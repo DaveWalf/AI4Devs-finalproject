@@ -1,0 +1,24 @@
+digraph Despliegue {
+ graph [rankdir=TB, bgcolor="white", pad="0.3", nodesep="0.5", ranksep="0.75", fontname="Arial", fontsize=18, label="Despliegue académico | puestos independientes y receptor de prueba", labelloc=t];
+ node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, color="#2b5072", fillcolor="#edf4fa", margin="0.18,0.12"];
+ edge [fontname="Arial", fontsize=11, color="#52667a"];
+ subgraph cluster_kiosk {
+  label="AIO / Windows 11 | cada puesto tiene identidad propia"; color="#85a9c8"; style=rounded;
+  ui [label="INComedor C# / .NET 10\nWPF + Blazor Hybrid / WebView2"];
+  local [shape=cylinder,label="SQLite / Microsoft.Data.Sqlite\nArchivo exclusivo del puesto\nReglas, consumos, colas y auditoría",fillcolor="#d6eade"];
+  files [shape=folder,label="Archivos locales AAAAMM\nGeneral + Interacciones\nACL y recuperación desde cola"];
+  per [label="Adaptadores de prueba\nSerie, BioMini 1:N / 1:1 e impresora\nPeriféricos reales: homologación posterior"];
+  ui -> local [label="transacción local"];
+  local -> files [label="exportación durable"];
+  per -> ui [dir=both,label="contratos locales"];
+ }
+ subgraph cluster_server {
+  label="Entorno académico de integración"; labelloc=b; color="#c9aa79"; style=rounded;
+  api [label="ASP.NET Core / HTTPS\nConfiguración, lotes y acuses\nFeed complementario",fillcolor="#f8ead2"];
+  central [shape=cylinder,label="SQL Server de prueba\nConfiguración y consolidación\nOrigen, deduplicación y avisos",fillcolor="#f8ead2"];
+  api -> central [label="persistencia central"];
+ }
+ peer [label="Segundo puesto de prueba\nOtra identidad y otro archivo SQLite\nEnsayos multipuesto"];
+ ui -> api [dir=both,style=dashed,label="mTLS / configuración y hechos\nRed ausente: política local"];
+ peer -> api [dir=both,style=dashed,label="mismo contrato"];
+}

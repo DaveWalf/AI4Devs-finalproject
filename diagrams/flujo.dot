@@ -1,0 +1,20 @@
+digraph Flujo {
+  graph [rankdir=TB, bgcolor="white", pad="0.25", nodesep="0.5", ranksep="0.45", fontname="Arial", label="Recorrido local | recuperación sin repetir el consumo", labelloc=t, fontsize=19];
+  node [shape=box, style="rounded,filled", fillcolor="#edf4fa", color="#2b5072", fontname="Arial", fontsize=12, margin="0.16,0.12"];
+  edge [fontname="Arial", fontsize=10, color="#52667a"];
+  idle [label="Reposo"];
+  id [label="Identificar localmente\nSerie / 1:N / código + 1:1"];
+  select [label="Elegir y confirmar\nCatálogo habilitado"];
+  commit [label="SQLite: revalidar\nreglas, cupo y política\nde comunicación\nregistrar intención", fillcolor="#d6eade"];
+  ok [label="Consumo + ticket\n+ outbox + auditoría durable", fillcolor="#d6eade"];
+  paper [label="Imprimir\nTrabajo durable"];
+  deny [label="Rechazo local\nMotivo, sin consumo", fillcolor="#f9e6de"];
+  recover [label="Falla de papel / reinicio\nRecuperar mismo ticket\nCopia auditada si incierto", fillcolor="#f8ead2"];
+  sync [label="Sincronizar aparte\nPublicar · acuse · pares", fillcolor="#f8ead2"];
+  idle -> id -> select -> commit;
+  commit -> ok [label="autorizado"];
+  commit -> deny [label="no habilitado / cupo / suspensión"];
+  ok -> paper; paper -> recover [label="falla o incertidumbre"];
+  ok -> sync [style=dashed,label="inmediato con red\ncola si no hay"];
+  recover -> paper [label="sin otro consumo"];
+}

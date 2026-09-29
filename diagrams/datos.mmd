@@ -1,0 +1,395 @@
+erDiagram
+    L_ConfigurationSnapshot ||--o{ L_PersonReference : contiene
+    L_ConfigurationSnapshot ||--o{ L_PersonGroup : contiene
+    L_ConfigurationSnapshot ||--o{ L_ServiceType : contiene
+    L_ConfigurationSnapshot ||--o{ L_QuotaScope : contiene
+    L_ConfigurationSnapshot ||--o{ L_QuotaBucket : contiene
+    L_ConfigurationSnapshot ||--o| L_KioskConfiguration : activa
+    L_PersonReference ||--o{ L_PersonExternalKey : vincula
+    L_PersonReference ||--o{ L_PersonCredential : identifica_por_codigo
+    L_PersonCredential o|--o{ L_IdentitySession : acredita_codigo
+    L_PersonReference ||--o{ L_LocalOperatorGrant : autoriza_rol
+    L_PersonReference ||--o{ L_GroupMembership : integra
+    L_PersonGroup ||--o{ L_GroupMembership : contiene
+    L_PersonReference o|--o{ L_EntitlementRule : sujeto
+    L_PersonGroup o|--o{ L_EntitlementRule : grupo
+    L_ServiceType ||--o{ L_EntitlementRule : habilita
+    L_QuotaScope ||--o{ L_EntitlementRule : delimita
+    L_QuotaBucket ||--o{ L_EntitlementRule : limita
+    L_ServiceType ||--o{ L_MenuItemVersion : clasifica
+    L_MenuItemVersion ||--|{ L_MenuQuotaCharge : afecta
+    L_QuotaBucket ||--o{ L_MenuQuotaCharge : carga
+    L_PersonReference ||--o{ L_IdentitySession : identifica
+    L_IdentitySession o|--o{ L_ConsumptionIntent : acredita
+    L_ConsumptionIntent ||--o| L_Consumption : autoriza_localmente
+    L_PersonReference ||--o{ L_Consumption : conserva_identidad
+    L_MenuItemVersion ||--o{ L_Consumption : conserva_menu
+    L_Consumption ||--|| L_Ticket : emite
+    L_ObservedConsumption ||--|{ L_ObservedQuotaCharge : carga_cupo
+    L_QuotaUsage ||--o{ L_ObservedQuotaCharge : agrega
+    L_FeedCursor ||--o{ L_PeerInbox : secuencia_recibida
+    L_Consumption o|--|| L_ObservedConsumption : propio_o_par
+    L_Ticket ||--|{ L_PrintJob : imprime
+    L_ConsumptionIntent o|--o{ L_OutboxEvent : registra_decision
+    L_Ticket o|--o{ L_OutboxEvent : registra_impresion
+    L_SyncBatch ||--|{ L_SyncBatchItem : contiene
+    L_OutboxEvent ||--o{ L_SyncBatchItem : reenvia
+    C_KioskRegistry ||--o{ C_ConfigurationPublication : nutre
+    C_KioskRegistry ||--o{ C_SyncBatchReceipt : recibe
+    C_KioskRegistry ||--o{ C_InboxEvent : deduplica
+    C_InboxEvent ||--o| C_ConsolidatedConsumption : consolida
+    C_InboxEvent o|--o{ C_ReconciliationCase : revisa
+    C_ConsolidatedConsumption ||--o{ C_ConsumptionFeed : distribuye
+    C_QuotaAuditAlert ||--|{ C_AlertConsumption : documenta
+    C_ConsolidatedConsumption ||--o{ C_AlertConsumption : involucra
+
+    L_KioskConfiguration {
+        uuid KioskId PK
+        uuid SiteId
+        uuid OrganizationId
+        uuid ActiveSnapshotId FK
+        string TimeZoneId
+        string BusinessDayStartLocal
+        string OperationMode
+        string MultiKioskOfflinePolicy
+    }
+    L_ConnectivityIncident o|--o{ L_Consumption : vincula_aislamiento
+    L_ConnectivityIncident o|--|{ L_OutboxEvent : registra_transicion
+    L_ConnectivityIncident {
+        uuid IncidentId PK
+        uuid KioskId FK
+        int ConfigurationVersion
+        string MultiKioskOfflinePolicy
+        string FailureKind
+        datetime DetectedAtUtc
+        datetime RecoveredAtUtc
+    }
+    L_ConfigurationSnapshot {
+        uuid SnapshotId PK
+        int ConfigurationVersion UK
+        int PolicyVersion
+        int CatalogVersion
+        int PeopleVersion
+        int SchemaVersion
+        bytes PayloadHash
+        string Status
+        datetime PublishedAtUtc
+    }
+    L_PersonReference {
+        uuid SnapshotId PK,FK
+        uuid PersonId PK
+        string DisplayName
+        bool Active
+        int IdentityMaterialVersion
+    }
+    L_PersonExternalKey {
+        uuid ExternalKeyId PK
+        uuid SnapshotId FK
+        uuid PersonId FK
+        string SourceSystem
+        string ExternalKey
+    }
+    L_PersonCredential {
+        uuid SnapshotId PK,FK
+        uuid CredentialId PK
+        uuid PersonId FK
+        string Kind
+        string NormalizedValue
+        datetime ValidFromUtc
+        datetime ValidToUtc
+        datetime RevokedAtUtc
+    }
+    L_LocalOperatorGrant {
+        uuid SnapshotId PK,FK
+        uuid GrantId PK
+        uuid PersonId FK
+        string Role
+        datetime ValidFromUtc
+        datetime ValidToUtc
+        datetime RevokedAtUtc
+    }
+    L_PersonGroup {
+        uuid SnapshotId PK,FK
+        uuid GroupId PK
+    }
+    L_GroupMembership {
+        uuid SnapshotId PK,FK
+        uuid GroupId PK,FK
+        uuid PersonId PK,FK
+    }
+    L_ServiceType {
+        uuid SnapshotId PK,FK
+        uuid ServiceTypeId PK
+        string Label
+    }
+    L_QuotaScope {
+        uuid SnapshotId PK,FK
+        uuid QuotaScopeId PK
+        string Definition
+    }
+    L_QuotaBucket {
+        uuid SnapshotId PK,FK
+        uuid QuotaBucketId PK
+        string Label
+    }
+    L_EntitlementRule {
+        uuid SnapshotId PK,FK
+        uuid RuleId PK
+        uuid PersonId FK
+        uuid GroupId FK
+        uuid ServiceTypeId FK
+        uuid QuotaScopeId FK
+        uuid QuotaBucketId FK
+        int Limit
+        int Priority
+        datetime ValidFromUtc
+        datetime ValidToUtc
+    }
+    L_MenuItemVersion {
+        uuid SnapshotId PK,FK
+        uuid MenuItemId PK
+        int MenuVersion
+        uuid ServiceTypeId FK
+        string Label
+        string Currency
+        int Scale
+        int64 EmployeeChargeMinor
+    }
+    L_MenuQuotaCharge {
+        uuid SnapshotId PK,FK
+        uuid MenuItemId PK,FK
+        uuid QuotaBucketId PK,FK
+        int Units
+    }
+    L_IdentitySession {
+        string IdentitySessionId PK
+        uuid SnapshotId FK
+        uuid PersonId FK
+        uuid CredentialId FK
+        string Method
+        string Purpose
+        datetime ExpiresAtUtc
+    }
+    L_ConsumptionIntent {
+        uuid IntentId PK
+        string IdentitySessionId FK
+        bytes PayloadHash
+        string Status
+        uuid DecisionId UK
+        datetime CommittedAtUtc
+        json ResultPayload
+    }
+    L_Consumption {
+        uuid ConsumptionId PK
+        uuid IntentId FK,UK
+        uuid SnapshotId FK
+        uuid PersonId FK
+        uuid MenuItemId FK
+        uuid ConnectivityIncidentId FK
+        date BusinessDate
+        int Quantity
+        int MenuVersion
+        int PolicyVersion
+        int CatalogVersion
+        int64 ClientSequence
+        datetime LocalCommittedAtUtc
+        json PriceSnapshot
+    }
+    L_QuotaUsage {
+        uuid PersonId PK
+        uuid QuotaScopeId PK
+        uuid QuotaBucketId PK
+        date BusinessDate PK
+        int Used
+        int Version
+    }
+    L_ObservedConsumption {
+        uuid ConsumptionId PK
+        uuid OriginKioskId
+        uuid OriginEventId UK
+        uuid PersonId
+        date BusinessDate
+        string Source
+        bytes PayloadHash
+    }
+    L_ObservedQuotaCharge {
+        uuid ConsumptionId PK,FK
+        uuid QuotaScopeId PK
+        uuid QuotaBucketId PK
+        date BusinessDate PK
+        int Units
+    }
+    L_PeerInbox {
+        uuid FeedEventId PK
+        uuid FeedId FK
+        uuid OriginEventId
+        uuid ConsumptionId
+        uuid OriginKioskId
+        int64 FeedSequence
+        bytes PayloadHash
+    }
+    L_FeedCursor {
+        uuid FeedId PK
+        int64 LastCommittedSequence
+    }
+    L_Ticket {
+        uuid TicketId PK
+        uuid ConsumptionId FK,UK
+        json PrintData
+    }
+    L_PrintJob {
+        uuid JobId PK
+        uuid TicketId FK
+        int CopyNumber
+        string Status
+        string SpoolerJobId
+        datetime UpdatedAtUtc
+    }
+    L_OutboxEvent {
+        uuid EventId PK
+        uuid IntentId FK
+        uuid TicketId FK
+        uuid IncidentId FK
+        string EventType
+        int PayloadVersion
+        json Payload
+        bytes PayloadHash
+        string State
+    }
+    L_SyncBatch {
+        uuid BatchId PK
+        bytes BodyHash
+        string State
+        json AckPayload
+    }
+    L_SyncBatchItem {
+        uuid BatchId PK,FK
+        uuid EventId PK,FK
+    }
+    B_BiometricTemplateEnvelope {
+        uuid TemplateId PK
+        uuid PersonId
+        string TemplateFormat
+        int TemplateVersion
+        string KeyReference
+        bytes Ciphertext
+        bool Enabled
+    }
+    C_KioskRegistry ||--o{ C_CentralConnectivityIncident : registra_incidencia
+    C_CentralConnectivityIncident {
+        uuid KioskId PK,FK
+        uuid IncidentId PK
+        int ConfigurationVersion
+        string MultiKioskOfflinePolicy
+        string FailureKind
+        datetime DetectedAtUtc
+        datetime RecoveredAtUtc
+    }
+    C_KioskRegistry {
+        uuid KioskId PK
+        uuid SiteId
+        uuid OrganizationId
+        string CertificateIdentity UK
+    }
+    C_ConfigurationPublication {
+        uuid SnapshotId PK
+        uuid KioskId FK
+        int ConfigurationVersion
+        bytes PayloadHash
+        json Payload
+    }
+    C_SyncBatchReceipt {
+        uuid KioskId PK,FK
+        uuid BatchId PK
+        bytes PayloadHash
+        string Status
+        json AckPayload
+    }
+    C_InboxEvent {
+        uuid EventId PK
+        uuid KioskId FK
+        bytes PayloadHash
+        json Payload
+        datetime ReceivedAtUtc
+        string ProjectionState
+    }
+    C_ConsolidatedConsumption {
+        uuid ConsumptionId PK
+        uuid OriginEventId FK,UK
+        uuid KioskId
+        json OriginalConsumption
+    }
+    C_ReconciliationCase {
+        uuid CaseId PK
+        uuid EventId FK
+        string Type
+        string Status
+    }
+    C_CentralVendorCost {
+        uuid PriceVersionId PK
+        string Currency
+        int Scale
+        int64 VendorCostMinor
+    }
+    C_ConsumptionFeed {
+        uuid FeedId PK
+        int64 Sequence PK
+        uuid FeedEventId UK
+        uuid OriginKioskId
+        uuid ConsumptionId FK
+        uuid OriginEventId
+        json QuotaCharges
+    }
+    C_QuotaAuditAlert {
+        uuid AlertId PK
+        uuid PersonId
+        uuid QuotaScopeId
+        uuid QuotaBucketId
+        date BusinessDate
+        string Status
+        string Resolution
+    }
+    C_AlertConsumption {
+        uuid AlertId PK,FK
+        uuid ConsumptionId PK,FK
+    }
+
+%% Archivos externos: no son tablas. Estas entidades sólo respaldan su entrega.
+    L_AuditRecord ||--|{ L_AuditFileDelivery : exporta_a_destinos
+    L_AuditRecord {
+        uuid AuditId PK
+        uuid KioskId
+        uuid GenerationId
+        int64 Sequence
+        uuid BootId
+        datetime OccurredAtUtc
+        datetime RecordedAtUtc
+        string LogMonth
+        string EventType
+        json Context
+    }
+    L_AuditFileDelivery {
+        uuid AuditId PK,FK
+        string Stream PK
+        string State
+        datetime ExportedAtUtc
+        string DestinationRelativePath
+        bytes ContentHash
+    }
+    L_LogDeliveryIncident {
+        uuid IncidentId PK
+        string Stream
+        datetime OpenedAtUtc
+        datetime RecoveredAtUtc
+        uuid GenerationId
+        int64 RecoveryCutoffSequence
+        string Cause
+    }
+    L_LocalSettingsRevision {
+        uuid RevisionId PK
+        int RevisionNumber
+        uuid ActorId
+        datetime CreatedAtUtc
+        string State
+        json Parameters
+    }
