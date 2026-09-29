@@ -1,0 +1,1722 @@
+openapi: 3.1.0
+info:
+  title: INComedor - configuración y consolidación eventual
+  version: 0.6.0-draft
+  description: |
+    Contrato propuesto para tres operaciones entre el puesto INComedor e INWeb:
+    descargar la configuración completa y enviar o consultar lotes de hechos ya
+    decididos localmente. No acredita una API implementada.
+
+    La versión 0.6.0-draft endurece la semántica de credenciales y permisos:
+    códigos no reasignables y revocación conocida al activar el snapshot.
+    Mantiene la estructura JSON y SchemaVersion 3 del snapshot; la versión
+    del documento no negocia capacidades en ejecución. No agrega endpoints.
+
+    El puesto autoriza e imprime con su base SQLite; ningún ACK central autoriza
+    un consumo ni lo rechaza retroactivamente. El certificado de equipo (mTLS)
+    protege sólo este intercambio: su vencimiento o la falta de red no bloquean
+    la operación local de un puesto único. La política multipuesto
+    CONTINUE_LOCAL o SUSPEND_NEW_CONSUMPTIONS viaja en la configuración.
+
+    El snapshot incluye padrón operativo, credenciales por código, permisos
+    locales, catálogo y reglas. Los templates biométricos, el feed de consumos
+    entre puestos y la administración local usan contratos complementarios
+    fuera de estas operaciones. Todos los ejemplos son sintéticos.
+
+    Los objetos del dominio usan PascalCase; ProblemDetails conserva los nombres
+    de RFC 9457. Las decisiones que originan el contrato están en docs/decisiones.md.
+servers:
+  - url: https://api.incomedor.example
+    description: Dominio reservado de ejemplo, sin servicio desplegado.
+security:
+  - KioskCertificate: []
+tags:
+  - name: Configuración
+  - name: Consolidación
+paths:
+  /api/incomedor/v1/configuration:
+    get:
+      operationId: GetConfiguration
+      tags: [Configuración]
+      summary: Descargar un snapshot completo para activación local atómica.
+      description: |
+        KioskId, SiteId y organización se obtienen del registro autenticado.
+        El snapshot integra padrón operativo mínimo, reglas y catálogo compatibles
+        entre sí. El cliente valida esquema, ámbito, hash y referencias en staging
+        y recién entonces lo activa completo; una descarga incompleta conserva
+        el snapshot anterior y no interrumpe la operación con la base existente.
+
+        Los snapshots muestran dos configuraciones alternativas del mismo puesto.
+        SyncBatch corresponde a ConfigurationVersion 1; el segundo ejemplo muestra
+        la política de suspensión, sin afirmar que el puesto ya la haya activado.
+
+        PayloadHash se propone como SHA-256 hexadecimal de Payload serializado
+        canónicamente según RFC 8785 (esquema 1). No incluye su propio hash.
+        Las bajas del padrón, las revocaciones de credenciales y permisos y los
+        cambios de derechos se aplican al activar la nueva versión; mientras no
+        llegue, rigen las últimas reglas locales. Esto implica una demora de
+        revocación conocida. El feed complementario de consumos pares reduce la
+        ventana de sobrecupo multipuesto, sin prometer exclusión global.
+
+        Con If-None-Match igual al ETag del snapshot vigente, la respuesta es 304
+        sin cuerpo. Si todavía no existe una publicación para el equipo, la
+        respuesta es 404 y el puesto conserva lo que tenga activo.
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          description: ETag del último snapshot recibido por el puesto.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Snapshot completo; configuración local utilizable después de validación y commit.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigurationSnapshot'
+              examples:
+                continue_local:
+                  summary: 'Fixture sintético completo: tres personas con cinco códigos y tres permisos, quince menús y cupos compartidos; continuidad local.'
+                  value:
+                    SnapshotId: 30303030-3030-4030-8030-303030303031
+                    ConfigurationVersion: 1
+                    SchemaVersion: 3
+                    PublishedAtUtc: '2026-09-29T12:00:00Z'
+                    PayloadHash: 5346c72c21d0631e588f2c3125b02411c8138143c383893263cc542519aebecc
+                    Payload:
+                      KioskId: 10101010-1010-4010-8010-101010101010
+                      SiteId: 20202020-2020-4020-8020-202020202020
+                      OperationMode: MULTI_KIOSK_AUDITED
+                      MultiKioskOfflinePolicy: CONTINUE_LOCAL
+                      TimeZoneId: America/Argentina/Buenos_Aires
+                      BusinessDayStartLocal: '00:00'
+                      CatalogVersion: 1
+                      PolicyVersion: 1
+                      PeopleVersion: 1
+                      People:
+                      - PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        DisplayName: Persona habilitada de prueba
+                        Active: true
+                        GroupIds:
+                        - 50505050-5050-4050-8050-505050505050
+                        IdentityMaterialVersion: 1
+                      - PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2
+                        DisplayName: Persona inactiva de prueba
+                        Active: false
+                        GroupIds:
+                        - 50505050-5050-4050-8050-505050505050
+                        IdentityMaterialVersion: 1
+                      - PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3
+                        DisplayName: Persona sin derecho de prueba
+                        Active: true
+                        GroupIds: []
+                        IdentityMaterialVersion: 1
+                      Credentials:
+                      - CredentialId: 12121212-1212-4212-8212-121212121211
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000123'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                      - CredentialId: 12121212-1212-4212-8212-121212121212
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000124'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                        RevokedAtUtc: '2026-09-28T12:00:00Z'
+                      - CredentialId: 12121212-1212-4212-8212-121212121213
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000125'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                        ValidToUtc: '2026-09-29T00:00:00Z'
+                      - CredentialId: 12121212-1212-4212-8212-121212121214
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000456'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                      - CredentialId: 12121212-1212-4212-8212-121212121215
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000789'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                      OperatorGrants:
+                      - GrantId: 13131313-1313-4313-8313-131313131311
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3
+                        Role: OPERATOR
+                        ValidFromUtc: '2026-09-01T00:00:00Z'
+                      - GrantId: 13131313-1313-4313-8313-131313131312
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        Role: SYSTEM_ADMINISTRATOR
+                        ValidFromUtc: '2026-09-01T00:00:00Z'
+                      - GrantId: 13131313-1313-4313-8313-131313131313
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3
+                        Role: SYSTEM_ADMINISTRATOR
+                        ValidFromUtc: '2026-09-01T00:00:00Z'
+                        RevokedAtUtc: '2026-09-29T10:00:00Z'
+                      Groups:
+                      - Id: 50505050-5050-4050-8050-505050505050
+                        Label: Grupo de prueba con derecho a comedor
+                      ServiceTypes:
+                      - Id: 60606060-6060-4060-8060-606060606061
+                        Label: ALMUERZO
+                      - Id: 60606060-6060-4060-8060-606060606062
+                        Label: REFRIGERIO
+                      QuotaScopes:
+                      - Id: cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                        Label: Instalación académica compartida
+                      QuotaBuckets:
+                      - Id: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                        Label: ALMUERZO_DIARIO
+                      - Id: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                        Label: REFRIGERIO_DIARIO
+                      MenuItems:
+                      - MenuItemId: 44444444-4444-4444-8444-444444444444
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo común
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000002
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opcional
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000003
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 03
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000004
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 04
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000005
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 05
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000006
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 06
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000007
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 07
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000008
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 08
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000009
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 09
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000010
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 10
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000011
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 01
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000012
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 02
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000013
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 03
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000014
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 04
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000015
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 05
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      Rules:
+                      - RuleId: 70707070-7070-4070-8070-707070707071
+                        Subject:
+                          GroupId: 50505050-5050-4050-8050-505050505050
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        QuotaScopeId: cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                        QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                        Limit: 1
+                        Priority: 100
+                      - RuleId: 70707070-7070-4070-8070-707070707072
+                        Subject:
+                          GroupId: 50505050-5050-4050-8050-505050505050
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        QuotaScopeId: cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                        QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                        Limit: 1
+                        Priority: 100
+                      - RuleId: 70707070-7070-4070-8070-707070707073
+                        Subject:
+                          PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        QuotaScopeId: cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                        QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                        Limit: 0
+                        Priority: 0
+                        ValidFromUtc: '2026-09-29T13:00:00Z'
+                        ValidToUtc: '2026-09-29T14:30:00Z'
+                    CorrelationId: 40404040-4040-4040-8040-404040404041
+                  description: 'Personas habilitada, inactiva y sin derecho. ALMUERZO y REFRIGERIO tienen cupos diarios
+                    independientes; sus variantes comparten categoría. Regla cero de ALMUERZO vigente el 29/09 entre 13:00Z
+                    y 14:30Z: RULE_DENIED a las 14:00Z y consumo SyncBatch a las 15:00:02Z, una vez vencida. La persona
+                    habilitada tiene un código vigente, uno revocado y uno vencido; la persona sin derecho es operadora y
+                    su permiso de administración está revocado. Precios, reglas, códigos y permisos sintéticos, sin
+                    aprobación comercial.'
+                suspend_new_consumptions:
+                  summary: 'Fixture sintético completo: tres personas con cinco códigos y tres permisos, quince menús y cupos compartidos; suspensión por
+                    comunicación.'
+                  value:
+                    SnapshotId: 30303030-3030-4030-8030-303030303032
+                    ConfigurationVersion: 2
+                    SchemaVersion: 3
+                    PublishedAtUtc: '2026-09-29T12:01:00Z'
+                    PayloadHash: 17f4a7742c5d3706d28e150c75f07ea4ba9578b33a5b17c60d67c04667f3220c
+                    Payload:
+                      KioskId: 10101010-1010-4010-8010-101010101010
+                      SiteId: 20202020-2020-4020-8020-202020202020
+                      OperationMode: MULTI_KIOSK_AUDITED
+                      MultiKioskOfflinePolicy: SUSPEND_NEW_CONSUMPTIONS
+                      TimeZoneId: America/Argentina/Buenos_Aires
+                      BusinessDayStartLocal: '00:00'
+                      CatalogVersion: 1
+                      PolicyVersion: 2
+                      PeopleVersion: 1
+                      People:
+                      - PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        DisplayName: Persona habilitada de prueba
+                        Active: true
+                        GroupIds:
+                        - 50505050-5050-4050-8050-505050505050
+                        IdentityMaterialVersion: 1
+                      - PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2
+                        DisplayName: Persona inactiva de prueba
+                        Active: false
+                        GroupIds:
+                        - 50505050-5050-4050-8050-505050505050
+                        IdentityMaterialVersion: 1
+                      - PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3
+                        DisplayName: Persona sin derecho de prueba
+                        Active: true
+                        GroupIds: []
+                        IdentityMaterialVersion: 1
+                      Credentials:
+                      - CredentialId: 12121212-1212-4212-8212-121212121211
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000123'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                      - CredentialId: 12121212-1212-4212-8212-121212121212
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000124'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                        RevokedAtUtc: '2026-09-28T12:00:00Z'
+                      - CredentialId: 12121212-1212-4212-8212-121212121213
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000125'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                        ValidToUtc: '2026-09-29T00:00:00Z'
+                      - CredentialId: 12121212-1212-4212-8212-121212121214
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000456'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                      - CredentialId: 12121212-1212-4212-8212-121212121215
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3
+                        Kind: SERIAL_CODE
+                        NormalizedValue: '000789'
+                        ValidFromUtc: '2026-01-01T00:00:00Z'
+                      OperatorGrants:
+                      - GrantId: 13131313-1313-4313-8313-131313131311
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3
+                        Role: OPERATOR
+                        ValidFromUtc: '2026-09-01T00:00:00Z'
+                      - GrantId: 13131313-1313-4313-8313-131313131312
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        Role: SYSTEM_ADMINISTRATOR
+                        ValidFromUtc: '2026-09-01T00:00:00Z'
+                      - GrantId: 13131313-1313-4313-8313-131313131313
+                        PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3
+                        Role: SYSTEM_ADMINISTRATOR
+                        ValidFromUtc: '2026-09-01T00:00:00Z'
+                        RevokedAtUtc: '2026-09-29T10:00:00Z'
+                      Groups:
+                      - Id: 50505050-5050-4050-8050-505050505050
+                        Label: Grupo de prueba con derecho a comedor
+                      ServiceTypes:
+                      - Id: 60606060-6060-4060-8060-606060606061
+                        Label: ALMUERZO
+                      - Id: 60606060-6060-4060-8060-606060606062
+                        Label: REFRIGERIO
+                      QuotaScopes:
+                      - Id: cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                        Label: Instalación académica compartida
+                      QuotaBuckets:
+                      - Id: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                        Label: ALMUERZO_DIARIO
+                      - Id: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                        Label: REFRIGERIO_DIARIO
+                      MenuItems:
+                      - MenuItemId: 44444444-4444-4444-8444-444444444444
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo común
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000002
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opcional
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000003
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 03
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000004
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 04
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000005
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 05
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000006
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 06
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000007
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 07
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000008
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 08
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000009
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 09
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000010
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        Label: Almuerzo opción 10
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 150000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000011
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 01
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000012
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 02
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000013
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 03
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000014
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 04
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      - MenuItemId: 44444444-4444-4444-8444-000000000015
+                        Version: 1
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        Label: Refrigerio opción 05
+                        Price:
+                          Currency: ARS
+                          Scale: 2
+                          EmployeeChargeMinor: 50000
+                        QuotaCharges:
+                        - QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                          Units: 1
+                      Rules:
+                      - RuleId: 70707070-7070-4070-8070-707070707071
+                        Subject:
+                          GroupId: 50505050-5050-4050-8050-505050505050
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        QuotaScopeId: cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                        QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                        Limit: 1
+                        Priority: 100
+                      - RuleId: 70707070-7070-4070-8070-707070707072
+                        Subject:
+                          GroupId: 50505050-5050-4050-8050-505050505050
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606062
+                        QuotaScopeId: cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                        QuotaBucketId: dddddddd-dddd-4ddd-8ddd-ddddddddddd2
+                        Limit: 1
+                        Priority: 100
+                      - RuleId: 70707070-7070-4070-8070-707070707073
+                        Subject:
+                          PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+                        ServiceTypeId: 60606060-6060-4060-8060-606060606061
+                        QuotaScopeId: cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                        QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                        Limit: 0
+                        Priority: 0
+                        ValidFromUtc: '2026-09-29T13:00:00Z'
+                        ValidToUtc: '2026-09-29T14:30:00Z'
+                    CorrelationId: 40404040-4040-4040-8040-404040404042
+                  description: 'Mismo fixture con la política de suspensión por comunicación. Credenciales y permisos
+                    iguales al ejemplo anterior. Precios, reglas, códigos y permisos sintéticos, sin aprobación comercial.'
+        '304':
+          description: El puesto ya tiene el snapshot vigente; conserva el activo sin descargarlo otra vez.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ConfigurationNotPublished'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/incomedor/v1/sync-batches:
+    post:
+      operationId: SubmitSyncBatch
+      tags: [Consolidación]
+      summary: Enviar hechos locales durables para consolidación idempotente.
+      description: |
+        ConsumptionId y EventId nacen en la transacción SQLite local que guarda
+        intención, decisión, consumo, ObservedConsumption propio con sus
+        ObservedQuotaCharge, contador, ticket, primer PrintJob, outbox y AuditRecord
+        en una misma transacción antes de imprimir (RB06). La impresión
+        genera después sus propios eventos. El envío no participa en la autorización.
+
+        El cliente guarda BatchId y el lote antes de enviar. Idempotency-Key debe
+        ser idéntico a BatchId. Se calcula SHA-256 del body JSON canónico (RFC 8785,
+        esquema 1); la misma clave con otro body produce 409, sin alterar el original.
+        EventId se deduplica además entre lotes: un hecho ya proyectado con el
+        mismo contenido es DUPLICATE; una recepción aún en revisión conserva ese estado;
+        otro contenido para EventId es CONFLICT y requiere revisión visible.
+        ConsumptionId conserva su unicidad de negocio durante la consolidación.
+        AppliedQuotaCharges conserva ámbito, categoría, unidades y fecha de cada
+        carga aplicada. El servidor usa estos hechos para distribuir a los pares
+        y detectar sobrecupos, sin recalcular silenciosamente la decisión local.
+
+        Un ACK por evento informa recepción, conflicto técnico o revisión de un
+        hecho ya decidido localmente; no cambia AUTHORIZED a DENIED ni elimina
+        la comida servida. REJECTED significa payload no incorporado, nunca rechazo
+        retroactivo del derecho a comer. El kiosco conserva conflictos y rechazos
+        para diagnóstico y conciliación, sin purgar silenciosamente su outbox.
+        Inbox durable y proyección son estados distintos. Un evento recibido
+        antes de su referencia conserva NEEDS_REVIEW/RELATED_EVENT_PENDING,
+        incluso al repetirse; no se transforma en DUPLICATE sólo por existir en
+        Inbox. El servidor retoma su proyección al llegar la referencia y registra
+        la resolución, sin depender de un reenvío ciego del cliente. El ACK de cada
+        lote permanece como recibo original; el seguimiento de revisión se resuelve
+        en el contrato complementario de auditoría, fuera de estas tres operaciones.
+
+        Ante timeout, consultar el mismo BatchId; si aún no aparece, reenviar
+        exactamente el lote original. La autorización local sigue funcionando.
+        El protocolo de consolidación es propuesto; no hay servidor implementado.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: UUID idéntico a BatchId, estable durante todos los reintentos.
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncBatchRequest'
+            examples:
+              syntheticConsumption:
+                $ref: '#/components/examples/SyncBatch'
+              denied_credential_revoked:
+                $ref: '#/components/examples/DeniedCredentialRevokedBatch'
+              denied_credential_expired:
+                $ref: '#/components/examples/DeniedCredentialExpiredBatch'
+              denied_rule_denied:
+                $ref: '#/components/examples/DeniedRuleDeniedBatch'
+      responses:
+        '201':
+          description: Lote nuevo con resultados de ingesta persistidos para todos sus eventos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletedBatchAck'
+              examples:
+                completed:
+                  $ref: '#/components/examples/CompletedAck'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '200':
+          description: ACK durable de un lote ya procesado; no duplica hechos ni altera resultados originales.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletedBatchAck'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '202':
+          $ref: '#/components/responses/Pending'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/Throttled'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/incomedor/v1/sync-batches/{batchId}:
+    get:
+      operationId: GetSyncBatch
+      tags: [Consolidación]
+      summary: Recuperar el ACK por evento después de una respuesta perdida.
+      description: |
+        Consulta limitada al equipo autenticado. Un lote ajeno se presenta como
+        desconocido. PENDING describe sólo procesamiento central de consolidación;
+        el consumo local y la impresión no esperan ese estado ni su finalización.
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Resultados durables por evento; se conserva el contenido del ACK original.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletedBatchAck'
+              examples:
+                completed:
+                  $ref: '#/components/examples/CompletedAck'
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+        '202':
+          $ref: '#/components/responses/Pending'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+components:
+  securitySchemes:
+    KioskCertificate:
+      type: mutualTLS
+      description: |
+        Credencial de equipo propuesta para configuración y sincronización.
+        Emisión, renovación y revocación se especificarán antes de implementación.
+        El fallo del handshake no produce respuesta HTTP; 401/403 aplican cuando
+        la solicitud alcanza la API. Su falla no invalida la operación local.
+  headers:
+    CorrelationId:
+      description: UUID de diagnóstico sin PII, igual a CorrelationId del cuerpo (correlationId en ProblemDetails).
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    ETag:
+      description: Identificador entre comillas del snapshot, formado por su PayloadHash.
+      schema:
+        type: string
+        pattern: '^"[a-f0-9]{64}"$'
+    RetryAfter:
+      description: Segundos mínimos sugeridos para reintentar la comunicación, conservando el mismo lote.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 9007199254740991
+      example: 2
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    UtcTimestamp:
+      type: string
+      format: date-time
+      pattern: 'Z$'
+    Hash:
+      type: string
+      pattern: '^[a-f0-9]{64}$'
+    ConfigurationSnapshot:
+      type: object
+      additionalProperties: false
+      required: [SnapshotId, ConfigurationVersion, SchemaVersion, PublishedAtUtc, PayloadHash, Payload, CorrelationId]
+      properties:
+        SnapshotId:
+          $ref: '#/components/schemas/Uuid'
+        ConfigurationVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        SchemaVersion:
+          type: integer
+          const: 3
+        PublishedAtUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+        PayloadHash:
+          $ref: '#/components/schemas/Hash'
+        Payload:
+          $ref: '#/components/schemas/ConfigurationPayload'
+        CorrelationId:
+          $ref: '#/components/schemas/Uuid'
+    ConfigurationPayload:
+      type: object
+      additionalProperties: false
+      required: [KioskId, SiteId, OperationMode, MultiKioskOfflinePolicy, TimeZoneId, BusinessDayStartLocal, CatalogVersion, PolicyVersion, PeopleVersion, People, Credentials, OperatorGrants, Groups, ServiceTypes, QuotaScopes, QuotaBuckets, MenuItems, Rules]
+      properties:
+        KioskId:
+          $ref: '#/components/schemas/Uuid'
+        SiteId:
+          $ref: '#/components/schemas/Uuid'
+        OperationMode:
+          type: string
+          enum: [SINGLE_KIOSK, MULTI_KIOSK_AUDITED]
+          description: Perfil de la instalación; sólo MULTI_KIOSK_AUDITED aplica suspensión por comunicación.
+        MultiKioskOfflinePolicy:
+          $ref: '#/components/schemas/MultiKioskOfflinePolicy'
+        TimeZoneId:
+          type: string
+          minLength: 1
+          description: Zona acordada para el cómputo local de BusinessDate.
+        BusinessDayStartLocal:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: Corte diario configurado; su valor de negocio debe aprobarse.
+        CatalogVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        PolicyVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        PeopleVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        People:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonOperationalReference'
+        Credentials:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonCredential'
+        OperatorGrants:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocalOperatorGrant'
+        Groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamedReference'
+        ServiceTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamedReference'
+        QuotaBuckets:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamedReference'
+        QuotaScopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamedReference'
+        MenuItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuItem'
+        Rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntitlementRule'
+      description: |
+        Versión completa para el ámbito del equipo. Referencias cruzadas, UUID
+        únicos, prioridad de reglas y completitud se validan antes de activar.
+        No contiene templates, documentos, imágenes ni costo del concesionario.
+        Credentials y OperatorGrants se activan con el mismo snapshot que People,
+        de modo que persona, credencial y permiso nunca quedan en versiones distintas.
+        SchemaVersion 3 exige modo y política explícitos, credenciales y permisos;
+        rechazar un snapshot de otro esquema conserva la última versión activa, sin
+        cambiarla a CONTINUE_LOCAL.
+    MultiKioskOfflinePolicy:
+      type: string
+      enum: [CONTINUE_LOCAL, SUSPEND_NEW_CONSUMPTIONS]
+      default: CONTINUE_LOCAL
+      description: |
+        Decisión D-A02 por instalación (SiteId). El publicador debe emitir el valor
+        explícito requerido por ConfigurationPayload; default documenta el valor
+        inicial, no completa payloads inválidos. Persiste con el snapshot íntegro.
+        CONTINUE_LOCAL atiende con datos/cupos conocidos y registra incidencia.
+        SUSPEND_NEW_CONSUMPTIONS deniega sólo confirmaciones nuevas mientras falla
+        envío a INWeb o recepción del feed; conserva hechos, replay y comprobantes.
+        Un reinicio no reemplaza una política previa por el valor inicial.
+    NamedReference:
+      type: object
+      additionalProperties: false
+      required: [Id, Label]
+      properties:
+        Id:
+          $ref: '#/components/schemas/Uuid'
+        Label:
+          type: string
+          minLength: 1
+    PersonOperationalReference:
+      type: object
+      additionalProperties: false
+      required: [PersonId, DisplayName, Active, GroupIds, IdentityMaterialVersion]
+      properties:
+        PersonId:
+          $ref: '#/components/schemas/Uuid'
+        DisplayName:
+          type: string
+          minLength: 1
+        Active:
+          type: boolean
+        GroupIds:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Uuid'
+        IdentityMaterialVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Metadato del conjunto separado de identificación; no contiene credencial ni template.
+    PersonCredential:
+      type: object
+      additionalProperties: false
+      required: [CredentialId, PersonId, Kind, NormalizedValue]
+      properties:
+        CredentialId:
+          $ref: '#/components/schemas/Uuid'
+        PersonId:
+          $ref: '#/components/schemas/Uuid'
+        Kind:
+          type: string
+          enum: [SERIAL_CODE]
+          description: Código recibido por el puerto serie. Otro tipo se agrega versionando el esquema.
+        NormalizedValue:
+          type: string
+          pattern: '^[0-9A-Z]{1,32}$'
+          description: Valor sin espacios y en mayúsculas que conserva ceros iniciales. Es un identificador, no un secreto.
+        ValidFromUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+          description: Inicio inclusive; antes de ese instante el código no identifica (IDENTITY_NOT_RESOLVED).
+        ValidToUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+          description: Fin exclusivo; desde ese instante corresponde CREDENTIAL_EXPIRED.
+        RevokedAtUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+          description: Revocación ya conocida, no posterior a PublishedAtUtc del snapshot. Su presencia causa CREDENTIAL_REVOKED al activar el snapshot, incluso si retrocede el reloj local.
+      description: |
+        Credencial por código de una persona del mismo snapshot (RB25). El par
+        Kind y NormalizedValue es único en todo el snapshot, incluidas revocadas.
+        Un código no se reasigna a otra persona, incluso tras retirar su fila;
+        CredentialId mantiene persona, tipo y valor entre versiones. Publicación
+        y staging comprueban referencias, unicidad, titularidad histórica y
+        RevokedAtUtc <= PublishedAtUtc (AT55). Son validaciones semánticas fuera
+        de JSON Schema. El ámbito y provisión del historial se cierran en M0;
+        un snapshot aislado no acredita ausencia de asignaciones anteriores.
+        El valor no se escribe en logs, tickets ni eventos. La renovación para
+        el mismo titular no permite duplicar el código en un snapshot.
+    LocalOperatorGrant:
+      type: object
+      additionalProperties: false
+      required: [GrantId, PersonId, Role]
+      properties:
+        GrantId:
+          $ref: '#/components/schemas/Uuid'
+        PersonId:
+          $ref: '#/components/schemas/Uuid'
+        Role:
+          type: string
+          enum: [OPERATOR, SYSTEM_ADMINISTRATOR]
+        ValidFromUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+          description: Inicio inclusive del permiso.
+        ValidToUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+          description: Fin exclusivo del permiso.
+        RevokedAtUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+          description: Revocación ya conocida, no posterior a PublishedAtUtc; el rol deja de autorizar al activar el snapshot, sin esperar al reloj local.
+      description: |
+        Permiso local de un rol para una persona del snapshot (RB26). OPERATOR
+        recupera y reimprime comprobantes; SYSTEM_ADMINISTRATOR configura y
+        diagnostica y exporta bitácoras. Los roles no se heredan. El actor se
+        autentica sin red con código y verificación 1:1 o cuenta individual local
+        de mantenimiento; el caso de uso comprueba el permiso en cada acción.
+        La contraseña no integra este contrato ni habilita consumo.
+        Persona y rol son únicos por snapshot. Staging rechaza RevokedAtUtc
+        posterior a PublishedAtUtc, también para permisos (AT55).
+    MenuItem:
+      type: object
+      additionalProperties: false
+      required: [MenuItemId, Version, ServiceTypeId, Label, Price, QuotaCharges]
+      properties:
+        MenuItemId:
+          $ref: '#/components/schemas/Uuid'
+        Version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        ServiceTypeId:
+          $ref: '#/components/schemas/Uuid'
+        Label:
+          type: string
+          minLength: 1
+        Price:
+          $ref: '#/components/schemas/PriceSnapshot'
+        QuotaCharges:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required: [QuotaBucketId, Units]
+            properties:
+              QuotaBucketId:
+                $ref: '#/components/schemas/Uuid'
+              Units:
+                type: integer
+                minimum: 1
+                maximum: 9007199254740991
+    EntitlementRule:
+      type: object
+      additionalProperties: false
+      required: [RuleId, Subject, ServiceTypeId, QuotaScopeId, QuotaBucketId, Limit, Priority]
+      description: |
+        Primero se comprueba vigencia y coincidencia del sujeto. Una regla
+        aplicable con Limit=0 expresa denegación explícita y prevalece sobre
+        cualquier permiso del mismo servicio/ámbito/categoría. Sólo entre reglas
+        con Limit>0 se elige la mayor Priority; empates incompatibles impiden
+        publicar. Esta precedencia es propuesta técnica para materializar el
+        bloqueo conocido. La comparación de fechas se valida por aplicación.
+      properties:
+        RuleId:
+          $ref: '#/components/schemas/Uuid'
+        Subject:
+          oneOf:
+            - type: object
+              additionalProperties: false
+              required: [PersonId]
+              properties:
+                PersonId:
+                  $ref: '#/components/schemas/Uuid'
+            - type: object
+              additionalProperties: false
+              required: [GroupId]
+              properties:
+                GroupId:
+                  $ref: '#/components/schemas/Uuid'
+        ServiceTypeId:
+          $ref: '#/components/schemas/Uuid'
+        QuotaScopeId:
+          $ref: '#/components/schemas/Uuid'
+        QuotaBucketId:
+          $ref: '#/components/schemas/Uuid'
+        Limit:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Cupo configurado; se controla con hechos propios y pares recibidos por la terminal, sin garantía global excluyente.
+        Priority:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Mayor valor prevalece sólo entre permisos positivos; una denegación aplicable tiene precedencia.
+        ValidFromUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+          description: Inicio inclusive; ausente significa sin límite inferior temporal de esta regla.
+        ValidToUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+          description: Fin exclusivo; ausente significa sin límite superior. Si ambos existen, fin posterior al inicio.
+    PriceSnapshot:
+      type: object
+      additionalProperties: false
+      required: [Currency, Scale, EmployeeChargeMinor]
+      properties:
+        Currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        Scale:
+          type: integer
+          minimum: 0
+          maximum: 6
+        EmployeeChargeMinor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+      description: |
+        Importe exacto = unidades menores / 10^Scale. Cero es gratuidad explícita;
+        ausencia no significa cero. Escala y redondeo comerciales por aprobar.
+        VendorCostMinor permanece central, fuera del contrato del kiosco.
+        Los enteros JSON se limitan a 2^53-1 para conservar exactitud entre
+        productores/consumidores y compatibilidad con canonicalización I-JSON.
+    SyncBatchRequest:
+      type: object
+      additionalProperties: false
+      required: [BatchId, SchemaVersion, CreatedAtUtc, Events]
+      properties:
+        BatchId:
+          $ref: '#/components/schemas/Uuid'
+        SchemaVersion:
+          type: integer
+          const: 1
+        CreatedAtUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+        Events:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/SyncEvent'
+          description: EventId únicos dentro del lote; orden no determina autorización ni precedencia del negocio.
+    SyncEvent:
+      oneOf:
+        - $ref: '#/components/schemas/ConsumptionRecorded'
+        - $ref: '#/components/schemas/ConsumptionDenied'
+        - $ref: '#/components/schemas/PrintEventRecorded'
+        - $ref: '#/components/schemas/ConnectivityIncidentRecorded'
+      discriminator:
+        propertyName: EventType
+        mapping:
+          CONSUMPTION_RECORDED: '#/components/schemas/ConsumptionRecorded'
+          CONSUMPTION_DENIED: '#/components/schemas/ConsumptionDenied'
+          PRINT_EVENT_RECORDED: '#/components/schemas/PrintEventRecorded'
+          CONNECTIVITY_INCIDENT_RECORDED: '#/components/schemas/ConnectivityIncidentRecorded'
+    ConsumptionRecorded:
+      type: object
+      additionalProperties: false
+      required: [EventId, EventType, PayloadVersion, IntentId, DecisionId, ConsumptionId, TicketId, PersonId, MenuItemId, MenuVersion, Quantity, BusinessDate, AppliedQuotaCharges, LocalCommittedAtUtc, ClientSequence, ConfigurationVersion, CatalogVersion, PolicyVersion, PriceSnapshot]
+      properties:
+        EventId:
+          $ref: '#/components/schemas/Uuid'
+        EventType:
+          type: string
+          const: CONSUMPTION_RECORDED
+        PayloadVersion:
+          type: integer
+          const: 1
+        IntentId:
+          $ref: '#/components/schemas/Uuid'
+        DecisionId:
+          $ref: '#/components/schemas/Uuid'
+        ConsumptionId:
+          $ref: '#/components/schemas/Uuid'
+        TicketId:
+          $ref: '#/components/schemas/Uuid'
+        PersonId:
+          $ref: '#/components/schemas/Uuid'
+        MenuItemId:
+          $ref: '#/components/schemas/Uuid'
+        MenuVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        Quantity:
+          type: integer
+          const: 1
+          description: Una unidad por elección como propuesta inicial; no establece el cupo comercial.
+        BusinessDate:
+          type: string
+          format: date
+        AppliedQuotaCharges:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/AppliedQuotaCharge'
+          description: Cargas efectivas para distribuir/auditar; no se infieren sólo del MenuItemId.
+        LocalCommittedAtUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+        ClientSequence:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        ConfigurationVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        CatalogVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        PolicyVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        PriceSnapshot:
+          $ref: '#/components/schemas/PriceSnapshot'
+        ConnectivityIncidentId:
+          $ref: '#/components/schemas/Uuid'
+      description: |
+        Hecho autorizado y confirmado localmente; no es una solicitud de autorización
+        central. ConnectivityIncidentId referencia la incidencia cuando la confirmación
+        ocurrió durante continuidad degradada; si falta su apertura en el receptor,
+        conservar el hecho para revisión recuperable, sin negar retroactivamente consumo.
+        Todas sus AppliedQuotaCharges conservan exactamente su BusinessDate;
+        el receptor valida esa igualdad por aplicación (AT50).
+        LocalCommittedAtUtc y BusinessDate conservan el reloj de Windows observado
+        y la zona/corte configurados. Los saltos detectados se auditan localmente
+        con correlación al consumo. Se acepta el riesgo de fecha/cupo incorrectos,
+        sin piso temporal ni suspensión por reloj. D-A02 gobierna la comunicación.
+    AppliedQuotaCharge:
+      type: object
+      additionalProperties: false
+      required: [QuotaScopeId, QuotaBucketId, Units, BusinessDate]
+      properties:
+        QuotaScopeId:
+          $ref: '#/components/schemas/Uuid'
+        QuotaBucketId:
+          $ref: '#/components/schemas/Uuid'
+        Units:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        BusinessDate:
+          type: string
+          format: date
+      description: |
+        Una carga por ámbito/categoría/fecha. BusinessDate debe ser igual al
+        BusinessDate del ConsumptionRecorded que la contiene. La aplicación
+        receptora valida esa igualdad antes de proyectar; este JSON Schema no
+        comprueba la igualdad entre campos. Una diferencia produce EventAck
+        REJECTED/INVALID_EVENT y conserva evidencia para corrección, sin anular
+        el consumo local ni alterar su fecha (AT50).
+    ConsumptionDenied:
+      type: object
+      additionalProperties: false
+      required: [EventId, EventType, PayloadVersion, IntentId, DecisionId, ReasonCode, LocalCommittedAtUtc, ConfigurationVersion]
+      properties:
+        EventId:
+          $ref: '#/components/schemas/Uuid'
+        EventType:
+          type: string
+          const: CONSUMPTION_DENIED
+        PayloadVersion:
+          type: integer
+          const: 1
+        IntentId:
+          $ref: '#/components/schemas/Uuid'
+        DecisionId:
+          $ref: '#/components/schemas/Uuid'
+        ReasonCode:
+          type: string
+          enum: [LOCAL_LIMIT_REACHED, PERSON_INACTIVE, CREDENTIAL_REVOKED, CREDENTIAL_EXPIRED, RULE_DENIED, SERVICE_NOT_ENABLED, IDENTITY_NOT_RESOLVED, CATALOG_UNAVAILABLE, MULTI_KIOSK_COMMUNICATION_REQUIRED]
+        LocalCommittedAtUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+        ConfigurationVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+      description: |
+        Decisión local denegada; sin ConsumptionId ni TicketId. No contiene credencial.
+        CREDENTIAL_REVOKED y CREDENTIAL_EXPIRED distinguen revocación y vencimiento
+        conocidos de PersonCredential (RB25); un código desconocido o todavía no
+        vigente usa IDENTITY_NOT_RESOLVED y la intención no tiene sesión.
+        PERSON_INACTIVE conserva el motivo de baja de persona.
+        RULE_DENIED corresponde a una regla aplicable vigente Limit=0 (RB02);
+        SERVICE_NOT_ENABLED indica ausencia de regla aplicable habilitante.
+        El contrato conserva PayloadVersion 1 para eventos y usa SchemaVersion 3
+        para configuración; los motivos distinguen estados del dominio local.
+        Un cambio de catálogo solicita reconfirmación (RB10/HU01-D); no se lo
+        convierte por esta revisión en una denegación durable de consumo.
+        MULTI_KIOSK_COMMUNICATION_REQUIRED es suspensión técnica configurada, distinta
+        de un rechazo por cupo. El replay conserva esa decisión; tras recuperarse,
+        una confirmación nueva utiliza otra intención y valida reglas actuales.
+    PrintEventRecorded:
+      type: object
+      additionalProperties: false
+      required: [EventId, EventType, PayloadVersion, TicketId, ConsumptionId, CopyNumber, PrintState, OccurredAtUtc]
+      properties:
+        EventId:
+          $ref: '#/components/schemas/Uuid'
+        EventType:
+          type: string
+          const: PRINT_EVENT_RECORDED
+        PayloadVersion:
+          type: integer
+          const: 1
+        TicketId:
+          $ref: '#/components/schemas/Uuid'
+        ConsumptionId:
+          $ref: '#/components/schemas/Uuid'
+        CopyNumber:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        PrintState:
+          type: string
+          enum: [QUEUED, SUBMITTED, FAILED, UNKNOWN]
+        OccurredAtUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+      description: SUBMITTED indica entrega al spooler, no prueba de papel. Un fallo no anula el consumo.
+    ConnectivityIncidentRecorded:
+      type: object
+      additionalProperties: false
+      required: [EventId, EventType, PayloadVersion, IncidentId, Phase, OccurredAtUtc, ConfigurationVersion, MultiKioskOfflinePolicy, FailureKind]
+      properties:
+        EventId:
+          $ref: '#/components/schemas/Uuid'
+        EventType:
+          type: string
+          const: CONNECTIVITY_INCIDENT_RECORDED
+        PayloadVersion:
+          type: integer
+          const: 1
+        IncidentId:
+          $ref: '#/components/schemas/Uuid'
+        Phase:
+          type: string
+          enum: [OPENED, RECOVERED]
+        OccurredAtUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+        ConfigurationVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        MultiKioskOfflinePolicy:
+          $ref: '#/components/schemas/MultiKioskOfflinePolicy'
+        FailureKind:
+          type: string
+          enum: [OUTBOUND, PEER_FEED, BOTH]
+      description: |
+        Transición durable de una incidencia del equipo autenticado. OPENED y RECOVERED
+        tienen EventId diferentes y el mismo IncidentId; cada retry conserva su EventId.
+        Configuración, política y FailureKind describen la apertura, conservados en cierre.
+        RECOVERED acredita los puntos de corte de recepción/feed recuperados, no un ping.
+        Cierre anterior a apertura usa NEEDS_REVIEW/RELATED_EVENT_PENDING; el receptor
+        retoma proyección al llegar la referencia. No suma cupo ni genera impresión.
+    PendingBatchAck:
+      type: object
+      additionalProperties: false
+      required: [BatchId, Status, CorrelationId]
+      properties:
+        BatchId:
+          $ref: '#/components/schemas/Uuid'
+        Status:
+          type: string
+          const: PENDING
+        CorrelationId:
+          $ref: '#/components/schemas/Uuid'
+    CompletedBatchAck:
+      type: object
+      additionalProperties: false
+      required: [BatchId, Status, ServerAcknowledgedAtUtc, Results, CorrelationId]
+      properties:
+        BatchId:
+          $ref: '#/components/schemas/Uuid'
+        Status:
+          type: string
+          const: COMPLETED
+        ServerAcknowledgedAtUtc:
+          $ref: '#/components/schemas/UtcTimestamp'
+        Results:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/EventAck'
+          description: Exactamente un resultado por EventId recibido; sin extraños ni omitidos. Validación de aplicación.
+        CorrelationId:
+          $ref: '#/components/schemas/Uuid'
+    EventAck:
+      type: object
+      additionalProperties: false
+      required: [EventId, Status, ReasonCode]
+      allOf:
+        - if:
+            properties:
+              Status:
+                const: ACCEPTED
+          then:
+            properties:
+              ReasonCode:
+                const: RECORDED
+        - if:
+            properties:
+              Status:
+                const: DUPLICATE
+          then:
+            properties:
+              ReasonCode:
+                const: ALREADY_RECORDED
+        - if:
+            properties:
+              Status:
+                const: CONFLICT
+          then:
+            properties:
+              ReasonCode:
+                const: EVENT_PAYLOAD_CONFLICT
+        - if:
+            properties:
+              Status:
+                const: REJECTED
+          then:
+            properties:
+              ReasonCode:
+                const: INVALID_EVENT
+        - if:
+            properties:
+              Status:
+                const: NEEDS_REVIEW
+          then:
+            properties:
+              ReasonCode:
+                enum: [UNKNOWN_CONFIGURATION_VERSION, MULTI_KIOSK_POLICY_REVIEW, RELATED_EVENT_PENDING]
+      properties:
+        EventId:
+          $ref: '#/components/schemas/Uuid'
+        Status:
+          type: string
+          enum: [ACCEPTED, DUPLICATE, CONFLICT, REJECTED, NEEDS_REVIEW]
+        ReasonCode:
+          type: string
+          enum: [RECORDED, ALREADY_RECORDED, EVENT_PAYLOAD_CONFLICT, INVALID_EVENT, UNKNOWN_CONFIGURATION_VERSION, MULTI_KIOSK_POLICY_REVIEW, RELATED_EVENT_PENDING]
+      description: |
+        ACCEPTED/RECORDED y DUPLICATE/ALREADY_RECORDED confirman incorporación.
+        CONFLICT/EVENT_PAYLOAD_CONFLICT conserva ambas evidencias para revisión.
+        REJECTED/INVALID_EVENT informa un problema técnico que impide incorporar.
+        NEEDS_REVIEW usa UNKNOWN_CONFIGURATION_VERSION, MULTI_KIOSK_POLICY_REVIEW
+        o RELATED_EVENT_PENDING y retiene el hecho. DUPLICATE exige proyección
+        ya completada; una mera recepción pendiente conserva NEEDS_REVIEW.
+        La igualdad de BusinessDate entre consumo y cargas se valida por aplicación;
+        una diferencia usa REJECTED/INVALID_EVENT antes de proyectar y conserva
+        evidencia. El cliente mantiene el hecho pendiente de corrección.
+        Ninguno revoca consumo local.
+    ProblemDetails:
+      type: object
+      additionalProperties: false
+      description: |
+        Formato RFC 9457. type, title, status y detail conservan sus nombres
+        estándar; code y correlationId siguen esa misma convención dentro de este
+        objeto. Los objetos del dominio usan PascalCase.
+      required: [type, title, status, code, correlationId]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+          minLength: 1
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        code:
+          type: string
+          enum: [INVALID_REQUEST, IDEMPOTENCY_KEY_MISMATCH, EQUIPMENT_AUTH_REQUIRED, EQUIPMENT_FORBIDDEN, BATCH_PAYLOAD_CONFLICT, CONTRACT_VERSION_CONFLICT, INVALID_BATCH, BATCH_NOT_FOUND, CONFIGURATION_NOT_PUBLISHED, BATCH_WINDOW_EXPIRED, RATE_LIMITED, SERVICE_UNAVAILABLE]
+        correlationId:
+          $ref: '#/components/schemas/Uuid'
+        detail:
+          type: string
+          maxLength: 500
+          description: Mensaje seguro sin tokens, biometría, credenciales ni excepción interna.
+  examples:
+    SyncBatch:
+      summary: Lote sintético de un consumo confirmado localmente.
+      value:
+        BatchId: aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+        SchemaVersion: 1
+        CreatedAtUtc: '2026-09-29T15:10:00Z'
+        Events:
+          - EventId: 88888888-8888-4888-8888-888888888888
+            EventType: CONSUMPTION_RECORDED
+            PayloadVersion: 1
+            IntentId: 11111111-1111-4111-8111-111111111111
+            DecisionId: 55555555-5555-4555-8555-555555555555
+            ConsumptionId: 66666666-6666-4666-8666-666666666666
+            TicketId: 77777777-7777-4777-8777-777777777777
+            PersonId: bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+            MenuItemId: 44444444-4444-4444-8444-444444444444
+            MenuVersion: 1
+            Quantity: 1
+            BusinessDate: '2026-09-29'
+            AppliedQuotaCharges:
+              - QuotaScopeId: cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                QuotaBucketId: dddddddd-dddd-4ddd-8ddd-dddddddddddd
+                Units: 1
+                BusinessDate: '2026-09-29'
+            LocalCommittedAtUtc: '2026-09-29T15:00:02Z'
+            ClientSequence: 1
+            ConfigurationVersion: 1
+            CatalogVersion: 1
+            PolicyVersion: 1
+            PriceSnapshot:
+              Currency: ARS
+              Scale: 2
+              EmployeeChargeMinor: 150000
+    DeniedCredentialRevokedBatch:
+      summary: Denegación local sintética por CREDENTIAL_REVOKED; sin consumo ni ticket.
+      value:
+        BatchId: aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1
+        SchemaVersion: 1
+        CreatedAtUtc: '2026-09-29T14:00:01Z'
+        Events:
+          - EventId: 88888888-8888-4888-8888-000000000001
+            EventType: CONSUMPTION_DENIED
+            PayloadVersion: 1
+            IntentId: 11111111-1111-4111-8111-000000000001
+            DecisionId: 55555555-5555-4555-8555-000000000001
+            ReasonCode: CREDENTIAL_REVOKED
+            LocalCommittedAtUtc: '2026-09-29T14:00:00Z'
+            ConfigurationVersion: 1
+    DeniedCredentialExpiredBatch:
+      summary: Denegación local sintética por CREDENTIAL_EXPIRED; sin consumo ni ticket.
+      value:
+        BatchId: aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2
+        SchemaVersion: 1
+        CreatedAtUtc: '2026-09-29T14:00:01Z'
+        Events:
+          - EventId: 88888888-8888-4888-8888-000000000002
+            EventType: CONSUMPTION_DENIED
+            PayloadVersion: 1
+            IntentId: 11111111-1111-4111-8111-000000000002
+            DecisionId: 55555555-5555-4555-8555-000000000002
+            ReasonCode: CREDENTIAL_EXPIRED
+            LocalCommittedAtUtc: '2026-09-29T14:00:00Z'
+            ConfigurationVersion: 1
+    DeniedRuleDeniedBatch:
+      summary: Denegación local sintética por RULE_DENIED; sin consumo ni ticket.
+      value:
+        BatchId: aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3
+        SchemaVersion: 1
+        CreatedAtUtc: '2026-09-29T14:00:01Z'
+        Events:
+          - EventId: 88888888-8888-4888-8888-000000000003
+            EventType: CONSUMPTION_DENIED
+            PayloadVersion: 1
+            IntentId: 11111111-1111-4111-8111-000000000003
+            DecisionId: 55555555-5555-4555-8555-000000000003
+            ReasonCode: RULE_DENIED
+            LocalCommittedAtUtc: '2026-09-29T14:00:00Z'
+            ConfigurationVersion: 1
+    CompletedAck:
+      summary: Recepción central del hecho, posterior a su autorización e impresión local.
+      value:
+        BatchId: aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+        Status: COMPLETED
+        ServerAcknowledgedAtUtc: '2026-09-29T15:10:03Z'
+        Results:
+          - EventId: 88888888-8888-4888-8888-888888888888
+            Status: ACCEPTED
+            ReasonCode: RECORDED
+        CorrelationId: 99999999-9999-4999-8999-999999999991
+    PendingAck:
+      value:
+        BatchId: aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+        Status: PENDING
+        CorrelationId: 99999999-9999-4999-8999-999999999992
+  responses:
+    Pending:
+      description: Lote recibido en procesamiento central; el cliente conserva los eventos locales.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PendingBatchAck'
+          examples:
+            pending:
+              $ref: '#/components/examples/PendingAck'
+    BadRequest:
+      description: 400 INVALID_REQUEST o IDEMPOTENCY_KEY_MISMATCH. Error del intercambio, sin efecto sobre operación local.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Unauthorized:
+      description: 401 EQUIPMENT_AUTH_REQUIRED. Recuperar credencial de comunicación; nuevas confirmaciones siguen la política local de D-A02, conservando hechos previos.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Forbidden:
+      description: 403 EQUIPMENT_FORBIDDEN. Comunicación no habilitada; no es una decisión de derecho a comedor.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Conflict:
+      description: |
+        409 BATCH_PAYLOAD_CONFLICT, CONTRACT_VERSION_CONFLICT o BATCH_WINDOW_EXPIRED.
+        Se conserva lote/eventos locales y se expone el conflicto. No se cambia
+        BatchId para ocultarlo. Las claves archivadas no se reciclan; una ventana
+        técnica vencida requiere recuperación o conciliación sin perder hechos.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: https://api.incomedor.example/problems/batch-payload-conflict
+            title: El lote ya existe con otro contenido
+            status: 409
+            code: BATCH_PAYLOAD_CONFLICT
+            correlationId: 99999999-9999-4999-8999-999999999993
+    Unprocessable:
+      description: 422 INVALID_BATCH. Lote inválido; conservar evidencia local y corregir el contrato sin borrar consumos.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ConfigurationNotPublished:
+      description: 404 CONFIGURATION_NOT_PUBLISHED. Todavía no hay publicación para el equipo autenticado. Un puesto provisionado conserva su snapshot activo; uno nuevo mantiene deshabilitadas las confirmaciones hasta recibir una provisión válida.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: https://api.incomedor.example/problems/configuration-not-published
+            title: No hay configuración publicada para el puesto
+            status: 404
+            code: CONFIGURATION_NOT_PUBLISHED
+            correlationId: 99999999-9999-4999-8999-999999999994
+    NotFound:
+      description: 404 BATCH_NOT_FOUND en el ámbito del equipo; no revela un lote ajeno.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Throttled:
+      description: 429 RATE_LIMITED. Respetar Retry-After y conservar el lote; D-A02 gobierna nuevas confirmaciones si el detector declara degradación.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Unavailable:
+      description: 503 SERVICE_UNAVAILABLE. Reintentar conservando hechos; monopuesto y CONTINUE_LOCAL atienden, el perfil de suspensión aplica D-A02.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'

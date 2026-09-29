@@ -1,0 +1,18 @@
+digraph Contexto {
+  graph [rankdir=LR, bgcolor="white", pad="0.3", nodesep="0.5", ranksep="0.7", fontname="Arial", label="INComedor | decisión local, sincronización independiente", labelloc=t, fontsize=20];
+  node [shape=box, style="rounded,filled", fillcolor="#eef4fb", color="#2b5072", fontname="Arial", fontsize=13, margin="0.2,0.15"];
+  edge [fontname="Arial", fontsize=11, color="#52667a"];
+  persona [label="Comensal\nCredencial / huella"];
+  puesto [label="INComedor autónomo\nIdentifica · aplica reglas\nregistra · imprime", fillcolor="#d6eade"];
+  sqlite [shape=cylinder,label="SQLite local\nPadrón · reglas · cupos\nconsumos · pendientes"];
+  ticket [label="Impresora / simulador\nComprobante local"];
+  central [label="INWeb + API de integración\nConfiguración maestra\nConsolidación y avisos", fillcolor="#f8ead2"];
+  pares [label="Otros puestos\nRegistro local actualizado"];
+  persona -> puesto [label="identificación y elección"];
+  puesto -> sqlite [label="transacción local"];
+  puesto -> ticket [label="tras commit local"];
+  puesto -> central [style=dashed,label="hechos + reintentos\ninmediato cuando hay red"];
+  central -> puesto [style=dashed,label="configuración y hechos pares"];
+  central -> pares [style=dashed,label="propagación inmediata\nen modo auditado"];
+  pares -> central [style=dashed,label="hechos locales"];
+}

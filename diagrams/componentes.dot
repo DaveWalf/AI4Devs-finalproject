@@ -1,0 +1,35 @@
+digraph Componentes {
+  graph [rankdir=TB, bgcolor="white", pad="0.25", nodesep="0.4", ranksep="0.5", fontname="Arial", label="Componentes | ningún consumo espera un permiso de INWeb", labelloc=t, fontsize=19];
+  node [shape=box, style="rounded,filled", fillcolor="#edf4fa", color="#2b5072", fontname="Arial", fontsize=12, margin="0.16,0.12"];
+  edge [fontname="Arial", fontsize=10, color="#52667a"];
+  subgraph cluster_local {
+    label="Puesto Windows 11 / AIO"; color="#85a9c8"; style=rounded;
+    admin [label="Administración local\nConfiguración y diagnóstico\nPermisos / pruebas aisladas"];
+    audit [label="Escritor de bitácoras\nCola durable / recuperación"];
+    files [shape=folder,label="Texto plano por AAAAMM\nGeneral | Interacciones\nArchivos independientes"];
+    ui [label="WPF + Blazor Hybrid\nPantallas y sesión"];
+    devices [label="Serie / BioMini broker\n1:N y código + 1:1\nAdaptadores de prueba"];
+    domain [label="Dominio y aplicación C#\nIdentidad · habilitación\ncupo · intención\npolítica de comunicación", fillcolor="#d6eade"];
+    db [shape=cylinder,label="SQLite\nVersión completa + ledger\nconsumos + outbox + inbox\nauditoría durable / entregas"];
+    print [label="Worker de impresión\nTicket / copia auditada"];
+    sync [label="Worker de sincronización\nConfig · lotes · acuses\nhechos de otros puestos"];
+    admin -> domain [label="casos de uso autorizados"];
+    db -> audit [label="pendientes de auditoría"];
+    audit -> files [label="append / flush"];
+    audit -> db [label="estado de entrega\nincidencia por archivo"];
+    ui -> domain; devices -> domain [label="identidad local"];
+    domain -> db [label="commit atómico"];
+    db -> print [label="trabajo durable"];
+    db -> sync [label="pendientes"];
+    sync -> db [label="snapshot / inbox\naplicación atómica"];
+  }
+  subgraph cluster_central {
+    label="Integración / servidor de prueba o INWeb"; labelloc=b; color="#c9aa79"; style=rounded;
+    api [label="API REST / HTTPS\nConfig y recepción idempotente", fillcolor="#f8ead2"];
+    sql [shape=cylinder,label="SQL Server / consolidación\nHechos · acuses · avisos"];
+    feed [label="Propagación a puestos\nCursor y recuperación"];
+    api -> sql; sql -> feed;
+  }
+  sync -> api [style=dashed,label="hechos e incidencias\npolítica de operación local"];
+  feed -> sync [style=dashed,label="sin dobleconteo del eco"];
+}

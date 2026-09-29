@@ -1,0 +1,28 @@
+digraph Datos {
+  graph [rankdir=TB, bgcolor="white", pad="0.25", nodesep="0.5", ranksep="0.6", fontname="Arial", label="Modelo lógico resumido | claves y tipos en modelo-datos.md", labelloc=t, fontsize=18];
+  node [shape=box, style="rounded,filled", fillcolor="#edf4fa", color="#2b5072", fontname="Arial", fontsize=12, margin="0.18,0.13"];
+  edge [fontname="Arial", fontsize=10, color="#52667a"];
+  config [label="Versión de configuración\nPadrón · derechos\ncatálogo · reglas"];
+  person [label="Persona / credencial\nPersonId estable · vigencia y revocación\nTemplates protegidos aparte"];
+  grants [label="Permisos locales\nOPERATOR · SYSTEM_ADMINISTRATOR\nRevocación por snapshot"];
+  intent [label="Intención y decisión local\nIntentId único\nHash + resultado"];
+  consumption [label="Consumo\nConsumptionId\nOrigen · día · versión", fillcolor="#d6eade"];
+  ledger [label="Ledger / uso de cupo\nPropios + pares observados\nSin duplicar eco"];
+  ticket [label="Ticket y trabajos\nTicketId + número copia\nImpresión ≠ consumo"];
+  outbox [label="Outbox / lote\nEventId · BatchId\nSin purgar pendientes"];
+  inbox [label="Inbox / cursor\nHechos pares deduplicados\nSin imprimir ni reenviar"];
+  audit [label="Auditoría / entregas\nAuditId + destino\nArchivos externos por mes", fillcolor="#e4edf5"];
+  intent -> audit [label="correlación lógica"];
+  central [label="Consolidación\nAcuse por evento\nAvisos de exceso",fillcolor="#f8ead2"];
+  config -> person [label="1 : N"];
+  person -> grants [label="1 : N rol"];
+  person -> intent [label="0..1 : N\nidentidad puede no resolverse"];
+  config -> consumption [label="versión usada"];
+  intent -> consumption [label="1 : 0..1"];
+  consumption -> ledger [label="cargos cupo"];
+  consumption -> ticket [label="1 : 1 ticket"];
+  consumption -> outbox [label="evento local"];
+  outbox -> central [label="sync idempotente"];
+  central -> inbox [label="propagación pares"];
+  inbox -> ledger [label="aplicación atómica"];
+}
