@@ -15,11 +15,11 @@ Regla de todo el change: cada test nuevo se escribe primero, se corre y se ve fa
 
 ## 3. Dominio: fecha de negocio y cupo
 
-- [ ] 3.1 Escribir en Domain.Tests las pruebas de `CalculadoraFechaNegocio` (escenario «Confirmaciones a ambos lados del corte», AT04: `02:59:59Z` y `03:00:00Z` con `America/Argentina/Buenos_Aires` y corte 00:00 dan días consecutivos; un corte distinto de 00:00 desplaza el día) contra un esqueleto que lanza `NotImplementedException`; verlas fallar con `dotnet test --filter "FullyQualifiedName~FechaNegocio"`
-- [ ] 3.2 Implementar `CalculadoraFechaNegocio` (D4); verificar que las pruebas de 3.1 pasan
-- [ ] 3.3 Escribir las pruebas de invariantes de `FechaNegocio`, `ClaveCupo` y `CodigoIntencion` (un UUID vacío se rechaza al construir); verlas fallar y después implementar los value objects; verificar con `dotnet test --filter "FullyQualifiedName~Domain.Tests"`
-- [ ] 3.4 Escribir las pruebas de `EvaluadorCupo`: autoriza bajo el límite; `LOCAL_LIMIT_REACHED` en el límite (AT02); variantes que comparten categoría cuentan juntas (AT02); otra categoría no consume el mismo cupo (AT02); sin regla, `SERVICE_NOT_ENABLED`; una opción con dos cargas se deniega si cualquiera excede; más de una regla vigente para la misma clave lanza excepción. Verlas fallar contra el esqueleto
-- [ ] 3.5 Implementar `EvaluadorCupo` (D4); verificar que pasan todas las pruebas de Domain.Tests
+- [x] 3.1 Escribir en Domain.Tests las pruebas de `CalculadoraFechaNegocio` (escenario «Confirmaciones a ambos lados del corte», AT04: `02:59:59Z` y `03:00:00Z` con `America/Argentina/Buenos_Aires` y corte 00:00 dan días consecutivos; un corte distinto de 00:00 desplaza el día) contra un esqueleto que lanza `NotImplementedException`; verlas fallar con `dotnet test --filter "FullyQualifiedName~FechaNegocio"`
+- [x] 3.2 Implementar `CalculadoraFechaNegocio` (D4); verificar que las pruebas de 3.1 pasan
+- [x] 3.3 Escribir las pruebas de invariantes de `FechaNegocio`, `ClaveCupo` y `CodigoIntencion` (un UUID vacío se rechaza al construir); verlas fallar y después implementar los value objects; verificar con `dotnet test --filter "FullyQualifiedName~Domain.Tests"`
+- [x] 3.4 Escribir las pruebas de `EvaluadorCupo`: autoriza bajo el límite; `LOCAL_LIMIT_REACHED` en el límite (AT02); variantes que comparten categoría cuentan juntas (AT02); otra categoría no consume el mismo cupo (AT02); sin regla, `SERVICE_NOT_ENABLED`; una opción con dos cargas se deniega si cualquiera excede; más de una regla vigente para la misma clave lanza excepción. Verlas fallar contra el esqueleto
+- [x] 3.5 Implementar `EvaluadorCupo` (D4); verificar que pasan todas las pruebas de Domain.Tests
 
 ## 4. Base SQLite y migración 0001
 
