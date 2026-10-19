@@ -1,25 +1,29 @@
 # Plan académico y trazabilidad de aceptación
 
-Diseño de ejecución del MVP. Las cuatro funcionalidades F01–F04 son obligatorias (D-C16). Dentro de cada una se distingue lo **must**, que acredita la funcionalidad, de lo **should**, que integra el compromiso de la entrega final pero se difiere primero si el plan se atrasa (D-C19). El alcance utiliza adaptadores de prueba, SQLite y archivos reales durante la implementación. Las fechas y tallas son estimaciones de planificación; no representan evidencia de implementación.
+Diseño de ejecución del MVP. El alcance que se presenta en la entrega 2 y la final es el primer corte de D-C24, que enmienda D-C19: cinco historias **must** y una **should** alrededor de un flujo de punta a punta, como pide el curso (de 3 a 5 must y 1 o 2 should). F01–F04 conservan sus ID. Lo que queda fuera es la **segunda ola**: diseñada en este paquete, no demostrada, y el producto la sigue requiriendo. El alcance utiliza adaptadores de prueba y SQLite real durante la implementación. Las fechas y tallas son estimaciones de planificación; no representan evidencia de implementación.
 
 ## Prioridad dentro de las funcionalidades
 
-| Función | Must: acredita la funcionalidad | Should: se difiere primero |
-|---|---|---|
-| F01 Identificación y selección | Sesión por código con verificación 1:1 y por 1:N, con adaptadores de prueba; credencial con vigencia y revocación; catálogo de 15 opciones, cancelación, timeout y reconfirmación | Ensayo de escalas 125 % y 150 % en el equipo declarado (el 100 % es must) |
-| F02 Autorización y registro local | Reglas, cupos y fecha de negocio locales; transacción RB06; replay; concurrencia; auditoría de saltos del reloj | Sin should: es el núcleo del MVP |
-| F03 Comprobante y recuperación | Ticket después del commit, worker de impresión, fallo de papel y copia numerada con permiso local y motivo | Sin should |
-| F04 Sincronización y supervisión | Configuración íntegra con credenciales y permisos, lotes idempotentes, feed multipuesto con `CONTINUE_LOCAL`, `SUSPEND_NEW_CONSUMPTIONS`, cambio de política por snapshot y aviso de exceso, dos bitácoras con respaldo SQLite, administración local con roles y acceso alternativo de mantenimiento, y diagnóstico de SQLite, API e impresora | Diagnóstico de táctil, BioMini, serie, red, versiones y bitácoras (parte de HU03.4) |
+| Prioridad | Historia | Función | Papel en el flujo |
+|---|---|---|---|
+| must | HU01.1 Confirmar un servicio sin red y sin duplicarlo | F01, F02 | Selección y confirmación; la identificación simulada por código es su precondición |
+| must | HU01.3 Recibir la decisión según cupo y reglas locales | F02 | Cupo y fecha de negocio deciden la confirmación |
+| must | HU02.1 Recuperar el resultado tras una caída | F02 | Replay por `IntentId`: RB06 atómica ante una caída |
+| must | HU02.2 Reenviar lotes sin duplicar, sin el escenario F | F04 | Outbox y receptor idempotente cierran el flujo hacia el centro |
+| must | HU03.1 Recuperar o reimprimir un comprobante | F03 | Salida ante un fallo de papel, con permiso `OPERATOR` |
+| should | HU01.2 reducida al código, escenario J | F01 | Rechazos por credencial vencida, revocada, todavía no vigente o desconocida |
 
-Lo should no se elimina del producto: si se difiere, la entrega final lo declara diseñado y no demostrado. Ambas políticas de D-A02 y su cambio son must de la demostración final; implementar continuidad primero no autoriza diferir suspensión fuera de M2. Homologación física, emisión para terceros, compensaciones económicas e interfaces empresariales pertenecen al producto posterior; no son condiciones para demostrar el MVP académico.
+**Segunda ola, diseñada y no demostrada:** biometría 1:N y 1:1 (HU01.2-E y F); multipuesto con ambas políticas y feed (HU02.2-F, HU02.4, HU02.5 y HU02.6); configuración por snapshot (HU02.3); administración, diagnóstico y cuenta de mantenimiento (HU03.2, HU03.3 y HU03.4); bitácoras mensuales (HU03.5); auditoría de saltos del reloj (AT48 y AT49); escalas 125/150 %. Homologación física, emisión para terceros, compensaciones económicas e interfaces empresariales siguen perteneciendo al producto posterior.
+
+Lo should se difiere primero y, si se difiere, la entrega lo declara pendiente. La segunda ola no se recorta del producto: se conserva su diseño y se declara no demostrada.
 
 ## Hitos y criterios de salida
 
 | Hito | Fecha | Resultado | Criterio verificable de salida |
 |---|---|---|---|
 | M0 Preparación de implementación | 06/10/2026 | Contratos complementarios, diseño de persistencia, estados y datos de prueba definidos | Dependencias de preparación de M1 disponibles: contratos/fixtures, criterios AT y pruebas diseñadas; certificados sintéticos y fixtures de credenciales, permisos y mantenimiento. Las dependencias de código integrado se completan en M1, no se declaran implementadas en M0 |
-| M1 Vertical autónoma — Entrega 2 | 22/10/2026 | UI, dominio, SQLite, impresión simulada y receptor conectados | Identificación→selección→consumo→ticket sin red; recuperación sin doble cargo y sincronización posterior; AT must de U02–U05 ejecutados con evidencia |
-| M2 MVP completo — Entrega final | 12/11/2026 | Cuatro funcionalidades completas y supervisión | AT must ejecutados, incluidos multipuesto, administración y archivos; unitarias/integración/E2E, capturas o video Windows y registro de IA actualizado. Los should terminados se agregan; los diferidos se declaran |
+| M1 Vertical autónoma — Entrega 2 | 22/10/2026 | Scaffolds conectados (pantalla Razor, dominio, SQLite y receptor) y flujo principal casi completo | Change `registrar-consumo-atomico` (TK03.1) con RB06, doble toque, caída tras el commit y replay probados sobre SQLite real; CI que compila y prueba; README y `prompts.md` actualizados |
+| M2 Primer corte completo — Entrega final | 12/11/2026 | Las cinco must de D-C24 de punta a punta | Identificación simulada→selección→confirmación→comprobante sin red, reimpresión con permiso y envío idempotente; unitarias, integración y un E2E del flujo principal, evidencia de despliegue y registro de IA actualizado. La should terminada se agrega; si no, se declara. La segunda ola se declara diseñada y no demostrada |
 
 ## Unidades de trabajo y tallas
 
@@ -31,12 +35,12 @@ Tallas de trabajo asistido: **S** de 2 a 4 h, **M** de 4 a 8 h y **L** de 8 a 16
 |---|---|---|---|---|---|---|
 | U01 Contratos y fixture | M0 | TK01 | Ninguna | Identidad, credenciales y permisos locales, contrato de mantenimiento, ámbitos de claves INWeb, DTO explícitos, configuración, fixture coherente y validación de referencias; AT07/19–23/36/51 | M | must |
 | U02 Persistencia y reloj | M0/M1 | TK03 (tarea TK03.1) | U01 | Migración inicial y transacción RB06 (TK03.1), diccionario físico según mapa, intención, reglas de fecha y observaciones; AT03–05/25/35/48–51 | L | must |
-| U03 Flujo táctil e identidad | M1 | TK02 (tarea TK02.1) | U01/U02 | Selección y confirmación (TK02.1), adaptadores, credenciales, sesión/cancelación y reconfirmación; AT01/08/16/20/21/26/47/52/53 | L | must; escalas 125/150 % should |
+| U03 Flujo táctil e identidad | M1 | TK02 (tarea TK02.1) | U01/U02 | Selección y confirmación (TK02.1), adaptadores, credenciales, sesión/cancelación y reconfirmación; AT01/08/16/20/21/26/47/52/53 | L | must para selección, confirmación e identificación simulada; biometría y escalas 125/150 %, segunda ola |
 | U04 Comprobante y recuperación | M1 | TK01 | U02/U03 | Worker, estado previo al envío, incertidumbre y copia autorizada con permiso local; AT06/24/41/54 | M | must |
-| U05 Configuración y lotes | M1 | TK01 (tarea TK01.1) | U01/U02 | Receptor de lotes (TK01.1), configuración con validación en staging, cliente sincronizador y cola SQLite integrados; AT09/12/13/27/36/50/55 | M | must |
-| U06 Archivos y recuperación | M1/M2 | TK03 | U02/U04 | Escritores de dos archivos mensuales, cola y reparación; AT41–44 | M | must |
-| U07 Feed y multipuesto | M2 | TK01 | U05/contrato de feed | Difusión, ledger, `CONTINUE_LOCAL` y aviso de exceso; suspensión y cambio de política; AT30–34 | L | must |
-| U08 Administración y diagnóstico | M2 | TK02 | U01, U04/U06/U07 | Roles, acceso individual de mantenimiento, parámetros, diagnóstico y estados; AT37–39/45/56 | M | must; matriz completa should |
+| U05 Configuración y lotes | M1 | TK01 (tarea TK01.1) | U01/U02 | Receptor de lotes (TK01.1), configuración con validación en staging, cliente sincronizador y cola SQLite integrados; AT09/12/13/27/36/50/55 | M | must para receptor, cliente y cola; configuración por snapshot y AT12, segunda ola |
+| U06 Archivos y recuperación | M1/M2 | TK03 | U02/U04 | Escritores de dos archivos mensuales, cola y reparación; AT41–44 | M | segunda ola |
+| U07 Feed y multipuesto | M2 | TK01 | U05/contrato de feed | Difusión, ledger, `CONTINUE_LOCAL` y aviso de exceso; suspensión y cambio de política; AT30–34 | L | segunda ola |
+| U08 Administración y diagnóstico | M2 | TK02 | U01, U04/U06/U07 | Roles, acceso individual de mantenimiento, parámetros, diagnóstico y estados; AT37–39/45/56 | M | segunda ola |
 | U09 Calidad y demostración | M2 | TK02 | U03–U08 | Pruebas integradas, cambio de adaptadores, UI, evidencias Windows y registro de IA; AT10/24/28/46/48/49 | M | must |
 
 ### Capacidad y reestimación
@@ -65,9 +69,9 @@ Se reestima con una primera vertical medida y esfuerzo restante, conservando M1/
 ### Regla de recorte
 
 1. Al cerrar M0 y cada hito, se compara la estimación restante de lo must del hito siguiente con la dedicación disponible hasta su fecha, que se registra en ese momento.
-2. Si no alcanza, se difieren los should en este orden: diagnóstico más allá de SQLite, API e impresora (parte de HU03.4, AT38 y AT39); escalas 125/150 % (parte de U03 y U09).
-3. Si M0 no cierra el 06/10, cada día de atraso se descuenta de M1 y se aplica el punto 2 antes de iniciar U02.
-4. Si aún no alcanza, no se recorta un must: se conserva el orden de dependencias, se entrega lo terminado con sus AT ejecutados y lo pendiente se declara no terminado. Un AT diseñado nunca se presenta como ejecutado.
+2. Si no alcanza, se difiere la should HU01.2-J.
+3. Si M0 no cierra el 06/10, cada día de atraso se descuenta de M1 y se aplica el punto 2 antes de iniciar U02. (Histórico: M0 no se ejecutó; D-C24 lo reemplazó por los changes de OpenSpec.)
+4. Si aún no alcanza, se aplica D-C24: el alcance ya está recortado a las cinco must del corte, se conserva el orden de dependencias, se entrega lo terminado con sus AT ejecutados y lo pendiente se declara no terminado. Un AT diseñado nunca se presenta como ejecutado.
 5. Cada aplicación de la regla se registra en [decisiones](decisiones.md) con fecha, unidades afectadas y AT diferidos.
 
 ## Contratos complementarios y preparación técnica
@@ -92,6 +96,8 @@ Mantenimiento individual local se incorpora al contrato de credenciales y permis
 ## Matriz de aceptación
 
 Cada fila asigna un AT definido en la [SDD](especificacion-sdd.md) a una historia y a un único responsable principal: el ticket de tarea cuando existe (TK01.1, TK02.1 o TK03.1) o la épica técnica. Apoyo identifica colaboración, sin duplicar el trabajo; las dependencias de integración sí condicionan el cierre integral.
+
+Con D-C24, el hito de una fila rige sólo si su historia o su escenario están en el corte (tabla de prioridad). Los AT de la segunda ola, entre ellos AT07, AT09, AT12, AT19–AT24, AT30–AT34, AT37–AT39, AT41–AT46, AT48, AT49, AT55 y AT56, conservan su diseño y no se ejecutan en M1 ni en M2.
 
 | AT | Historia | Ticket principal | Apoyo | Hito / prioridad |
 |---|---|---|---|---|
@@ -124,7 +130,7 @@ Cada fila asigna un AT definido en la [SDD](especificacion-sdd.md) a una histori
 | AT27 | HU02.2 | TK01.1 | TK02/TK03 | M1; cierre integral M2 |
 | AT28 | HU01.3 | TK03 | TK01/TK02 | M1; cierre integral M2 |
 | AT29 | HU01.3 | TK01 | TK02/TK03 | M1; cierre integral M2 |
-| AT30 | HU02.5, HU02.6 | TK01 | TK02/TK03 | M2; must con ambas políticas y su cambio por snapshot |
+| AT30 | HU02.5, HU02.6 | TK01 | TK02/TK03 | Segunda ola (D-C24): ambas políticas y su cambio por snapshot |
 | AT31 | HU02.4 | TK01 | TK02/TK03 | M2; cierre integral M2 |
 | AT32 | HU02.4 | TK01 | TK02/TK03 | M2; cierre integral M2 |
 | AT33 | HU02.4 | TK03 | TK01/TK02 | M2; cierre integral M2 |
@@ -132,8 +138,8 @@ Cada fila asigna un AT definido en la [SDD](especificacion-sdd.md) a una histori
 | AT35 | HU02.1 | TK03.1 | TK01/TK02 | M1; cierre integral M2 |
 | AT36 | HU01.3 | TK01 | TK02/TK03 | M1; cierre integral M2 |
 | AT37 | HU03.3 | TK02 | TK01/TK03 | M2; cierre integral M2 |
-| AT38 | HU03.4 | TK02 | TK01/TK03 | M2; must para SQLite, API e impresora, should para el resto |
-| AT39 | HU03.4 | TK02 | TK01/TK03 | M2; must para impresora, should para BioMini y serie |
+| AT38 | HU03.4 | TK02 | TK01/TK03 | Segunda ola (D-C24) |
+| AT39 | HU03.4 | TK02 | TK01/TK03 | Segunda ola (D-C24) |
 | AT40 | Producto futuro | Por especificar | — | Fuera del MVP |
 | AT41 | HU03.5 | TK03 | TK01/TK02 | M1; cierre integral M2 |
 | AT42 | HU03.5 | TK03 | TK01/TK02 | M2; cierre integral M2 |
@@ -154,7 +160,7 @@ Cada fila asigna un AT definido en la [SDD](especificacion-sdd.md) a una histori
 
 ## Evidencia de terminado
 
-Cada ejecución de producto registra versión, ambiente, datos, comando, resultado y artefacto observable. Las pruebas usan SQLite y filesystem reales para durabilidad; los adaptadores biométricos y de impresión se identifican como simulados. La integración física registra evidencia y homologación por separado. El cierre de M2 exige las cuatro funcionalidades con sus AT must, la suite de pruebas y una demostración verificable del flujo completo.
+Cada ejecución de producto registra versión, ambiente, datos, comando, resultado y artefacto observable. Las pruebas usan SQLite y filesystem reales para durabilidad; los adaptadores biométricos y de impresión se identifican como simulados. La integración física registra evidencia y homologación por separado. El cierre de M2 exige las cinco must de D-C24 con sus AT, la suite de pruebas y una demostración verificable del flujo completo.
 
 ## Cobertura de requisitos por aceptación
 

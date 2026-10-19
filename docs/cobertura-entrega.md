@@ -19,7 +19,7 @@ tickets y registro de uso de IA.
 | Tres historias de usuario | [README 5](../readme.md#5-historias-de-usuario), [historias y épicas](historias-y-tickets.md) | HU01.1, HU02.1 y HU02.2, de tamaño real, dentro de las épicas HU01–HU03; enunciados, precondiciones, escenarios y terminado. El backlog de historias hijas cubre los 35 escenarios. |
 | Tres tickets de trabajo | [README 6](../readme.md#6-tickets-de-trabajo), [tickets](historias-y-tickets.md#tickets-de-trabajo) | TK01.1 backend, TK02.1 frontend y TK03.1 datos, de tamaño tarea, con 3 o 4 AT propios, responsable, dependencias disponibles y terminado en lenguaje llano. |
 | Registro de IA | [prompts.md](../prompts.md) | Herramientas, modelos, skills, subagentes, prompts representativos y correcciones humanas. |
-| Priorización y secuencia | [Plan académico](plan-academico.md) | Must/should dentro de las cuatro funcionalidades, fecha de M0, tallas por unidad, regla de recorte, entregas y evidencia prevista. |
+| Priorización y secuencia | [Plan académico](plan-academico.md), [D-C24](decisiones.md) | Primer corte: cinco historias must y una should, segunda ola diseñada y no demostrada, tallas por unidad, regla de recorte, entregas y evidencia prevista. |
 
 ## Alcance de esta etapa
 
@@ -31,10 +31,12 @@ el diseño que se desarrollará.
 
 El curso recomienda planificar de tres a cinco historias imprescindibles y
 una o dos historias deseables; para la entrega final requiere de tres a cinco
-funcionalidades completas. INComedor presenta tres épicas que cubren cuatro
-funcionalidades obligatorias; dentro de ellas, el plan distingue historias y
-frentes must y should, con una regla de recorte si la implementación se atrasa.
-Las ampliaciones fuera del MVP no forman parte del compromiso de aceptación académico.
+funcionalidades completas. La entrega 1 comprometía doce historias must; la
+devolución de LIDR marcó ese alcance como excesivo y D-C24 (18/10/2026) lo
+recortó a cinco must y una should alrededor de un flujo de punta a punta:
+HU01.1, HU01.3, HU02.1, HU02.2 sin el escenario F y HU03.1, más HU01.2 reducida
+al código. El resto es la segunda ola, diseñada y no demostrada. Las ampliaciones
+fuera del MVP no forman parte del compromiso de aceptación académico.
 
 ## Fuentes de la consigna
 
@@ -50,6 +52,6 @@ mantener coherencia entre requisitos, decisiones y pruebas.
 
 ## Decisiones confirmadas y límites de preparación
 
-El autor confirmó ambas políticas multipuesto como must, capacidad de 6 h semanales y M0 objetivo 06/10; [plan y riesgo de capacidad](plan-academico.md#capacidad-y-reestimación). Códigos no reasignables, revocación al activar snapshot sin programación futura, dos roles sin herencia y mantenimiento con cuenta local individual se recogen en D-C20–D-C23. AT56 agrega aceptación de mantenimiento a HU03.3/U08, sin ampliar las cuatro funcionalidades.
+El autor confirmó el 29/09 ambas políticas multipuesto como must (D-C19), capacidad de 6 h semanales y M0 objetivo 06/10; el 18/10, D-C24 enmendó esa prioridad y pasó multipuesto a la segunda ola, conservando la capacidad ([plan y riesgo de capacidad](plan-academico.md#capacidad-y-reestimación)). Códigos no reasignables, revocación al activar snapshot sin programación futura, dos roles sin herencia y mantenimiento con cuenta local individual se recogen en D-C20–D-C23. AT56 agrega aceptación de mantenimiento a HU03.3/U08, sin ampliar las cuatro funcionalidades.
 
 El modelo conserva 44 entidades, 256 atributos y 47 relaciones representados. Los 19 atributos existentes pendientes y las estructuras de cuenta/historial aún por diseñar se declaran en el diccionario; no se cuentan como implementados. Esta entrega acredita diseño documental; contratos complementarios de M0, software, pruebas de producto y homologación siguen pendientes.

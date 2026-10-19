@@ -54,16 +54,23 @@ una ampliación independiente.
 
 ### 1.2. Características y funcionalidades principales
 
-El MVP académico comprende **cuatro funcionalidades obligatorias**. Las cuatro
-integran el compromiso de la entrega final; su secuencia y aceptación figuran en el
-[plan académico](docs/plan-academico.md).
+Lo que se construye y se demuestra es el **primer corte** de
+[D-C24](docs/decisiones.md), que recorta el alcance de la entrega 1 tras la
+devolución de LIDR: un puesto, identificación simulada por código, selección,
+cupo y fecha de negocio, confirmación atómica (RB06) con replay por IntentId,
+comprobante con reimpresión, outbox y receptor idempotente. Cinco historias
+must y una should; su secuencia y aceptación figuran en el
+[plan académico](docs/plan-academico.md#prioridad-dentro-de-las-funcionalidades).
 
-| ID | Funcionalidad | Resultado previsto para las etapas ejecutables |
-|---|---|---|
-| F01 | Identificación y selección | Identidad local y catálogo extensible según habilitaciones sincronizadas. |
-| F02 | Autorización y registro local | Reglas y cupos en SQLite; un único consumo ante doble toque, retry o reinicio. |
-| F03 | Comprobante y recuperación | Ticket tras commit local; recuperar impresión sin registrar otra comida. |
-| F04 | Sincronización y supervisión | Configuraciones íntegras, envío de hechos, acuses idempotentes, interfaz administrativa y diagnóstico por componente. |
+| ID | Funcionalidad | En el primer corte | Segunda ola, diseñada y no demostrada |
+|---|---|---|---|
+| F01 | Identificación y selección | Identificación simulada por código; catálogo, cancelación y reconfirmación (HU01.1). Should: rechazos de credencial (HU01.2-J). | Biometría 1:N y 1:1. |
+| F02 | Autorización y registro local | Cupo y fecha de negocio en SQLite (HU01.3); un único consumo ante doble toque, retry o reinicio (HU01.1, HU02.1). | Auditoría de saltos del reloj. |
+| F03 | Comprobante y recuperación | Ticket tras el commit local y reimpresión con permiso, sin registrar otra comida (HU03.1). | — |
+| F04 | Sincronización y supervisión | Outbox y receptor idempotente de lotes (HU02.2). | Multipuesto, configuración por snapshot, administración, diagnóstico, cuenta de mantenimiento y bitácoras. |
+
+La segunda ola no se recorta del producto: los párrafos siguientes describen el
+producto completo, y su diseño se conserva en `docs/`.
 
 El producto requiere serie virtual y BioMini Suprema USB. La biometría contempla
 **1:N contra templates de personas habilitadas** y **código previo + verificación
@@ -143,7 +150,7 @@ consistencia eventual. [Justificación y alternativas](docs/arquitectura.md).
 
 | Componente | Tecnología prevista | Responsabilidad |
 |---|---|---|
-| Kiosco táctil | C#/.NET 10, WPF + Blazor Hybrid | Pantallas, accesibilidad y sesión. |
+| Kiosco táctil | C#/.NET 10; pantallas Razor en Blazor Hybrid, con WPF sólo como ventana host del BlazorWebView | Pantallas, accesibilidad y sesión. Razor es también la tecnología de vistas del portal INWeb; WPF XAML queda como contingencia, no como segunda tecnología. |
 | Aplicación y dominio | Bibliotecas C# | Identidad operativa, habilitación, cupo e idempotencia local. |
 | Administración y diagnóstico | UI local + casos de uso con permisos | Configuración de equipo, pruebas aisladas e inventario de versiones. |
 | Bitácoras | Archivos UTF-8 mensuales + escritor recuperable | General e interacciones separadas, respaldo durable y reconstrucción. |
@@ -220,7 +227,7 @@ Cada puesto conserva su archivo SQLite; la sincronización intercambia hechos
 por API. Actualizaciones, reinicios y restauración preservan eventos pendientes.
 La integración física y el despliegue productivo requieren homologación.
 
-La demostración final conserva ambas políticas multipuesto y su cambio como must. Sólo diagnóstico ampliado y escalas 125/150 % pueden diferirse. El [plan](docs/plan-academico.md#capacidad-y-reestimación) registra 6 h semanales, M0 objetivo 06/10 y viabilidad todavía no demostrada. Cuenta local de mantenimiento y sus procedimientos se especifican en M0; no equivalen a integración física homologada.
+La demostración final es la de un puesto, con el primer corte de D-C24. Multipuesto, cuenta local de mantenimiento y diagnóstico quedan en la segunda ola, diseñados y no demostrados. El [plan](docs/plan-academico.md#capacidad-y-reestimación) registra 6 h semanales y viabilidad todavía no demostrada.
 
 ### 2.5. Seguridad
 
@@ -236,6 +243,14 @@ Se proponen ACL y cifrado de disco más protección específica para templates.
 SQLite estándar no se considera cifrada por defecto. No se guardarán imágenes de
 huellas ni templates en logs. Retención, acceso, enrolamiento y revocación productivos
 se definirán y verificarán antes de una instalación productiva.
+
+**Protección en reposo del primer corte (D-C24):**
+
+- El código de identificación no es un secreto: identifica, no prueba identidad. No se cifra, pero no se escribe en logs, tickets ni eventos.
+- Si el corte usa mTLS con el receptor, la clave privada del certificado del puesto va al almacén de certificados de Windows, marcada como no exportable.
+- La ACL de la base SQLite queda limitada a la cuenta que corre el puesto.
+- El cifrado de disco (BitLocker) es requisito de instalación, no una función del producto.
+- Los templates biométricos y el verificador de la cuenta de mantenimiento quedan fuera del corte: no existen en esta versión.
 
 ### 2.6. Tests
 

@@ -201,3 +201,28 @@ Las decisiones de consumo del producto serán reglas determinísticas de la apli
 Herramienta: Codex; modelo: gpt-6-astra; trabajo inline, sin subagentes. El autor pidió aplicar una matriz acotada de coherencia documental, conservar antecedentes y verificar en copia, sin publicar ni implementar. Confirmó ambas políticas multipuesto en la demo, 6 h semanales, M0 objetivo 06/10, códigos no reasignables, revocación recibida sin programación futura, roles sin herencia, cuenta individual local para mantenimiento y motivo externo genérico para código futuro.
 
 La intervención ajustó especificación, contratos, responsabilidades y planificación; agregó AT56 dentro de administración. Las decisiones técnicas de provisión, protección de cuentas e historial de códigos quedan abiertas en M0. Los controles estáticos y simulaciones de fixtures no se presentan como ejecución del producto. El autor conserva la decisión de formalizar la entrega.
+
+## Entrega 2
+
+Actualizado el 19/10/2026. Tras la devolución de LIDR de la entrega 1 (alcance excesivo), el autor aceptó el recorte (D-C24) y adoptó OpenSpec: cada avance es un change con proposal, design, tasks y, cuando cambia comportamiento, specs; el autor revisa el change antes de aplicarlo.
+
+### IA en las seis fases
+
+| Fase | Herramienta y modelo | Evidencia |
+|---|---|---|
+| Análisis | Claude Code, `opus` (Opus 5.5), esfuerzo medium | Change `fijar-primer-corte`: la IA contrastó la devolución, el material del curso y el paquete; el autor decidió el recorte. Archivado en `openspec/changes/archive/` |
+| Diseño | Claude Code, `opus` | `proposal.md` y `design.md` de cada change, con la alternativa descartada de cada decisión |
+| Implementación | Claude Code con `/openspec-apply-change`, `sonnet` previsto para changes con código | Change `registrar-consumo-atomico` (TK03.1), en curso |
+| Pruebas | Claude Code, tests derivados de los escenarios de la spec y vistos fallar | Previsto: salida de `dotnet test` sobre SQLite real en el PR del change |
+| Despliegue | Claude Code, workflow de CI generado y revisado | Previsto: GitHub Actions con build y test en `windows-latest` |
+| Mantenimiento | `/openspec-verify-change` y `openspec validate --all --strict` antes de cada PR; `AGENTS.md` como contexto vivo | `AGENTS.md`, `openspec/config.yaml` y la plantilla de PR de este change |
+
+### Prompt representativo: fijar el primer corte
+
+**Extracto del paso ejecutado el 19/10, redactado en una sesión anterior y lanzado por el autor:**
+
+> Tomá como dadas las decisiones de David del 18/10/2026, que enmienda D-C19, y del 19/10 […]: el recorte de LIDR es la versión que se presenta (entrega 2 y final). […] Creá el change con `openspec new change fijar-primer-corte`. En su `.openspec.yaml` agregá `skip_specs: true`, porque decide alcance y contexto, no comportamiento. […] Mostrale a David los tres artefactos […] Es la revisión humana antes de aplicar que el curso llama «el oro de la sesión». No sigas sin su aprobación.
+
+Resultado: la IA propuso cinco historias must (HU01.1, HU01.3, HU02.1, HU02.2 sin el escenario F y HU03.1) y una should (HU01.2 reducida al código), y marcó HU03.1 como la must más discutible. Presentó dos ajustes posibles: pasar HU03.1 a should o quitar la should.
+
+**Decisión del autor en la revisión del change:** «Aprobar tal cual». Con esa aprobación se aplicaron D-C24, el plan, el README, `AGENTS.md` y la plantilla de PR.
