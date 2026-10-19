@@ -4,4 +4,7 @@
     <ProjectReference Include="..\Intelektron.INComedor.Domain\Intelektron.INComedor.Domain.csproj" />
     <InternalsVisibleTo Include="Intelektron.INComedor.Infrastructure.Sqlite.Tests" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Migraciones\0001_transaccion_consumo.sql" LogicalName="Migraciones.0001_transaccion_consumo.sql" />
+  </ItemGroup>
 </Project>

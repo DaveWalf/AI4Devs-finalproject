@@ -23,10 +23,10 @@ Regla de todo el change: cada test nuevo se escribe primero, se corre y se ve fa
 
 ## 4. Base SQLite y migración 0001
 
-- [ ] 4.1 Escribir la prueba de bloqueo inmediato: con una transacción abierta por `BaseComedor.IniciarTransaccionEscritura()` en la conexión A, sin escrituras, la conexión B con `DefaultTimeout = 1` no logra abrir la suya y recibe `SQLITE_BUSY`. Verla fallar contra un esqueleto; implementar con `BeginTransaction(deferred: false)` y, si la prueba sigue fallando, con `BEGIN IMMEDIATE` explícito (D7); verificar que pasa
-- [ ] 4.2 Escribir `Migraciones/0001_transaccion_consumo.sql` con las 20 tablas de D5, los nombres del mapa y de la tabla de D5, PK, FK compuestas, unicidades y `CHECK`; **mostrarle a David el SQL completo y esperar su aprobación antes de aplicarlo** (L87:444-461). Verificar con la respuesta de David
-- [ ] 4.3 Escribir las pruebas de apertura: escenario «Base vacía» (versión 1, `foreign_keys` en 1 y la lista exacta de las 20 tablas `tbComedor…`), «Versión de esquema desconocida» (excepción y hash SHA-256 del archivo igual antes y después) y «Unicidad de consumo por intención» (la segunda inserción directa falla con `SQLITE_CONSTRAINT`). Verlas fallar contra el esqueleto de `BaseComedor.Abrir`
-- [ ] 4.4 Implementar `BaseComedor.Abrir` y el migrador con `PRAGMA user_version`, WAL y `synchronous = FULL` en el orden de D6; verificar con `dotnet test --filter "FullyQualifiedName~Infrastructure.Sqlite.Tests"`
+- [x] 4.1 Escribir la prueba de bloqueo inmediato: con una transacción abierta por `BaseComedor.IniciarTransaccionEscritura()` en la conexión A, sin escrituras, la conexión B con `DefaultTimeout = 1` no logra abrir la suya y recibe `SQLITE_BUSY`. Verla fallar contra un esqueleto; implementar con `BeginTransaction(deferred: false)` y, si la prueba sigue fallando, con `BEGIN IMMEDIATE` explícito (D7); verificar que pasa
+- [x] 4.2 Escribir `Migraciones/0001_transaccion_consumo.sql` con las 20 tablas de D5, los nombres del mapa y de la tabla de D5, PK, FK compuestas, unicidades y `CHECK`; **mostrarle a David el SQL completo y esperar su aprobación antes de aplicarlo** (L87:444-461). Verificar con la respuesta de David
+- [x] 4.3 Escribir las pruebas de apertura: escenario «Base vacía» (versión 1, `foreign_keys` en 1 y la lista exacta de las 20 tablas `tbComedor…`), «Versión de esquema desconocida» (excepción y hash SHA-256 del archivo igual antes y después) y «Unicidad de consumo por intención» (la segunda inserción directa falla con `SQLITE_CONSTRAINT`). Verlas fallar contra el esqueleto de `BaseComedor.Abrir`
+- [x] 4.4 Implementar `BaseComedor.Abrir` y el migrador con `PRAGMA user_version`, WAL y `synchronous = FULL` en el orden de D6; verificar con `dotnet test --filter "FullyQualifiedName~Infrastructure.Sqlite.Tests"`
 
 ## 5. Confirmación y replay
 
