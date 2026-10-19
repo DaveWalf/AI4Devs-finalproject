@@ -53,8 +53,6 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 
 ## Comandos
 
-Pendientes hasta que exista la solución (change `registrar-consumo-atomico`):
-
-- Build: `dotnet build INComedor.sln -warnaserror` (pendiente).
-- Test: `dotnet test INComedor.sln` (pendiente).
+- Build: `dotnet build INComedor.sln -warnaserror` (vigente).
+- Test: `dotnet test INComedor.sln` (vigente).
 - Spec: `openspec validate --all --strict` (vigente).
