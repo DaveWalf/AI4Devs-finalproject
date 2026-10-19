@@ -10,8 +10,8 @@ Regla de todo el change: cada test nuevo se escribe primero, se corre y se ve fa
 
 ## 2. D-C25 y menciones de .NET 10
 
-- [ ] 2.1 Agregar D-C25 a `docs/decisiones.md`: SDK .NET 11, versión vigente y fecha (19/10/2026, decisión de David), `global.json`, `net11.0`, paquetes `11.0.0-rc.2.*` fijados en su versión exacta, paso a estable el 10/11/2026 antes de la entrega final del 12/11, y como descartadas el SDK 10 LTS con `net10.0` y el SDK 11 con `net10.0`, cada una con su porqué; anotar en la línea «Interfaz» de «Selección técnica del MVP» que D-C25 la enmienda, sin borrarla. Subir la versión documental a 1.3. Verificar con `rg -n "D-C25" docs/decisiones.md`: aparecen la fila y la nota
-- [ ] 2.2 Cambiar «.NET 10» por «.NET 11» en `readme.md:123` y `:153`, `openspec/config.yaml:12`, `docs/arquitectura.md:3` y `:111` y `diagrams/despliegue.dot:7`, y en el nodo de texto equivalente de `diagrams/despliegue.svg` (a mano: Graphviz no está instalado en la máquina); verificar con `rg -n "\.NET 10" readme.md openspec docs diagrams` que sólo quedan las menciones de D-C25 a lo descartado
+- [x] 2.1 Agregar D-C25 a `docs/decisiones.md`: SDK .NET 11, versión vigente y fecha (19/10/2026, decisión de David), `global.json`, `net11.0`, paquetes `11.0.0-rc.2.*` fijados en su versión exacta, paso a estable el 10/11/2026 antes de la entrega final del 12/11, y como descartadas el SDK 10 LTS con `net10.0` y el SDK 11 con `net10.0`, cada una con su porqué; anotar en la línea «Interfaz» de «Selección técnica del MVP» que D-C25 la enmienda, sin borrarla. Subir la versión documental a 1.3. Verificar con `rg -n "D-C25" docs/decisiones.md`: aparecen la fila y la nota
+- [x] 2.2 Cambiar «.NET 10» por «.NET 11» en `readme.md:123` y `:153`, `openspec/config.yaml:12`, `docs/arquitectura.md:3` y `:111` y `diagrams/despliegue.dot:7`, y en el nodo de texto equivalente de `diagrams/despliegue.svg` (a mano: Graphviz no está instalado en la máquina); verificar con `rg -n "\.NET 10" readme.md openspec docs diagrams` que sólo quedan las menciones de D-C25 a lo descartado
 
 ## 3. Dominio: fecha de negocio y cupo
 

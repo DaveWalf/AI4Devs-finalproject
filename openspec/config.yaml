@@ -9,7 +9,7 @@ context: |
   confirmación atómica (RB06) con replay por IntentId, comprobante con reimpresión, outbox y receptor idempotente.
   Fuera del corte, diseñado y no demostrado: multipuesto, administración y diagnóstico, bitácoras,
   cuenta de mantenimiento, biometría 1:N y 1:1 y auditoría de saltos del reloj.
-  Stack: C# y .NET 10; pantallas Razor en Blazor Hybrid con host WPF; Microsoft.Data.Sqlite; receptor ASP.NET Core; xUnit.
+  Stack: C# y .NET 11; pantallas Razor en Blazor Hybrid con host WPF; Microsoft.Data.Sqlite; receptor ASP.NET Core; xUnit.
   El puesto autoriza y registra sin red; ningún acuse central autoriza ni revierte un consumo.
   Sólo datos sintéticos y cliente anonimizado: ningún dato personal real ni template biométrico.
   docs/especificacion-sdd.md es la visión del producto completo: antecedente, no requisito del corte.

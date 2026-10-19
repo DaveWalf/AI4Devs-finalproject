@@ -120,7 +120,7 @@ recuperación. Una nueva lectura no sustituye la identidad de una sesión ocupad
 Para consultar esta entrega, abrir este README y sus anexos. Las instrucciones
 ejecutables de instalación se incorporarán con el código de la entrega 2.
 
-La demostración se diseñará para Windows 11, .NET 10, WebView2 y almacenamiento local
+La demostración se diseñará para Windows 11, .NET 11, WebView2 y almacenamiento local
 y datos sintéticos. El primer provisionamiento podrá hacerse por sincronización
 o paquete local validado. Con base provisionada, el arranque y la operación no
 exigirán INWeb en el perfil autónomo y con continuidad local. El modo
@@ -150,7 +150,7 @@ consistencia eventual. [Justificación y alternativas](docs/arquitectura.md).
 
 | Componente | Tecnología prevista | Responsabilidad |
 |---|---|---|
-| Kiosco táctil | C#/.NET 10; pantallas Razor en Blazor Hybrid, con WPF sólo como ventana host del BlazorWebView | Pantallas, accesibilidad y sesión. Razor es también la tecnología de vistas del portal INWeb; WPF XAML queda como contingencia, no como segunda tecnología. |
+| Kiosco táctil | C#/.NET 11; pantallas Razor en Blazor Hybrid, con WPF sólo como ventana host del BlazorWebView | Pantallas, accesibilidad y sesión. Razor es también la tecnología de vistas del portal INWeb; WPF XAML queda como contingencia, no como segunda tecnología. |
 | Aplicación y dominio | Bibliotecas C# | Identidad operativa, habilitación, cupo e idempotencia local. |
 | Administración y diagnóstico | UI local + casos de uso con permisos | Configuración de equipo, pruebas aisladas e inventario de versiones. |
 | Bitácoras | Archivos UTF-8 mensuales + escritor recuperable | General e interacciones separadas, respaldo durable y reconstrucción. |

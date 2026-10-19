@@ -1,6 +1,6 @@
 # Decisiones de producto y arquitectura
 
-Versión documental: 1.2 · Fecha: 19/10/2026.
+Versión documental: 1.3 · Fecha: 19/10/2026.
 
 Este registro distingue decisiones del MVP académico y condiciones necesarias
 para una futura integración productiva. Los identificadores no se reutilizan:
@@ -33,6 +33,7 @@ D-C07 reservado, sin asignar.
 | D-C22 | Mantenimiento mediante usuario y contraseña individual local, confirmado por David el 29/09/2026. | Alternativa sin INWeb ni lector; misma autorización por acción, límites de intentos y auditoría. No habilita consumo ni reimpresión sin OPERATOR. Cuenta sintética en MVP; provisión, almacenamiento y recuperación se especifican en M0. |
 | D-C23 | Credencial todavía no vigente: IDENTITY_NOT_RESOLVED externo, confirmado por David el 29/09/2026. | Causa interna diferenciada de código desconocido, sin registrar el código en claro; no abre selección ni consumo. |
 | D-C24 | Primer corte, confirmado por David el 18/10/2026 tras la devolución de LIDR de la entrega 1 y aprobado el 19/10/2026 en el change `fijar-primer-corte`. Enmienda D-C19. | Es la versión que se presenta en la entrega 2 y la final. Un puesto, identificación simulada por código, selección, cupo y fecha de negocio, confirmación atómica RB06 con replay por IntentId, comprobante con reimpresión, outbox y receptor idempotente. Must: HU01.1, HU01.3, HU02.1, HU02.2 sin el escenario F y HU03.1; should: HU01.2 reducida al código (escenario J). Segunda ola, diseñada y no demostrada, que el producto sigue requiriendo: multipuesto (ambas políticas y feed), configuración por snapshot, administración y diagnóstico, bitácoras mensuales, cuenta de mantenimiento, biometría 1:N y 1:1 y auditoría de saltos del reloj. Ver [plan académico](plan-academico.md#prioridad-dentro-de-las-funcionalidades). |
+| D-C25 | SDK .NET 11, decisión de David del 19/10/2026 en el change `registrar-consumo-atomico`. Enmienda la línea «Interfaz» de la selección técnica. | `global.json` fija el SDK `11.0.100-rc.2.26504.105` y los proyectos apuntan a `net11.0`; los paquetes de Microsoft se fijan en su versión exacta de la familia `11.0.0-rc.2.*`. Pasa a la versión estable el 10/11/2026, antes de la entrega final del 12/11, en una tarea aparte que toca sólo `global.json` y `Directory.Packages.props`. Descartada: SDK 10 LTS con `net10.0`, era lo documentado pero la máquina de desarrollo ya no tiene SDK 10 y volver obliga a instalar uno que el resto del ecosistema local no usa. Descartada: SDK 11 con `net10.0`, compila pero deja el runtime de destino en una versión que no es la elegida y suma una segunda línea de versiones sin beneficio para el corte. |
 
 ## Condiciones del diseño académico
 
@@ -45,7 +46,7 @@ D-C07 reservado, sin asignar.
 
 ## Selección técnica del MVP
 
-- **Interfaz:** pantallas Razor en Blazor Hybrid sobre C#/.NET 10, con WebView2; WPF es sólo la ventana host (ADR01).
+- **Interfaz:** pantallas Razor en Blazor Hybrid sobre C#/.NET 10, con WebView2; WPF es sólo la ventana host (ADR01). **Enmendada por D-C25:** el SDK pasa a .NET 11.
 - **Persistencia local:** SQLite con Microsoft.Data.Sqlite directo, SQL parametrizado
   y transacciones explícitas para controlar el registro atómico y la recuperación.
   Las operaciones se ejecutarán en una cola de trabajo fuera del hilo de interfaz.

@@ -24,7 +24,7 @@
 <g id="node1" class="node">
 <title>ui</title>
 <path fill="#edf4fa" stroke="#2b5072" d="M576.82,-412.8C576.82,-412.8 395.18,-412.8 395.18,-412.8 389.18,-412.8 383.18,-406.8 383.18,-400.8 383.18,-400.8 383.18,-378.72 383.18,-378.72 383.18,-372.72 389.18,-366.72 395.18,-366.72 395.18,-366.72 576.82,-366.72 576.82,-366.72 582.82,-366.72 588.82,-372.72 588.82,-378.72 588.82,-378.72 588.82,-400.8 588.82,-400.8 588.82,-406.8 582.82,-412.8 576.82,-412.8"/>
-<text xml:space="preserve" text-anchor="middle" x="486" y="-393.36" font-family="Arial" font-size="12.00">INComedor C# / .NET 10</text>
+<text xml:space="preserve" text-anchor="middle" x="486" y="-393.36" font-family="Arial" font-size="12.00">INComedor C# / .NET 11</text>
 <text xml:space="preserve" text-anchor="middle" x="486" y="-378.96" font-family="Arial" font-size="12.00">WPF + Blazor Hybrid / WebView2</text>
 </g>
 <!-- local -->
