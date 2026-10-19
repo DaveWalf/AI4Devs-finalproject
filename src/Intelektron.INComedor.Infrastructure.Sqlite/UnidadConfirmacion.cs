@@ -49,6 +49,8 @@ public sealed class UnidadConfirmacion
             }
         }
 
+        _puntosDeFalla.DespuesDeLecturaPrevia();
+
         // 2. El bloqueo de escritura se toma al empezar; bajo el bloqueo se vuelve a buscar el IntentId.
         using var conexion = _baseComedor.AbrirConexion();
         using var transaccion = BaseComedor.IniciarTransaccionEscritura(conexion);
@@ -87,7 +89,9 @@ public sealed class UnidadConfirmacion
             : PersistirRechazo(conexion, transaccion, solicitud, hash, puesto, decision, fecha, ahora);
 
         // 7. Commit y devolución del resultado.
+        _puntosDeFalla.AntesDelCommit();
         transaccion.Commit();
+        _puntosDeFalla.DespuesDelCommit();
         return resultado;
     }
 

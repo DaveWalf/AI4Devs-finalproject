@@ -38,8 +38,8 @@ Regla de todo el change: cada test nuevo se escribe primero, se corre y se ve fa
 
 ## 6. Caídas y concurrencia
 
-- [ ] 6.1 Escribir las pruebas con `IPuntosDeFalla`, todavía sin invocar desde la unidad de trabajo: «Caída antes del commit no deja rastro» (AT05, cero filas de la intención en todas las tablas y una confirmación posterior que produce un solo consumo), «Caída entre el commit y el resultado» (AT05, `ClearAllPools`, conexión nueva y mismos `DecisionId`, `ConsumptionId` y `TicketId`), «Recuperar no reconstruye el trabajo original» (AT05/RB17), «Dos conexiones compiten por el último cupo» (AT03, `Barrier(2)` con timeout de 10 s) y «Mismo IntentId concurrente en dos conexiones» (AT03). Verlas fallar porque la unidad de trabajo todavía no llama a los puntos de falla
-- [ ] 6.2 Invocar `DespuesDeLecturaPrevia`, `AntesDelCommit` y `DespuesDelCommit` desde `UnidadConfirmacion` (D10); verificar que pasan las pruebas de 6.1
+- [x] 6.1 Escribir las pruebas con `IPuntosDeFalla`, todavía sin invocar desde la unidad de trabajo: «Caída antes del commit no deja rastro» (AT05, cero filas de la intención en todas las tablas y una confirmación posterior que produce un solo consumo), «Caída entre el commit y el resultado» (AT05, `ClearAllPools`, conexión nueva y mismos `DecisionId`, `ConsumptionId` y `TicketId`), «Recuperar no reconstruye el trabajo original» (AT05/RB17), «Dos conexiones compiten por el último cupo» (AT03, `Barrier(2)` con timeout de 10 s) y «Mismo IntentId concurrente en dos conexiones» (AT03). Verlas fallar porque la unidad de trabajo todavía no llama a los puntos de falla
+- [x] 6.2 Invocar `DespuesDeLecturaPrevia`, `AntesDelCommit` y `DespuesDelCommit` desde `UnidadConfirmacion` (D10); verificar que pasan las pruebas de 6.1
 
 ## 7. Datos protegidos y verificación integrada
 
