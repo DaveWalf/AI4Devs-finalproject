@@ -10,7 +10,7 @@ Reglas de todo el change:
 
 ## 1. Contrato de eventos compartido
 
-- [ ] 1.1 Crear `src/Intelektron.INComedor.Contracts` (`net11.0`, sin dependencias) y agregarlo a `INComedor.sln`; mover con `git mv` `src/Intelektron.INComedor.Infrastructure.Sqlite/EventosSalida.cs` a `src/Intelektron.INComedor.Contracts/Eventos/EventosSalida.cs`, con los cuatro records `public sealed`, el namespace `Intelektron.INComedor.Contracts.Eventos` y los mismos nombres, `[JsonPropertyName]` y orden de propiedades (D7); agregar a `Infrastructure.Sqlite` la referencia a `Contracts` y el `using`. Verificar con `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (48 en verde, incluidas las dos de `ContratoEventosTests`) y `git diff --stat -- tests/` vacío
+- [x] 1.1 Crear `src/Intelektron.INComedor.Contracts` (`net11.0`, sin dependencias) y agregarlo a `INComedor.sln`; mover con `git mv` `src/Intelektron.INComedor.Infrastructure.Sqlite/EventosSalida.cs` a `src/Intelektron.INComedor.Contracts/Eventos/EventosSalida.cs`, con los cuatro records `public sealed`, el namespace `Intelektron.INComedor.Contracts.Eventos` y los mismos nombres, `[JsonPropertyName]` y orden de propiedades (D7); agregar a `Infrastructure.Sqlite` la referencia a `Contracts` y el `using`. Verificar con `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (48 en verde, incluidas las dos de `ContratoEventosTests`) y `git diff --stat -- tests/` vacío
 
 ## 2. Esqueleto del receptor
 
