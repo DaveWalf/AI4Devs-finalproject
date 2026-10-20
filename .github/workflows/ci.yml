@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "feature/**"
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # El SDK sale de global.json (RC fijada con versión exacta: se instala tal cual, sin rollForward).
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore INComedor.sln
+
+      - name: Build
+        run: dotnet build INComedor.sln -warnaserror --no-restore
+
+      - name: Test
+        run: dotnet test INComedor.sln --no-build
