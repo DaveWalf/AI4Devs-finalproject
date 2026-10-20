@@ -36,8 +36,9 @@ Paquetes consultados en NuGet el 20/10/2026:
 
 ### D1. Host WPF con `BlazorWebView` y una sola pantalla Razor
 
-`src/Intelektron.INComedor.Kiosk` usa `Sdk="Microsoft.NET.Sdk.Razor"` con `OutputType` `WinExe`, `UseWPF` y `TargetFramework` `net11.0-windows`, que pisa al de `Directory.Build.props`. Referencia `Microsoft.AspNetCore.Components.WebView.Wpf` e `Infrastructure.Sqlite`.
+`src/Intelektron.INComedor.Kiosk` usa `Sdk="Microsoft.NET.Sdk.Razor"` con `OutputType` `WinExe`, `UseWPF` y `TargetFramework` `net11.0-windows10.0.17763.0`, que pisa al de `Directory.Build.props`. Referencia `Microsoft.AspNetCore.Components.WebView.Wpf` e `Infrastructure.Sqlite`.
 
+- **Corrección durante el apply (20/10).** El diseño decía `net11.0-windows`. Con ese TFM la ventana se cierra al abrir con `FileNotFoundException: Microsoft.Windows.SDK.NET`, porque `Microsoft.Web.WebView2.Wpf` pide la proyección de WinRT, que sólo llega con la versión de plataforma. `10.0.17763.0` es la mínima de WebView2. `proposal.md` (Impact) y las tareas 3.1 y 3.2 conservan la mención corta; vale la del design.
 - `MainWindow.xaml` contiene sólo el `BlazorWebView`, con `wwwroot/index.html` y el componente raíz `Demostracion/PantallaDemostracion.razor`.
 - No hay XAML de pantalla: WPF es la ventana host (ADR01).
 
@@ -131,7 +132,7 @@ Alternativas descartadas:
 
 ### D9. Pruebas: servicio sobre SQLite real, componente con bUnit y receptor con `WebApplicationFactory`
 
-- **`tests/Intelektron.INComedor.Kiosk.Tests`** (`net11.0-windows`) referencia el Kiosk.
+- **`tests/Intelektron.INComedor.Kiosk.Tests`** (`net11.0-windows10.0.17763.0`, el mismo TFM que el Kiosk, porque un proyecto no puede referenciar a otro de una plataforma mayor) referencia el Kiosk.
   - Prueba `ServicioDemostracion` sobre un archivo temporal real, con el mismo patrón de borrado de `-wal` y `-shm` de D11 del change anterior y un `RelojFijo` propio de 10 líneas.
   - Prueba `PantallaDemostracion` con bUnit `2.12.5` y un `ServicioDemostracion` real sobre archivo temporal, sin doble.
 - **`tests/Intelektron.INComedor.Sync.Api.Tests`** usa `WebApplicationFactory<Program>`.
