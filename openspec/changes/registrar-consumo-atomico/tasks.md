@@ -43,11 +43,11 @@ Regla de todo el change: cada test nuevo se escribe primero, se corre y se ve fa
 
 ## 7. Datos protegidos y verificación integrada
 
-- [ ] 7.1 Escribir «Una autorización no registra el código» y «Un rechazo tampoco lo registra» (buscan `000123` en toda columna de texto de intenciones, eventos de salida, comprobantes y bitácora); como deben pasar sin cambios, verlas fallar escribiendo a propósito el código en el contexto de bitácora y restaurar; verificar que pasan
-- [ ] 7.2 Correr `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln`, y pegar en la respuesta su salida literal: 0 advertencias, 0 errores y todas las pruebas en verde, con su cantidad
-- [ ] 7.3 Correr 20 veces seguidas `dotnet test INComedor.sln --filter "DisplayName~AT03"` y pegar el conteo: 20 de 20 en verde
-- [ ] 7.4 Comprobar que cada uno de los 22 escenarios del spec tiene al menos un test cuyo `DisplayName` lo nombra (DoD de feature, L52:72-73); verificar con `rg -c "DisplayName" tests` y una lista escenario → test en la respuesta
-- [ ] 7.5 Revisar `AGENTS.md` y `openspec/config.yaml` contra lo que dejó este change (comandos, stack .NET 11) y correr `openspec validate --all --strict` sin errores; correr `git status --short` y comprobar que no aparecen `bin/`, `obj/`, archivos `.db` ni `devoluciones de AI4DEVS/`
+- [x] 7.1 Escribir «Una autorización no registra el código» y «Un rechazo tampoco lo registra» (buscan `000123` en toda columna de texto de intenciones, eventos de salida, comprobantes y bitácora); como deben pasar sin cambios, verlas fallar escribiendo a propósito el código en el contexto de bitácora y restaurar; verificar que pasan
+- [x] 7.2 Correr `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln`, y pegar en la respuesta su salida literal: 0 advertencias, 0 errores y todas las pruebas en verde, con su cantidad
+- [x] 7.3 Correr 20 veces seguidas `dotnet test INComedor.sln --filter "DisplayName~AT03"` y pegar el conteo: 20 de 20 en verde
+- [x] 7.4 Comprobar que cada uno de los 22 escenarios del spec tiene al menos un test cuyo `DisplayName` lo nombra (DoD de feature, L52:72-73); verificar con `rg -c "DisplayName" tests` y una lista escenario → test en la respuesta
+- [x] 7.5 Revisar `AGENTS.md` y `openspec/config.yaml` contra lo que dejó este change (comandos, stack .NET 11) y correr `openspec validate --all --strict` sin errores; correr `git status --short` y comprobar que no aparecen `bin/`, `obj/`, archivos `.db` ni `devoluciones de AI4DEVS/`
 
 ## Workflow follow-up
 
