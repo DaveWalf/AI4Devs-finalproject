@@ -38,7 +38,7 @@ Ninguna: `openspec/specs/` está vacía. `registro-consumo` sigue en el change a
 ## Impact
 
 - **Proyectos nuevos:**
-  - `src/Intelektron.INComedor.Kiosk/` (`net11.0-windows`, WPF y Razor);
+  - `src/Intelektron.INComedor.Kiosk/` (`net11.0-windows10.0.17763.0`, WPF y Razor);
   - `src/Intelektron.INComedor.Contracts/`;
   - `src/Intelektron.INComedor.Sync.Api/` (`Sdk.Web`);
   - `tests/Intelektron.INComedor.Kiosk.Tests/`;

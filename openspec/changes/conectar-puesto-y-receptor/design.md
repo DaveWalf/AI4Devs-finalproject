@@ -38,7 +38,7 @@ Paquetes consultados en NuGet el 20/10/2026:
 
 `src/Intelektron.INComedor.Kiosk` usa `Sdk="Microsoft.NET.Sdk.Razor"` con `OutputType` `WinExe`, `UseWPF` y `TargetFramework` `net11.0-windows10.0.17763.0`, que pisa al de `Directory.Build.props`. Referencia `Microsoft.AspNetCore.Components.WebView.Wpf` e `Infrastructure.Sqlite`.
 
-- **Corrección durante el apply (20/10).** El diseño decía `net11.0-windows`. Con ese TFM la ventana se cierra al abrir con `FileNotFoundException: Microsoft.Windows.SDK.NET`, porque `Microsoft.Web.WebView2.Wpf` pide la proyección de WinRT, que sólo llega con la versión de plataforma. `10.0.17763.0` es la mínima de WebView2. `proposal.md` (Impact) y las tareas 3.1 y 3.2 conservan la mención corta; vale la del design.
+- **Corrección durante el apply (20/10).** El diseño decía `net11.0-windows`. Con ese TFM la ventana se cierra al abrir con `FileNotFoundException: Microsoft.Windows.SDK.NET`, porque `Microsoft.Web.WebView2.Wpf` pide la proyección de WinRT, que sólo llega con la versión de plataforma. `10.0.17763.0` es la mínima de WebView2. `proposal.md` (Impact) y las tareas 3.1 y 3.2 se alinearon el mismo día, con la aprobación de David.
 - `MainWindow.xaml` contiene sólo el `BlazorWebView`, con `wwwroot/index.html` y el componente raíz `Demostracion/PantallaDemostracion.razor`.
 - No hay XAML de pantalla: WPF es la ventana host (ADR01).
 
