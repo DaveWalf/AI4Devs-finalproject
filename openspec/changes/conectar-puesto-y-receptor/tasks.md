@@ -30,10 +30,10 @@ Reglas de todo el change:
 
 ## 4. Documentación y verificación integrada
 
-- [ ] 4.1 Agregar en `AGENTS.md`, sección «Comandos», `dotnet run --project src/Intelektron.INComedor.Kiosk` (puesto de demostración) y `dotnet run --project src/Intelektron.INComedor.Sync.Api` (receptor esqueleto); agregar en `readme.md` un apartado «Cómo ver la demostración» con esos comandos, la ruta de la base de D5 y lo que el receptor hace y no hace (D8). Verificar que los dos comandos corren tal como quedan escritos: la ventana abre, y `curl -i -X POST http://localhost:<puerto>/api/incomedor/v1/sync-batches` responde 501
-- [ ] 4.2 Correr `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln`, y pegar su salida literal: 0 advertencias, 0 errores y todas las pruebas en verde, con su cantidad por proyecto (48 anteriores más las nuevas)
-- [ ] 4.3 Comprobar que cada uno de los 10 escenarios del spec tiene al menos un test cuyo `DisplayName` lo nombra, con una lista escenario → test en la respuesta; correr `openspec validate --all --strict` sin errores
-- [ ] 4.4 Correr `pwsh -NoProfile -File C:\AI\INComedor\.claude\skills\estado\medir.ps1` y pegar el ítem «scaffolds conectados»: `front->BD si · back->propio si`; correr `git status --short` y comprobar que no aparecen `bin/`, `obj/`, archivos `.db` ni capturas
+- [x] 4.1 Agregar en `AGENTS.md`, sección «Comandos», `dotnet run --project src/Intelektron.INComedor.Kiosk` (puesto de demostración) y `dotnet run --project src/Intelektron.INComedor.Sync.Api` (receptor esqueleto); agregar en `readme.md` un apartado «Cómo ver la demostración» con esos comandos, la ruta de la base de D5 y lo que el receptor hace y no hace (D8). Verificar que los dos comandos corren tal como quedan escritos: la ventana abre, y `curl -i -X POST http://localhost:<puerto>/api/incomedor/v1/sync-batches` responde 501
+- [x] 4.2 Correr `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln`, y pegar su salida literal: 0 advertencias, 0 errores y todas las pruebas en verde, con su cantidad por proyecto (48 anteriores más las nuevas)
+- [x] 4.3 Comprobar que cada uno de los 10 escenarios del spec tiene al menos un test cuyo `DisplayName` lo nombra, con una lista escenario → test en la respuesta; correr `openspec validate --all --strict` sin errores
+- [x] 4.4 Correr `pwsh -NoProfile -File C:\AI\INComedor\.claude\skills\estado\medir.ps1` y pegar el ítem «scaffolds conectados»: `front->BD si · back->propio si`; correr `git status --short` y comprobar que no aparecen `bin/`, `obj/`, archivos `.db` ni capturas
 
 ## Workflow follow-up
 

@@ -131,6 +131,43 @@ que requiere provisionamiento y mantendrá deshabilitadas las confirmaciones.
 La entrega de código agregará versiones exactas, comandos probados, carga del
 conjunto sintético y recuperación.
 
+#### Cómo ver la demostración
+
+Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.json`
+(11.0.100-rc.2). Los comandos se corren desde la raíz del repositorio, porque
+`global.json` se lee del directorio actual.
+
+**Puesto de demostración.**
+
+```powershell
+dotnet run --project src/Intelektron.INComedor.Kiosk
+```
+
+La ventana muestra una persona y una opción sintéticas fijas y el botón «Confirmar». Cada
+toque confirma una intención nueva con la transacción de RB06 sobre SQLite, sin red:
+
+- El primer toque del día muestra `AUTHORIZED` con los identificadores de consumo y de comprobante.
+- El segundo muestra `DENIED` con `LOCAL_LIMIT_REACHED`, porque el límite de la persona es 1 por fecha de negocio.
+
+La base está en `%LOCALAPPDATA%\INComedor\demo\incomedor.db`. Se crea y se siembra con datos
+sintéticos al abrir la ventana por primera vez; una base que ya tiene datos no se vuelve a sembrar.
+Para repetir la demostración, cerrar la ventana y borrar la carpeta `%LOCALAPPDATA%\INComedor\demo\`.
+Es una pantalla de demostración: no cumple la atención completa de TK02.1 (identificación por código,
+catálogo de quince opciones, estados de reposo, timeout), que llega con `atender-seleccion-y-confirmacion`.
+
+**Receptor de lotes (esqueleto).**
+
+```powershell
+dotnet run --project src/Intelektron.INComedor.Sync.Api
+curl.exe -i -X POST http://localhost:5000/api/incomedor/v1/sync-batches
+```
+
+Lo que hace: declara las dos operaciones de TK01.1, `POST /api/incomedor/v1/sync-batches` y
+`GET /api/incomedor/v1/sync-batches/{batchId}`, y a las dos les responde `501` con `application/problem+json`.
+Lo que no hace: no lee el cuerpo, no persiste nada, no autentica y nunca responde un 2xx, así que ningún
+puesto puede tomar una respuesta suya como acuse de un lote. La ingesta idempotente llega con
+`recibir-lotes-idempotente`. No se publica ni se despliega mientras no tenga autenticación.
+
 ## 2. Arquitectura del sistema
 
 ### 2.1. Diagrama de arquitectura

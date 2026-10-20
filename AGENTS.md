@@ -49,6 +49,8 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 - SQLite con `Microsoft.Data.Sqlite` y SQL parametrizado, sin ORM en el puesto; pruebas sobre un
   archivo SQLite real temporal, con dobles sólo para impresora y lector.
 - Pantallas sólo Razor; WPF es la ventana host del BlazorWebView, no una segunda tecnología de UI.
+- El Kiosk y sus pruebas usan `net11.0-windows10.0.17763.0`, no `net11.0-windows`: sin la versión de plataforma,
+  WebView2 falla al abrir la ventana (`Microsoft.Windows.SDK.NET`) y las pruebas no referencian al Kiosk (NU1201).
 - Commits por rutas, nunca `git add -A`; mensajes en español. Push y merge son de David.
 
 ## Comandos
@@ -56,3 +58,7 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 - Build: `dotnet build INComedor.sln -warnaserror` (vigente).
 - Test: `dotnet test INComedor.sln` (vigente).
 - Spec: `openspec validate --all --strict` (vigente).
+- Puesto de demostración: `dotnet run --project src/Intelektron.INComedor.Kiosk` (ventana WPF; su base queda en
+  `%LOCALAPPDATA%\INComedor\demo\`, se reinicia borrando esa carpeta).
+- Receptor esqueleto: `dotnet run --project src/Intelektron.INComedor.Sync.Api` (`http://localhost:5000`; responde 501).
+- Todos desde la raíz del repo: `global.json` se lee del directorio actual.
