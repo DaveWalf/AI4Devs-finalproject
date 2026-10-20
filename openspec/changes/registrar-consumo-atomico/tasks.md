@@ -4,7 +4,7 @@ Regla de todo el change: cada test nuevo se escribe primero, se corre y se ve fa
 
 ## 1. SDK, solución y andamio
 
-- [x] 1.1 Crear `global.json` (`sdk.version` `11.0.100-rc.2.26504.105`, `rollForward` `latestFeature`, `allowPrerelease` true), `Directory.Build.props` (`net11.0`, `Nullable` y `ImplicitUsings` activos) y `Directory.Packages.props` con las versiones exactas de D2; verificar con `dotnet --version` en la raíz, que imprime `11.0.100-rc.2.26504.105`
+- [x] 1.1 Crear `global.json` (`sdk.version` `11.0.100-rc.2.26504.105`, `rollForward` `latestFeature`, `allowPrerelease` true, y `"test": {"runner": "Microsoft.Testing.Platform"}` de D1), `Directory.Build.props` (`net11.0`, `Nullable` y `ImplicitUsings` activos) y `Directory.Packages.props` con las versiones exactas de D2; verificar con `dotnet --version` en la raíz, que imprime `11.0.100-rc.2.26504.105`
 - [x] 1.2 Crear `INComedor.sln` con `dotnet new sln --format sln` y los cuatro proyectos de D3 con sus referencias (Infrastructure.Sqlite → Domain; cada proyecto de pruebas → su proyecto de `src`), `InternalsVisibleTo` de Infrastructure.Sqlite hacia sus pruebas y un `.gitignore` para `bin/`, `obj/`, `TestResults/` y `*.db`; verificar con `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores) y `dotnet test INComedor.sln` (corre sin tests)
 - [x] 1.3 Actualizar la sección «Comandos» de `AGENTS.md`: quitar «(pendiente)» de build y test, ya vigentes; verificar que los dos comandos corren tal como quedan escritos
 

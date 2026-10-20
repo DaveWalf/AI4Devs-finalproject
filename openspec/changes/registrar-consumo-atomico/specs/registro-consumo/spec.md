@@ -97,7 +97,7 @@ Origen: AT05 (HU02-B).
 - **GIVEN** una intención cuya transacción hizo commit
 - **WHEN** el proceso cae antes de devolver el resultado y, al reabrir la base con una conexión nueva, se repite la intención
 - **THEN** el resultado tiene los mismos `DecisionId`, `ConsumptionId` y `TicketId` que quedaron guardados
-- **AND** existen un consumo, un comprobante y un solo trabajo de impresión, con copia 0 y todavía pendiente
+- **AND** existen un consumo, un comprobante y un solo trabajo de impresión, con copia 0 y en estado `QUEUED`
 
 #### Scenario: Recuperar no reconstruye el trabajo original
 Origen: AT05 y RB17.

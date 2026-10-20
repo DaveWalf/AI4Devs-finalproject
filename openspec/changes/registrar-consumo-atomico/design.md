@@ -24,7 +24,10 @@ Restricciones que vienen de antes: `Microsoft.Data.Sqlite` con SQL parametrizado
 
 `global.json` en la raíz con `sdk.version` `11.0.100-rc.2.26504.105`, `rollForward: latestFeature` y `allowPrerelease: true`; los proyectos apuntan a `net11.0`. D-C25 se agrega a `docs/decisiones.md` y enmienda la línea «Interfaz» de la selección técnica sin borrarla. La versión estable sale el 10/11/2026 y se adopta ese día, antes de la entrega final del 12/11, en una tarea aparte.
 
+`global.json` lleva además `"test": {"runner": "Microsoft.Testing.Platform"}`. `xunit.v3` corre sobre Microsoft.Testing.Platform y, desde el SDK 10, `dotnet test` exige ese opt-in: sin él falla con «Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later» (medido el 19/10). El paso a estable del 10/11 conserva el bloque.
+
 - **Descartada: SDK 10 LTS con `net10.0`.** Era lo documentado, pero la máquina ya no tiene SDK 10 y David decidió el 19/10 trabajar sobre .NET 11. Volver a 10 obliga a instalar un SDK que el resto del ecosistema local no usa.
+- **Descartada: `UseMicrosoftTestingPlatformRunner=false` en las propiedades de MSBuild.** Se probó el 19/10 y no resolvió el error; el SDK lee el runner de `global.json`.
 - **Descartada: SDK 11 con `net10.0`.** Compila, pero deja el runtime de destino en una versión que no es la elegida y suma una segunda línea de versiones que mantener sin beneficio para el corte.
 
 ### D2. Versiones de paquetes en un único `Directory.Packages.props`
@@ -52,7 +55,16 @@ Value objects con su invariante en el constructor: `FechaNegocio` (DateOnly), `C
 
 ### D5. Migración `0001` con las 20 tablas que la transacción usa
 
-`Migraciones/0001_transaccion_consumo.sql`, embebida como recurso. Escribe la transacción: intenciones, consumos, consumos conocidos, cargos de cupo conocidos, usos de cupo, comprobantes, trabajos de impresión, eventos de salida y bitácora; también actualiza `ConsumedByIntentId` en la sesión de identidad. Lee, y sus claves referencian: configuración de puestos, versiones de configuración, personas, credenciales, tipos de servicio, ámbitos y categorías de cupo, opciones de menú y sus cargas, reglas de habilitación y sesiones de identidad. Lleva todas las PK, FK compuestas y unicidades del diccionario, y `CHECK` para enums, `Units > 0`, `Used >= 0` y `Limit >= 0`.
+`Migraciones/0001_transaccion_consumo.sql`, embebida como recurso. Escribe la transacción: intenciones, consumos, consumos conocidos, cargos de cupo conocidos, usos de cupo, comprobantes, trabajos de impresión, eventos de salida y bitácora; también actualiza `ConsumedByIntentId` en la sesión de identidad. Lee, y sus claves referencian: configuración de puestos, versiones de configuración, personas, credenciales, tipos de servicio, ámbitos y categorías de cupo, opciones de menú y sus cargas, reglas de habilitación y sesiones de identidad. Lleva todas las PK, FK compuestas y unicidades del diccionario, y `CHECK` para los enums cuyos valores el diccionario enumera (modo de operación, política sin conexión, tipo de credencial, propósito de sesión, estado de intención, origen del consumo y tipo de evento), `Units > 0`, `Used >= 0` y `Limit >= 0`.
+
+Cuatro enums quedan sin `CHECK` porque el diccionario sólo dice «enum» y no lista sus valores. Este change fija los que usa; el `CHECK` se agrega cuando una lista cerrada se decida, en una migración posterior:
+
+| Columna | Valor | Origen y quién lo escribe |
+|---|---|---|
+| `comimpEstado` | `QUEUED` | Estado inicial de la copia 0; primer valor del `PrintState` del OpenAPI (`QUEUED`, `SUBMITTED`, `FAILED`, `UNKNOWN`). Lo escribe la transacción. |
+| `comevsEstado` | `PENDING` | Estado inicial del evento (D9); los demás los define el change del reenvío del outbox. Lo escribe la transacción. |
+| `comsidMetodo` | `CODE` | Identificación simulada por código. Sólo lo escribe el fixture; la transacción no lo lee. |
+| `comvcEstado` | `ACTIVE` | Snapshot vigente. Sólo lo escriben los fixtures; la transacción identifica el activo con `ActiveSnapshotId`. |
 
 Representación física: UUID como TEXT por parámetro `Guid` (la conversión por defecto del proveedor), instantes UTC como TEXT ISO 8601 con `Z`, fechas de negocio como TEXT `yyyy-MM-dd`, hashes como BLOB de 32 bytes y JSON como TEXT.
 
