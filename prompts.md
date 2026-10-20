@@ -204,18 +204,18 @@ La intervención ajustó especificación, contratos, responsabilidades y planifi
 
 ## Entrega 2
 
-Actualizado el 19/10/2026. Tras la devolución de LIDR de la entrega 1 (alcance excesivo), el autor aceptó el recorte (D-C24) y adoptó OpenSpec: cada avance es un change con proposal, design, tasks y, cuando cambia comportamiento, specs; el autor revisa el change antes de aplicarlo.
+Actualizado el 20/10/2026. Tras la devolución de LIDR de la entrega 1 (alcance excesivo), el autor aceptó el recorte (D-C24) y adoptó OpenSpec: cada avance es un change con proposal, design, tasks y, cuando cambia comportamiento, specs; el autor revisa el change antes de aplicarlo.
 
 ### IA en las seis fases
 
 | Fase | Herramienta y modelo | Evidencia |
 |---|---|---|
-| Análisis | Claude Code, `opus` (Opus 5.5), esfuerzo medium | Change `fijar-primer-corte`: la IA contrastó la devolución, el material del curso y el paquete; el autor decidió el recorte. Archivado en `openspec/changes/archive/` |
-| Diseño | Claude Code, `opus` | `proposal.md` y `design.md` de cada change, con la alternativa descartada de cada decisión |
-| Implementación | Claude Code con `/openspec-apply-change`, `sonnet` previsto para changes con código | Change `registrar-consumo-atomico` (TK03.1), en curso |
-| Pruebas | Claude Code, tests derivados de los escenarios de la spec y vistos fallar | Previsto: salida de `dotnet test` sobre SQLite real en el PR del change |
-| Despliegue | Claude Code, workflow de CI generado y revisado | Previsto: GitHub Actions con build y test en `windows-latest` |
-| Mantenimiento | `/openspec-verify-change` y `openspec validate --all --strict` antes de cada PR; `AGENTS.md` como contexto vivo | `AGENTS.md`, `openspec/config.yaml` y la plantilla de PR de este change |
+| Análisis | Claude Code, `opus` (Opus 5.5), esfuerzo medium | Change `fijar-primer-corte` (commit `36b20d8`): la IA contrastó la devolución, el material del curso y el paquete; el autor decidió el recorte. Archivado en `openspec/changes/archive/` |
+| Diseño | Claude Code, `opus` (Opus 5.5) | Proposal, specs, design y tasks de `registrar-consumo-atomico` (`644bfb3`, ajustado en `27f5709`) y de `conectar-puesto-y-receptor` (`b5ea3a0`), con la alternativa descartada de cada decisión. El autor los aprobó en el gate antes de cada apply |
+| Implementación | Claude Code con `/openspec-apply-change`, `sonnet` (Sonnet 5.5) | `registrar-consumo-atomico` (TK03.1), 26 de 26 tareas: `5dc9614`, `97d7717`, `a48bdcc`, `9f80550`. `conectar-puesto-y-receptor` (TK02.1 y TK01.1 como andamios), 15 de 15 tareas: `ea6e7d5`, `f7337e8`, `71f4f5d`. Los dos changes siguen sin archivar |
+| Pruebas | Claude Code, `sonnet`: cada test se escribió desde un escenario de la spec y se vio fallar antes de implementar | 61 pruebas en verde con `dotnet test INComedor.sln`: 21 de Domain, 27 de Infrastructure.Sqlite sobre un archivo SQLite real, 9 del Kiosk y 4 del receptor. Ensayo de caídas y concurrencia en `34e21d8`, código no filtrado en `256e87c` |
+| Despliegue | Claude Code, `sonnet`: workflow de CI generado y revisado | `.github/workflows/ci.yml` (`c122028`): restore, build y test en `windows-latest`. Todavía sin primera corrida: la rama no se publicó; no hay ejecución que mostrar |
+| Mantenimiento | `/openspec-verify-change` y `openspec validate --all --strict`; `AGENTS.md` como contexto vivo | `AGENTS.md` actualizado con los comandos de run y el gotcha del TFM (`7a57612`); `openspec validate --all --strict`: 2 de 2 válidos; salida de verify de cada change en el borrador de su PR. Los PR todavía no están abiertos |
 
 ### Prompt representativo: fijar el primer corte
 
@@ -226,3 +226,19 @@ Actualizado el 19/10/2026. Tras la devolución de LIDR de la entrega 1 (alcance 
 Resultado: la IA propuso cinco historias must (HU01.1, HU01.3, HU02.1, HU02.2 sin el escenario F y HU03.1) y una should (HU01.2 reducida al código), y marcó HU03.1 como la must más discutible. Presentó dos ajustes posibles: pasar HU03.1 a should o quitar la should.
 
 **Decisión del autor en la revisión del change:** «Aprobar tal cual». Con esa aprobación se aplicaron D-C24, el plan, el README, `AGENTS.md` y la plantilla de PR.
+
+### Prompt representativo: aplicar `registrar-consumo-atomico`
+
+**Resumen de la instrucción, no cita literal.** Sesión nueva (`/clear`) con `sonnet`, y `/openspec-apply-change registrar-consumo-atomico`. El paso pide cumplir las tareas por grupo y comitear cada grupo por rutas; escribir cada test antes de implementar, correrlo y verlo fallar por la razón esperada (si pasa sin cambios, romper la línea que lo sostiene, verlo fallar y restaurarla); no modificar un test que ya se vio en verde sin aprobación; leer completa la migración antes de aplicarla; y parar a preguntar sólo si nada avanza sin el autor.
+
+Resultado: solución .NET 11 con dominio de fecha de negocio y cupo, migración `0001`, unidad de trabajo con `BEGIN IMMEDIATE`, replay por `IntentId` y ensayos de caída y concurrencia; 48 pruebas en verde.
+
+**Ajustes humanos:** el autor leyó y aprobó la migración `0001` en la tarea 4.2. Aprobó además cambiar el `DisplayName` de una prueba ya vista en verde (escenario «Un rechazo tampoco lo registra»), porque la regla del proyecto prohíbe tocar un test sin su aprobación.
+
+### Prompt representativo: aplicar `conectar-puesto-y-receptor`
+
+**Resumen de la instrucción, no cita literal.** El mismo patrón: `/clear`, `sonnet` y `/openspec-apply-change conectar-puesto-y-receptor`. Pide mover los eventos de outbox a `Contracts` sin cambiar su JSON, crear el receptor `Sync.Api` que responde `501` sin leer el cuerpo y sin acusar, y el puesto `Kiosk` con una pantalla Razor de demostración sobre SQLite real. Pide revisar el receptor contra OWASP Top 10, no tocar los 48 tests existentes y correr la ventana de verdad antes de dar por cerrada la tarea 3.6.
+
+Resultado: cinco proyectos en `src/`, cuatro en `tests/` y 61 pruebas en verde; la ventana mostró `AUTHORIZED` en el primer toque y `LOCAL_LIMIT_REACHED` en el segundo.
+
+**Ajustes humanos:** el TFM `net11.0-windows` del diseño era incorrecto: al correr la ventana se cerraba al abrir (`Microsoft.Windows.SDK.NET`) y el proyecto de pruebas fallaba con NU1201. Lo detectó la corrida de la ventana, no el build ni las pruebas. El autor aprobó (20/10) corregirlo a `net11.0-windows10.0.17763.0` en `design.md` y propagarlo a `proposal.md` y a las tareas 3.1 y 3.2 (`10b04ab`).
