@@ -486,8 +486,24 @@ asigna cada AT a un único responsable.
 
 ## 7. Pull requests
 
-Las tres revisiones de código representativas se incorporarán durante las entregas
-de implementación, con sus enlaces y resultados. Esta primera entrega documenta el diseño.
+Cada PR corresponde a un change de OpenSpec, lleva la salida de `/openspec-verify-change`
+y el CI de `windows-latest` en verde. Están apilados: la base del segundo es la rama del
+primero, así cada diff muestra sólo su change. La entrega 1 documentó el diseño, sin código,
+en el [#1](https://github.com/DaveWalf/AI4Devs-finalproject/pull/1).
+
+**Pull Request 1:** [#2 · registrar-consumo-atomico (TK03.1)](https://github.com/DaveWalf/AI4Devs-finalproject/pull/2).
+Solución .NET 11, base SQLite con la migración `0001` y confirmación atómica con replay por
+`IntentId` (RB06, RB07, RB17); 48 pruebas. Incluye la corrección de fin de línea que destapó
+la primera corrida del CI ([roja](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40790002939),
+[verde](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40794862257)).
+
+**Pull Request 2:** [#3 · conectar-puesto-y-receptor (TK02.1, TK01.1)](https://github.com/DaveWalf/AI4Devs-finalproject/pull/3).
+Puesto Kiosk WPF con la pantalla Razor de demostración sobre SQLite, contrato de eventos en
+`Contracts` y receptor `Sync.Api` que responde `501`; 61 pruebas
+([CI](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40795276016)).
+
+**Pull Request 3:** llega con la entrega final, con `atender-seleccion-y-confirmacion` o
+`recibir-lotes-idempotente`.
 
 ## 8. Uso de IA y cobertura
 
