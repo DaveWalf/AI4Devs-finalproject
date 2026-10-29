@@ -1,6 +1,6 @@
 # Arquitectura de INComedor autónomo
 
-Diseño técnico del MVP académico. C#/.NET 10, WPF + Blazor Hybrid, Microsoft.Data.Sqlite para persistencia local y ASP.NET Core para el receptor de prueba.
+Diseño técnico del MVP académico. C#/.NET 11, WPF + Blazor Hybrid, Microsoft.Data.Sqlite para persistencia local y ASP.NET Core para el receptor de prueba.
 
 ## Responsabilidades
 
@@ -108,7 +108,7 @@ conservan y auditan, sin prometer exclusión global.
 
 | ID | Propuesta | Razón | Costo o condición |
 |---|---|---|---|
-| ADR01 | C#/.NET 10, WPF + Blazor Hybrid | Ecosistema C# y acceso Windows a periféricos, UI Razor. | WebView2 y ensayo táctil; WPF XAML como alternativa si el host no cumple. |
+| ADR01 | C#/.NET 11; pantallas sólo Razor en Blazor Hybrid, con WPF como ventana host del BlazorWebView | Ecosistema C# y acceso Windows a periféricos; una sola tecnología de vistas, Razor, la misma del portal INWeb (ASP.NET Core MVC/Razor). | WebView2 y ensayo táctil. WPF XAML queda como contingencia si el host no cumple, no como segunda tecnología de pantallas (D-C24). |
 | ADR02 | SQLite con Microsoft.Data.Sqlite local; SQL Server consolidado | SQL parametrizado y transacciones explícitas para las invariantes del puesto. | Migraciones SQL versionadas, backup y concurrencia; archivo independiente por equipo. |
 | ADR03 | REST/HTTPS para configuración y hechos | Contrato explícito, adaptador INWeb desacoplado. | API y permisos todavía por implementar. |
 | ADR04 | Commit local + outbox + deduplicación central | Integridad sin transacción distribuida ni servidor disponible. | Retener pendientes y tratar conflictos visibles. |

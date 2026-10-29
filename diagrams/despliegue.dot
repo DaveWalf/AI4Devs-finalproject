@@ -4,7 +4,7 @@ digraph Despliegue {
  edge [fontname="Arial", fontsize=11, color="#52667a"];
  subgraph cluster_kiosk {
   label="AIO / Windows 11 | cada puesto tiene identidad propia"; color="#85a9c8"; style=rounded;
-  ui [label="INComedor C# / .NET 10\nWPF + Blazor Hybrid / WebView2"];
+  ui [label="INComedor C# / .NET 11\nWPF + Blazor Hybrid / WebView2"];
   local [shape=cylinder,label="SQLite / Microsoft.Data.Sqlite\nArchivo exclusivo del puesto\nReglas, consumos, colas y auditoría",fillcolor="#d6eade"];
   files [shape=folder,label="Archivos locales AAAAMM\nGeneral + Interacciones\nACL y recuperación desde cola"];
   per [label="Adaptadores de prueba\nSerie, BioMini 1:N / 1:1 e impresora\nPeriféricos reales: homologación posterior"];

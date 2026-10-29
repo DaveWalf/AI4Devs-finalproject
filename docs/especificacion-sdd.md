@@ -60,7 +60,7 @@ El comportamiento de una terminal desconectada en ese escenario multi puesto es 
 | Precedencia de reglas | Entre aplicables vigentes, `Limit=0` deniega; positivas se ordenan por `Priority`; empate contradictorio impide publicación | Decisión técnica propuesta de esta base, no dato comercial aprobado |
 | Reimpresión | Permiso, motivo y copia numerada; conserva el consumo | Propuesta operativa a validar |
 | Credenciales y permisos locales | Snapshot atómico, códigos no reasignables, revocación recibida sin programación futura; dos roles sin herencia; autenticación biométrica o cuenta local de mantenimiento (§7.4) | ADR12; D-C20–D-C23 confirmadas |
-| Prioridad dentro de F01–F04 | Must acredita cada funcionalidad; should se difiere primero según la regla de recorte del plan | D-C19 |
+| Prioridad dentro de F01–F04 | Must acredita cada funcionalidad; should se difiere primero según la regla de recorte del plan. Desde el 18/10/2026 rige el primer corte: cinco must, una should y la segunda ola diseñada y no demostrada | D-C19, enmendada por D-C24 |
 
 Una falta de red no cambia por sí misma la vigencia de una política. Una política con vencimiento explícito sí debe evaluarse según ese vencimiento. El puesto no puede conocer una baja ocurrida mientras está aislado: debe informar la versión y fecha de última sincronización y aplicar el cambio al recibirlo, conservando los hechos previos.
 

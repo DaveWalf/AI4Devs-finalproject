@@ -1,0 +1,2 @@
+# ContratoEventosTests lee el OpenAPI buscando saltos LF: fijarlo para que un checkout en Windows no lo pase a CRLF.
+api/openapi.yaml text eol=lf

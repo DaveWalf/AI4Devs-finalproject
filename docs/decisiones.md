@@ -1,6 +1,6 @@
 # Decisiones de producto y arquitectura
 
-Versión documental: 1.1 · Fecha: 29/09/2026.
+Versión documental: 1.3 · Fecha: 19/10/2026.
 
 Este registro distingue decisiones del MVP académico y condiciones necesarias
 para una futura integración productiva. Los identificadores no se reutilizan:
@@ -24,14 +24,16 @@ D-C07 reservado, sin asignar.
 | D-C13 | Dos bitácoras completas, general e interacciones, externas a DB en texto plano mensual AAAAMM. | Archivos separados y correlacionados; auditoría transversal desde el MVP. |
 | D-C14 | Ante fallo del archivo, continuar con respaldo durable en SQLite y reconstruir señalando el intervalo degradado. | Cola recuperable por destino; si SQLite tampoco persiste, se impiden consumos nuevos. |
 | D-C15 | Tickets para terceros: sólo reglas del beneficiario, sin excepciones de cupo. | El privilegio de emisión conserva derechos/cupos; internos y externos requieren identidad y habilitación. |
-| D-C16 | Las cuatro funcionalidades F01–F04 son obligatorias para el MVP académico. | Identificación/selección, autorización/registro, comprobante/recuperación y sincronización/supervisión forman el compromiso completo de la entrega final. La secuencia está en el plan académico. |
+| D-C16 | Las cuatro funcionalidades F01–F04 son obligatorias para el MVP académico. | Identificación/selección, autorización/registro, comprobante/recuperación y sincronización/supervisión forman el compromiso completo de la entrega final. La secuencia está en el plan académico. **Alcance enmendado por D-C24:** F01–F04 conservan sus ID; F04 se reduce a la sincronización y la supervisión pasa a la segunda ola. |
 | D-C17 | Usar la hora de Windows y continuar operando ante saltos del reloj, registrándolos para auditoría. | El día de negocio usa la zona y el corte configurados. Se acepta el riesgo de fecha/cupo si la hora es incorrecta; no se aplica un piso temporal ni una suspensión adicional por reloj. Se conservan hechos originales y la política de conectividad D-A02. |
 | D-C18 | Adoptar la convención del ecosistema INWeb en persistencia y C#, con mapa explícito y contrato JSON vigente. | Perfil aprobado por el autor: tablas `tbComedor...`, columnas mnemónicas y dominio español; preservar UUID, claves compuestas y referencias externas. [Nomenclatura e integración](nomenclatura-integracion.md), ADR11, RNF15 y AT51; detalle físico en M0. |
-| D-C19 | Prioridad y capacidad confirmadas por David el 29/09/2026 en la conversación de decisiones. | Ambas políticas multipuesto y su cambio son must para la final. Sólo diagnóstico ampliado y escalas 125/150 % pueden diferirse. Capacidad: 6 h semanales hasta 22/10 y hasta 12/11; M0 objetivo 06/10. Las tallas siguen siendo estimaciones técnicas, no una viabilidad aprobada. Ver [plan académico](plan-academico.md#capacidad-y-reestimación). |
+| D-C19 | Prioridad y capacidad confirmadas por David el 29/09/2026 en la conversación de decisiones. | Ambas políticas multipuesto y su cambio son must para la final. Sólo diagnóstico ampliado y escalas 125/150 % pueden diferirse. Capacidad: 6 h semanales hasta 22/10 y hasta 12/11; M0 objetivo 06/10. Las tallas siguen siendo estimaciones técnicas, no una viabilidad aprobada. Ver [plan académico](plan-academico.md#capacidad-y-reestimación). **Enmendada por D-C24 el 18/10/2026:** la prioridad de esta fila deja de regir; la capacidad se conserva. |
 | D-C20 | Códigos no reasignables entre personas y sin revocaciones programadas a futuro, confirmado por David el 29/09/2026. | Conservar titularidad histórica; revocación efectiva al activar el snapshot que la comunica. Vencimientos previstos mediante ValidToUtc; demora offline aceptada. Ámbito y persistencia histórica por cerrar en M0. |
 | D-C21 | Dos roles sin herencia, confirmado por David el 29/09/2026. | OPERATOR reimprime con motivo; SYSTEM_ADMINISTRATOR configura, diagnostica y exporta. Una persona puede tener ambos; Soporte usa administrador en el MVP. |
 | D-C22 | Mantenimiento mediante usuario y contraseña individual local, confirmado por David el 29/09/2026. | Alternativa sin INWeb ni lector; misma autorización por acción, límites de intentos y auditoría. No habilita consumo ni reimpresión sin OPERATOR. Cuenta sintética en MVP; provisión, almacenamiento y recuperación se especifican en M0. |
 | D-C23 | Credencial todavía no vigente: IDENTITY_NOT_RESOLVED externo, confirmado por David el 29/09/2026. | Causa interna diferenciada de código desconocido, sin registrar el código en claro; no abre selección ni consumo. |
+| D-C24 | Primer corte, confirmado por David el 18/10/2026 tras la devolución de LIDR de la entrega 1 y aprobado el 19/10/2026 en el change `fijar-primer-corte`. Enmienda D-C19. | Es la versión que se presenta en la entrega 2 y la final. Un puesto, identificación simulada por código, selección, cupo y fecha de negocio, confirmación atómica RB06 con replay por IntentId, comprobante con reimpresión, outbox y receptor idempotente. Must: HU01.1, HU01.3, HU02.1, HU02.2 sin el escenario F y HU03.1; should: HU01.2 reducida al código (escenario J). Segunda ola, diseñada y no demostrada, que el producto sigue requiriendo: multipuesto (ambas políticas y feed), configuración por snapshot, administración y diagnóstico, bitácoras mensuales, cuenta de mantenimiento, biometría 1:N y 1:1 y auditoría de saltos del reloj. Ver [plan académico](plan-academico.md#prioridad-dentro-de-las-funcionalidades). |
+| D-C25 | SDK .NET 11, decisión de David del 19/10/2026 en el change `registrar-consumo-atomico`. Enmienda la línea «Interfaz» de la selección técnica. | `global.json` fija el SDK `11.0.100-rc.2.26504.105` y los proyectos apuntan a `net11.0`; los paquetes de Microsoft se fijan en su versión exacta de la familia `11.0.0-rc.2.*`. Pasa a la versión estable el 10/11/2026, antes de la entrega final del 12/11, en una tarea aparte que toca sólo `global.json` y `Directory.Packages.props`. Descartada: SDK 10 LTS con `net10.0`, era lo documentado pero la máquina de desarrollo ya no tiene SDK 10 y volver obliga a instalar uno que el resto del ecosistema local no usa. Descartada: SDK 11 con `net10.0`, compila pero deja el runtime de destino en una versión que no es la elegida y suma una segunda línea de versiones sin beneficio para el corte. |
 
 ## Condiciones del diseño académico
 
@@ -39,12 +41,12 @@ D-C07 reservado, sin asignar.
 |---|---|---|
 | D-A01 | Identificación académica y privacidad | David Walfisch / DW; cliente anonimizado y datos sintéticos, conforme a D-C09. |
 | D-A02 | Pérdida de conexión en multipuesto auditado | D-C10 establece continuidad local inicial y suspensión alternativa. La decisión local y los hechos confirmados se conservan. |
-| D-A03 | Repositorio académico | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject), rama `feature/entrega-1-DW`. |
+| D-A03 | Repositorio académico | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject), ramas `feature/entrega-1-DW` y `feature/entrega-2-DW`. |
 | D-A04 | Conjunto de prueba | ALMUERZO compartido entre variantes, corte 00:00, zona argentina y quince opciones de menú; valores sintéticos definidos en el plan de pruebas. |
 
 ## Selección técnica del MVP
 
-- **Interfaz:** WPF + Blazor Hybrid sobre C#/.NET 10, con WebView2.
+- **Interfaz:** pantallas Razor en Blazor Hybrid sobre C#/.NET 10, con WebView2; WPF es sólo la ventana host (ADR01). **Enmendada por D-C25:** el SDK pasa a .NET 11.
 - **Persistencia local:** SQLite con Microsoft.Data.Sqlite directo, SQL parametrizado
   y transacciones explícitas para controlar el registro atómico y la recuperación.
   Las operaciones se ejecutarán en una cola de trabajo fuera del hilo de interfaz.
