@@ -80,9 +80,16 @@ public sealed class UnidadConfirmacion
 
         // 5. Decide el dominio.
         var fecha = CalculadoraFechaNegocio.Calcular(ahora, puesto.ZonaHoraria.Id, puesto.InicioDiaNegocio);
-        var reglas = LeerReglasVigentes(conexion, transaccion, puesto, solicitud.PersonId, opcion.ServicioId, ahora);
-        var usos = LeerUsos(conexion, transaccion, solicitud.PersonId, fecha);
-        var decision = EvaluadorCupo.Evaluar(solicitud.PersonId, opcion.ServicioId, fecha, opcion.Cargas, reglas, usos);
+        var candidatas = LeerReglasCandidatas(conexion, transaccion, puesto, solicitud.PersonId, opcion.ServicioId);
+        var habilitacion = EvaluadorHabilitacion.Evaluar(
+            LeerPersonaActiva(conexion, transaccion, puesto, solicitud.PersonId),
+            LeerCredencialDeSesion(conexion, transaccion, puesto, solicitud.IdentitySessionId),
+            ahora, opcion.ServicioId, opcion.Cargas, candidatas);
+        var decision = habilitacion.Motivo is { } motivo
+            ? new DecisionCupo(false, motivo, [])
+            : EvaluadorCupo.Evaluar(
+                solicitud.PersonId, opcion.ServicioId, fecha, opcion.Cargas, habilitacion.Reglas,
+                LeerUsos(conexion, transaccion, solicitud.PersonId, fecha));
 
         // 6. Persistencia de la decisión según RB06.
         var resultado = decision.Autorizada
@@ -431,13 +438,40 @@ public sealed class UnidadConfirmacion
         return new OpcionMenu(leida.Version, leida.ServicioId, leida.Nombre, leida.Moneda, leida.Escala, leida.ImporteEmpleadoUnidadesMenores, cargas);
     }
 
-    private static List<ReglaPersona> LeerReglasVigentes(
-        SqliteConnection conexion, SqliteTransaction transaccion, Puesto puesto, Guid personaId, Guid servicioId, DateTimeOffset ahora)
+    private static bool LeerPersonaActiva(SqliteConnection conexion, SqliteTransaction transaccion, Puesto puesto, Guid personaId) =>
+        ComandosSqlite.EscalarLong(conexion, transaccion,
+            "SELECT comperActivo FROM tbComedorPersonas WHERE comvcCodigo = $vc AND comperCodigo = $per",
+            ("$vc", puesto.SnapshotId), ("$per", personaId)) == 1;
+
+    /// <summary>La credencial con la que se abrió la sesión; null si la sesión no lleva ninguna (demostración).</summary>
+    private static CredencialSesion? LeerCredencialDeSesion(
+        SqliteConnection conexion, SqliteTransaction transaccion, Puesto puesto, Guid sesionId)
     {
-        var reglas = new List<ReglaPersona>();
         using var comando = ComandosSqlite.Crear(conexion, transaccion,
             """
-            SELECT comregCodigo, comsrvCodigo, comacCodigo, comcatCodigo, comregLimite,
+            SELECT cre.comcreFechaVigenciaHastaUtc, cre.comcreFechaRevocacionUtc
+            FROM tbComedorSesionesIdentidad ses
+            JOIN tbComedorCredencialesPersonas cre ON cre.comvcCodigo = ses.comvcCodigo AND cre.comcreCodigo = ses.comcreCodigo
+            WHERE ses.comsidCodigo = $sid AND cre.comvcCodigo = $vc
+            """,
+            ("$sid", sesionId), ("$vc", puesto.SnapshotId));
+        using var lector = comando.ExecuteReader();
+        if (!lector.Read())
+        {
+            return null;
+        }
+
+        return new CredencialSesion(LeerInstanteOpcional(lector, 0), LeerInstanteOpcional(lector, 1));
+    }
+
+    /// <summary>Todas las reglas por persona del servicio, sin filtrar vigencia: RB02 se decide en el dominio.</summary>
+    private static List<ReglaCandidata> LeerReglasCandidatas(
+        SqliteConnection conexion, SqliteTransaction transaccion, Puesto puesto, Guid personaId, Guid servicioId)
+    {
+        var reglas = new List<ReglaCandidata>();
+        using var comando = ComandosSqlite.Crear(conexion, transaccion,
+            """
+            SELECT comregCodigo, comsrvCodigo, comacCodigo, comcatCodigo, comregLimite, comregPrioridad,
                    comregFechaVigenciaDesdeUtc, comregFechaVigenciaHastaUtc
             FROM tbComedorReglasHabilitacion
             WHERE comvcCodigo = $vc AND comperCodigo = $per AND comsrvCodigo = $srv
@@ -446,16 +480,16 @@ public sealed class UnidadConfirmacion
         using var lector = comando.ExecuteReader();
         while (lector.Read())
         {
-            var desde = lector.IsDBNull(5) ? (DateTimeOffset?)null : FormatoInstante.Leer(lector.GetString(5));
-            var hasta = lector.IsDBNull(6) ? (DateTimeOffset?)null : FormatoInstante.Leer(lector.GetString(6));
-            if ((desde is null || desde <= ahora) && (hasta is null || ahora < hasta))
-            {
-                reglas.Add(new ReglaPersona(lector.GetGuid(0), lector.GetGuid(1), lector.GetGuid(2), lector.GetGuid(3), lector.GetInt32(4)));
-            }
+            reglas.Add(new ReglaCandidata(
+                lector.GetGuid(0), lector.GetGuid(1), lector.GetGuid(2), lector.GetGuid(3), lector.GetInt32(4), lector.GetInt32(5),
+                LeerInstanteOpcional(lector, 6), LeerInstanteOpcional(lector, 7)));
         }
 
         return reglas;
     }
+
+    private static DateTimeOffset? LeerInstanteOpcional(SqliteDataReader lector, int columna) =>
+        lector.IsDBNull(columna) ? null : FormatoInstante.Leer(lector.GetString(columna));
 
     private static Dictionary<ClaveCupo, int> LeerUsos(
         SqliteConnection conexion, SqliteTransaction transaccion, Guid personaId, FechaNegocio fecha)
@@ -479,6 +513,10 @@ public sealed class UnidadConfirmacion
     {
         MotivoDenegacion.LocalLimitReached => "LOCAL_LIMIT_REACHED",
         MotivoDenegacion.ServiceNotEnabled => "SERVICE_NOT_ENABLED",
+        MotivoDenegacion.PersonInactive => "PERSON_INACTIVE",
+        MotivoDenegacion.CredentialRevoked => "CREDENTIAL_REVOKED",
+        MotivoDenegacion.CredentialExpired => "CREDENTIAL_EXPIRED",
+        MotivoDenegacion.RuleDenied => "RULE_DENIED",
         _ => throw new ArgumentOutOfRangeException(nameof(motivo), motivo, null),
     };
 
