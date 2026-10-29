@@ -25,9 +25,39 @@ Se aplica con `sonnet` · `medium` si David aprueba el design tal cual: es un pl
 
 ## 3. Verificación integrada
 
-- [ ] 3.1 Correr `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (61 más las nuevas, todas en verde) y `openspec validate --all --strict` (sin errores), y pegar las tres salidas
-- [ ] 3.2 Comprobar que cada uno de los 18 escenarios de los deltas tiene su prueba: listar con `rg -n "DisplayName" tests/Intelektron.INComedor.Domain.Tests/EvaluadorHabilitacionTests.cs tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/HabilitacionLocalTests.cs` y pegar la tabla escenario → prueba, sin huecos
-- [ ] 3.3 Correr el puesto de demostración (`dotnet run --project src/Intelektron.INComedor.Kiosk`, con la carpeta de demostración respaldada antes y restaurada después) y verificar que el primer toque sigue dando `AUTHORIZED` y el segundo `LOCAL_LIMIT_REACHED`; pegar los dos resultados
+- [x] 3.1 Correr `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (61 más las nuevas, todas en verde) y `openspec validate --all --strict` (sin errores), y pegar las tres salidas
+- [x] 3.2 Comprobar que cada uno de los 18 escenarios de los deltas tiene su prueba: listar con `rg -n "DisplayName" tests/Intelektron.INComedor.Domain.Tests/EvaluadorHabilitacionTests.cs tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/HabilitacionLocalTests.cs` y pegar la tabla escenario → prueba, sin huecos
+- [x] 3.3 Correr el puesto de demostración (`dotnet run --project src/Intelektron.INComedor.Kiosk`, con la carpeta de demostración respaldada antes y restaurada después) y verificar que el primer toque sigue dando `AUTHORIZED` y el segundo `LOCAL_LIMIT_REACHED`; pegar los dos resultados
+
+  Salida de 3.1: `dotnet build INComedor.sln -warnaserror`: `Compilación correcta. 0 Advertencia(s) 0 Errores`. `dotnet test INComedor.sln`: `total: 102, error: 0, correcto: 102, omitido: 0` (61 anteriores más 25 de dominio y 16 de SQLite). `openspec validate --all --strict`: `Totals: 5 passed, 0 failed (5 items)`, con `✓ change/evaluar-habilitacion-local`, `✓ spec/registro-consumo` y las demás.
+
+  Salida de 3.2, escenario → prueba (D = `Domain.Tests/EvaluadorHabilitacionTests.cs`, S = `Infrastructure.Sqlite.Tests/HabilitacionLocalTests.cs`; la línea es la del atributo `Fact`):
+
+  | # | Escenario del delta | Dominio (D) | SQLite (S) |
+  |---|---|---|---|
+  | 1 | Persona dada de baja con regla vigente y cupo libre | :43 | :63 |
+  | 2 | Credencial de la sesión revocada | :52 | :76 |
+  | 3 | Credencial de la sesión vencida en el instante de la decisión | :72 | :91 |
+  | 4 | Persona inactiva con una regla cero vigente | :88 | :102 |
+  | 5 | Sesión sin credencial | :96 | :113 |
+  | 6 | Regla con fecha de fin ya alcanzada | :106 | :126 |
+  | 7 | Inicio exacto de la vigencia | :122 | :136 |
+  | 8 | Regla sin vencimiento y un período prolongado sin red | :138 | :156 |
+  | 9 | Horario sólo informativo | :148 | :167 |
+  | 10 | Regla cero vigente frente a un permiso de mayor prioridad | :160 | :179 |
+  | 11 | En el fin exacto de la regla cero se evalúa el permiso | :172 | :191 |
+  | 12 | Una regla cero en una de dos categorías deniega la opción | :202 | :208 |
+  | 13 | Gana la de mayor prioridad | :227 | :227 |
+  | 14 | Empate contradictorio en la mayor prioridad | :246 | :241 |
+  | 15 | Empate sin contradicción | :263 | :258 |
+  | 16 | Variantes que comparten categoría cuentan juntas (`registro-consumo`, sin cambios) | `EvaluadorCupoTests.cs:47` | `DecisionNuevaTests.cs:83` |
+  | 17 | Otra categoría no consume el mismo cupo (`registro-consumo`, sin cambios) | `EvaluadorCupoTests.cs:59` | `DecisionNuevaTests.cs:96` |
+  | 18 | Persona sin regla aplicable (`registro-consumo`, sin cambios) | `EvaluadorCupoTests.cs:70` | `DecisionNuevaTests.cs:72` |
+
+  Sin huecos: 18 de 18. Los tres últimos ya tenían su prueba y siguen en verde con el requirement modificado.
+
+  Salida de 3.3: el Kiosk (`Intelektron.INComedor.Kiosk.exe` de `bin\Debug
+et11.0-windows10.0.17763.0`, PID 41736) se lanzó con la carpeta `%LOCALAPPDATA%\INComedor\demo\` inexistente (no había nada que respaldar). Dos toques sobre «Confirmar» enviados a la ventana web por mensajes de Windows y capturados con `PrintWindow`: el primero mostró `Decisión AUTHORIZED` con `Consumo 3806c7ae-555f-45ad-912a-548dd7ba6925` y `Comprobante b675648a-e2cc-47eb-8337-020d0514a07c`; el segundo, `Decisión DENIED` y `Motivo LOCAL_LIMIT_REACHED`. Se cerró por su PID y se borró la carpeta `demo`, que no existía antes (restaurada al estado inicial). Se usó el ejecutable ya compilado en lugar de `dotnet run` porque la ventana se maneja por su PID; es el mismo binario.
 
 ## 4. Tallas y evidencia
 
