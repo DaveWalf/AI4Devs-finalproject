@@ -4,12 +4,12 @@ Los chequeos de enlaces, del mapa y de `prompts.md` son los de design D8: corren
 
 ## 1. Mapa de prácticas y devolución
 
-- [ ] 1.1 Crear `docs/aplicacion-del-curso.md` con el título, «Cómo leerlo» (los tres estados de D4) y la convención de citas de D5 en una línea; verificar leyendo que los tres estados y la convención están escritos
-- [ ] 1.2 Agregar el mapa por área del catálogo (3.1 a 3.10) con las columnas `| Práctica | Lección | Estado | Evidencia o motivo |`: las 67 prácticas, cada una con el estado que muestra el repo hoy y las lecciones renumeradas según D5; verificar con el chequeo del mapa (D8) que da 67 filas o más y `defectuosas: 0`
-- [ ] 1.3 Agregar la tabla «Proyecto final» con las prácticas del curso v20261027 de D4, con las mismas columnas; verificar con el chequeo del mapa que el total sube en la cantidad de filas agregadas y sigue en `defectuosas: 0`
-- [ ] 1.4 Agregar «Lo que no se aplica» con los descartes del §7 del catálogo y su motivo, y comprobar que cada descarte tiene su fila `No aplica` en el mapa; verificar contando que cada descarte de la sección aparece como `No aplica` en alguna fila
-- [ ] 1.5 Agregar la tabla «La devolución pidió | Respuesta | Evidencia» con las diez filas del §5b del análisis, al día con el CI en verde y los PR #2 y #3; verificar leyendo que cada una de las diez filas tiene un enlace en la columna Evidencia
-- [ ] 1.6 Correr el chequeo del mapa sobre una copia con una fila `Aplicada` sin enlace y otra con un estado inventado (debe dar `SIN EVIDENCIA` y `ESTADO INVÁLIDO`), y después sobre el archivo real; correr también el chequeo de enlaces sobre `docs/aplicacion-del-curso.md`, con salida `enlaces rotos: 0`. Pegar las tres salidas
+- [x] 1.1 Crear `docs/aplicacion-del-curso.md` con el título, «Cómo leerlo» (los tres estados de D4) y la convención de citas de D5 en una línea; verificar leyendo que los tres estados y la convención están escritos
+- [x] 1.2 Agregar el mapa por área del catálogo (3.1 a 3.10) con las columnas `| Práctica | Lección | Estado | Evidencia o motivo |`: las 67 prácticas, cada una con el estado que muestra el repo hoy y las lecciones renumeradas según D5; verificar con el chequeo del mapa (D8) que da 67 filas o más y `defectuosas: 0`
+- [x] 1.3 Agregar la tabla «Proyecto final» con las prácticas del curso v20261027 de D4, con las mismas columnas; verificar con el chequeo del mapa que el total sube en la cantidad de filas agregadas y sigue en `defectuosas: 0`
+- [x] 1.4 Agregar «Lo que no se aplica» con los descartes del §7 del catálogo y su motivo, y comprobar que cada descarte tiene su fila `No aplica` en el mapa; verificar contando que cada descarte de la sección aparece como `No aplica` en alguna fila
+- [x] 1.5 Agregar la tabla «La devolución pidió | Respuesta | Evidencia» con las diez filas del §5b del análisis, al día con el CI en verde y los PR #2 y #3; verificar leyendo que cada una de las diez filas tiene un enlace en la columna Evidencia
+- [x] 1.6 Correr el chequeo del mapa sobre una copia con una fila `Aplicada` sin enlace y otra con un estado inventado (debe dar `SIN EVIDENCIA` y `ESTADO INVÁLIDO`), y después sobre el archivo real; correr también el chequeo de enlaces sobre `docs/aplicacion-del-curso.md`, con salida `enlaces rotos: 0`. Pegar las tres salidas
 
 ## 2. `prompts.md` con las cinco partes
 
