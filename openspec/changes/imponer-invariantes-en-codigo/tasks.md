@@ -77,7 +77,30 @@ Se aplica con `opus` · `medium`, porque toca configuración compartida (la CI y
   ruta: C:/AI/INComedor/INComedor-AI4DEVS/.claude/hooks/confirmar-edicion-de-test.ps1
   Test-Path: True
   ```
-- [ ] 2.2 David: abrir una sesión nueva de Claude Code en `C:\AI\INComedor` y pedirle que edite `tests/Intelektron.INComedor.Domain.Tests/ValueObjectsTests.cs`; verificar que aparece el pedido de confirmación con `[settings]` y el motivo del hook, rechazarlo y pegar el texto del pedido
+- [x] 2.2 David: abrir una sesión nueva de Claude Code en `C:\AI\INComedor` y pedirle que edite `tests/Intelektron.INComedor.Domain.Tests/ValueObjectsTests.cs`; verificar que aparece el pedido de confirmación con `[settings]` y el motivo del hook, rechazarlo y pegar el texto del pedido
+
+  Hecho por David el 29/10/2026, en una sesión nueva de Claude Code 2.1.312 abierta en `C:\AI\INComedor`, con dos intentos rechazados. La transcripción registra el primero en modo `auto` y el segundo en `acceptEdits`, un modo en el que una edición dentro de la carpeta de trabajo no pregunta. Los dos mostraron este pedido:
+
+  ```text
+  ● Update(INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs)
+   Edit file
+   INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs
+  // prueba del hook
+  using Intelektron.INComedor.Domain;
+   Do you want to make this edit to ValueObjectsTests.cs?
+   ❯ 1. Yes
+     2. No
+  ```
+
+  Diferencia con lo esperado: en esta versión el diálogo no muestra la etiqueta `[settings]` ni el motivo del hook, y la transcripción tampoco los guarda. El pedido sólo puede venir del puntero: el hook global de ediciones del usuario (`pretooluse-fuente-no-destino.ps1`) nunca devuelve `ask` y no hay reglas `ask` en la configuración. Para dejar el motivo literal, el mismo día se corrió desde `C:\AI\INComedor`, con el permiso de David, `claude -p "<editar ese test con Edit>" --model haiku --permission-mode acceptEdits --output-format json`:
+
+  ```text
+  permission_denials: [('Edit', 'C:\\AI\\INComedor\\INComedor-AI4DEVS\\tests\\Intelektron.INComedor.Domain.Tests\\ValueObjectsTests.cs')]
+  result: … La herramienta Edit devolvió este motivo, textual:
+  > Test existente: C:\AI\INComedor\INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs. AGENTS.md pide la aprobación explícita de David para modificarlo.
+  git status --short -- tests/
+  (vacío)
+  ```
 
 ## 3. CI: scripts, controles locales y workflow
 
