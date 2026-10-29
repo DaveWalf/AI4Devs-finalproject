@@ -13,11 +13,11 @@ Los chequeos de enlaces, del mapa y de `prompts.md` son los de design D8: corren
 
 ## 2. `prompts.md` con las cinco partes
 
-- [ ] 2.1 Pasar el contenido actual a «Anexo A. Registro de la entrega 1 (29/09/2026)» (líneas 8-203) y «Anexo B. Registro de la entrega 2 (20/10/2026)» (líneas 205-244), bajando cada encabezado un nivel, y agregar al pie de cada anexo la línea que remite a §1-§5; verificar con `git diff --word-diff HEAD -- prompts.md` que en los anexos sólo cambian los `#` de los encabezados y las dos líneas agregadas
-- [ ] 2.2 Escribir el párrafo inicial y «## 1. Herramientas por fase», con la tabla de las seis fases de L58:232 (Fase | Herramienta | Modelo | Evidencia) según D2; verificar leyendo que hay seis filas y que cada una tiene un enlace relativo a un archivo del repo
-- [ ] 2.3 Escribir «## 2. Modelos y para qué» y «## 3. Contexto avanzado» según D2, sin presentar los hooks como existentes; verificar con `rg -n "hook" prompts.md` que toda mención de hooks los da como pendientes de la acción 2
-- [ ] 2.4 Escribir «## 4. Prompts y workflows clave» con los cuatro workflows de D3, cada uno con herramienta y modelo, el prompt (extracto real o resumen rotulado), qué produjo, qué ajustó el humano y un enlace a evidencia; verificar que el chequeo de `prompts.md` (D8) da `workflows: 4`
-- [ ] 2.5 Escribir «## 5. Criterio humano» con los seis ajustes de D2, cada uno con su enlace, y un enlace a `docs/aplicacion-del-curso.md`; verificar que el chequeo de `prompts.md` lista los siete encabezados de D2 en orden y que el de enlaces da `enlaces rotos: 0`
+- [x] 2.1 Pasar el contenido actual a «Anexo A. Registro de la entrega 1 (29/09/2026)» (líneas 8-203) y «Anexo B. Registro de la entrega 2 (20/10/2026)» (líneas 205-244), bajando cada encabezado un nivel, y agregar al pie de cada anexo la línea que remite a §1-§5; verificar con `git diff --word-diff HEAD -- prompts.md` que en los anexos sólo cambian los `#` de los encabezados y las dos líneas agregadas
+- [x] 2.2 Escribir el párrafo inicial y «## 1. Herramientas por fase», con la tabla de las seis fases de L58:232 (Fase | Herramienta | Modelo | Evidencia) según D2; verificar leyendo que hay seis filas y que cada una tiene un enlace relativo a un archivo del repo
+- [x] 2.3 Escribir «## 2. Modelos y para qué» y «## 3. Contexto avanzado» según D2, sin presentar los hooks como existentes; verificar con `rg -n "hook" prompts.md` que toda mención de hooks los da como pendientes de la acción 2
+- [x] 2.4 Escribir «## 4. Prompts y workflows clave» con los cuatro workflows de D3, cada uno con herramienta y modelo, el prompt (extracto real o resumen rotulado), qué produjo, qué ajustó el humano y un enlace a evidencia; verificar que el chequeo de `prompts.md` (D8) da `workflows: 4`
+- [x] 2.5 Escribir «## 5. Criterio humano» con los seis ajustes de D2, cada uno con su enlace, y un enlace a `docs/aplicacion-del-curso.md`; verificar que el chequeo de `prompts.md` lista los siete encabezados de D2 en orden y que el de enlaces da `enlaces rotos: 0`
 
 ## 3. Cobertura de la entrega final
 

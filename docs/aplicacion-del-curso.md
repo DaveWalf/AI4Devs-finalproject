@@ -130,7 +130,7 @@ Las citas siguen la numeración del curso v20261027, la vigente: `L58:232` es la
 
 | Práctica | Lección | Estado | Evidencia o motivo |
 |---|---|---|---|
-| `prompts.md` con herramienta y modelo por fase, prompts clave y ajustes humanos | lección 58 (L58:137-145) | Aplicada | [`prompts.md`](../prompts.md): las seis fases con herramienta, modelo y evidencia, y los prompts de cada change con sus ajustes humanos. La forma de las cinco partes de L58 es de la tabla «Proyecto final». |
+| `prompts.md` con herramienta y modelo por fase, prompts clave y ajustes humanos | lección 58 (L58:137-145) | Aplicada | [`prompts.md`](../prompts.md): las seis fases con herramienta, modelo y evidencia, y los prompts de cada change con sus ajustes humanos. La forma de las cinco partes de L58 está en la tabla «Proyecto final». |
 | Carpeta de evidencias: salidas de `validate`, de `dotnet test` y del CI enlazadas desde cada PR | sesión 13 | Aplicada | Las salidas están en la descripción de los PR [#2](https://github.com/DaveWalf/AI4Devs-finalproject/pull/2) y [#3](https://github.com/DaveWalf/AI4Devs-finalproject/pull/3), con la [corrida del CI](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40794862257) de la rama del primer change; la [plantilla](../.github/pull_request_template.md) las pide. |
 
 ### Proyecto final
@@ -140,7 +140,7 @@ Prácticas que agregó el curso v20261027 después del catálogo del 18/10.
 | Práctica | Lección | Estado | Evidencia o motivo |
 |---|---|---|---|
 | IA en al menos 4 de las 6 fases del ciclo | lección 58 (L58:232) | Aplicada | [`prompts.md`](../prompts.md) documenta las seis, cada una con herramienta, modelo y evidencia del repo. |
-| `prompts.md` con las cinco partes: herramientas por fase, modelos, contexto avanzado, entre 3 y 5 workflows clave y criterio humano | lección 58 (L58:137-145) | Pendiente | `mostrar-aplicacion-del-curso`, grupo 2: reestructura `prompts.md` y pasa la historia de las entregas 1 y 2 a dos anexos. |
+| `prompts.md` con las cinco partes: herramientas por fase, modelos, contexto avanzado, entre 3 y 5 workflows clave y criterio humano | lección 58 (L58:137-145) | Aplicada | [`prompts.md`](../prompts.md): herramientas por fase, modelos y para qué, contexto avanzado, cuatro workflows clave y criterio humano, en ese orden; la historia de las entregas 1 y 2 quedó en dos anexos. |
 | Al menos un E2E del flujo principal | lección 58 (L58:90-107) | Pendiente | Acción 3. |
 | Evidencia de funcionamiento: URL, video de 2 a 3 minutos o repo con credenciales de prueba | lección 58 (L58:111-117) | Pendiente | Acción 3: Release con el EXE y video. |
 | README para revisar en local, con `.env.example` y `docker-compose` si aplican, y credenciales de prueba listadas | lección 58 (L58:121-125) | Pendiente | Acción 3: «Cómo revisar», con los códigos de prueba, quién reimprime y la línea que diga que ni `.env.example` ni `docker-compose` hacen falta. |
@@ -149,7 +149,7 @@ Prácticas que agregó el curso v20261027 después del catálogo del 18/10.
 | GitHub Issues para historias y tickets, con «Closes #n» | lección 59 (L59:108) | Pendiente | Backlog posterior a la acción 3. Activar Issues en el fork se ve desde afuera y lo decide el autor. Hoy los tickets viven en [`historias-y-tickets.md`](historias-y-tickets.md). |
 | Barreras automáticas de seguridad en la CI | lecciones 138 y 140 | Pendiente | Acción 2: paquetes vulnerables y escaneo de secretos. Hoy hay una revisión OWASP manual del receptor y una casilla en la [plantilla de PR](../.github/pull_request_template.md). |
 | La CI crece de a poco | sesión 15 | Aplicada | Primer escalón en verde, con restore, build y test: [`ci.yml`](../.github/workflows/ci.yml) y la [corrida 40802117357](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40802117357). |
-| ¿Un agente, varios o un flujo? | sesión 16 (L59:144) | Pendiente | `mostrar-aplicacion-del-curso`, grupo 2: dejar escrita en `prompts.md` la decisión de un agente por fase con gates humanos y sin orquestador. |
+| ¿Un agente, varios o un flujo? | sesión 16 (L59:144) | Aplicada | Un agente por fase, con gates humanos y sin orquestador, y por qué: [`prompts.md`](../prompts.md), sección «Contexto avanzado». |
 | Producto con LLM | sesión 14 | No aplica | El producto no llama a ningún modelo; las decisiones de consumo son reglas deterministas (RB06, cupo, fecha de negocio). La IA está en el proceso, no en el producto. |
 | Laboratorios de RAG y frameworks de agentes | lecciones 116 a 120 y 151 | No aplica | El producto no usa LLM: no hay recuperación aumentada ni agentes dentro de INComedor. |
 | Adopción de IA en el equipo | lección 164 | No aplica | El equipo es una persona. |
