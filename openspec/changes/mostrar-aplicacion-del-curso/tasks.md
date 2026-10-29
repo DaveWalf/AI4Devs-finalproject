@@ -31,10 +31,10 @@ Los chequeos de enlaces, del mapa y de `prompts.md` son los de design D8: corren
 
 ## 5. Verificación integrada
 
-- [ ] 5.1 Correr el chequeo de enlaces sobre `prompts.md`, `readme.md`, `docs/aplicacion-del-curso.md` y `docs/cobertura-entrega.md` juntos; salida `enlaces rotos: 0`
-- [ ] 5.2 Correr `openspec validate --all --strict` y `openspec status --change mostrar-aplicacion-del-curso`; las dos sin errores
-- [ ] 5.3 Aplicar a este change su propia regla: agregar en el mapa la evidencia de este change (la fila de `prompts.md` de la tabla «Proyecto final» enlaza este change) y volver a correr el chequeo del mapa, con `defectuosas: 0`
-- [ ] 5.4 Correr `git status --short` y comprobar que sólo aparecen `prompts.md`, `readme.md`, `docs/aplicacion-del-curso.md`, `docs/cobertura-entrega.md`, `openspec/config.yaml` y el `tasks.md` de este change, y que no aparece `devoluciones de AI4DEVS/`
+- [x] 5.1 Correr el chequeo de enlaces sobre `prompts.md`, `readme.md`, `docs/aplicacion-del-curso.md` y `docs/cobertura-entrega.md` juntos; salida `enlaces rotos: 0`
+- [x] 5.2 Correr `openspec validate --all --strict` y `openspec status --change mostrar-aplicacion-del-curso`; las dos sin errores
+- [x] 5.3 Aplicar a este change su propia regla: agregar en el mapa la evidencia de este change (la fila de `prompts.md` de la tabla «Proyecto final» enlaza este change) y volver a correr el chequeo del mapa, con `defectuosas: 0`
+- [x] 5.4 Correr `git status --short` y comprobar que sólo aparecen `prompts.md`, `readme.md`, `docs/aplicacion-del-curso.md`, `docs/cobertura-entrega.md`, `openspec/config.yaml` y el `tasks.md` de este change, y que no aparece `devoluciones de AI4DEVS/`
 
 ## Workflow follow-up
 
