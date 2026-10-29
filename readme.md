@@ -10,10 +10,10 @@ con la política inicial. En multipuesto auditado puede configurarse suspensión
 de nuevas confirmaciones durante la pérdida de comunicación. INWeb distribuye
 información y consolida los hechos cuando se recupera la conexión.
 
-**Estado:** entrega 2 en curso (vence el 22/10). Hay un puesto de demostración que confirma
+**Estado:** entrega 2 presentada el 29/10; entrega final en curso. Hay un puesto de demostración que confirma
 sobre SQLite con la transacción de RB06, un receptor de lotes esqueleto que responde 501 y 61
 pruebas en verde (ver §2.6); la atención completa del puesto y la ingesta idempotente del receptor
-son de las siguientes entregas. El resto del documento describe el diseño del producto. La
+son de la entrega final. El resto del documento describe el diseño del producto. La
 demostración usa datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
 
 ## Índice
@@ -227,6 +227,7 @@ docs/
   pruebas.md                    plan de pruebas por nivel
   decisiones.md                 decisiones del autor y condiciones del diseño
   cobertura-entrega.md          relación entre la consigna y cada artefacto
+  aplicacion-del-curso.md       prácticas del curso, su evidencia y la respuesta a la devolución
 api/openapi.yaml                contrato de las tres operaciones de sincronización
 diagrams/                       fuentes .dot y .mmd editables y sus SVG
 ```
@@ -507,10 +508,14 @@ Puesto Kiosk WPF con la pantalla Razor de demostración sobre SQLite, contrato d
 
 ## 8. Uso de IA y cobertura
 
-[Registro de IA](prompts.md): herramientas, modelos, subagentes, prompts
-representativos y correcciones humanas que determinaron el diseño.
+[Registro de IA](prompts.md), en las cinco partes que pide el curso: herramientas por fase,
+modelos y para qué, contexto avanzado, workflows clave y criterio humano. La IA está en el
+proceso y no en el producto.
 
-[Cobertura de E1](docs/cobertura-entrega.md): relación entre la consigna y cada
-artefacto. [Plan académico](docs/plan-academico.md): prioridades, secuencia y
-evidencia prevista para las siguientes entregas.
+[Aplicación del curso](docs/aplicacion-del-curso.md): cada práctica del curso con su evidencia
+en el repo, o lo que falta, o por qué no aplica, y la respuesta a la devolución de la entrega 1.
+
+[Cobertura de la entrega final](docs/cobertura-entrega.md): cada requisito de la final y de la
+plantilla, con su evidencia o con lo que falta. [Plan académico](docs/plan-academico.md):
+prioridades, secuencia y evidencia prevista para las siguientes entregas.
 [Especificación SDD](docs/especificacion-sdd.md): requisitos, reglas y aceptación.

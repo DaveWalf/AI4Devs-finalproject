@@ -26,8 +26,8 @@ Los chequeos de enlaces, del mapa y de `prompts.md` son los de design D8: corren
 
 ## 4. README y regla de evidencia
 
-- [ ] 4.1 Aplicar las tres ediciones de D9 en `readme.md` (estado, árbol y enlaces de documentación); verificar que `rg -n "vence el 22/10|Cobertura de E1" readme.md` no encuentra nada y que el chequeo de enlaces sobre `readme.md` da `enlaces rotos: 0`
-- [ ] 4.2 Agregar a `rules.tasks` de `openspec/config.yaml` la regla de D7, textual; verificar que `openspec instructions tasks --change mostrar-aplicacion-del-curso --json` la devuelve en `rules` y que `openspec validate --all --strict` no da errores
+- [x] 4.1 Aplicar las tres ediciones de D9 en `readme.md` (estado, árbol y enlaces de documentación); verificar que `rg -n "vence el 22/10|Cobertura de E1" readme.md` no encuentra nada y que el chequeo de enlaces sobre `readme.md` da `enlaces rotos: 0`
+- [x] 4.2 Agregar a `rules.tasks` de `openspec/config.yaml` la regla de D7, textual; verificar que `openspec instructions tasks --change mostrar-aplicacion-del-curso --json` la devuelve en `rules` y que `openspec validate --all --strict` no da errores
 
 ## 5. Verificación integrada
 
