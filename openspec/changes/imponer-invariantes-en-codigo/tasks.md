@@ -152,15 +152,20 @@ Se aplica con `opus` · `medium`, porque toca configuración compartida (la CI y
   exit=0
   ```
 
-- [ ] 3.5 Pedirle permiso a David para bajar `actionlint` 1.7.12 al scratchpad, verificado con el SHA-256 de su `checksums.txt`, y correrlo con `-shellcheck= -pyflakes=` sobre `ci.yml`: debe salir sin hallazgos. Si David no lo autoriza, anotar en la tarea que no corrió y por qué
+- [x] 3.5 Pedirle permiso a David para bajar `actionlint` 1.7.12 al scratchpad, verificado con el SHA-256 de su `checksums.txt`, y correrlo con `-shellcheck= -pyflakes=` sobre `ci.yml`: debe salir sin hallazgos. Si David no lo autoriza, anotar en la tarea que no corrió y por qué
 
-  No corrió. David lo autorizó el 29/10 (decisión 3 del plan del goal). La descarga y el hash pasaron: `actionlint_1.7.12_windows_amd64.zip`, `6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9` en `checksums.txt` y en `sha256sum`. Ejecutarlo lo denegó el clasificador de auto mode de Claude Code, y no se reintentó por otra vía:
+  David lo autorizó el 29/10 (decisión 3 del plan del goal). La descarga y el hash pasaron: `actionlint_1.7.12_windows_amd64.zip`, `6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9` en `checksums.txt` y en `sha256sum`. En la sesión del goal, ejecutarlo lo denegó el clasificador de auto mode de Claude Code, y no se reintentó por otra vía:
 
   ```text
   Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Code from External].
   ```
 
-  Queda para David: correrlo él desde la raíz del repo, con el binario verificado.
+  Ese mismo día lo corrió David desde la raíz del repo, con el binario verificado, y salió sin hallazgos:
+
+  ```text
+  $ actionlint.exe -shellcheck= -pyflakes= .github/workflows/ci.yml; echo "exit=$?"
+  exit=0
+  ```
 
 - [x] 3.6 Correr `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (61 de 61) y `openspec validate --all --strict` (sin errores), pegar las tres salidas y hacer el commit por rutas de `ci.yml` y los dos scripts
 
