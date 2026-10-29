@@ -198,15 +198,87 @@ Se aplica con `opus` · `medium`, porque toca configuración compartida (la CI y
 
 ## 5. Corrida real de la CI
 
-- [ ] 5.1 David: empujar la rama de trabajo que elija dentro de `feature/**` (ver el riesgo «Empujar la rama de trabajo» del design); verificar con `gh run view <id>` que `build-test`, `specs` y `secretos` terminan en verde y que el log muestra `proyectos auditados: 9 de 9`, `Totals: … passed, 0 failed` y `commits escaneados: N · esperados: N`. Pegar el resumen y el enlace de la corrida
-- [ ] 5.2 Preparar en local la rama `feature/control-ci-rojo` desde la rama de trabajo, con el commit de D9 (el spec sin escenarios y `Newtonsoft.Json.Bson` por los dos `Directory.*.props`), sin push; verificar con `git show --stat HEAD` que sólo cambian `openspec/specs/sincronizacion-lotes/spec.md`, `Directory.Packages.props` y `Directory.Build.props`
-- [ ] 5.3 David: empujar `feature/control-ci-rojo`; verificar con `gh run view <id>` que `specs` falla en «openspec validate», que `build-test` falla en «Dependencias vulnerables» con Build y Test salteados y que `secretos` queda en verde. Pegar el resumen y el enlace. Después David borra la rama remota y el agente la local; verificar que `git ls-remote --heads origin feature/control-ci-rojo` no devuelve nada y que `git branch --list feature/control-ci-rojo` sale vacío
+- [x] 5.1 David: empujar la rama de trabajo que elija dentro de `feature/**` (ver el riesgo «Empujar la rama de trabajo» del design); verificar con `gh run view <id>` que `build-test`, `specs` y `secretos` terminan en verde y que el log muestra `proyectos auditados: 9 de 9`, `Totals: … passed, 0 failed` y `commits escaneados: N · esperados: N`. Pegar el resumen y el enlace de la corrida
+
+  David eligió el 29/10 una rama nueva, `feature/invariantes-dw` desde `ff6b41f`, y autorizó que la empujara el goal: `feature/entrega-2-DW`, la del Typeform, no se movió. Push de `ef90dc6`; corrida [40953247197](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40953247197):
+
+  ```text
+  ✓ feature/invariantes-dw CI · 40953247197
+  ✓ build-test in 1m44s
+  ✓ secretos in 6s
+  ✓ specs in 8s
+  build-test | Dependencias vulnerables | proyectos auditados: 9 de 9 · paquetes vulnerables: 0
+  build-test | Test | Test run summary: Passed!  total: 61  failed: 0  succeeded: 61
+  secretos | Instalar gitleaks | /home/runner/work/_temp/gitleaks.tar.gz: OK
+  secretos | Secretos | commits escaneados: 39 · esperados: 39 · exit de gitleaks: 0
+  specs | openspec validate | Totals: 4 passed, 0 failed (4 items)
+  ```
+
+- [x] 5.2 Preparar en local la rama `feature/control-ci-rojo` desde la rama de trabajo, con el commit de D9 (el spec sin escenarios y `Newtonsoft.Json.Bson` por los dos `Directory.*.props`), sin push; verificar con `git show --stat HEAD` que sólo cambian `openspec/specs/sincronizacion-lotes/spec.md`, `Directory.Packages.props` y `Directory.Build.props`
+
+  ```text
+  8642c95 control: CI en rojo a propósito (imponer-invariantes-en-codigo, tarea 5.2; rama descartable)
+   Directory.Build.props                       |  3 +++
+   Directory.Packages.props                    |  1 +
+   openspec/specs/sincronizacion-lotes/spec.md | 25 -------------------------
+   3 files changed, 4 insertions(+), 25 deletions(-)
+  ```
+
+- [x] 5.3 David: empujar `feature/control-ci-rojo`; verificar con `gh run view <id>` que `specs` falla en «openspec validate», que `build-test` falla en «Dependencias vulnerables» con Build y Test salteados y que `secretos` queda en verde. Pegar el resumen y el enlace. Después David borra la rama remota y el agente la local; verificar que `git ls-remote --heads origin feature/control-ci-rojo` no devuelve nada y que `git branch --list feature/control-ci-rojo` sale vacío
+
+  Empujada y borrada por el goal, con la autorización de David del 29/10. Corrida [40953621473](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40953621473):
+
+  ```text
+  X feature/control-ci-rojo CI · 40953621473
+  specs: failure | … Instalar OpenSpec=success, openspec validate=failure
+  secretos: success | … Instalar gitleaks=success, Secretos=success
+  build-test: failure | … Restore=success, Dependencias vulnerables=failure, Build=skipped, Test=skipped
+  specs | openspec validate |   ✗ [ERROR] requirements.0.scenarios: Requirement must have at least one scenario
+  specs | openspec validate | Totals: 3 passed, 1 failed (4 items)
+  build-test | Dependencias vulnerables | proyectos auditados: 9 de 9 · paquetes vulnerables: 9
+  secretos | Secretos | commits escaneados: 40 · esperados: 40 · exit de gitleaks: 0
+  $ git push origin --delete feature/control-ci-rojo
+   - [deleted]         feature/control-ci-rojo
+  $ git branch -D feature/control-ci-rojo
+  Deleted branch feature/control-ci-rojo (was 8642c95).
+  $ git ls-remote --heads origin feature/control-ci-rojo
+  (vacío)
+  $ git branch --list feature/control-ci-rojo
+  (vacío)
+  ```
+
+  Las líneas `::error::` del script no aparecen en el log: GitHub las convierte en anotaciones de la corrida.
 
 ## 6. Evidencia
 
-- [ ] 6.1 Actualizar en `docs/aplicacion-del-curso.md` las ocho filas de D10, partir la de secretos en dos, poner al día «Actualizado el …» y la frase de «Cómo leerlo» sobre la acción 2. Cada `Aplicada` nueva enlaza su archivo del repo y, cuando corresponde, la corrida de 5.1 o la de 5.3. Verificar con el chequeo del mapa (D11), con `defectuosas: 0`, y con `rg -n "acción 2" docs/aplicacion-del-curso.md`, que no debe devolver ninguna mención en futuro
-- [ ] 6.2 Reescribir en `prompts.md` la entrada «Hooks» de §3 y agregar a §5 el ajuste humano de D10, cada uno con su enlace; verificar con `rg -n -i "hook" prompts.md` que ninguna mención los da como pendientes
-- [ ] 6.3 Verificación integrada: el chequeo de enlaces relativos sobre `docs/aplicacion-del-curso.md`, `prompts.md` y `AGENTS.md` (`enlaces rotos: 0`), `openspec validate --all --strict` sin errores y `git status --short`, en el que sólo aparecen los dos documentos y el `tasks.md` de este change, y no aparece `devoluciones de AI4DEVS/`. Pegar las tres salidas y hacer el commit por rutas
+- [x] 6.1 Actualizar en `docs/aplicacion-del-curso.md` las ocho filas de D10, partir la de secretos en dos, poner al día «Actualizado el …» y la frase de «Cómo leerlo» sobre la acción 2. Cada `Aplicada` nueva enlaza su archivo del repo y, cuando corresponde, la corrida de 5.1 o la de 5.3. Verificar con el chequeo del mapa (D11), con `defectuosas: 0`, y con `rg -n "acción 2" docs/aplicacion-del-curso.md`, que no debe devolver ninguna mención en futuro
+
+  «Actualizado el 29/10/2026» ya decía la fecha del día y queda igual. Las dos menciones que quedan están en pasado: «Desde la acción 2, el job `specs` … la corre» (fila «Validar con `--strict`») y «El segundo escalón, de la acción 2, sumó …» (fila «Crecer por escalones»).
+
+  ```text
+  filas del mapa: 82 · defectuosas: 0
+  rg -n "acción 2" docs/aplicacion-del-curso.md
+  43:| Validar con `--strict` … Desde la acción 2, el job `specs` de [`ci.yml`](…) la corre en cada push y en cada PR ([corrida 40953247197](…)). |
+  114:| Crecer por escalones y pedir el mínimo a la IA | sesión 15 | Aplicada | … El segundo escalón, de la acción 2, sumó specs, dependencias vulnerables y secretos: … |
+  ```
+
+- [x] 6.2 Reescribir en `prompts.md` la entrada «Hooks» de §3 y agregar a §5 el ajuste humano de D10, cada uno con su enlace; verificar con `rg -n -i "hook" prompts.md` que ninguna mención los da como pendientes
+
+  ```text
+  41:- **Hooks.** Un hook `PreToolUse` de Claude Code, versionado en [`.claude/settings.json`](.claude/settings.json), corre [`confirmar-edicion-de-test.ps1`](…) antes de cada Edit~
+  107:7. **Las barreras de la acción 2.** Sobre la propuesta de la IA, el autor decidió el 29/10 cuatro cosas: …
+  ```
+
+- [x] 6.3 Verificación integrada: el chequeo de enlaces relativos sobre `docs/aplicacion-del-curso.md`, `prompts.md` y `AGENTS.md` (`enlaces rotos: 0`), `openspec validate --all --strict` sin errores y `git status --short`, en el que sólo aparecen los dos documentos y el `tasks.md` de este change, y no aparece `devoluciones de AI4DEVS/`. Pegar las tres salidas y hacer el commit por rutas
+
+  ```text
+  enlaces rotos: 0
+  Totals: 4 passed, 0 failed (4 items)
+  validate exit=0
+   M docs/aplicacion-del-curso.md
+   M openspec/changes/imponer-invariantes-en-codigo/tasks.md
+   M prompts.md
+  ```
 
 ## Workflow follow-up
 
