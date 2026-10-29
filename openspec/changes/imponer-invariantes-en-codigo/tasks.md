@@ -4,14 +4,79 @@ Se aplica con `opus` · `medium`, porque toca configuración compartida (la CI y
 
 ## 1. Hook en el repo
 
-- [ ] 1.1 Crear `.claude/hooks/confirmar-edicion-de-test.ps1` con el texto de design D6, en UTF-8 con BOM; verificar con el chequeo de BOM de D11, que debe imprimir `EF BB BF`
-- [ ] 1.2 Crear `.claude/settings.json` con el JSON de D6; verificar con `pwsh -NoProfile -Command "(Get-Content .claude/settings.json -Raw | ConvertFrom-Json).hooks.PreToolUse.matcher"`, que debe imprimir `Edit|Write|MultiEdit|NotebookEdit`
-- [ ] 1.3 Correr el probador de D11 sobre el repo con `powershell.exe` y con `pwsh`; verificar que las siete líneas dan lo esperado en los dos motores (tres `ask`, cuatro sin salida, «aprobación» bien escrito) y pegar las catorce
-- [ ] 1.4 Commit por rutas de los dos archivos. Después, en un clon descartable de ese commit, correr las ediciones reales A, B, C y D de D11 con `claude -p`; verificar que A da una denegación con el motivo del hook y el test intacto, que B y C pasan y que D pasa sin el hook, y pegar `permission_denials` y `git status --short` de cada una
+- [x] 1.1 Crear `.claude/hooks/confirmar-edicion-de-test.ps1` con el texto de design D6, en UTF-8 con BOM; verificar con el chequeo de BOM de D11, que debe imprimir `EF BB BF`
+
+  ```text
+  EF BB BF
+  ```
+
+- [x] 1.2 Crear `.claude/settings.json` con el JSON de D6; verificar con `pwsh -NoProfile -Command "(Get-Content .claude/settings.json -Raw | ConvertFrom-Json).hooks.PreToolUse.matcher"`, que debe imprimir `Edit|Write|MultiEdit|NotebookEdit`
+
+  ```text
+  Edit|Write|MultiEdit|NotebookEdit
+  ```
+
+- [x] 1.3 Correr el probador de D11 sobre el repo con `powershell.exe` y con `pwsh`; verificar que las siete líneas dan lo esperado en los dos motores (tres `ask`, cuatro sin salida, «aprobación» bien escrito) y pegar las catorce
+
+  ```text
+  --- powershell.exe
+  Edit de test existente      exit=0  ask | Test existente: C:\AI\INComedor\INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs. AGENTS.md pide la aprobación explícita de David para modificarlo.
+  Write de test nuevo         exit=0  (sin salida: sigue el flujo normal)
+  Write sobre test existente  exit=0  ask | Test existente: C:\AI\INComedor\INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs. AGENTS.md pide la aprobación explícita de David para modificarlo.
+  Edit fuera de tests         exit=0  (sin salida: sigue el flujo normal)
+  Carpeta parecida tests2     exit=0  (sin salida: sigue el flujo normal)
+  Ruta con ..                 exit=0  ask | Test existente: C:\AI\INComedor\INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs. AGENTS.md pide la aprobación explícita de David para modificarlo.
+  Sin file_path               exit=0  (sin salida: sigue el flujo normal)
+  --- pwsh
+  Edit de test existente      exit=0  ask | Test existente: C:\AI\INComedor\INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs. AGENTS.md pide la aprobación explícita de David para modificarlo.
+  Write de test nuevo         exit=0  (sin salida: sigue el flujo normal)
+  Write sobre test existente  exit=0  ask | Test existente: C:\AI\INComedor\INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs. AGENTS.md pide la aprobación explícita de David para modificarlo.
+  Edit fuera de tests         exit=0  (sin salida: sigue el flujo normal)
+  Carpeta parecida tests2     exit=0  (sin salida: sigue el flujo normal)
+  Ruta con ..                 exit=0  ask | Test existente: C:\AI\INComedor\INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs. AGENTS.md pide la aprobación explícita de David para modificarlo.
+  Sin file_path               exit=0  (sin salida: sigue el flujo normal)
+  ```
+
+- [x] 1.4 Commit por rutas de los dos archivos. Después, en un clon descartable de ese commit, correr las ediciones reales A, B, C y D de D11 con `claude -p`; verificar que A da una denegación con el motivo del hook y el test intacto, que B y C pasan y que D pasa sin el hook, y pegar `permission_denials` y `git status --short` de cada una
+
+  Commit `12cbb0e`. Clon de ese commit en el scratchpad, Claude Code 2.1.312, `claude -p "<pedido>" --model haiku --permission-mode acceptEdits --output-format json`, en orden, sin limpiar entre A, B y C:
+
+  ```text
+  === A (Edit de tests/…/ValueObjectsTests.cs)
+  permission_denials: [{"tool_name": "Edit", "tool_input": {"file_path": "…\\clon\\tests\\Intelektron.INComedor.Domain.Tests\\ValueObjectsTests.cs", "old_string": "using Intelektron.INComedor.Domain;\n", "new_string": "// prueba del hook\nusing Intelektron.INComedor.Domain;\n", …}}]
+  result: La lectura de `ValueObjectsTests.cs` salió bien, pero la edición fue denegada y el archivo no cambió. El motivo que recibí: `Test existente: …\clon\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs. AGENTS.md pide la aprobación explícita de David para modificarlo.`
+  git status --short:
+  (vacío)
+  === B (Write de tests/…/HookNuevoTests.cs)
+  permission_denials: []
+  git status --short:
+  ?? tests/Intelektron.INComedor.Domain.Tests/HookNuevoTests.cs
+  === C (Edit de src/Intelektron.INComedor.Domain/FechaNegocio.cs)
+  permission_denials: []
+  git status --short:
+   M src/Intelektron.INComedor.Domain/FechaNegocio.cs
+  ?? tests/Intelektron.INComedor.Domain.Tests/HookNuevoTests.cs
+  (src y el test nuevo restaurados; control D: .claude/settings.json renombrado)
+  === D (el pedido de A, sin el hook)
+  permission_denials: []
+  git status --short:
+   D .claude/settings.json
+   M tests/Intelektron.INComedor.Domain.Tests/ValueObjectsTests.cs
+  ?? .claude/settings.json.off
+  === restaurado: git status --short vacío
+  ```
 
 ## 2. Puntero local
 
-- [ ] 2.1 Comprobar que `C:\AI\INComedor\.claude\settings.json` no existe y crearlo con el JSON de D7; verificar que parsea y que su ruta apunta al script, con `Test-Path` sobre la ruta del `command`, que debe dar `True`
+- [x] 2.1 Comprobar que `C:\AI\INComedor\.claude\settings.json` no existe y crearlo con el JSON de D7; verificar que parsea y que su ruta apunta al script, con `Test-Path` sobre la ruta del `command`, que debe dar `True`
+
+  ```text
+  settings.json no existe          (antes de crearlo; en C:\AI\INComedor\.claude sólo estaba skills\)
+  matcher: Edit|Write|MultiEdit|NotebookEdit
+  command: powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:/AI/INComedor/INComedor-AI4DEVS/.claude/hooks/confirmar-edicion-de-test.ps1"
+  ruta: C:/AI/INComedor/INComedor-AI4DEVS/.claude/hooks/confirmar-edicion-de-test.ps1
+  Test-Path: True
+  ```
 - [ ] 2.2 David: abrir una sesión nueva de Claude Code en `C:\AI\INComedor` y pedirle que edite `tests/Intelektron.INComedor.Domain.Tests/ValueObjectsTests.cs`; verificar que aparece el pedido de confirmación con `[settings]` y el motivo del hook, rechazarlo y pegar el texto del pedido
 
 ## 3. CI: scripts, controles locales y workflow
