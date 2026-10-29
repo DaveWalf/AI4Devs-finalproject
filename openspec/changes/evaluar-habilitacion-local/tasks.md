@@ -4,8 +4,12 @@ Se aplica con `sonnet` · `medium` si David aprueba el design tal cual: es un pl
 
 ## 1. Dominio: el evaluador de habilitación
 
-- [ ] 1.1 Crear `tests/Intelektron.INComedor.Domain.Tests/EvaluadorHabilitacionTests.cs` con una prueba por escenario de `specs/habilitacion-local/spec.md` (D9), en memoria, con bordes exactos de vigencia y el `DisplayName` empezando por su AT o su regla; verificar con `dotnet test tests/Intelektron.INComedor.Domain.Tests` que fallan (o no compilan) antes de implementar, y pegar la salida
-- [ ] 1.2 Implementar `EvaluadorHabilitacion`, sus modelos, `ReglasHabilitacionContradictoriasException` y los cuatro motivos nuevos de `MotivoDenegacion` al final de la enumeración (D1 a D5), sin cambiar la firma de `EvaluadorCupo.Evaluar` ni de `ReglaPersona`; verificar con `dotnet test tests/Intelektron.INComedor.Domain.Tests` que pasan las nuevas y las 21 anteriores, y con `git diff --stat -- tests/` que sólo aparece el archivo nuevo
+- [x] 1.1 Crear `tests/Intelektron.INComedor.Domain.Tests/EvaluadorHabilitacionTests.cs` con una prueba por escenario de `specs/habilitacion-local/spec.md` (D9), en memoria, con bordes exactos de vigencia y el `DisplayName` empezando por su AT o su regla; verificar con `dotnet test tests/Intelektron.INComedor.Domain.Tests` que fallan (o no compilan) antes de implementar, y pegar la salida
+- [x] 1.2 Implementar `EvaluadorHabilitacion`, sus modelos, `ReglasHabilitacionContradictoriasException` y los cuatro motivos nuevos de `MotivoDenegacion` al final de la enumeración (D1 a D5), sin cambiar la firma de `EvaluadorCupo.Evaluar` ni de `ReglaPersona`; verificar con `dotnet test tests/Intelektron.INComedor.Domain.Tests` que pasan las nuevas y las 21 anteriores, y con `git diff --stat -- tests/` que sólo aparece el archivo nuevo
+
+  Salida de 1.1 (antes de implementar): `dotnet test tests/Intelektron.INComedor.Domain.Tests` no compiló: `error CS0246: El nombre del tipo o del espacio de nombres 'ReglaCandidata' no se encontró`, y lo mismo para `CredencialSesion`, `ResultadoHabilitacion` y `EvaluadorHabilitacion`; `La compilación falló con el código de salida 1.`
+
+  Salida de 1.2: `Resumen de la serie de pruebas: Correcta! total: 46, error: 0, correcto: 46` (25 nuevas en `EvaluadorHabilitacionTests` y las 21 anteriores). `git diff --stat -- tests/` no muestra ningún archivo modificado; `git status --short` sólo tiene el archivo de pruebas nuevo, `EvaluadorHabilitacion.cs` y `ModelosCupo.cs`.
 
 ## 2. Infrastructure: la decisión en la unidad de confirmación
 
