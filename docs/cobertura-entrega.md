@@ -1,57 +1,44 @@
-# Cobertura de la primera entrega
+# Cobertura de la entrega final
 
-La entrega 1 presenta el diseño técnico del MVP. Sigue las secciones de la
-plantilla oficial y reúne descripción, arquitectura, datos, API, historias,
-tickets y registro de uso de IA.
+Actualizado el 29/10/2026. La entrega final se evalúa contra la lección 58 vigente del curso (L58, la fuente de verdad desde el 23/10/2026) y contra la plantilla de `LIDR-academy-temp/AI4Devs-finalproject`. Cada requisito figura como `Cubierto`, con el enlace a su evidencia en el repo, o `Pendiente`, con el change o la acción que lo trae. La cobertura de la primera entrega, contra la lección retirada, está en [`feature/entrega-1-DW`](https://github.com/DaveWalf/AI4Devs-finalproject/blob/feature/entrega-1-DW/docs/cobertura-entrega.md). Qué prácticas del curso se aplicaron, con su evidencia, está en [aplicacion-del-curso.md](aplicacion-del-curso.md).
 
-| Requisito o sección | Evidencia | Contenido |
-|---|---|---|
-| Ficha del proyecto | [README 0](../readme.md#0-ficha-del-proyecto) | Autor, producto, descripción, repositorio y modalidad académica. |
-| Objetivo, características y funciones | [README 1](../readme.md#1-descripción-general-del-producto), [SDD](especificacion-sdd.md) | Problema, usuarios, cuatro funcionalidades obligatorias y límites del MVP. |
-| Stack y arquitectura | [README 2](../readme.md#2-arquitectura-del-sistema), [arquitectura](arquitectura.md) | Componentes, responsabilidades, tecnologías, decisiones y alternativas. |
-| Experiencia de usuario | [Bocetos](experiencia.md), [flujo](../diagrams/flujo.svg) | Pantallas y estados diseñados para el recorrido principal y la recuperación. |
-| Estructura e infraestructura | [README 2.3–2.4](../readme.md#23-descripción-de-alto-nivel-y-estructura-de-ficheros), [despliegue](../diagrams/despliegue.svg) | Estructura documental y futura solución, topología y puesta en marcha prevista. |
-| Seguridad | [Arquitectura](arquitectura.md), [SDD](especificacion-sdd.md) | Identidad de equipo, permisos locales, minimización, biometría y protección de datos. |
-| Pruebas | [Plan de pruebas](pruebas.md) | Casos de dominio, persistencia, contratos, recuperación e integración. Su ejecución corresponde a las siguientes entregas. |
-| Modelo de datos | [README 3](../readme.md#3-modelo-de-datos), [diccionario](modelo-datos.md), [ER](../diagrams/datos.mmd) | Entidades, atributos, tipos, claves, relaciones y restricciones. |
-| Coherencia con INWeb | [Convención y mapas](nomenclatura-integracion.md), ADR11, D-C18, RNF15/AT51 | Correspondencia de 44 entidades y 256 atributos representados en el ER; identidades y JSON conservados. Diccionario físico completo y pruebas de ejecución previstos en M0/implementación. |
-| API: tres operaciones principales | [OpenAPI 3.1](../api/openapi.yaml) | Configuración, envío de hechos y recuperación de acuses; ejemplos y errores. |
-| Tres historias de usuario | [README 5](../readme.md#5-historias-de-usuario), [historias y épicas](historias-y-tickets.md) | HU01.1, HU02.1 y HU02.2, de tamaño real, dentro de las épicas HU01–HU03; enunciados, precondiciones, escenarios y terminado. El backlog de historias hijas cubre los 35 escenarios. |
-| Tres tickets de trabajo | [README 6](../readme.md#6-tickets-de-trabajo), [tickets](historias-y-tickets.md#tickets-de-trabajo) | TK01.1 backend, TK02.1 frontend y TK03.1 datos, de tamaño tarea, con 3 o 4 AT propios, responsable, dependencias disponibles y terminado en lenguaje llano. |
-| Registro de IA | [prompts.md](../prompts.md) | Herramientas, modelos, skills, subagentes, prompts representativos y correcciones humanas. |
-| Priorización y secuencia | [Plan académico](plan-academico.md), [D-C24](decisiones.md) | Primer corte: cinco historias must y una should, segunda ola diseñada y no demostrada, tallas por unidad, regla de recorte, entregas y evidencia prevista. |
+| Requisito | Fuente | Evidencia | Estado |
+|---|---|---|---|
+| De 3 a 5 funcionalidades 100 % operativas | L58:82 | Hoy hay tres piezas: la [confirmación atómica](../openspec/specs/registro-consumo/spec.md), la [pantalla de demostración](../openspec/specs/modo-demostracion/spec.md) y el [receptor que responde 501](../openspec/specs/sincronizacion-lotes/spec.md). Las funcionalidades F01, F03 y F04 de punta a punta llegan con `evaluar-habilitacion-local`, `atender-seleccion-y-confirmacion` y `recibir-lotes-idempotente`. | Pendiente |
+| Tests unitarios sobre la lógica clave | L58:94 | 21 pruebas de dominio en [Domain.Tests](../tests/Intelektron.INComedor.Domain.Tests/EvaluadorCupoTests.cs): fecha de negocio, cupo y value objects. | Cubierto |
+| Tests de integración entre componentes | L58:95 | 27 pruebas sobre SQLite real, como [`CaidasYConcurrenciaTests`](../tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/CaidasYConcurrenciaTests.cs), y 4 con `WebApplicationFactory` en [`ReceptorEsqueletoTests`](../tests/Intelektron.INComedor.Sync.Api.Tests/ReceptorEsqueletoTests.cs), en verde en el [CI](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40802117357). Las del receptor de verdad llegan con `recibir-lotes-idempotente`. | Cubierto |
+| Al menos un test E2E del flujo principal | L58:96 | El escenario está escrito en [`pruebas.md`](pruebas.md). El E2E llega con la acción 3 del plan de adopción, tras un spike sobre WebView2. | Pendiente |
+| Evidencia de funcionamiento: URL, video de 2 a 3 minutos o repo con credenciales de prueba | L58:111-117 | Hoy se puede ver la [demostración local](../readme.md#cómo-ver-la-demostración). El Release con el EXE y el video llegan con la acción 3. | Pendiente |
+| README para revisar en local: instalación, datos de prueba, `.env.example` y, si aplica, `docker-compose` | L58:121 | Están la [instalación y la siembra](../readme.md#14-instrucciones-de-instalación). Falta el `.env.example`, o la línea que diga que no hace falta, y lo mismo para `docker-compose`: acción 3. | Pendiente |
+| Sólo credenciales de prueba, y listadas | L58:82, L58:125 | Sólo datos sintéticos ([`AGENTS.md`](../AGENTS.md) y la [semilla](../src/Intelektron.INComedor.Kiosk/Demostracion/semilla_demostracion.sql)). Los códigos de prueba y quién reimprime se listan en el «Cómo revisar» de la acción 3. | Pendiente |
+| `prompts.md` con las cinco partes, que además se evalúa como técnica de prompting | L58:137-145, L58:240-245 | [`prompts.md`](../prompts.md): herramientas por fase, modelos, contexto avanzado, cuatro workflows clave y criterio humano. | Cubierto |
+| IA en al menos 4 de las 6 fases del ciclo de vida | L58:232 | Las seis, cada una con herramienta, modelo y enlace a su evidencia: [`prompts.md`, sección 1](../prompts.md#1-herramientas-por-fase). | Cubierto |
+| Rama `final-project-dw` y Typeform: la entrega es rama más formulario, no un PR | L58:195-213 | Se corta al final, con el CI en verde y después del paso al SDK estable del 10/11 ([D-C25](decisiones.md)). Las entregas 1 y 2 ya son ramas del fork. | Pendiente |
+| Plantilla, sección 0: ficha del proyecto | Plantilla, 0 | [README, sección 0](../readme.md#0-ficha-del-proyecto): autor, producto, descripción y repositorio. | Cubierto |
+| Plantilla, sección 1: descripción general del producto | Plantilla, 1 | [README, sección 1](../readme.md#1-descripción-general-del-producto) y la [especificación SDD](especificacion-sdd.md): objetivo, características, experiencia de usuario e instrucciones de instalación. | Cubierto |
+| Plantilla, sección 2: arquitectura del sistema | Plantilla, 2 | [README, sección 2](../readme.md#2-arquitectura-del-sistema), [`arquitectura.md`](arquitectura.md), el [diagrama de componentes](../diagrams/componentes.svg) y los tests en la [sección 2.6](../readme.md#26-tests). | Cubierto |
+| Plantilla, sección 3: modelo de datos | Plantilla, 3 | [README, sección 3](../readme.md#3-modelo-de-datos), [`modelo-datos.md`](modelo-datos.md) y el [ER](../diagrams/datos-er.svg). El primer corte implementa una parte: la [migración `0001`](../src/Intelektron.INComedor.Infrastructure.Sqlite/Migraciones/0001_transaccion_consumo.sql). | Cubierto |
+| Plantilla, sección 4: especificación de la API, hasta tres endpoints | Plantilla, 4 | [README, sección 4](../readme.md#4-especificación-de-la-api) y [`openapi.yaml`](../api/openapi.yaml): las tres operaciones de sincronización. El receptor las implementa con `recibir-lotes-idempotente`. | Cubierto |
+| Plantilla, sección 5: tres historias de usuario | Plantilla, 5 | [README, sección 5](../readme.md#5-historias-de-usuario): HU01.1, HU02.1 y HU02.2, con su [backlog](historias-y-tickets.md). | Cubierto |
+| Plantilla, sección 6: tres tickets de trabajo | Plantilla, 6 | [README, sección 6](../readme.md#6-tickets-de-trabajo): TK03.1, TK02.1 y TK01.1, cada uno un [change de OpenSpec](../openspec/changes/archive/2026-10-20-registrar-consumo-atomico/proposal.md). | Cubierto |
+| Plantilla, sección 7: tres pull requests | Plantilla, 7 | [README, sección 7](../readme.md#7-pull-requests): los PR [#2](https://github.com/DaveWalf/AI4Devs-finalproject/pull/2) y [#3](https://github.com/DaveWalf/AI4Devs-finalproject/pull/3) están abiertos. El tercero llega con `atender-seleccion-y-confirmacion` o `recibir-lotes-idempotente`. | Pendiente |
 
 ## Alcance de esta etapa
 
-La lección 1 del Proyecto Final establece que E1 es completamente documental.
-El código funcional, los comandos de instalación probados, los resultados de
-pruebas operativas y las revisiones de código se incorporarán en las etapas de
-implementación. Los diagramas, pantallas y contratos de este paquete expresan
-el diseño que se desarrollará.
+En la opción A el evaluador mira el repo: «Código y documentación viven juntos» (L58:169). La final pide de tres a cinco funcionalidades completas (L58:82); la devolución de la entrega 1 marcó el alcance de las doce historias must como excesivo, y D-C24 (18/10/2026) lo recortó a cinco must y una should alrededor de un flujo de punta a punta: HU01.1, HU01.3, HU02.1, HU02.2 sin el escenario F y HU03.1, más HU01.2 reducida al código. El resto es la segunda ola, diseñada y no demostrada, y no forma parte del compromiso de aceptación académico.
 
-El curso recomienda planificar de tres a cinco historias imprescindibles y
-una o dos historias deseables; para la entrega final requiere de tres a cinco
-funcionalidades completas. La entrega 1 comprometía doce historias must; la
-devolución de LIDR marcó ese alcance como excesivo y D-C24 (18/10/2026) lo
-recortó a cinco must y una should alrededor de un flujo de punta a punta:
-HU01.1, HU01.3, HU02.1, HU02.2 sin el escenario F y HU03.1, más HU01.2 reducida
-al código. El resto es la segunda ola, diseñada y no demostrada. Las ampliaciones
-fuera del MVP no forman parte del compromiso de aceptación académico.
+La entrega 1 fue documental y la entrega 2 sumó código: la confirmación atómica sobre SQLite real, el puesto con su pantalla de demostración y el receptor esqueleto. Lo que falta para la final está en las filas `Pendiente` de la tabla: tres changes de funcionalidad (`evaluar-habilitacion-local`, `atender-seleccion-y-confirmacion` y `recibir-lotes-idempotente`) y la acción 3, con el E2E, el Release y el «Cómo revisar».
 
 ## Fuentes de la consigna
 
-- [Plantilla oficial del proyecto](https://github.com/LIDR-academy/AI4Devs-finalproject).
-- [Plantilla de registro de prompts](https://github.com/LIDR-academy/AI4Devs-finalproject/blob/main/prompts.md).
-- “Proyecto Final Master AI4Devs”: ficha, entregas progresivas y registro de IA.
-- “Lección 1 — Todo lo que necesitás saber para arrancar tu Proyecto Final”:
-  alcance de E1, prioridades y criterios del proyecto.
+- [Plantilla oficial del proyecto](https://github.com/LIDR-academy-temp/AI4Devs-finalproject): el 29/10/2026 responde, y su `main` está en el commit `bcde5c4`, el mismo que el `main` del fork. La organización anterior, `LIDR-academy`, responde 404.
+- [Plantilla de registro de prompts](https://github.com/LIDR-academy-temp/AI4Devs-finalproject/blob/main/prompts.md). Conserva «un máximo de 3 por sección», y la lección 58 vigente pide entre 3 y 5 prompts o workflows clave, agrupados por fase (L58:144): como esa lección es la fuente de verdad, [`prompts.md`](../prompts.md) sigue la lección.
+- Curso AI4Devs, versión v20261027: «Proyecto Final Master AI4Devs» (lección 56: fechas y prórroga), «Lección 1 — Introducción y Reglas del Proyecto Final» (lección 58: alcance, tests, evidencia, ramas y `Prompts.md`) y «Lección 2 — Resuelve tus bloqueos y avanza hacia la entrega final» (lección 59: del PRD al SDD por ticket).
 
-Las lecciones se consultaron en la copia del curso actualizada al 26/09/2026.
-La especificación SDD y las tablas de trazabilidad son el método elegido para
-mantener coherencia entre requisitos, decisiones y pruebas.
+La especificación SDD y las tablas de trazabilidad son el método elegido para mantener coherencia entre requisitos, decisiones y pruebas. Las fechas: la final vence el jueves 12/11/2026 (L56:53), con una prórroga de hasta dos semanas, hasta el 26/11 (L56:205), que se pide al TA con anticipación (L56:209).
 
-## Decisiones confirmadas y límites de preparación
+## Decisiones confirmadas y límites
 
-El autor confirmó el 29/09 ambas políticas multipuesto como must (D-C19), capacidad de 6 h semanales y M0 objetivo 06/10; el 18/10, D-C24 enmendó esa prioridad y pasó multipuesto a la segunda ola, conservando la capacidad ([plan y riesgo de capacidad](plan-academico.md#capacidad-y-reestimación)). Códigos no reasignables, revocación al activar snapshot sin programación futura, dos roles sin herencia y mantenimiento con cuenta local individual se recogen en D-C20–D-C23. AT56 agrega aceptación de mantenimiento a HU03.3/U08, sin ampliar las cuatro funcionalidades.
+El autor confirmó el 29/09 ambas políticas multipuesto como must (D-C19), capacidad de 6 h semanales y M0 objetivo 06/10; el 18/10, D-C24 enmendó esa prioridad y pasó multipuesto a la segunda ola, conservando la capacidad ([plan y riesgo de capacidad](plan-academico.md#capacidad-y-reestimación)). Códigos no reasignables, revocación al activar snapshot sin programación futura, dos roles sin herencia y mantenimiento con cuenta local individual se recogen en D-C20–D-C23. AT56 agrega aceptación de mantenimiento a HU03.3/U08, sin ampliar las cuatro funcionalidades. D-C25 fija el SDK de .NET 11 y su paso a la versión estable el 10/11.
 
-El modelo conserva 44 entidades, 256 atributos y 47 relaciones representados. Los 19 atributos existentes pendientes y las estructuras de cuenta/historial aún por diseñar se declaran en el diccionario; no se cuentan como implementados. Esta entrega acredita diseño documental; contratos complementarios de M0, software, pruebas de producto y homologación siguen pendientes.
+El modelo de diseño conserva 44 entidades, 256 atributos y 47 relaciones representados; el primer corte implementa sólo la parte que necesita, en la migración `0001`. Los 19 atributos existentes pendientes y las estructuras de cuenta/historial aún por diseñar se declaran en el diccionario y no se cuentan como implementados. Lo diseñado y no demostrado, la segunda ola, no se presenta como funcionalidad operativa.

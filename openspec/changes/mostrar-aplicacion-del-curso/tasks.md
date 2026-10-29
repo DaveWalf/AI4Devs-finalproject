@@ -21,8 +21,8 @@ Los chequeos de enlaces, del mapa y de `prompts.md` son los de design D8: corren
 
 ## 3. Cobertura de la entrega final
 
-- [ ] 3.1 Comprobar las dos plantillas con `gh api repos/LIDR-academy-temp/AI4Devs-finalproject --jq .full_name` (debe responder) y `gh api repos/LIDR-academy/AI4Devs-finalproject` (404 esperado), y pegar las dos salidas. Si la vigente tampoco responde, citar el commit `bcde5c4` según el riesgo del design
-- [ ] 3.2 Reescribir `docs/cobertura-entrega.md` según D6: la tabla `| Requisito | Fuente | Evidencia | Estado |` con los requisitos de la final y las secciones de la plantilla, las fuentes de la consigna en la plantilla vigente, la línea que enlaza la cobertura de la entrega 1 en `feature/entrega-1-DW` y el párrafo de D-C24 al día; verificar con el chequeo de enlaces (`enlaces rotos: 0`) y con `rg -n "\| (Cubierto|Pendiente) \|" docs/cobertura-entrega.md`, que debe contar tantas filas como la tabla tiene, y comprobar leyendo que cada `Pendiente` nombra su change o acción
+- [x] 3.1 Comprobar las dos plantillas con `gh api repos/LIDR-academy-temp/AI4Devs-finalproject --jq .full_name` (debe responder) y `gh api repos/LIDR-academy/AI4Devs-finalproject` (404 esperado), y pegar las dos salidas. Si la vigente tampoco responde, citar el commit `bcde5c4` según el riesgo del design
+- [x] 3.2 Reescribir `docs/cobertura-entrega.md` según D6: la tabla `| Requisito | Fuente | Evidencia | Estado |` con los requisitos de la final y las secciones de la plantilla, las fuentes de la consigna en la plantilla vigente, la línea que enlaza la cobertura de la entrega 1 en `feature/entrega-1-DW` y el párrafo de D-C24 al día; verificar con el chequeo de enlaces (`enlaces rotos: 0`) y con `rg -n "\| (Cubierto|Pendiente) \|" docs/cobertura-entrega.md`, que debe contar tantas filas como la tabla tiene, y comprobar leyendo que cada `Pendiente` nombra su change o acción
 
 ## 4. README y regla de evidencia
 
