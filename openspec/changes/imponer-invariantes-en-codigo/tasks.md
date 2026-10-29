@@ -187,7 +187,14 @@ Se aplica con `opus` · `medium`, porque toca configuración compartida (la CI y
 
 ## 4. `AGENTS.md`
 
-- [ ] 4.1 Agregar a las dos reglas de `AGENTS.md` la mención de su barrera, con el texto de D8 y sin cambiar el resto de la línea; verificar con `git diff --word-diff -- AGENTS.md` que sólo se agregan los dos paréntesis, y hacer el commit por rutas
+- [x] 4.1 Agregar a las dos reglas de `AGENTS.md` la mención de su barrera, con el texto de D8 y sin cambiar el resto de la línea; verificar con `git diff --word-diff -- AGENTS.md` que sólo se agregan los dos paréntesis, y hacer el commit por rutas
+
+  ```text
+  - No modificar un test existente sin aprobación explícita de [-David.-]{+David (en Claude Code, el hook de `.claude/settings.json` pide la confirmación).+}
+  - Never commit secrets: ni certificados, ni claves, ni cadenas de conexión con [-credenciales.-]{+credenciales (el job `secretos` de la CI los busca con gitleaks).+}
+   AGENTS.md | 4 ++--
+   1 file changed, 2 insertions(+), 2 deletions(-)
+  ```
 
 ## 5. Corrida real de la CI
 

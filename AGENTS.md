@@ -40,9 +40,9 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 
 ## Reglas
 
-- No modificar un test existente sin aprobación explícita de David.
+- No modificar un test existente sin aprobación explícita de David (en Claude Code, el hook de `.claude/settings.json` pide la confirmación).
 - Sólo datos sintéticos y cliente anonimizado: ningún dato personal real ni template biométrico.
-- Never commit secrets: ni certificados, ni claves, ni cadenas de conexión con credenciales.
+- Never commit secrets: ni certificados, ni claves, ni cadenas de conexión con credenciales (el job `secretos` de la CI los busca con gitleaks).
 - Revisar contra OWASP Top 10 todo lo que toca entrada externa: el receptor de lotes, el
   código tipeado y la configuración que llega al puesto.
 - Un test nuevo se ve fallar antes de implementar lo que lo hace pasar.
