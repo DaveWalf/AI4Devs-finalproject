@@ -81,12 +81,109 @@ Se aplica con `opus` · `medium`, porque toca configuración compartida (la CI y
 
 ## 3. CI: scripts, controles locales y workflow
 
-- [ ] 3.1 Crear `.github/scripts/auditar-dependencias.ps1` con el texto de D3 y correrlo desde la raíz; verificar `proyectos auditados: 9 de 9 · paquetes vulnerables: 0` y exit 0. En un clon descartable, agregar `Newtonsoft.Json.Bson` 1.0.2 por `Directory.Packages.props` y `Directory.Build.props` (D9): debe dar exit 1 con la línea `::error::` de `Newtonsoft.Json 12.0.1`. Con una versión inexistente, debe dar exit 1 por `problems`. Pegar las tres salidas
-- [ ] 3.2 Crear `.github/scripts/escanear-secretos.sh` con el texto de D4 y correrlo desde la raíz con el gitleaks local (`gitleaks version` debe decir `8.30.1`); verificar que escaneados es igual a esperados y que sale con exit 0. En un clon descartable, correr los cuatro controles de D4 (secreto sintético, stub, base inexistente, `.gitleaksignore`), que deben salir distinto de 0. Pegar la tabla con las cinco salidas
-- [ ] 3.3 En un clon descartable, quitar los escenarios del requirement de `openspec/specs/sincronizacion-lotes/spec.md` y correr `openspec validate --all --strict`: debe dar `ERROR` y exit 1; restaurado, exit 0. Pegar las dos salidas
-- [ ] 3.4 Reemplazar `.github/workflows/ci.yml` por el YAML de D1; verificar parseándolo con la librería `yaml` de OpenSpec (`npm root -g`, `@fission-ai/openspec/node_modules/yaml`), que debe listar `build-test`, `specs` y `secretos` con los pasos de D1, y pegar la salida
+- [x] 3.1 Crear `.github/scripts/auditar-dependencias.ps1` con el texto de D3 y correrlo desde la raíz; verificar `proyectos auditados: 9 de 9 · paquetes vulnerables: 0` y exit 0. En un clon descartable, agregar `Newtonsoft.Json.Bson` 1.0.2 por `Directory.Packages.props` y `Directory.Build.props` (D9): debe dar exit 1 con la línea `::error::` de `Newtonsoft.Json 12.0.1`. Con una versión inexistente, debe dar exit 1 por `problems`. Pegar las tres salidas
+
+  ```text
+  === repo, desde la raíz
+  proyectos auditados: 9 de 9 · paquetes vulnerables: 0
+  exit=0
+  === clon con Newtonsoft.Json.Bson 1.0.2 (restore exit=0)
+  proyectos auditados: 9 de 9 · paquetes vulnerables: 9
+  ::error::Intelektron.INComedor.Domain.csproj · Newtonsoft.Json 12.0.1 · High · https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+  … (la misma línea para los otros ocho proyectos: el ItemGroup de Directory.Build.props alcanza a todos)
+  exit=1
+  === clon con Newtonsoft.Json.Bson 99.99.99 (restore exit=1)
+     "problems": [
+           "text": "Error en la restauración. Ejecute "dotnet restore" para obtener más detalles sobre el problema.",
+           "level": "error"
+       | dotnet list package salió 1.
+  exit=1
+  ```
+
+  Con el SDK de `global.json`, una restauración rota hace que `dotnet list` salga 1 y el JSON traiga `problems`: corta la primera compuerta de D3, no la segunda. El resultado es el que pide la tarea (exit 1, con `problems` a la vista) y el design no cambia.
+
+- [x] 3.2 Crear `.github/scripts/escanear-secretos.sh` con el texto de D4 y correrlo desde la raíz con el gitleaks local (`gitleaks version` debe decir `8.30.1`); verificar que escaneados es igual a esperados y que sale con exit 0. En un clon descartable, correr los cuatro controles de D4 (secreto sintético, stub, base inexistente, `.gitleaksignore`), que deben salir distinto de 0. Pegar la tabla con las cinco salidas
+
+  `gitleaks version`: `8.30.1`. Desde la raíz: `37 commits scanned`, `no leaks found`, `commits escaneados: 37 · esperados: 37 · exit de gitleaks: 0`, exit 0. Controles en un clon de `f75ec9d` que no se empuja:
+
+  | Caso | Salida | Exit |
+  |---|---|---|
+  | Historia propia, limpia | `commits escaneados: 37 · esperados: 37 · exit de gitleaks: 0` | 0 |
+  | Stub que imprime `0 commits scanned` y sale 0 | `::error::gitleaks escaneó 0 commits y se esperaban 37.` | 1 |
+  | Base inexistente | `fatal: Invalid revision range 0123456789abcdef0123456789abcdef01234567..HEAD` | 128 |
+  | Con un `.gitleaksignore` | `::error::Hay un .gitleaksignore: silencia hallazgos sin pasar por la revisión del workflow.` | 1 |
+  | Commit con un `api_key` sintético | `leaks found: 1` · `commits escaneados: 38 · esperados: 38 · exit de gitleaks: 1` · `::error::gitleaks encontró secretos o falló (exit 1).` | 1 |
+
+- [x] 3.3 En un clon descartable, quitar los escenarios del requirement de `openspec/specs/sincronizacion-lotes/spec.md` y correr `openspec validate --all --strict`: debe dar `ERROR` y exit 1; restaurado, exit 0. Pegar las dos salidas
+
+  ```text
+  === sin escenarios (0 escenarios)
+  ✗ spec/sincronizacion-lotes
+    ✗ [ERROR] requirements.0.scenarios: Requirement must have at least one scenario
+  Totals: 3 passed, 1 failed (4 items)
+  exit=1
+  === restaurado (4 escenarios)
+  ✓ spec/modo-demostracion
+  ✓ spec/registro-consumo
+  ✓ spec/sincronizacion-lotes
+  Totals: 4 passed, 0 failed (4 items)
+  exit=0
+  ```
+
+- [x] 3.4 Reemplazar `.github/workflows/ci.yml` por el YAML de D1; verificar parseándolo con la librería `yaml` de OpenSpec (`npm root -g`, `@fission-ai/openspec/node_modules/yaml`), que debe listar `build-test`, `specs` y `secretos` con los pasos de D1, y pegar la salida
+
+  ```text
+  build-test (windows-latest):
+    - actions/checkout@v7
+    - actions/setup-dotnet@v6
+    - Restore
+    - Dependencias vulnerables
+    - Build
+    - Test
+  specs (ubuntu-latest):
+    - actions/checkout@v7
+    - actions/setup-node@v7
+    - Instalar OpenSpec
+    - openspec validate
+  secretos (ubuntu-latest):
+    - actions/checkout@v7
+    - Instalar gitleaks
+    - Secretos
+  exit=0
+  ```
+
 - [ ] 3.5 Pedirle permiso a David para bajar `actionlint` 1.7.12 al scratchpad, verificado con el SHA-256 de su `checksums.txt`, y correrlo con `-shellcheck= -pyflakes=` sobre `ci.yml`: debe salir sin hallazgos. Si David no lo autoriza, anotar en la tarea que no corrió y por qué
-- [ ] 3.6 Correr `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (61 de 61) y `openspec validate --all --strict` (sin errores), pegar las tres salidas y hacer el commit por rutas de `ci.yml` y los dos scripts
+
+  No corrió. David lo autorizó el 29/10 (decisión 3 del plan del goal). La descarga y el hash pasaron: `actionlint_1.7.12_windows_amd64.zip`, `6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9` en `checksums.txt` y en `sha256sum`. Ejecutarlo lo denegó el clasificador de auto mode de Claude Code, y no se reintentó por otra vía:
+
+  ```text
+  Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Code from External].
+  ```
+
+  Queda para David: correrlo él desde la raíz del repo, con el binario verificado.
+
+- [x] 3.6 Correr `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (61 de 61) y `openspec validate --all --strict` (sin errores), pegar las tres salidas y hacer el commit por rutas de `ci.yml` y los dos scripts
+
+  ```text
+  dotnet build INComedor.sln -warnaserror
+  Compilación correcta.
+      0 Advertencia(s)
+      0 Errores
+  build exit=0
+  dotnet test INComedor.sln
+    total: 61
+    error: 0
+    correcto: 61
+    omitido: 0
+  test exit=0
+  openspec validate --all --strict
+  ✓ change/imponer-invariantes-en-codigo
+  ✓ spec/modo-demostracion
+  ✓ spec/registro-consumo
+  ✓ spec/sincronizacion-lotes
+  Totals: 4 passed, 0 failed (4 items)
+  validate exit=0
+  ```
 
 ## 4. `AGENTS.md`
 
