@@ -1,6 +1,6 @@
 # INComedor
 
-**Entrega 2 AI4DEVS en curso (20/10/2026) · Primera entrega: documentación técnica, 29/09/2026**
+**Entrega final AI4DEVS en curso · Entrega 2 presentada el 29/10/2026 · Primera entrega: documentación técnica, 29/09/2026**
 
 INComedor es un puesto autónomo de autoservicio de comedor empresarial para una
 All-in-One táctil con Windows 11. Identifica, aplica habilitaciones y cupos,
@@ -37,8 +37,8 @@ demostración usa datos sintéticos y adaptadores de prueba para INWeb y disposi
 | Descripción breve | Kiosco autónomo de comedor, táctil, con identificación, reglas locales, ticket y sincronización. |
 | Organización | INTELEKTRON. Caso empresarial con cliente anonimizado y datos sintéticos. |
 | URL del proyecto | Aplicación de escritorio Windows con ejecución local; no corresponde una URL de aplicación en esta etapa. |
-| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`, aún sin publicar. |
-| Etapa | Entrega 2 en curso: scaffolds conectados (puesto, base SQLite y receptor). La entrega 1, documentación técnica, está presentada. |
+| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`. La final irá en la rama `final-project-dw`. |
+| Etapa | Entrega final en curso. Presentadas: la entrega 1, documentación técnica, y la entrega 2, scaffolds conectados (puesto, base SQLite y receptor). |
 | Modalidad del MVP | Adaptadores de prueba para servicios y dispositivos; persistencia y reglas reales en la implementación académica. |
 
 ## 1. Descripción general del producto
