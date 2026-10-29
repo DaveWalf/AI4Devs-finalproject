@@ -1,0 +1,64 @@
+@using Intelektron.INComedor.Infrastructure.Sqlite
+@inject ServicioDemostracion Servicio
+
+<style>
+    .demostracion { font-family: "Segoe UI", sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+    .demostracion button { font-size: 1.5rem; padding: 1rem 2rem; min-width: 12rem; }
+    .demostracion .resultado { margin-top: 1.5rem; font-size: 1.25rem; }
+    .demostracion .resultado dt { font-weight: 600; margin-top: .5rem; }
+    .demostracion .error { color: #b00020; font-size: 1.25rem; }
+</style>
+
+<main class="demostracion">
+    <h1>INComedor · pantalla de demostración</h1>
+    <p>Datos sintéticos: no es la atención del comedor. Cada toque confirma una intención nueva sobre la base local.</p>
+
+    @if (_estado == EstadoPreparacion.ErrorAlmacenamiento)
+    {
+        <p id="error-almacenamiento" class="error" role="alert">Error de almacenamiento: la base no es de una versión conocida</p>
+    }
+    else
+    {
+        <p>Persona: <strong>Persona de demostración</strong> · Opción: <strong>Almuerzo de demostración</strong></p>
+        <button id="confirmar" type="button" @onclick="Confirmar">Confirmar</button>
+
+        @if (_resultado is not null)
+        {
+            <dl class="resultado">
+                <dt>Decisión</dt>
+                <dd id="decision">@Decision(_resultado)</dd>
+                @if (_resultado.ReasonCode is not null)
+                {
+                    <dt>Motivo</dt>
+                    <dd id="motivo">@_resultado.ReasonCode</dd>
+                }
+                @if (_resultado.ConsumptionId is not null)
+                {
+                    <dt>Consumo</dt>
+                    <dd id="consumo">@_resultado.ConsumptionId</dd>
+                }
+                @if (_resultado.TicketId is not null)
+                {
+                    <dt>Comprobante</dt>
+                    <dd id="comprobante">@_resultado.TicketId</dd>
+                }
+            </dl>
+        }
+    }
+</main>
+
+@code {
+    private EstadoPreparacion _estado;
+    private ResultadoConfirmacion? _resultado;
+
+    protected override void OnInitialized() => _estado = Servicio.Preparar();
+
+    private void Confirmar() => _resultado = Servicio.Confirmar();
+
+    private static string Decision(ResultadoConfirmacion resultado) => resultado.Tipo switch
+    {
+        TipoResultado.Autorizada => "AUTHORIZED",
+        TipoResultado.Denegada => "DENIED",
+        _ => resultado.Tipo.ToString(),
+    };
+}

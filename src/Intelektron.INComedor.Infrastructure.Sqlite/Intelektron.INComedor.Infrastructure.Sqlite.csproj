@@ -2,6 +2,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <ProjectReference Include="..\Intelektron.INComedor.Domain\Intelektron.INComedor.Domain.csproj" />
+    <ProjectReference Include="..\Intelektron.INComedor.Contracts\Intelektron.INComedor.Contracts.csproj" />
     <InternalsVisibleTo Include="Intelektron.INComedor.Infrastructure.Sqlite.Tests" />
   </ItemGroup>
   <ItemGroup>

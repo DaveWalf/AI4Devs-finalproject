@@ -1,6 +1,6 @@
 # INComedor
 
-**Primera entrega AI4DEVS · Documentación técnica · 29/09/2026**
+**Entrega 2 AI4DEVS en curso (20/10/2026) · Primera entrega: documentación técnica, 29/09/2026**
 
 INComedor es un puesto autónomo de autoservicio de comedor empresarial para una
 All-in-One táctil con Windows 11. Identifica, aplica habilitaciones y cupos,
@@ -10,9 +10,11 @@ con la política inicial. En multipuesto auditado puede configurarse suspensión
 de nuevas confirmaciones durante la pérdida de comunicación. INWeb distribuye
 información y consolida los hechos cuando se recupera la conexión.
 
-**Estado:** diseño técnico del MVP académico. La implementación y las pruebas
-operativas corresponden a las siguientes entregas. La demostración utilizará
-datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
+**Estado:** entrega 2 en curso (vence el 22/10). Hay un puesto de demostración que confirma
+sobre SQLite con la transacción de RB06, un receptor de lotes esqueleto que responde 501 y 61
+pruebas en verde (ver §2.6); la atención completa del puesto y la ingesta idempotente del receptor
+son de las siguientes entregas. El resto del documento describe el diseño del producto. La
+demostración usa datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
 
 ## Índice
 
@@ -35,8 +37,8 @@ datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
 | Descripción breve | Kiosco autónomo de comedor, táctil, con identificación, reglas locales, ticket y sincronización. |
 | Organización | INTELEKTRON. Caso empresarial con cliente anonimizado y datos sintéticos. |
 | URL del proyecto | Aplicación de escritorio Windows con ejecución local; no corresponde una URL de aplicación en esta etapa. |
-| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject), rama `feature/entrega-1-DW`. |
-| Etapa | Entrega 1: documentación técnica. |
+| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`, aún sin publicar. |
+| Etapa | Entrega 2 en curso: scaffolds conectados (puesto, base SQLite y receptor). La entrega 1, documentación técnica, está presentada. |
 | Modalidad del MVP | Adaptadores de prueba para servicios y dispositivos; persistencia y reglas reales en la implementación académica. |
 
 ## 1. Descripción general del producto
@@ -117,10 +119,12 @@ recuperación. Una nueva lectura no sustituye la identidad de una sesión ocupad
 
 ### 1.4. Instrucciones de instalación
 
-Para consultar esta entrega, abrir este README y sus anexos. Las instrucciones
-ejecutables de instalación se incorporarán con el código de la entrega 2.
+Para consultar el diseño, abrir este README y sus anexos. Las instrucciones ejecutables
+están en «Cómo ver la demostración», más abajo: SDK fijado en `global.json`
+(11.0.100-rc.2), paquetes con versión exacta en `Directory.Packages.props`, comandos
+de build, test y run, y base creada y sembrada con datos sintéticos al abrir el puesto.
 
-La demostración se diseñará para Windows 11, .NET 11, WebView2 y almacenamiento local
+La demostración corre en Windows 11, .NET 11, WebView2 y almacenamiento local
 y datos sintéticos. El primer provisionamiento podrá hacerse por sincronización
 o paquete local validado. Con base provisionada, el arranque y la operación no
 exigirán INWeb en el perfil autónomo y con continuidad local. El modo
@@ -128,8 +132,46 @@ multipuesto con suspensión conserva el arranque, diagnóstico y recuperación
 locales, pero no admite nuevos consumos hasta recuperar la comunicación. Sin ninguna configuración inicial válida, el puesto informará
 que requiere provisionamiento y mantendrá deshabilitadas las confirmaciones.
 
-La entrega de código agregará versiones exactas, comandos probados, carga del
-conjunto sintético y recuperación.
+Ya existen las versiones exactas, los comandos probados y la carga del conjunto sintético.
+Siguen pendientes la recuperación, un script de verificación del entorno, el
+provisionamiento por sincronización o paquete local y el paquete de instalación (EXE).
+
+#### Cómo ver la demostración
+
+Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.json`
+(11.0.100-rc.2). Los comandos se corren desde la raíz del repositorio, porque
+`global.json` se lee del directorio actual.
+
+**Puesto de demostración.**
+
+```powershell
+dotnet run --project src/Intelektron.INComedor.Kiosk
+```
+
+La ventana muestra una persona y una opción sintéticas fijas y el botón «Confirmar». Cada
+toque confirma una intención nueva con la transacción de RB06 sobre SQLite, sin red:
+
+- El primer toque del día muestra `AUTHORIZED` con los identificadores de consumo y de comprobante.
+- El segundo muestra `DENIED` con `LOCAL_LIMIT_REACHED`, porque el límite de la persona es 1 por fecha de negocio.
+
+La base está en `%LOCALAPPDATA%\INComedor\demo\incomedor.db`. Se crea y se siembra con datos
+sintéticos al abrir la ventana por primera vez; una base que ya tiene datos no se vuelve a sembrar.
+Para repetir la demostración, cerrar la ventana y borrar la carpeta `%LOCALAPPDATA%\INComedor\demo\`.
+Es una pantalla de demostración: no cumple la atención completa de TK02.1 (identificación por código,
+catálogo de quince opciones, estados de reposo, timeout), que llega con `atender-seleccion-y-confirmacion`.
+
+**Receptor de lotes (esqueleto).**
+
+```powershell
+dotnet run --project src/Intelektron.INComedor.Sync.Api
+curl.exe -i -X POST http://localhost:5000/api/incomedor/v1/sync-batches
+```
+
+Lo que hace: declara las dos operaciones de TK01.1, `POST /api/incomedor/v1/sync-batches` y
+`GET /api/incomedor/v1/sync-batches/{batchId}`, y a las dos les responde `501` con `application/problem+json`.
+Lo que no hace: no lee el cuerpo, no persiste nada, no autentica y nunca responde un 2xx, así que ningún
+puesto puede tomar una respuesta suya como acuse de un lote. La ingesta idempotente llega con
+`recibir-lotes-idempotente`. No se publica ni se despliega mientras no tenga autenticación.
 
 ## 2. Arquitectura del sistema
 
@@ -189,22 +231,29 @@ api/openapi.yaml                contrato de las tres operaciones de sincronizaci
 diagrams/                       fuentes .dot y .mmd editables y sus SVG
 ```
 
-Estructura prevista de la solución, la misma en todos los documentos. Las carpetas
-de código todavía no existen:
+Estructura prevista de la solución, la misma en todos los documentos. Existen hoy cinco
+proyectos en `src/` (Domain, Contracts, Infrastructure.Sqlite, Kiosk y Sync.Api) y cuatro
+en `tests/` (uno por Domain, Infrastructure.Sqlite, Kiosk y Sync.Api). Application,
+Biometrics.Broker, Devices e Integration.INWeb siguen previstos y no existen; el E2E
+tampoco. Marcados con `[existe]` los que están:
 
 ```text
 src/
-  Intelektron.INComedor.Domain/                reglas, cupos, intención y consumo, sin dependencias externas
+  Intelektron.INComedor.Domain/                [existe] reglas, cupos, intención y consumo, sin dependencias externas
   Intelektron.INComedor.Application/           casos de uso y control de permisos locales
-  Intelektron.INComedor.Contracts/             DTO del JSON versionado, con nombres explícitos
-  Intelektron.INComedor.Infrastructure.Sqlite/ migraciones, transacción RB06, outbox y bitácoras
-  Intelektron.INComedor.Kiosk/                 host WPF + Blazor Hybrid: atención, supervisión y administración
+  Intelektron.INComedor.Contracts/             [existe] DTO del JSON versionado, con nombres explícitos
+  Intelektron.INComedor.Infrastructure.Sqlite/ [existe] migraciones, transacción RB06, outbox y bitácoras
+  Intelektron.INComedor.Kiosk/                 [existe] host WPF + Blazor Hybrid: atención, supervisión y administración
   Intelektron.INComedor.Biometrics.Broker/     proceso aparte que aísla el SDK de BioMini
   Intelektron.INComedor.Devices/               adaptadores de serie e impresora y dobles de prueba de dispositivos
-  Intelektron.INComedor.Sync.Api/              receptor ASP.NET Core de configuración y lotes
+  Intelektron.INComedor.Sync.Api/              [existe] receptor ASP.NET Core de configuración y lotes
   Intelektron.INComedor.Integration.INWeb/     adaptador a INWeb y consolidación con EF Core y SQL Server
 tests/                                         un proyecto de pruebas por proyecto de src, más el E2E
 ```
+
+De ese árbol, hoy el Kiosk sólo implementa la pantalla de demostración, `Infrastructure.Sqlite`
+sólo el primer corte de la transacción y el outbox (sin bitácoras) y `Sync.Api` sólo el esqueleto
+que responde 501 y no acusa nada. Contracts hoy contiene los eventos de outbox, no todo el JSON versionado.
 
 ### 2.4. Infraestructura y despliegue
 
@@ -258,8 +307,12 @@ El [plan de pruebas](docs/pruebas.md) cubre dominio, SQLite real, sincronizació
 contratos, E2E y dispositivos. Casos centrales: arranque offline, cupo local,
 doble confirmación, caída tras commit, reimpresión, snapshot parcial, acuse perdido
 y ambos modos biométricos. Incluye también saltos del reloj, cálculo del día de
-negocio y vigencias. En esta entrega los casos están especificados; su ejecución
-y evidencia se incorporarán con el producto.
+negocio y vigencias. Hoy corren 61 pruebas, todas en verde, con
+`dotnet test INComedor.sln` desde la raíz del repositorio: 21 de Domain, 27 de
+Infrastructure.Sqlite sobre un archivo SQLite real temporal, 9 del Kiosk y 4 del receptor. Cubren
+la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después del commit y la
+concurrencia por el último cupo, además de la pantalla de demostración y el 501 del receptor. El
+resto de los casos del plan sigue especificado, no ejecutado.
 
 ## 3. Modelo de datos
 
@@ -433,8 +486,24 @@ asigna cada AT a un único responsable.
 
 ## 7. Pull requests
 
-Las tres revisiones de código representativas se incorporarán durante las entregas
-de implementación, con sus enlaces y resultados. Esta primera entrega documenta el diseño.
+Cada PR corresponde a un change de OpenSpec, lleva la salida de `/openspec-verify-change`
+y el CI de `windows-latest` en verde. Están apilados: la base del segundo es la rama del
+primero, así cada diff muestra sólo su change. La entrega 1 documentó el diseño, sin código,
+en el [#1](https://github.com/DaveWalf/AI4Devs-finalproject/pull/1).
+
+**Pull Request 1:** [#2 · registrar-consumo-atomico (TK03.1)](https://github.com/DaveWalf/AI4Devs-finalproject/pull/2).
+Solución .NET 11, base SQLite con la migración `0001` y confirmación atómica con replay por
+`IntentId` (RB06, RB07, RB17); 48 pruebas. Incluye la corrección de fin de línea que destapó
+la primera corrida del CI ([roja](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40790002939),
+[verde](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40794862257)).
+
+**Pull Request 2:** [#3 · conectar-puesto-y-receptor (TK02.1, TK01.1)](https://github.com/DaveWalf/AI4Devs-finalproject/pull/3).
+Puesto Kiosk WPF con la pantalla Razor de demostración sobre SQLite, contrato de eventos en
+`Contracts` y receptor `Sync.Api` que responde `501`; 61 pruebas
+([CI](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40795276016)).
+
+**Pull Request 3:** llega con la entrega final, con `atender-seleccion-y-confirmacion` o
+`recibir-lotes-idempotente`.
 
 ## 8. Uso de IA y cobertura
 

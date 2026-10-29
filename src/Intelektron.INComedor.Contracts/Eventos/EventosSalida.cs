@@ -1,22 +1,22 @@
 using System.Text.Json.Serialization;
 
-namespace Intelektron.INComedor.Infrastructure.Sqlite;
+namespace Intelektron.INComedor.Contracts.Eventos;
 
-// Records internos con los nombres de ConsumptionRecorded, AppliedQuotaCharge, PriceSnapshot y
+// Records públicos con los nombres de ConsumptionRecorded, AppliedQuotaCharge, PriceSnapshot y
 // ConsumptionDenied del OpenAPI, PayloadVersion 1 (D9). Ninguno lleva la credencial ni el código.
 
-internal sealed record PriceSnapshotEvento(
+public sealed record PriceSnapshotEvento(
     [property: JsonPropertyName("Currency")] string Currency,
     [property: JsonPropertyName("Scale")] int Scale,
     [property: JsonPropertyName("EmployeeChargeMinor")] long EmployeeChargeMinor);
 
-internal sealed record AppliedQuotaChargeEvento(
+public sealed record AppliedQuotaChargeEvento(
     [property: JsonPropertyName("QuotaScopeId")] Guid QuotaScopeId,
     [property: JsonPropertyName("QuotaBucketId")] Guid QuotaBucketId,
     [property: JsonPropertyName("Units")] int Units,
     [property: JsonPropertyName("BusinessDate")] string BusinessDate);
 
-internal sealed record ConsumptionRecordedEvento(
+public sealed record ConsumptionRecordedEvento(
     [property: JsonPropertyName("EventId")] Guid EventId,
     [property: JsonPropertyName("EventType")] string EventType,
     [property: JsonPropertyName("PayloadVersion")] int PayloadVersion,
@@ -37,7 +37,7 @@ internal sealed record ConsumptionRecordedEvento(
     [property: JsonPropertyName("PolicyVersion")] int PolicyVersion,
     [property: JsonPropertyName("PriceSnapshot")] PriceSnapshotEvento PriceSnapshot);
 
-internal sealed record ConsumptionDeniedEvento(
+public sealed record ConsumptionDeniedEvento(
     [property: JsonPropertyName("EventId")] Guid EventId,
     [property: JsonPropertyName("EventType")] string EventType,
     [property: JsonPropertyName("PayloadVersion")] int PayloadVersion,
