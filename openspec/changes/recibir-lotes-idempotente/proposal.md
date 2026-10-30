@@ -38,7 +38,7 @@ Origen: historia HU02.2 (escenarios HU02-C, HU02-D y HU02-G; el F queda fuera po
 ### Modified Capabilities
 
 - `sincronizacion-lotes`: se quita «Ningún acuse sin ingesta durable» (el `501` del esqueleto). Se agregan la autenticación del equipo, la idempotencia por lote, el resultado por evento, la validación por aplicación, la consulta del acuse, los errores que no reflejan la entrada y la ruta no declarada.
-- `registro-consumo`: «Base SQLite con esquema versionado» aplica `0001` a `0003` y queda en la versión 3.
+- `registro-consumo`: «Base SQLite con esquema versionado» aplica `0001` a `0003` y queda en la versión 3, y «Unicidades del modelo en la base» suma un evento por lote una sola vez. Las dos salen de partir en el gate un requirement que pasaba los 500 caracteres de `openspec validate --strict`, con el texto tal cual.
 - `modo-demostracion`: la base de la demostración queda en la versión 3 y se agrega «Receptor y puesto de demostración conectados».
 
 ## Impact
@@ -57,7 +57,7 @@ Origen: historia HU02.2 (escenarios HU02-C, HU02-D y HU02-G; el F queda fuera po
 
 | Quién | Talla | Horas | Con el colchón del 30 % |
 |---|---|---|---|
-| David | _(la ponés en el gate)_ | | |
+| David, 30/10/2026 (en el gate) | **S** | 2 a 4 h (`docs/plan-academico.md`: «**S** de 2 a 4 h») | 2,9 a 5,7 h de capacidad |
 | La IA (Claude Code, Opus 5.5), 30/10/2026 | **S** | 2 a 4 h | 2,9 a 5,7 h de capacidad |
 
 El colchón es el de la lección 50 («Buffers realistas: 30-40%, no 10%»): se compromete el 70 % de la capacidad, así que cada talla pide su valor dividido por 0,7.
@@ -109,4 +109,4 @@ Lo que en otras exploraciones se te preguntaba; cada punto con la opción que se
 10. **Un doble más que la impresora y el lector** (D13). Tomada: un `IReceptorLotes` de prueba en `SincronizadorPuestoTests`, para cortar la respuesta en el punto exacto. La misma situación se prueba también de punta a punta, contra el receptor real. `AGENTS.md` admite dobles sólo para la impresora y el lector, así que necesita tu aprobación. Descartada: probar el sincronizador sólo de punta a punta, donde algunos cortes (el `202`, un acuse incompleto) no se pueden provocar sin tocar el receptor.
 11. **El change 4 se archiva antes que este** (Risks del design). El delta de `modo-demostracion` corrige a «versión 3» un escenario que agrega el change 4; `openspec validate` avisa que el archivado lo rechazaría mientras el change 4 no esté archivado. El archivado es tuyo, y queda como precondición del apply.
 12. **Aplicar con `opus` · `xhigh`, supervisado.** El apéndice manda la línea de seguridad cuando hay seguridad en alcance (mTLS y entrada externa), y un salto de `medium` a `xhigh` es el costo de eso. Descartado: `opus` · `medium` como en el change 4, que no tenía entrada externa.
-13. **Tallas**: la tuya queda vacía para que la pongas acá.
+13. **Tallas**: la tuya queda vacía para que la pongas acá. En el gate del 30/10/2026 David puso **S**, la misma talla que la IA.

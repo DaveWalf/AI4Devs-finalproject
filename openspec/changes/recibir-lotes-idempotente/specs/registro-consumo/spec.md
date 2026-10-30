@@ -4,7 +4,7 @@
 
 ### Requirement: Base SQLite con esquema versionado
 
-Al abrir la base, el sistema MUST activar las claves foráneas, aplicar en orden las migraciones conocidas (`0001` a `0003`) que le falten a una base vacía o de una versión anterior, cada una en su propia transacción, y rechazar, sin modificarla, una base cuya versión de esquema no conoce. Las migraciones MUST usar los nombres físicos del mapa de nomenclatura (D-C18) y hacer cumplir las unicidades del modelo: un consumo por intención, un comprobante por consumo, `(TicketId, CopyNumber)`, la clave de `QuotaUsage`, un permiso por persona y rol en cada snapshot y un evento por lote una sola vez.
+Al abrir la base, el sistema MUST activar las claves foráneas, aplicar en orden las migraciones conocidas (`0001` a `0003`) que le falten a una base vacía o de una versión anterior, cada una en su propia transacción, y rechazar, sin modificarla, una base cuya versión de esquema no conoce. Las migraciones MUST usar los nombres físicos del mapa de nomenclatura (D-C18).
 
 #### Scenario: Base vacía
 Origen: TK03.1, «la migración crea una base vacía válida», y AT51.
@@ -31,6 +31,10 @@ Origen: TK03.1, trabajo incluido 2.
 - **GIVEN** una base con una versión de esquema mayor que la última migración conocida
 - **WHEN** se abre
 - **THEN** la apertura falla con un error de esquema desconocido y el archivo queda sin cambios
+
+### Requirement: Unicidades del modelo en la base
+
+Las migraciones MUST hacer cumplir las unicidades del modelo: un consumo por intención, un comprobante por consumo, `(TicketId, CopyNumber)`, la clave de `QuotaUsage`, un permiso por persona y rol en cada snapshot y un evento por lote una sola vez.
 
 #### Scenario: Unicidad de consumo por intención
 Origen: TK03.1, trabajo incluido 5, y RNF01.
