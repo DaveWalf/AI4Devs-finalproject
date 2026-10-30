@@ -78,8 +78,8 @@ Desde `evaluar-habilitacion-local` cada change declara dos tallas, la de David y
 | [`atender-seleccion-y-confirmacion`](../openspec/changes/archive/2026-10-30-atender-seleccion-y-confirmacion/proposal.md#tallas) | La IA (Claude Code, Opus 5.5), 29/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
 | [`recibir-lotes-idempotente`](../openspec/changes/archive/2026-10-30-recibir-lotes-idempotente/proposal.md#tallas) | David, 30/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
 | [`recibir-lotes-idempotente`](../openspec/changes/archive/2026-10-30-recibir-lotes-idempotente/proposal.md#tallas) | La IA (Claude Code, Opus 5.5), 30/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
-| [`demostrar-flujo-de-punta-a-punta`](../openspec/changes/demostrar-flujo-de-punta-a-punta/proposal.md#tallas) | David, 30/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
-| [`demostrar-flujo-de-punta-a-punta`](../openspec/changes/demostrar-flujo-de-punta-a-punta/proposal.md#tallas) | La IA (Claude Code, Opus 5.5), 30/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
+| [`demostrar-flujo-de-punta-a-punta`](../openspec/changes/archive/2026-10-30-demostrar-flujo-de-punta-a-punta/proposal.md#tallas) | David, 30/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
+| [`demostrar-flujo-de-punta-a-punta`](../openspec/changes/archive/2026-10-30-demostrar-flujo-de-punta-a-punta/proposal.md#tallas) | La IA (Claude Code, Opus 5.5), 30/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
 
 Horas reales del apply de ese change, medidas con el reloj de la sesión del 29/10/2026: **0,2 h** de la IA (12 minutos de reloj, de las 20:32 a las 20:44), con los cuatro grupos de tareas y sin la propuesta, el gate ni el informe de `/openspec-verify-change`. Quedan fuera, y no se midieron, la revisión del gate, el archivado y el PR, que son de David. La talla M de la IA sobreestimó el trabajo de la IA por un orden de magnitud; la S de David cubre además esas horas humanas. La reestimación del próximo change parte de esta diferencia y no de promediar.
 
