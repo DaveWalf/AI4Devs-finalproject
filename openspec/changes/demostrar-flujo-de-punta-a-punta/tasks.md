@@ -39,7 +39,7 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
 ## 2. El entorno de la demostración, sin ventana
 
-- [ ] 2.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/EntornoDemostracionTests.cs` (D1), un caso por escenario de los tres requirements de `modo-demostracion`:
+- [x] 2.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/EntornoDemostracionTests.cs` (D1), un caso por escenario de los tres requirements de `modo-demostracion`:
   - la carpeta absoluta, sin la variable y relativa;
   - la dirección `https` en otro puerto, `http`, sin esquema y sin la variable;
   - el puerto en 1024, 9333 y 65535, sin la variable, `abc`, `80`, `1023`, `65536` y `70000`.
