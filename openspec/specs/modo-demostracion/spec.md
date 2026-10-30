@@ -14,7 +14,7 @@ Al arrancar en modo demostración, el puesto SHALL abrir su base SQLite local y,
 Origen: AT51 (base vacía válida), TK03.1, y AT01 (persona sintética habilitada).
 - **GIVEN** que no existe el archivo de la base del puesto
 - **WHEN** el puesto arranca en modo demostración
-- **THEN** la base queda en la versión de esquema 2, con un puesto, una persona habilitada, una opción de menú y una regla de límite 1, todos sintéticos
+- **THEN** la base queda en la versión de esquema 3, con un puesto, una persona habilitada, una opción de menú y una regla de límite 1, todos sintéticos
 - **AND** no contiene ningún consumo
 
 #### Scenario: Un segundo arranque no duplica ni borra
@@ -76,5 +76,29 @@ Origen: sin AT propio; RB06, «un consumo ya confirmado no se revierte».
 Origen: RB06, «un consumo ya confirmado no se revierte», y la semilla de la demostración sin cambios.
 - **GIVEN** una base sembrada por la demostración, en la versión de esquema 1, con un consumo autorizado
 - **WHEN** arranca la atención
-- **THEN** la base queda en la versión 2 con los datos de atención agregados
+- **THEN** la base queda en la versión 3 con los datos de atención agregados
 - **AND** sigue habiendo un solo puesto y el consumo anterior sigue registrado
+
+### Requirement: Receptor y puesto de demostración conectados
+
+El receptor arrancado con `--demostracion` SHALL generar, si faltan, una autoridad, un certificado de servidor y uno del puesto, todos sintéticos, en la carpeta de la demostración fuera del repo, y registrar el puesto de la demostración. Con esos certificados el puesto MUST enviar sus lotes a ese receptor; sin ellos MUST atender e informar que no hay receptor configurado.
+
+#### Scenario: Primer arranque del receptor de demostración
+Origen: AT13 (credencial de equipo) y `AGENTS.md`, «Never commit secrets».
+- **GIVEN** que no existe la carpeta de certificados de la demostración
+- **WHEN** el receptor arranca con `--demostracion`
+- **THEN** la carpeta tiene la autoridad, el certificado del receptor y el del puesto, y el receptor tiene registrado al puesto de la demostración
+- **AND** `git status --short` no muestra ningún archivo nuevo en el repo
+
+#### Scenario: Puesto con receptor
+Origen: HU02-C y AT27.
+- **GIVEN** el receptor de demostración en marcha y un puesto con un consumo confirmado
+- **WHEN** corre un ciclo de envío
+- **THEN** el receptor tiene ese consumo consolidado y el estado de la sincronización del puesto dice que está al día
+
+#### Scenario: Puesto sin certificados
+Origen: AT01 (monopuesto sin red) y HU02-G, «en monopuesto sigue atención».
+- **GIVEN** que no existe la carpeta de certificados de la demostración
+- **WHEN** arranca la atención y una persona confirma
+- **THEN** la intención se decide como antes y el estado de la sincronización informa que no hay receptor configurado
+- **AND** el evento queda en `PENDING`
