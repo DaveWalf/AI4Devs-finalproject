@@ -6,15 +6,21 @@ Las pruebas existentes no se tocan, salvo las siete que aprobó David en el gate
 
 ## 1. Precondiciones y JSON canónico
 
-- [ ] 1.1 Comprobar que `atender-seleccion-y-confirmacion` ya está archivado, porque el delta de `modo-demostracion` modifica un requirement que ese change agrega. Verificar con `openspec list` que no figura entre los changes activos y con `openspec validate --all --strict` que no queda el aviso «Archive would refuse this delta». Si sigue activo, parar y avisarle a David: el archivado es suyo
-- [ ] 1.2 Crear `tests/Intelektron.INComedor.Contracts.Tests` (xUnit v3, en la solución) con `JsonCanonicoTests.cs`. Cubrir:
+- [x] 1.1 Comprobar que `atender-seleccion-y-confirmacion` ya está archivado, porque el delta de `modo-demostracion` modifica un requirement que ese change agrega. Verificar con `openspec list` que no figura entre los changes activos y con `openspec validate --all --strict` que no queda el aviso «Archive would refuse this delta». Si sigue activo, parar y avisarle a David: el archivado es suyo
+- [x] 1.2 Crear `tests/Intelektron.INComedor.Contracts.Tests` (xUnit v3, en la solución) con `JsonCanonicoTests.cs`. Cubrir:
   - el orden de propiedades por unidades UTF-16 y el escape de cadenas, con los ejemplos del RFC 8785;
   - enteros en los extremos de ±(2^53 − 1);
   - el rechazo de un número decimal, de un exponente y de una propiedad repetida;
   - que el mismo objeto con otro orden y otros espacios da los mismos bytes.
 
   Verificar con `dotnet test tests/Intelektron.INComedor.Contracts.Tests` que no compilan o fallan antes de implementar, y pegar la salida
-- [ ] 1.3 Implementar `JsonCanonico` y `JsonCanonicoException` en `src/Intelektron.INComedor.Contracts` (D4), y los records del lote y del acuse con los nombres del OpenAPI (`SyncBatchRequest`, `CompletedBatchAck`, `EventAck`). Verificar con el mismo comando que pasan, y con `dotnet test INComedor.sln` que las 183 anteriores siguen en verde
+- [x] 1.3 Implementar `JsonCanonico` y `JsonCanonicoException` en `src/Intelektron.INComedor.Contracts` (D4), y los records del lote y del acuse con los nombres del OpenAPI (`SyncBatchRequest`, `CompletedBatchAck`, `EventAck`). Verificar con el mismo comando que pasan, y con `dotnet test INComedor.sln` que las 183 anteriores siguen en verde
+
+  Salida de 1.1: `atender-seleccion-y-confirmacion` archivado por la IA con autorización de David en el gate (`e7e1362`). `openspec list`: sólo `recibir-lotes-idempotente` (0/28) e `imponer-invariantes-en-codigo` (17/19). `openspec validate --all --strict`: `Totals: 8 passed, 0 failed (8 items)`, sin «Archive would refuse this delta». El archivado dejó «Base SQLite con esquema versionado» en 565 caracteres, por encima de los 500 de `--strict`; por decisión de David se partió en dos, en la spec viva (`e7e1362`) y en el delta de este change (`b572b8c`), con el texto tal cual.
+
+  Salida de 1.2 (antes de implementar): `dotnet test tests/Intelektron.INComedor.Contracts.Tests` no compiló: `error CS0246: El nombre del tipo o del espacio de nombres 'JsonCanonicoException' no se encontró` y `error CS0103: El nombre 'JsonCanonico' no existe en el contexto actual`; exit 1. Los ejemplos del RFC llevan sus secuencias de escape con un marcador (`%uXXXX` para el escape JSON y `%cXXXX` para el carácter), para que el fuente no dependa de cómo una herramienta escribe una barra-u. Nota: `dotnet sln add` informó «Se ha agregado» sin tocar el archivo, porque intentó sumar también la referencia a `Contracts`, que ya estaba; se agregó con `--include-references false` y se comprobó con `git diff --stat -- INComedor.sln`.
+
+  Salida de 1.3: el mismo comando da `total: 23, error: 0, correcto: 23` (10 pruebas, 3 de ellas `Theory` con 4, 7, 2 y 4 casos). `dotnet build INComedor.sln -warnaserror`: `0 Advertencia(s) 0 Errores`. `dotnet test INComedor.sln`: `total: 206, error: 0, correcto: 206` (las 183 anteriores: Domain 68, Sqlite 73, Kiosk 38 y Sync.Api 4, más las 23 de Contracts).
 
 ## 2. Migración `0003` y versión de esquema 3
 
