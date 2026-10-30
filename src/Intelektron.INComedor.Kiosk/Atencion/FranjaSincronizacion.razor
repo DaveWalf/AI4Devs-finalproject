@@ -3,7 +3,7 @@
 <section class="franja-sincronizacion" role="status" aria-live="polite" aria-label="Sincronización con el receptor">
     <style>
         .franja-sincronizacion { margin-top: 1rem; padding: .5rem; border-top: 2px solid #888; font-size: 1rem; }
-        .franja-sincronizacion .mensaje-sincronizacion { margin-right: 1.5rem; }
+        .franja-sincronizacion .mensaje-sincronizacion { margin-left: .5rem; margin-right: 1rem; }
     </style>
     <strong>Sincronización:</strong>
     @foreach (var mensaje in Mensajes(Estado))
@@ -17,8 +17,8 @@
     public EstadoSincronizacion Estado { get; set; } = null!;
 
     /// <summary>
-    /// Los mensajes de D11 de recibir-lotes-idempotente. La credencial va aparte de la falta de red (HU02-G), y los
-    /// pendientes y retenidos se cuentan. Sin nada de eso, al día.
+    /// Los mensajes de D11 de recibir-lotes-idempotente, detrás de la etiqueta «Sincronización:». La credencial va aparte
+    /// de la falta de red (HU02-G), y los pendientes y retenidos se cuentan. Sin nada de eso, al día.
     /// </summary>
     private static List<string> Mensajes(EstadoSincronizacion estado)
     {
@@ -43,6 +43,6 @@
             mensajes.Add(estado.Retenidos == 1 ? "1 retenido para revisión" : $"{estado.Retenidos} retenidos para revisión");
         }
 
-        return mensajes.Count > 0 ? mensajes : ["Sincronización: al día"];
+        return mensajes.Count > 0 ? mensajes : ["al día"];
     }
 }

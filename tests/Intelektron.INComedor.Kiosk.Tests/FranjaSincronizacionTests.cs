@@ -15,9 +15,12 @@ public class FranjaSincronizacionTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    [Fact(DisplayName = "HU02-C · Sin pendientes, retenidos ni errores: «Sincronización: al día»")]
-    public void Al_dia() =>
-        Assert.Equal(["Sincronización: al día"], Mensajes(new EstadoSincronizacion(true, 0, 0, null, false)));
+    [Fact(DisplayName = "HU02-C · Sin pendientes, retenidos ni errores: «Sincronización: al día», con la etiqueta una sola vez")]
+    public void Al_dia()
+    {
+        Assert.Equal(["al día"], Mensajes(new EstadoSincronizacion(true, 0, 0, null, false)));
+        Assert.Equal("Sincronización: al día", Texto(new EstadoSincronizacion(true, 0, 0, null, false)));
+    }
 
     [Fact(DisplayName = "HU02-C · AT01 · Eventos que esperan acuse: «N pendientes»")]
     public void Pendientes() =>
@@ -49,4 +52,12 @@ public class FranjaSincronizacionTests : IDisposable
     private List<string> Mensajes(EstadoSincronizacion estado) =>
         _contexto.Render<FranjaSincronizacion>(p => p.Add(f => f.Estado, estado))
             .FindAll(".mensaje-sincronizacion").Select(m => m.TextContent.Trim()).ToList();
+
+    /// <summary>El texto visible de la franja, sin el estilo y con los espacios normalizados.</summary>
+    private string Texto(EstadoSincronizacion estado)
+    {
+        var franja = _contexto.Render<FranjaSincronizacion>(p => p.Add(f => f.Estado, estado));
+        var partes = new[] { franja.Find("strong").TextContent }.Concat(franja.FindAll(".mensaje-sincronizacion").Select(m => m.TextContent));
+        return string.Join(" ", partes.Select(p => p.Trim()));
+    }
 }

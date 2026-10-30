@@ -117,6 +117,22 @@ public class EnvioDeLotesIntegradoTests(ReceptorQueCorta receptor) : IClassFixtu
         }
     }
 
+    [Fact(DisplayName = "OWASP A07 · D11 · El puesto no le envía nada a un servidor cuyo certificado no emitió su autoridad: el ciclo queda sin respuesta y el receptor no recibe el lote")]
+    public async Task El_puesto_rechaza_un_servidor_de_otra_autoridad()
+    {
+        var (demostracion, cola) = Puesto();
+        var consumo = demostracion.Confirmar().ConsumptionId!.Value;
+        await receptor.AsegurarPuestoAsync(receptor.Certificados.Puesto);
+        using var cliente = new ClienteReceptorHttp(receptor.Direccion, receptor.Certificados.Puesto, receptor.Certificados.OtraAutoridad);
+        var sincronizador = new SincronizadorPuesto(cola, cliente);
+
+        await sincronizador.EnviarUnaVezAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal("NETWORK", sincronizador.Estado.UltimoError);
+        Assert.Equal(1, sincronizador.Estado.Pendientes);
+        Assert.Equal(0, await ConsolidadosAsync(consumo));
+    }
+
     private (ServicioDemostracion Demostracion, ColaSincronizacion Cola) Puesto()
     {
         var demostracion = new ServicioDemostracion(_archivo.Ruta, _reloj);
