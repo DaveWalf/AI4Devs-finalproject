@@ -52,7 +52,7 @@ Origen: sin AT propio; una variable mal escrita no deja al puesto sin receptor p
 El puesto SHALL abrir el puerto de depuración remota de su WebView2 sólo si la variable `INCOMEDOR_CDP_PORT` trae un número entero entre 1024 y 65535, y sólo en la interfaz de loopback. Sin la variable, o con otro valor, MUST NOT abrir ningún puerto de depuración, y la ventana MUST abrir igual. Esto vale también cuando el puesto corre elevado.
 
 #### Scenario: Puerto válido
-Origen: el spike del 29/10 (`ai4devs/gestion/spike-e2e-cdp-20261029.md`) y L58:96, «al menos un test E2E».
+Origen: el spike del 29/10 (`docs/spikes/spike-e2e-cdp-20261029.md`) y L58:96, «al menos un test E2E».
 - **GIVEN** `INCOMEDOR_CDP_PORT` con un puerto libre entre 1024 y 65535
 - **WHEN** arranca la atención
 - **THEN** un cliente del protocolo de depuración de Chromium se conecta en `127.0.0.1` y ese puerto y encuentra la pantalla de reposo, con el campo del código

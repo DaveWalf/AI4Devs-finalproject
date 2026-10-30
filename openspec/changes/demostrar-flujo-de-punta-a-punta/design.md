@@ -45,6 +45,8 @@ Riesgo de seguridad (OWASP A05): con el puerto abierto, cualquier proceso del mi
 
 `INCOMEDOR_DEMO_DIR`, `INCOMEDOR_RECEPTOR_URL` e `INCOMEDOR_CDP_PORT`. Cada una tiene una razón propia: aislar los datos, no chocar con una demostración en el 5001 y abrir la depuración. Un valor inválido se ignora y el puesto usa el valor por defecto. Nunca cae en un destino relativo al directorio de trabajo ni en `http`.
 
+Una ruta absoluta que no se puede crear (una unidad que no existe, una carpeta sin permiso) no es un valor inválido: el puesto no arranca. No vuelve a la carpeta por defecto, porque la spec le prohíbe tocarla cuando la variable trae una ruta absoluta, y así una demostración aislada nunca se mezcla con la base propia. Hoy se cierra sin mensaje; David decidió el 30/10 documentarlo y no agregar un aviso (sugerencia 1 del verify).
+
 - **Descartada: una sola variable «modo E2E».** Mezcla aislamiento con depuración, cuando una demostración aislada sin puerto abierto también sirve, por ejemplo para grabar el video sin tocar la base propia.
 - **Descartada: un archivo de configuración junto al EXE.** El paquete tendría un archivo más que validar, y la prueba tendría que escribir en la carpeta del EXE.
 
@@ -120,11 +122,13 @@ Si la primera corrida en `windows-latest` falla por una de esas tres, el remedio
 
 Workflow nuevo, `.github/workflows/release.yml`:
 - se dispara sólo con `push: tags: ['v*']`;
-- tiene `permissions: contents: read` arriba y `contents: write` sólo en su job;
-- corre en `windows-latest`, con `actions/checkout@v7` y `actions/setup-dotnet@v6`, las mismas acciones de `ci.yml`, sin terceros nuevos;
-- corre `publicar-puesto.ps1 -Version <tag>` y después `gh release create <tag> --draft` con el zip y su suma, usando `GITHUB_TOKEN`.
+- tiene `permissions: contents: read` arriba y `contents: write` sólo en el job que crea el borrador;
+- tiene dos jobs. `paquete` corre en `windows-latest`, con sólo lectura, `publicar-puesto.ps1 -Version <tag>` y sube el zip y su suma como artefacto. `borrador`, que depende de `paquete`, corre en `ubuntu-latest` sin clonar el repo, comprueba la suma y hace `gh release create <tag> --draft` con `GITHUB_TOKEN`. Así el código del repo y de NuGet nunca corre con permiso de escritura;
+- usa sólo acciones de GitHub (`checkout`, `setup-dotnet`, `upload-artifact` y `download-artifact`), sin terceros, fijadas por SHA con su versión en un comentario, porque una etiqueta como `@v7` puede moverse (OWASP A08).
 
-Si el script falla, no se llega a `gh` y no queda Release. Publicar el borrador, y sumarle el video, es de David. El tag va después del paso al SDK estable del 10/11 (D-C25). El workflow y el script se prueban antes en local, con la RC, y el workflow corre de verdad recién con el primer tag.
+Los dos jobs y las acciones por SHA los decidió David el 30/10 (sugerencia 6 del verify). Exigir que el tag esté sobre `main` se descartó, porque la entrega va en `final-project-dw`.
+
+Si el script falla, `borrador` no corre y no queda Release. Publicar el borrador, y sumarle el video, es de David. El tag va después del paso al SDK estable del 10/11 (D-C25). El workflow y el script se prueban antes en local, con la RC, y el workflow corre de verdad recién con el primer tag.
 
 - **Descartado: `gh release create` desde el equipo de David.** No arma el paquete en un entorno limpio, y la devolución pidió un pipeline que publique.
 - **Descartado: `softprops/action-gh-release` u otra acción de terceros.** Suma una dependencia con permiso de escritura (OWASP A08), y `gh` ya está en el runner.
@@ -172,14 +176,16 @@ La última tarea agrega las filas de `docs/aplicacion-del-curso.md` (E2E con la 
 
 ## Risks / Trade-offs
 
-- **[`windows-latest` sin escritorio interactivo, sin el runtime de WebView2 o sin LocalDB]** → El E2E falla con un mensaje que nombra lo que falta (D6), y el remedio en `ci.yml` es de David. El primer push lo dice; hasta entonces no está verificado.
+- **[`windows-latest` sin escritorio interactivo, sin el runtime de WebView2 o sin LocalDB]** → El E2E falla con un mensaje que nombra lo que falta (D6), y el remedio en `ci.yml` es de David. Despejado el 30/10: la primera CI de la rama, la corrida 41108336041 sobre `006fb05`, pasó el E2E en `windows-latest` sin tocar `ci.yml`.
+- **[Si el host de pruebas muere de golpe, el puesto y el receptor que lanzó el E2E quedan vivos]** → En la CI no pasa, porque el runner se descarta; en local, cada prueba usa sus puertos y su carpeta, así que un resto no rompe la corrida siguiente. Un Job Object los ataría al host; David decidió el 30/10 no agregarlo (sugerencia 8 del verify).
+- **[El zip lleva los `.pdb`]** → Un error del puesto sale con archivo y línea. La ruta que muestran es la de donde se compiló, que en el Release es la del runner. David decidió el 30/10 dejarlos.
 - **[El ciclo de 30 s hace lenta la prueba]** → Una corrida de 1,5 a 2 minutos, con esperas de hasta 45 s por paso y sin `Sleep`. Es el costo de no meter otra costura (D5).
 - **[Un puerto «libre» que otro toma entre la reserva y el arranque]** → Si el puerto no responde en el plazo, la prueba toma otros dos y reintenta una vez; el registro lo dice.
 - **[Con el puerto abierto, cualquier proceso local maneja la pantalla]** → Sólo con la variable; el E2E cierra los procesos en `finally`, y el README la marca como sólo para pruebas (D2).
 - **[La convivencia de dos WebView2 sobre la misma carpeta de datos no se midió en este repo]** → D4 la evita con `UserDataFolder`, y la tarea 3.4 corre el E2E con el puesto abierto.
 - **[La publicación autocontenida de Blazor Hybrid no se probó]** → El E2E contra el EXE publicado es la condición para armar el zip (D7).
 - **[`Microsoft.Playwright` o un transitivo con una vulnerabilidad]** → El paso «Dependencias vulnerables» y NuGet Audit lo cortan, como pasó con `Microsoft.Data.SqlClient` en el change 5. Se fija la versión corregida y se registra.
-- **[El workflow del Release no corre hasta el primer tag]** → Hace lo mismo que el script, que se prueba en local, y deja un borrador. Si falla, no queda nada publicado.
+- **[El workflow del Release no corre hasta el primer tag]** → Hace lo mismo que el script, que se prueba en local, y deja un borrador. Si falla, no queda nada publicado. David decidió el 30/10 ensayarlo antes del 10/11, con la RC, con un tag descartable que después se borra junto con su borrador (WARNING 3 del verify).
 - **[El SDK todavía es la RC]** → El tag va después del 10/11 (D8 y D-C25).
 
 ## Migration Plan

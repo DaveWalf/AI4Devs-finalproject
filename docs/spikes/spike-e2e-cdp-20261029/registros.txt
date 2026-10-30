@@ -1,0 +1,28 @@
+== salida3
+18:22:24.639 conectado por CDP a los 1397 ms · version 156.0.4314.50
+18:22:24.676 pagina https://0.0.0.1/ a los 1434 ms
+18:22:24.934 primer toque: AUTHORIZED
+18:22:24.993 segundo toque: DENIED · LOCAL_LIMIT_REACHED
+18:22:25.059 captura a los 1817 ms
+18:22:25.273 Kiosk PID 55184 cerrado: True
+== repeticion-1
+18:22:49.230 conectado por CDP a los 924 ms · version 156.0.4314.50
+18:22:49.814 pagina https://0.0.0.1/ a los 1508 ms
+18:22:49.949 primer toque: AUTHORIZED
+18:22:50.010 segundo toque: DENIED · LOCAL_LIMIT_REACHED
+18:22:50.088 captura a los 1782 ms
+18:22:50.275 Kiosk PID 40708 cerrado: True
+== repeticion-2
+18:22:52.798 conectado por CDP a los 976 ms · version 156.0.4314.50
+18:22:53.362 pagina https://0.0.0.1/ a los 1540 ms
+18:22:53.504 primer toque: AUTHORIZED
+18:22:53.562 segundo toque: DENIED · LOCAL_LIMIT_REACHED
+18:22:53.625 captura a los 1803 ms
+18:22:53.811 Kiosk PID 48868 cerrado: True
+== repeticion-3
+18:22:56.369 conectado por CDP a los 903 ms · version 156.0.4314.50
+18:22:56.934 pagina https://0.0.0.1/ a los 1469 ms
+18:22:57.019 primer toque: AUTHORIZED
+18:22:57.076 segundo toque: DENIED · LOCAL_LIMIT_REACHED
+18:22:57.137 captura a los 1671 ms
+18:22:57.320 Kiosk PID 39904 cerrado: True

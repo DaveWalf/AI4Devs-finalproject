@@ -421,10 +421,71 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
   AGENTS.md, guion-video.md y los cinco archivos del change: enlaces rotos: 0
   ```
 
+## 9. Lo que David decidió del verify
+
+El 30/10, después de la primera CI de la rama (corrida [41108336041](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41108336041) sobre `006fb05`: los tres jobs en verde, 358 pruebas y el E2E en `windows-latest` en 3 min 06 s), David miró las capturas del flujo y decidió lo abierto del verify, una pregunta por vez:
+
+| Abierto | Decisión |
+|---|---|
+| WARNING 3, el primer uso de `release.yml` | Ensayarlo ya, con la RC, con un tag descartable que después se borra junto con su borrador |
+| Sugerencia 6, endurecer `release.yml` | Dos jobs y acciones por SHA; exigir el tag sobre `main` se descarta, porque la entrega va en `final-project-dw` |
+| Los `.pdb` del zip, visto al revisar el paquete | Dejarlos |
+| Sugerencia 1, una carpeta de demostración imposible de crear | Documentarlo, sin aviso nuevo |
+| Sugerencia 8, un Job Object para el E2E | No agregarlo; anotarlo en los riesgos |
+| Sugerencia 9, la cita al spike fuera del repo | Traer el spike al repo |
+
+- [x] 9.1 Partir `release.yml` en `paquete`, con sólo lectura, y `borrador`, con `contents: write`, que depende del primero, comprueba la suma del zip y crea el borrador; y fijar las cuatro acciones por SHA, con su versión en un comentario (D8). Verificar que el YAML parsea, que ninguna acción queda sin SHA, que los dos controles fallan (la sangría rota y una acción por etiqueta) y que `ci.yml` no cambió. Pegar las salidas
+
+  Hecho. Las acciones son las de GitHub y nada más: `checkout` v7.0.1 y `setup-dotnet` v6.0.0, las mismas versiones a las que hoy resuelven `@v7` y `@v6` en `ci.yml`, más `upload-artifact` v7.0.2 y `download-artifact` v8.0.2. Cada SHA salió de `gh api repos/actions/<acción>/commits/<versión>`. El artefacto lleva sólo el zip y su suma, con `if-no-files-found: error` y un día de retención. `borrador` corre en `ubuntu-latest` sin clonar el repo, así que `gh` toma el repo de `GH_REPO`, y el tag sigue entrando por `env:`. Se parseó con la biblioteca `yaml` del CLI de OpenSpec, como en la 6.1:
+
+  ```text
+  parsea: sí
+  on: {"push":{"tags":["v*"]}}
+  permissions arriba: {"contents":"read"}
+  job paquete: runs-on windows-latest · needs - · permissions "heredados" · timeout 30
+    - actions/checkout@3d3c42e5… · actions/setup-dotnet@a98b5685… · Restore · Dependencias vulnerables · Paquete probado · actions/upload-artifact@cf430e03…
+  job borrador: runs-on ubuntu-latest · needs paquete · permissions {"contents":"write"} · timeout 10
+    - actions/download-artifact@9000827c… · Suma del zip · Release en borrador
+  acciones sin SHA: 0
+  control con la sangría rota: errores: All mapping items must start at the same column at line 21, column 1 …
+  control con checkout por @v7: acciones sin SHA: 1
+  git diff --stat -- .github/workflows/ci.yml: (vacío)
+  ```
+
+  `actionlint` sigue sin estar en este equipo y no se corrió: queda para David. El workflow se prueba de verdad con el ensayo del tag.
+
+- [x] 9.2 Documentar en D3 y en `.env.example` que una ruta absoluta imposible de crear no arranca el puesto, en lugar de caer en la carpeta por defecto. Verificar con `rg` que las dos frases están
+
+  Hecho:
+
+  ```text
+  design.md:    Una ruta absoluta que no se puede crear (una unidad que no existe, una carpeta sin permiso) no es un valor inválido: el puesto no arranca.
+  .env.example: # carpeta sin permiso), el puesto no arranca, en lugar de usar la carpeta por defecto.
+  ```
+
+- [x] 9.3 Traer el spike del 29/10 a `docs/spikes/`, con su carpeta, y citarlo desde la spec y desde la fila del spike en `docs/aplicacion-del-curso.md`. El texto queda como el del 29/10, salvo dos referencias a documentos de gestión que no están en el repo. Verificar que cada archivo copiado es idéntico al original, que no queda ninguna cita a `ai4devs/gestion` en el change, que no hay enlaces rotos (con un control que sí lo tenga) y que el `.csproj` copiado no entra a la solución. Pegar las salidas
+
+  Hecho. El `.csproj` va como evidencia, fuera de `INComedor.sln`, y la auditoría de dependencias cuenta los proyectos de la solución:
+
+  ```text
+  igual DemostracionPorCdpTests.cs 9bf54b04c3a5 · igual Spike.E2E.Cdp.csproj 6175414a28e1 · igual captura-cdp.png a1f655688758
+  igual costura-y-paquete.diff 88eb16826757 · igual primer-intento-sin-costura.txt bdcdeda72cba · igual registros.txt 3c3f8b140f38
+  sin citas a ai4devs/gestion
+  enlaces, sobre el spike, aplicacion-del-curso.md, design.md y tasks.md: enlaces relativos: 178 · enlaces rotos: 0
+  control con un enlace falso: ROTO: control.md -> no-existe.md
+  dotnet build INComedor.sln -warnaserror: 0 Advertencia(s) · 0 Errores
+  openspec validate --all --strict: Totals: 9 passed, 0 failed (9 items)
+  ```
+
+- [x] 9.4 Registrar en los riesgos del design lo decidido sin código: el E2E en `windows-latest`, ya despejado; el Job Object, que no se agrega; los `.pdb`, que se quedan; y el ensayo del Release, que va antes del 10/11. Verificar que `openspec validate --all --strict` sigue en 9 de 9
+
+  Hecho, en la misma corrida de la 9.3.
+
 ## Workflow follow-up
 
 - David revisa el informe de `/openspec-verify-change`, el E2E y el paquete local, y decide el push y el PR.
-- El primer push muestra si `windows-latest` corre el E2E (D6). Si falta algo, el paso en `ci.yml` es de David.
-- Lo que `ci.yml` necesite en `windows-latest` (por ejemplo `sqllocaldb start MSSQLLocalDB`) le va a faltar también a `release.yml`, que corre el mismo E2E. Antes del primer tag real conviene ensayar el workflow con un tag descartable, por ejemplo `v0.0.0-ensayo`, y borrar después el tag y su borrador (WARNING 3 del verify). El ensayo y el tag son de David.
+- Hecho el 30/10: el primer push mostró que `windows-latest` corre el E2E (D6) sin cambios en `ci.yml`.
+- El ensayo de `release.yml`, ya con los dos jobs de la 9.1, va antes del 10/11, con la RC: un tag descartable, por ejemplo `v0.0.0-ensayo`, y después el borrado del tag y de su borrador (WARNING 3 del verify). El ensayo y el tag son de David.
+- `actionlint` sobre `ci.yml` y `release.yml`, de David.
 - Después del SDK estable del 10/11 (D-C25), David empuja el tag, revisa el borrador, le suma el video y lo publica. El enlace del video en el README se completa entonces.
 - El change se archiva en su PR, con los enlaces a su carpeta pasados a `archive/`.
