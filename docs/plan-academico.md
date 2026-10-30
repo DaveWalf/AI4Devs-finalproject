@@ -74,8 +74,12 @@ Desde `evaluar-habilitacion-local` cada change declara dos tallas, la de David y
 |---|---|---|---|---|
 | [`evaluar-habilitacion-local`](../openspec/changes/archive/2026-10-29-evaluar-habilitacion-local/proposal.md#tallas) | David, 29/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
 | [`evaluar-habilitacion-local`](../openspec/changes/archive/2026-10-29-evaluar-habilitacion-local/proposal.md#tallas) | La IA (Claude Code, Opus 5.5), 29/10/2026 | M | 4 a 6 h | 5,7 a 8,6 h |
+| [`atender-seleccion-y-confirmacion`](../openspec/changes/atender-seleccion-y-confirmacion/proposal.md#tallas) | David, 29/10/2026 | L | 8 a 16 h | 11,4 a 22,9 h |
+| [`atender-seleccion-y-confirmacion`](../openspec/changes/atender-seleccion-y-confirmacion/proposal.md#tallas) | La IA (Claude Code, Opus 5.5), 29/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
 
 Horas reales del apply de ese change, medidas con el reloj de la sesión del 29/10/2026: **0,2 h** de la IA (12 minutos de reloj, de las 20:32 a las 20:44), con los cuatro grupos de tareas y sin la propuesta, el gate ni el informe de `/openspec-verify-change`. Quedan fuera, y no se midieron, la revisión del gate, el archivado y el PR, que son de David. La talla M de la IA sobreestimó el trabajo de la IA por un orden de magnitud; la S de David cubre además esas horas humanas. La reestimación del próximo change parte de esta diferencia y no de promediar.
+
+Horas reales del apply de `atender-seleccion-y-confirmacion`, medidas con el reloj de la sesión del 30/10/2026: **1,0 h** de la IA (62 minutos de reloj, de las 06:29, al empezar la tarea 1.1, a las 07:31, al cerrar la 7.3). Cubren 21 tareas en siete grupos, 81 pruebas nuevas, la corrida del puesto real y una pausa por un pedido de David a mitad del apply: quitar el hook de confirmación de tests, unos 5 minutos. La IA había estimado 1 a 1,5 h de reloj y declaró S (2 a 4 h) porque la escala no tiene una talla menor: la medición cayó en el piso de su propia estimación. Igual que en el change 3, la L de David cubre el tiempo humano, que no se midió: el gate, la aprobación de las dos pruebas de D1, mirar el puesto andando y el PR.
 
 ### Regla de recorte
 
