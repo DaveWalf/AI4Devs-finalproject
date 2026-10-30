@@ -35,12 +35,15 @@ function RevisarPublicacion {
 # Sin restos de una corrida anterior.
 Remove-Item -LiteralPath $zip, $suma -Force -ErrorAction SilentlyContinue
 if (Test-Path -LiteralPath $publicacion) { Remove-Item -LiteralPath $publicacion -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $artefactos | Out-Null
 
-# Restore y build separados, como en ci.yml: en windows-latest, el restore implícito del build con -warnaserror
-# falló con MSB4181 y ninguna advertencia (ensayo v0.0.0-ensayo, corrida 41132357042), y en local no se reprodujo.
-Invocar 'El restore' { dotnet restore INComedor.sln }
-Invocar 'El build' { dotnet build INComedor.sln -c Release -warnaserror --no-restore }
-Invocar 'La publicación' { dotnet publish src/Intelektron.INComedor.Kiosk -c Release -r win-x64 --self-contained true -o $publicacion }
+# Restore y build separados, como en ci.yml. Cada paso deja su binlog en artifacts/, fuera del zip: en windows-latest,
+# un restore posterior a «Dependencias vulnerables» falló con MSB4181 y sin advertencias (corridas 41132357042 y
+# 41139494001), y en local no se reprodujo. release.yml sube los binlog si el job falla.
+$binlog = { param([string] $Paso) '-bl:' + (Join-Path $artefactos "$Paso.binlog") }
+Invocar 'El restore' { dotnet restore INComedor.sln (& $binlog 'restore') }
+Invocar 'El build' { dotnet build INComedor.sln -c Release -warnaserror --no-restore (& $binlog 'build') }
+Invocar 'La publicación' { dotnet publish src/Intelektron.INComedor.Kiosk -c Release -r win-x64 --self-contained true -o $publicacion (& $binlog 'publicacion') }
 RevisarPublicacion
 
 # El E2E contra el EXE publicado, con un entorno sin .NET a la vista (escenario «Abre sin .NET instalado»).

@@ -29,10 +29,6 @@ jobs:
       - name: Restore
         run: dotnet restore INComedor.sln
 
-      - name: Dependencias vulnerables
-        shell: pwsh
-        run: ./.github/scripts/auditar-dependencias.ps1
-
       # El mismo script que corre en local: compila, publica, corre el E2E contra el EXE publicado y sólo entonces
       # escribe el zip y su suma. Si falla, el job borrador no corre y no queda Release. El tag entra por el entorno,
       # nunca interpolado en el script (OWASP A03), y el script lo valida.
@@ -41,6 +37,22 @@ jobs:
         env:
           VERSION: ${{ github.ref_name }}
         run: ./.github/scripts/publicar-puesto.ps1 -Version $env:VERSION
+
+      # Después del paquete y no antes, como en ci.yml, donde nada restaura después de la auditoría: en windows-latest,
+      # un restore posterior a ella falló con MSB4181 (corridas 41132357042 y 41139494001). Un paquete vulnerable sigue
+      # cortando el job antes de subir el zip, así que no hay borrador.
+      - name: Dependencias vulnerables
+        shell: pwsh
+        run: ./.github/scripts/auditar-dependencias.ps1
+
+      # Sólo si el job falla: los binlog del script, para ver la causa. Sin datos del repo ni secretos en el entorno.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: diagnostico
+          path: artifacts/*.binlog
+          if-no-files-found: ignore
+          retention-days: 3
 
       # Sólo el zip y su suma pasan al job siguiente; la carpeta publicada no.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
