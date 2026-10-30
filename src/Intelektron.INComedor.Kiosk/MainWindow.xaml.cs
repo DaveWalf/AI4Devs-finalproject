@@ -5,6 +5,7 @@ using Intelektron.INComedor.Kiosk.Demostracion;
 using Intelektron.INComedor.Kiosk.Sincronizacion;
 using Microsoft.AspNetCore.Components.WebView.Wpf;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Web.WebView2.Core;
 
 namespace Intelektron.INComedor.Kiosk;
 
@@ -14,21 +15,24 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        var carpeta = CarpetaDemostracion();
-        var rutaBase = Path.Combine(carpeta, "incomedor.db");
+        // La carpeta, el receptor y el WebView2 salen del entorno; sin sus variables, lo de siempre (D1 a D4).
+        var entorno = EntornoDemostracion.Resolver(
+            Environment.GetEnvironmentVariable, Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+        Directory.CreateDirectory(entorno.Carpeta);
+        ConfigurarWebView2(entorno);
         var demostracion = Environment.GetCommandLineArgs().Contains("--demostracion", StringComparer.OrdinalIgnoreCase);
 
         var servicios = new ServiceCollection();
         servicios.AddWpfBlazorWebView();
         if (demostracion)
         {
-            servicios.AddSingleton(new ServicioDemostracion(rutaBase, TimeProvider.System));
+            servicios.AddSingleton(new ServicioDemostracion(entorno.RutaBase, TimeProvider.System));
         }
         else
         {
             // El receptor de demostración (D12) deja sus certificados en certificados\; sin ellos, el puesto atiende sin receptor.
-            var receptor = ClienteReceptorHttp.DesdeCarpetaDemostracion(Path.Combine(carpeta, "certificados"), new Uri("https://localhost:5001/"));
-            var atencion = new ServicioAtencion(rutaBase, TimeProvider.System, new ImpresoraSimulada(Path.Combine(carpeta, "comprobantes")), receptor);
+            var receptor = ClienteReceptorHttp.DesdeCarpetaDemostracion(entorno.CarpetaCertificados, entorno.DireccionReceptor);
+            var atencion = new ServicioAtencion(entorno.RutaBase, TimeProvider.System, new ImpresoraSimulada(entorno.CarpetaComprobantes), receptor);
             servicios.AddSingleton(atencion);
             servicios.AddSingleton(new MaquinaAtencion(atencion));
         }
@@ -41,12 +45,29 @@ public partial class MainWindow : Window
         });
     }
 
-    /// <summary>%LOCALAPPDATA%\INComedor\demo\ (D5): la base y los comprobantes; se reinicia borrando esa carpeta.</summary>
-    private static string CarpetaDemostracion()
+    /// <summary>
+    /// Con una carpeta elegida, el WebView2 guarda ahí sus datos: dos entornos con argumentos distintos no comparten carpeta
+    /// (D4). Con un puerto válido, abre la depuración remota, que Chromium escucha sólo en loopback; entra por código porque
+    /// una app elevada ignora WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (D2). Sin las variables no se toca nada.
+    /// </summary>
+    private void ConfigurarWebView2(EntornoDemostracion entorno)
     {
-        var carpeta = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "INComedor", "demo");
-        Directory.CreateDirectory(carpeta);
-        return carpeta;
+        if (entorno.CarpetaDatosWebView2 is null && entorno.PuertoCdp is null)
+        {
+            return;
+        }
+
+        blazorWebView.BlazorWebViewInitializing = (_, e) =>
+        {
+            if (entorno.CarpetaDatosWebView2 is { } datos)
+            {
+                e.UserDataFolder = datos;
+            }
+
+            if (entorno.PuertoCdp is { } puerto)
+            {
+                e.EnvironmentOptions = new CoreWebView2EnvironmentOptions { AdditionalBrowserArguments = $"--remote-debugging-port={puerto}" };
+            }
+        };
     }
 }

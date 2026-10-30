@@ -68,7 +68,7 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
 ## 3. Las costuras en la ventana real
 
-- [ ] 3.1 Escribir la preparación del E2E (D5 y D6):
+- [x] 3.1 Escribir la preparación del E2E (D5 y D6):
   - las tres comprobaciones previas: WebView2 Runtime, SQL Server y sesión interactiva;
   - la carpeta temporal, los dos puertos y la base `INComedorE2E_<8 hex>`;
   - el arranque y el cierre por PID con su árbol;
@@ -77,9 +77,66 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
   - la lectura de los puertos en escucha del árbol de procesos (`CreateToolhelp32Snapshot` y `GetExtendedTcpTable`).
 
   Control negativo: con `INCOMEDOR_SQLSERVER` en una instancia inexistente, la prueba falla con un mensaje que nombra SQL Server, y después de la corrida no queda ningún proceso del puesto ni del receptor. Pegar el mensaje y el conteo de procesos
-- [ ] 3.2 Escribir las pruebas de las costuras con la ventana real: «Puerto válido» (se conecta por CDP, ve `#codigo` y el puerto escucha sólo en loopback), «Sin la variable», y `abc`, `80` y `70000` (la ventana abre y ningún proceso del puesto escucha). Verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` que «Puerto válido» falla contra el `MainWindow` de hoy, porque nada escucha, y pegar la salida
-- [ ] 3.3 Aplicar el entorno en `MainWindow` (D2 y D4): la carpeta, la dirección del receptor, `UserDataFolder` en `<carpeta>\webview2` y el puerto por `BlazorWebViewInitializing`, este último sólo con un puerto válido. Verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` que las pruebas de 3.2 pasan, y con `dotnet test INComedor.sln` que todo sigue en verde. Pegar los totales
-- [ ] 3.4 Correr el E2E con el puesto abierto en otra ventana, sin variables (`dotnet run --project src/Intelektron.INComedor.Kiosk`). Verificar que pasa y que la foto de `%LOCALAPPDATA%\INComedor\demo\` no cambió (D4). Cerrar el puesto por su PID. Pegar el resultado
+
+  Hecho en `EscenarioE2E.cs` y `ProcesosYPuertos.cs`. Las tres comprobaciones se juntan en un solo mensaje que nombra cada falta y su remedio en la CI. Las variables `INCOMEDOR_*` y `WEBVIEW2_*` heredadas no pasan al puesto: la prueba fija las suyas. Cada cierre registra cuántos procesos tenía el árbol y cuántos quedaron vivos, y falla si queda alguno. Control negativo, con las 5 pruebas de la 3.2 y `INCOMEDOR_SQLSERVER=E2E-NO-EXISTE\NINGUNA` sólo en ese proceso:
+
+  ```text
+  System.InvalidOperationException : El E2E no puede correr en este entorno. Falta:
+  - SQL Server: no hay conexión con «E2E-NO-EXISTE\NINGUNA» (INCOMEDOR_SQLSERVER, o LocalDB por defecto; en la CI, «sqllocaldb start MSSQLLocalDB» en ci.yml): Error relacionado con la red o específico de la instancia [...] (provider: Interfaces de red SQL, error: 26 - Error al buscar el servidor/instancia especificado)
+  Intelektron.INComedor.E2E.Tests.dll (net11.0|x64) error con 5 errores [+0/x5/?0] (20s 832ms)
+  procesos del puesto: 0 · del receptor: 0
+  ```
+- [x] 3.2 Escribir las pruebas de las costuras con la ventana real: «Puerto válido» (se conecta por CDP, ve `#codigo` y el puerto escucha sólo en loopback), «Sin la variable», y `abc`, `80` y `70000` (la ventana abre y ningún proceso del puesto escucha). Verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` que «Puerto válido» falla contra el `MainWindow` de hoy, porque nada escucha, y pegar la salida
+
+  Hecho en `CosturasDelPuestoTests.cs`. Sin CDP, «la ventana abre en reposo» se comprueba así: el puesto sigue vivo, tiene su ventana principal, su WebView2 arrancó y la pantalla de atención preparó su base en la carpeta de la prueba (`MaquinaAtencion.Iniciar`). Las escuchas del árbol se observan durante 5 s.
+
+  **Cambio de orden, y por qué.** El `MainWindow` de hoy ignora `INCOMEDOR_DEMO_DIR` y habría creado `%LOCALAPPDATA%\INComedor\demo\`, que no existía y en este apply sólo se lee. Por eso el rojo se vio con la primera mitad de la 3.3 ya puesta (la carpeta, la dirección y `UserDataFolder`) y sin el puerto. Falla por la misma razón: nada escucha.
+
+  ```text
+  System.TimeoutException : CDP no respondió en 127.0.0.1:52582 en 60 s.
+  Intelektron.INComedor.E2E.Tests.dll (net11.0|x64) error con 1 errores [+4/x1/?0] (1m 31s 014ms)
+  total: 5 · error: 1 · correcto: 4
+  carpeta demo existe: False · procesos del puesto vivos: 0
+  registro de «Sin la variable»: ventana «INComedor · puesto de demostración» en reposo a los 1380 ms · 6 procesos de WebView2 · base preparada
+                                 escuchas del árbol del puesto en 5 s: ninguna
+                                 PID 15952 cerrado con su árbol: 7 procesos, vivos después: 0
+  ```
+- [x] 3.3 Aplicar el entorno en `MainWindow` (D2 y D4): la carpeta, la dirección del receptor, `UserDataFolder` en `<carpeta>\webview2` y el puerto por `BlazorWebViewInitializing`, este último sólo con un puerto válido. Verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` que las pruebas de 3.2 pasan, y con `dotnet test INComedor.sln` que todo sigue en verde. Pegar los totales
+
+  Hecho. Sin ninguna de las dos variables, `MainWindow` no asigna `BlazorWebViewInitializing`, y el WebView2 arranca como hoy. «Puerto válido» deja su captura `01-reposo-por-cdp.png`, y su registro es el control positivo de la lectura de escuchas: ve `127.0.0.1:<puerto>` en el proceso del navegador del WebView2, hijo del puesto, y nada más.
+
+  Las pruebas de ausencia (`abc`, `80` y `70000`) pasaban antes de que existiera el puerto, así que se vieron fallar con una mutación: el parseo del spike, `int.TryParse` sin rango, en lugar de `entorno.PuertoCdp`. Después se restauró, con el hash comparado. Para que MSBuild recompilara se tocó la fecha del fuente, porque `Copy-Item` conserva la del respaldo, y sin eso corrieron los binarios mutados.
+
+  ```text
+  E2E.Tests correcto [+5/x0/?0] (35s 110ms)
+  registro de «Puerto válido»: conectado por CDP a los 1164 ms · WebView2 156.0.4314.50
+                               escuchas del árbol del puesto en 5 s: 127.0.0.1:6920 (PID 9540)
+  mutación (int.TryParse sin rango): con errores [...] ningún proceso del puesto escucha(valor: "80")
+      Assert.Empty() Failure: Collection was not empty
+      Collection: [Escucha { Direccion = 127.0.0.1, Puerto = 80, Pid = 39616 }]
+      [+2/x1/?0]
+  restaurada: 8F7DEA33...C6BD7414 igual al respaldo
+
+  Domain 68 · Contracts 23 · Sync.Api 62 · Infrastructure.Sqlite 117 · Kiosk 79 · E2E 5
+    total: 354
+    error: 0
+    correcto: 354
+  carpeta demo existe: False · procesos del puesto vivos: 0
+  ```
+- [x] 3.4 Correr el E2E con el puesto abierto en otra ventana, sin variables (`dotnet run --project src/Intelektron.INComedor.Kiosk`). Verificar que pasa y que la foto de `%LOCALAPPDATA%\INComedor\demo\` no cambió (D4). Cerrar el puesto por su PID. Pegar el resultado
+
+  Hecho el 30/10 a las 13:12. El puesto abierto sin variables crea `%LOCALAPPDATA%\INComedor\demo\`, que antes no existía. David decidió en el apply correr la tarea y, como no existía, borrarla al final para dejarla como estaba. El puesto abierto usa la carpeta de datos del WebView2 de siempre, y cada prueba del E2E usa la suya, en `<carpeta>\webview2`.
+
+  ```text
+  carpeta demo antes de abrir el puesto: no existe
+  dotnet run PID 35996 → Intelektron.INComedor.Kiosk.exe PID 37700, «INComedor · puesto de demostración»
+  E2E.Tests correcto [+5/x0/?0] (34s 146ms) · total: 5 · error: 0
+  foto propia antes y después del E2E: igual (\incomedor.db 253952 2026-10-30T16:12:25.6133343Z)
+  registro de cada prueba: foto de %LOCALAPPDATA%\INComedor\demo\: igual (existe)   (5 de 5)
+  árbol del dotnet run antes de cerrar: 35996, 36824, 37700, 40152 · vivos después: 0
+  procesos del puesto o de su WebView2 que quedan: 0
+  carpeta demo después de borrarla: no existe
+  ```
 
 ## 4. El flujo principal de punta a punta
 
