@@ -147,6 +147,8 @@
             break;
     }
 
+    <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
+
     @if (Servicio.Impresora is ImpresoraSimulada simulada)
     {
         <FranjaImpresora Impresora="simulada" />
@@ -159,6 +161,7 @@
 
     protected override void OnInitialized()
     {
+        Servicio.SincronizacionCambiada += RefrescarSincronizacion;
         Maquina.Iniciar();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
@@ -201,5 +204,12 @@
         _ => "En cola",
     };
 
-    public void Dispose() => _temporizador?.Dispose();
+    /// <summary>El ciclo de envío avisa desde su hilo; la franja se redibuja en el del componente.</summary>
+    private void RefrescarSincronizacion() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Servicio.SincronizacionCambiada -= RefrescarSincronizacion;
+        _temporizador?.Dispose();
+    }
 }

@@ -56,10 +56,15 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 ## Comandos
 
 - Build: `dotnet build INComedor.sln -warnaserror` (vigente).
-- Test: `dotnet test INComedor.sln` (vigente).
+- Test: `dotnet test INComedor.sln` (vigente). Las pruebas del receptor usan SQL Server: `(localdb)\MSSQLLocalDB`,
+  u otra instancia en `INCOMEDOR_SQLSERVER`; cada clase crea su base y la borra.
 - Spec: `openspec validate --all --strict` (vigente).
 - Puesto de demostración: `dotnet run --project src/Intelektron.INComedor.Kiosk` (ventana WPF con la atención; la
   pantalla anterior, con `-- --demostracion`). La base y los comprobantes de la impresora simulada quedan en
   `%LOCALAPPDATA%\INComedor\demo\`, que se reinicia borrando esa carpeta. Los códigos sintéticos están en el README.
-- Receptor esqueleto: `dotnet run --project src/Intelektron.INComedor.Sync.Api` (`http://localhost:5000`; responde 501).
+- Receptor de demostración: `dotnet run --project src/Intelektron.INComedor.Sync.Api -- --demostracion`
+  (`https://localhost:5001`, TLS mutuo). Genera certificados sintéticos sin contraseña en
+  `%LOCALAPPDATA%\INComedor\demo\certificados\`, que el puesto usa si existen, y la base `INComedorReceptorDemo`
+  en la instancia de `INCOMEDOR_SQLSERVER`. Sin `--demostracion` necesita `ConnectionStrings:Receptor` y
+  `Receptor:Autoridad`; sin ellos responde 503.
 - Todos desde la raíz del repo: `global.json` se lee del directorio actual.

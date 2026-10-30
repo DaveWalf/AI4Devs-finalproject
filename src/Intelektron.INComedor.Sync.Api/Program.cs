@@ -8,18 +8,37 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 const string RutaLotes = "/api/incomedor/v1/sync-batches";
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.ConfigureKestrel(kestrel => kestrel.ConfigureHttpsDefaults(https =>
+builder.WebHost.ConfigureKestrel((contexto, kestrel) =>
 {
-    // Pide el certificado de equipo sin cortar el handshake: la cadena, la vigencia y el registro los valida
-    // FiltroEquipo, para responder 401 o 403 en lugar de cerrar la conexión sin respuesta (D2).
-    https.ClientCertificateMode = ClientCertificateMode.AllowCertificate;
-    https.AllowAnyClientCertificate();
-}));
+    kestrel.ConfigureHttpsDefaults(https =>
+    {
+        // Pide el certificado de equipo sin cortar el handshake: la cadena, la vigencia y el registro los valida
+        // FiltroEquipo, para responder 401 o 403 en lugar de cerrar la conexión sin respuesta (D2).
+        https.ClientCertificateMode = ClientCertificateMode.AllowCertificate;
+        https.AllowAnyClientCertificate();
+    });
+    if (DemostracionReceptor.Activa(contexto.Configuration, args))
+    {
+        DemostracionReceptor.Escuchar(kestrel, contexto.Configuration);
+    }
+});
 builder.Services.TryAddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<ConfiguracionReceptor>();
+builder.Services.AddSingleton(servicios =>
+{
+    var configuracion = servicios.GetRequiredService<IConfiguration>();
+    return DemostracionReceptor.Activa(configuracion, args)
+        ? DemostracionReceptor.Configuracion(configuracion)
+        : new ConfiguracionReceptor(configuracion);
+});
 builder.Services.AddSingleton<IngestaLotes>();
 
 var app = builder.Build();
+
+// Con --demostracion: certificados, base y puesto registrado, antes de que Kestrel cargue el certificado (D12).
+if (DemostracionReceptor.Activa(app.Configuration, args))
+{
+    DemostracionReceptor.Preparar(app.Configuration);
+}
 
 // Una excepción no prevista responde 503 SERVICE_UNAVAILABLE con Retry-After: el puesto reintenta el mismo lote, y
 // eso es inocuo porque el lote es idempotente. El registro lleva el correlationId y el tipo, nunca el cuerpo (D8).

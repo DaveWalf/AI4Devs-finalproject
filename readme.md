@@ -10,11 +10,10 @@ con la política inicial. En multipuesto auditado puede configurarse suspensión
 de nuevas confirmaciones durante la pérdida de comunicación. INWeb distribuye
 información y consolida los hechos cuando se recupera la conexión.
 
-**Estado:** entrega 2 presentada el 29/10; entrega final en curso. Hay un puesto de demostración que confirma
-sobre SQLite con la transacción de RB06, un receptor de lotes esqueleto que responde 501 y 61
-pruebas en verde (ver §2.6); la atención completa del puesto y la ingesta idempotente del receptor
-son de la entrega final. El resto del documento describe el diseño del producto. La
-demostración usa datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
+**Estado:** entrega 2 presentada el 29/10; entrega final en curso. Hay un puesto de demostración que atiende
+y confirma sobre SQLite con la transacción de RB06, y un receptor de lotes idempotente sobre SQL Server con
+TLS mutuo, al que el puesto envía su outbox; 317 pruebas en verde (ver §2.6). El resto del documento describe
+el diseño del producto. La demostración usa datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
 
 ## Índice
 
@@ -185,23 +184,34 @@ Muestra una persona y una opción sintéticas fijas y el botón «Confirmar». C
 intención nueva: el primero del día muestra `AUTHORIZED` con los identificadores de consumo y de
 comprobante, y el segundo `DENIED` con `LOCAL_LIMIT_REACHED`.
 
-Las dos pantallas comparten la base `%LOCALAPPDATA%\INComedor\demo\incomedor.db`, en la versión de esquema 2.
+Las dos pantallas comparten la base `%LOCALAPPDATA%\INComedor\demo\incomedor.db`, en la versión de esquema 3.
 Se crea y se siembra con datos sintéticos al abrir la ventana por primera vez, y una base que ya tiene datos
-no se vuelve a sembrar. Una base de la versión 1 se actualiza sin perder sus consumos. Para repetir la
+no se vuelve a sembrar. Una base de la versión 1 o 2 se actualiza sin perder sus consumos. Para repetir la
 demostración, cerrar la ventana y borrar la carpeta `%LOCALAPPDATA%\INComedor\demo\`.
 
-**Receptor de lotes (esqueleto).**
+**Receptor de lotes y puesto conectados.** En dos terminales, primero el receptor y después el puesto:
 
 ```powershell
-dotnet run --project src/Intelektron.INComedor.Sync.Api
-curl.exe -i -X POST http://localhost:5000/api/incomedor/v1/sync-batches
+dotnet run --project src/Intelektron.INComedor.Sync.Api -- --demostracion
+dotnet run --project src/Intelektron.INComedor.Kiosk
 ```
 
-Lo que hace: declara las dos operaciones de TK01.1, `POST /api/incomedor/v1/sync-batches` y
-`GET /api/incomedor/v1/sync-batches/{batchId}`, y a las dos les responde `501` con `application/problem+json`.
-Lo que no hace: no lee el cuerpo, no persiste nada, no autentica y nunca responde un 2xx, así que ningún
-puesto puede tomar una respuesta suya como acuse de un lote. La ingesta idempotente llega con
-`recibir-lotes-idempotente`. No se publica ni se despliega mientras no tenga autenticación.
+El receptor escucha en `https://localhost:5001` con TLS mutuo. La primera vez genera tres certificados
+sintéticos en `%LOCALAPPDATA%\INComedor\demo\certificados\`: la autoridad, el del receptor y el del puesto.
+Además crea la base `INComedorReceptorDemo` en la instancia de SQL Server de la variable `INCOMEDOR_SQLSERVER`
+(si no está, `(localdb)\MSSQLLocalDB`) y registra el puesto de la demostración. Al abrir la atención, el puesto
+encuentra esos certificados y envía sus lotes cada 30 s, fuera de la confirmación. La franja «Sincronización», al
+pie, dice «Sincronización: al día», cuántos eventos están pendientes o retenidos para revisión, «Error técnico:
+credencial del equipo» o «Sin receptor configurado». Con el receptor detenido, la atención sigue y la franja cuenta
+los pendientes; al volver, el puesto los envía sin duplicarlos, y un acuse perdido se recupera consultando el lote.
+
+Los tres PFX no tienen contraseña. Son sintéticos, viven en el perfil del usuario, fuera del repo, y sólo
+permiten mandar lotes sintéticos a un receptor local; no se usan fuera de la demostración. Para repetirla, cerrar
+el puesto y el receptor, y borrar `%LOCALAPPDATA%\INComedor\demo\` y la base `INComedorReceptorDemo`.
+
+Sin `--demostracion`, el receptor lee la cadena de conexión (`ConnectionStrings:Receptor`) y la autoridad de los
+equipos (`Receptor:Autoridad`) de su configuración, sin valores por defecto; sin ellas responde `503`. No se
+publica ni se despliega: la emisión, la renovación y la revocación reales de certificados quedan fuera del corte.
 
 ## 2. Arquitectura del sistema
 
@@ -284,8 +294,9 @@ tests/                                         un proyecto de pruebas por proyec
 
 De ese árbol, hoy el Kiosk implementa la atención con identificación simulada por código, la asistencia
 con impresora simulada y la pantalla de demostración; `Infrastructure.Sqlite`, el primer corte de la
-transacción, la identificación, la impresión y el outbox (sin bitácoras mensuales), y `Sync.Api` sólo el esqueleto
-que responde 501 y no acusa nada. Contracts hoy contiene los eventos de outbox, no todo el JSON versionado.
+transacción, la identificación, la impresión, el outbox y la cola de lotes (sin bitácoras mensuales), y `Sync.Api`
+la ingesta idempotente de lotes sobre SQL Server, sin el adaptador INWeb. Contracts hoy contiene los eventos de
+outbox, el lote, el acuse y el JSON canónico RFC 8785, no todo el JSON versionado.
 
 ### 2.4. Infraestructura y despliegue
 
@@ -339,11 +350,14 @@ El [plan de pruebas](docs/pruebas.md) cubre dominio, SQLite real, sincronizació
 contratos, E2E y dispositivos. Casos centrales: arranque offline, cupo local,
 doble confirmación, caída tras commit, reimpresión, snapshot parcial, acuse perdido
 y ambos modos biométricos. Incluye también saltos del reloj, cálculo del día de
-negocio y vigencias. Hoy corren 61 pruebas, todas en verde, con
-`dotnet test INComedor.sln` desde la raíz del repositorio: 21 de Domain, 27 de
-Infrastructure.Sqlite sobre un archivo SQLite real temporal, 9 del Kiosk y 4 del receptor. Cubren
-la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después del commit y la
-concurrencia por el último cupo, además de la pantalla de demostración y el 501 del receptor. El
+negocio y vigencias. Hoy corren 317 pruebas, todas en verde, con
+`dotnet test INComedor.sln` desde la raíz del repositorio: 68 de Domain, 114 de
+Infrastructure.Sqlite sobre un archivo SQLite real temporal, 51 del Kiosk, 61 del receptor y 23 de Contracts.
+Las del receptor y las del envío integrado necesitan una instancia de SQL Server: `(localdb)\MSSQLLocalDB`
+por defecto, u otra en la variable `INCOMEDOR_SQLSERVER`; cada clase crea su base y la borra al terminar.
+Cubren la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después del commit, la
+concurrencia por el último cupo, la atención y el comprobante, y el envío de lotes: el acuse perdido, el
+reenvío idéntico, el TLS mutuo real y la deduplicación en el receptor (AT13, AT27 y AT50). El
 resto de los casos del plan sigue especificado, no ejecutado.
 
 ## 3. Modelo de datos

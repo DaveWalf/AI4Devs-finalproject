@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using Intelektron.INComedor.Kiosk.Atencion;
 using Intelektron.INComedor.Kiosk.Demostracion;
+using Intelektron.INComedor.Kiosk.Sincronizacion;
 using Microsoft.AspNetCore.Components.WebView.Wpf;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,7 +26,9 @@ public partial class MainWindow : Window
         }
         else
         {
-            var atencion = new ServicioAtencion(rutaBase, TimeProvider.System, new ImpresoraSimulada(Path.Combine(carpeta, "comprobantes")));
+            // El receptor de demostración (D12) deja sus certificados en certificados\; sin ellos, el puesto atiende sin receptor.
+            var receptor = ClienteReceptorHttp.DesdeCarpetaDemostracion(Path.Combine(carpeta, "certificados"), new Uri("https://localhost:5001/"));
+            var atencion = new ServicioAtencion(rutaBase, TimeProvider.System, new ImpresoraSimulada(Path.Combine(carpeta, "comprobantes")), receptor);
             servicios.AddSingleton(atencion);
             servicios.AddSingleton(new MaquinaAtencion(atencion));
         }

@@ -20,6 +20,7 @@ public sealed partial class ClienteReceptorHttp : IReceptorLotes, IDisposable
     private const int TopeRespuesta = 1024 * 1024;
 
     private readonly HttpClient _http;
+    private readonly List<X509Certificate2> _propios = [];
 
     public ClienteReceptorHttp(Uri direccion, X509Certificate2 certificadoPuesto, X509Certificate2 autoridad, TimeSpan? espera = null)
     {
@@ -36,6 +37,31 @@ public sealed partial class ClienteReceptorHttp : IReceptorLotes, IDisposable
         };
     }
 
+    /// <summary>
+    /// El cliente de la demostración (D12): sólo si la carpeta tiene puesto.pfx y autoridad.pfx, que genera el receptor
+    /// con --demostracion; de la autoridad se usa sólo la parte pública. Sin ellos, null: el puesto atiende sin receptor.
+    /// </summary>
+    public static ClienteReceptorHttp? DesdeCarpetaDemostracion(string carpeta, Uri direccion)
+    {
+        var rutaPuesto = Path.Combine(carpeta, "puesto.pfx");
+        var rutaAutoridad = Path.Combine(carpeta, "autoridad.pfx");
+        if (!File.Exists(rutaPuesto) || !File.Exists(rutaAutoridad))
+        {
+            return null;
+        }
+
+        var puesto = X509CertificateLoader.LoadPkcs12FromFile(rutaPuesto, null);
+        X509Certificate2 autoridad;
+        using (var conClave = X509CertificateLoader.LoadPkcs12FromFile(rutaAutoridad, null))
+        {
+            autoridad = X509CertificateLoader.LoadCertificate(conClave.RawData);
+        }
+
+        var cliente = new ClienteReceptorHttp(direccion, puesto, autoridad);
+        cliente._propios.AddRange([puesto, autoridad]);
+        return cliente;
+    }
+
     public Task<RespuestaReceptor> EnviarAsync(LoteSincronizacion lote, CancellationToken cancelacion)
     {
         var pedido = new HttpRequestMessage(HttpMethod.Post, RutaLotes) { Content = new ByteArrayContent(lote.Cuerpo) };
@@ -47,7 +73,14 @@ public sealed partial class ClienteReceptorHttp : IReceptorLotes, IDisposable
     public Task<RespuestaReceptor> ConsultarAsync(Guid batchId, CancellationToken cancelacion) =>
         PedirAsync(new HttpRequestMessage(HttpMethod.Get, $"{RutaLotes}/{batchId}"), cancelacion);
 
-    public void Dispose() => _http.Dispose();
+    public void Dispose()
+    {
+        _http.Dispose();
+        foreach (var certificado in _propios)
+        {
+            certificado.Dispose();
+        }
+    }
 
     private async Task<RespuestaReceptor> PedirAsync(HttpRequestMessage pedido, CancellationToken cancelacion)
     {
