@@ -6,13 +6,36 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
 ## 1. Precondiciones y dependencia
 
-- [ ] 1.1 Comprobar la línea de base:
+- [x] 1.1 Comprobar la línea de base:
   - `recibir-lotes-idempotente` archivado (`openspec list` sólo muestra este change e `imponer-invariantes-en-codigo`);
   - `openspec validate --all --strict` sin errores;
   - `dotnet test INComedor.sln` con 322 en verde, con `INCOMEDOR_SQLSERVER` en `INMO-DW-AR` en este equipo.
 
   Pegar las tres líneas finales.
-- [ ] 1.2 Agregar `Microsoft.Playwright` 1.64.1 a `Directory.Packages.props` y crear `tests/Intelektron.INComedor.E2E.Tests` en la solución (D5): xUnit v3, `net11.0-windows10.0.17763.0`, con `Microsoft.Data.SqlClient` y referencias al puesto y al receptor con `ReferenceOutputAssembly="false"`. Si un transitivo trae una vulnerabilidad, fijar la versión corregida como en `Kiosk.Tests`. Verificar con `./.github/scripts/auditar-dependencias.ps1` (exit 0), con `dotnet build INComedor.sln -warnaserror` (0 advertencias y 0 errores) y con `git diff --stat -- INComedor.sln`, que muestra sólo el proyecto nuevo. Pegar las salidas
+
+  Hecho el 30/10 a las 12:48, sobre `9828599`:
+
+  ```text
+  demostrar-flujo-de-punta-a-punta     0/21 tasks    2m ago
+  imponer-invariantes-en-codigo        17/19 tasks   17h ago
+  Totals: 9 passed, 0 failed (9 items)
+  total: 322 · error: 0 (Contracts 23, Domain 68, Sync.Api 62, Infrastructure.Sqlite 117, Kiosk 52)
+  ```
+- [x] 1.2 Agregar `Microsoft.Playwright` 1.64.1 a `Directory.Packages.props` y crear `tests/Intelektron.INComedor.E2E.Tests` en la solución (D5): xUnit v3, `net11.0-windows10.0.17763.0`, con `Microsoft.Data.SqlClient` y referencias al puesto y al receptor con `ReferenceOutputAssembly="false"`. Si un transitivo trae una vulnerabilidad, fijar la versión corregida como en `Kiosk.Tests`. Verificar con `./.github/scripts/auditar-dependencias.ps1` (exit 0), con `dotnet build INComedor.sln -warnaserror` (0 advertencias y 0 errores) y con `git diff --stat -- INComedor.sln`, que muestra sólo el proyecto nuevo. Pegar las salidas
+
+  Hecho. `Microsoft.Data.SqlClient` 7.1.1 trae el mismo `Pkcs` 9.0.18 que en el change 5, así que el proyecto fija `System.Security.Cryptography.Pkcs` 11.0.0-rc.2, como `Kiosk.Tests`. La configuración de la prueba entra como `AssemblyMetadata` («Configuracion»), para buscar los EXE en `bin\<Configuracion>\`. `dotnet sln add` de .NET 11 suma también las referencias y aborta porque ya están en la solución; se agregó con `--include-references false`.
+
+  ```text
+  proyectos auditados: 11 de 11 · paquetes vulnerables: 0
+  exit auditoría 0
+  Compilación correcta.
+      0 Advertencia(s)
+      0 Errores
+   INComedor.sln | 15 +++++++++++++++
+   1 file changed, 15 insertions(+)        (un Project, sus 12 configuraciones y su carpeta «tests»)
+  ```
+
+  Hasta la 3.1 el proyecto no tiene pruebas, y `dotnet test` sobre él sale 8 («No tests ran»), medido.
 
 ## 2. El entorno de la demostración, sin ventana
 
