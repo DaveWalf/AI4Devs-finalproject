@@ -81,9 +81,9 @@ Las pruebas existentes no se tocan, salvo las dos de D1 que aprobó David en el 
 
 ## 7. Verificación integrada
 
-- [ ] 7.1 Correr `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (las 102 anteriores, dos de ellas cambiadas en 1.2, más las nuevas, todas en verde) y `openspec validate --all --strict` (sin errores), y pegar las tres salidas
-- [ ] 7.2 Comprobar que cada uno de los 52 escenarios de los cuatro deltas tiene su prueba. Listar con `rg -n "DisplayName"` sobre los archivos nuevos y las dos pruebas cambiadas, y pegar la tabla escenario → prueba, sin huecos
-- [ ] 7.3 Correr el puesto real (`dotnet run --project src/Intelektron.INComedor.Kiosk`), con la carpeta `%LOCALAPPDATA%\INComedor\demo\` respaldada antes y restaurada después. Recorrer:
+- [x] 7.1 Correr `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (las 102 anteriores, dos de ellas cambiadas en 1.2, más las nuevas, todas en verde) y `openspec validate --all --strict` (sin errores), y pegar las tres salidas
+- [x] 7.2 Comprobar que cada uno de los 52 escenarios de los cuatro deltas tiene su prueba. Listar con `rg -n "DisplayName"` sobre los archivos nuevos y las dos pruebas cambiadas, y pegar la tabla escenario → prueba, sin huecos
+- [x] 7.3 Correr el puesto real (`dotnet run --project src/Intelektron.INComedor.Kiosk`), con la carpeta `%LOCALAPPDATA%\INComedor\demo\` respaldada antes y restaurada después. Recorrer:
   - `0001` con «Siguiente» y «Anterior», y confirmar: «Consumo registrado» y el archivo del comprobante;
   - `0001` otra vez: el mensaje de cupo;
   - `0003`: el mensaje de revocado;
@@ -93,6 +93,79 @@ Las pruebas existentes no se tocan, salvo las dos de D1 que aprobó David en el 
   - `--demostracion`: abre la pantalla anterior.
 
   Pegar cada resultado con su captura en `ai4devs/gestion/evidencias/atender-seleccion-y-confirmacion/`, fuera del repo
+
+  Salida de 7.1: `dotnet build INComedor.sln -warnaserror`: `Compilación correcta. 0 Advertencia(s) 0 Errores`. `dotnet test INComedor.sln`: `total: 183, error: 0, correcto: 183, omitido: 0` (Domain 68, Sqlite 73, Kiosk 38, Sync.Api 4: las 102 anteriores, dos de ellas cambiadas en 1.2, más 81 nuevas). `openspec validate --all --strict`: `Totals: 6 passed, 0 failed (6 items)`, con `✓ change/atender-seleccion-y-confirmacion`.
+
+  Salida de 7.2, escenario → prueba (`rg -n "DisplayName"` sobre los archivos nuevos y los cambiados; S = `Infrastructure.Sqlite.Tests`, K = `Kiosk.Tests`, la línea es la del atributo):
+
+  | # | Delta · escenario | Prueba |
+  |---|---|---|
+  | 1 | atencion-puesto · Código vigente abre la selección | S `IdentificacionPorCodigoTests.cs:25`; pantalla K `PantallaAtencionTests.cs:52` |
+  | 2 | atencion-puesto · Ceros iniciales y espacios alrededor | S `IdentificacionPorCodigoTests.cs:51` |
+  | 3 | atencion-puesto · Código revocado | S `IdentificacionPorCodigoTests.cs:63`; pantalla K `PantallaAtencionTests.cs:65` |
+  | 4 | atencion-puesto · Código vencido en el límite exacto | S `IdentificacionPorCodigoTests.cs:80` |
+  | 5 | atencion-puesto · Revocado y vencido a la vez | S `IdentificacionPorCodigoTests.cs:93` |
+  | 6 | atencion-puesto · Código todavía no vigente | S `IdentificacionPorCodigoTests.cs:103` |
+  | 7 | atencion-puesto · Código desconocido | S `IdentificacionPorCodigoTests.cs:117` |
+  | 8 | atencion-puesto · Ningún rechazo registra el código | S `IdentificacionPorCodigoTests.cs:129`; pantalla K `PantallaAtencionTests.cs:65` |
+  | 9 | atencion-puesto · Recorrer un catálogo de 15 opciones | K `MaquinaAtencionTests.cs:28` |
+  | 10 | atencion-puesto · Opciones y navegación alcanzables con el teclado | K `PantallaAtencionTests.cs:33` |
+  | 11 | atencion-puesto · Cancelar antes de confirmar | K `MaquinaAtencionTests.cs:56` |
+  | 12 | atencion-puesto · Treinta segundos sin actividad | K `MaquinaAtencionTests.cs:70` |
+  | 13 | atencion-puesto · Un toque reinicia el plazo | K `MaquinaAtencionTests.cs:89` |
+  | 14 | atencion-puesto · Autorización sin red | K `MaquinaAtencionTests.cs:110`; pantalla K `PantallaAtencionTests.cs:91` |
+  | 15 | atencion-puesto · Doble toque | K `MaquinaAtencionTests.cs:130`; pantalla K `PantallaAtencionTests.cs:119` |
+  | 16 | atencion-puesto · Otra identificación durante la confirmación | K `MaquinaAtencionTests.cs:157` |
+  | 17 | atencion-puesto · Cada rechazo con su mensaje | K `MaquinaAtencionTests.cs:183` |
+  | 18 | atencion-puesto · La sesión venció mientras elegía | K `MaquinaAtencionTests.cs:217` |
+  | 19 | atencion-puesto · Vuelta a reposo después del resultado | K `MaquinaAtencionTests.cs:246` |
+  | 20 | atencion-puesto · Base de una versión de esquema desconocida | K `MaquinaAtencionTests.cs:271`; pantalla K `PantallaAtencionTests.cs:219` |
+  | 21 | atencion-puesto · Cambio de precio entre la selección y la confirmación | K `MaquinaAtencionTests.cs:290` |
+  | 22 | atencion-puesto · Reconfirmar con el valor vigente | K `MaquinaAtencionTests.cs:307` |
+  | 23 | atencion-puesto · Volver sin reconfirmar | K `MaquinaAtencionTests.cs:329` |
+  | 24 | atencion-puesto · Opción retirada del catálogo | K `MaquinaAtencionTests.cs:344` |
+  | 25 | comprobante-local · Impresora disponible | S `TrabajosImpresionTests.cs:13` |
+  | 26 | comprobante-local · Impresora sin papel | S `TrabajosImpresionTests.cs:36`; pantalla K `PantallaAtencionTests.cs:106` |
+  | 27 | comprobante-local · Respuesta incierta de la impresora | S `TrabajosImpresionTests.cs:53` |
+  | 28 | comprobante-local · Caída durante el envío | S `TrabajosImpresionTests.cs:66` |
+  | 29 | comprobante-local · Arranque con un trabajo en cola | S `TrabajosImpresionTests.cs:82` |
+  | 30 | comprobante-local · Operador con permiso vigente | S `AsistenciaTests.cs:23` |
+  | 31 | comprobante-local · Persona sin permiso | S `AsistenciaTests.cs:51`; pantalla K `PantallaAtencionTests.cs:164` |
+  | 32 | comprobante-local · Permiso vencido | S `AsistenciaTests.cs:67` |
+  | 33 | comprobante-local · Permiso revocado | S `AsistenciaTests.cs:81` |
+  | 34 | comprobante-local · Administrador sin OPERATOR | S `AsistenciaTests.cs:92` |
+  | 35 | comprobante-local · Autenticación fallida | S `AsistenciaTests.cs:103` |
+  | 36 | comprobante-local · La sesión de asistencia no habilita consumo | S `AsistenciaTests.cs:118`; «Salir», K `PantallaAtencionTests.cs:177` |
+  | 37 | comprobante-local · Reimpresión con motivo | S `AsistenciaTests.cs:145` |
+  | 38 | comprobante-local · Segunda reimpresión | S `AsistenciaTests.cs:176` |
+  | 39 | comprobante-local · Trabajo fallido por papel | S `AsistenciaTests.cs:190` |
+  | 40 | comprobante-local · Resultado incierto | S `AsistenciaTests.cs:222`; aviso, K `PantallaAtencionTests.cs:140` |
+  | 41 | comprobante-local · El permiso vence durante la sesión | S `AsistenciaTests.cs:239`; reposo, K `PantallaAtencionTests.cs:191` |
+  | 42 | registro-consumo · Base vacía | S `AperturaBaseTests.cs:35` (cambiada en 1.2) |
+  | 43 | registro-consumo · Base en la versión 1 | S `MigracionesTests.cs:23` |
+  | 44 | registro-consumo · Versión de esquema desconocida | S `AperturaBaseTests.cs:61` (sin cambios) |
+  | 45 | registro-consumo · Unicidad de consumo por intención | S `AperturaBaseTests.cs:75` (sin cambios) |
+  | 46 | registro-consumo · Unicidad de permiso por persona y rol | S `MigracionesTests.cs:59` |
+  | 47 | modo-demostracion · Primer arranque sobre una base inexistente | K `ServicioDemostracionTests.cs:18` (cambiada en 1.2) |
+  | 48 | modo-demostracion · Un segundo arranque no duplica ni borra | K `ServicioDemostracionTests.cs:35` (sin cambios) |
+  | 49 | modo-demostracion · Base de una versión de esquema desconocida | K `ServicioDemostracionTests.cs:54` y `PantallaDemostracionTests.cs:58` (sin cambios) |
+  | 50 | modo-demostracion · Primer arranque de la atención | K `SemillaAtencionTests.cs:19` |
+  | 51 | modo-demostracion · Un segundo arranque de la atención no duplica | K `SemillaAtencionTests.cs:43` |
+  | 52 | modo-demostracion · Atención sobre una base de la demostración en uso | K `SemillaAtencionTests.cs:57` |
+
+  52 de 52, sin huecos (24 de `atencion-puesto`, 17 de `comprobante-local`, 5 de `registro-consumo` y 6 de `modo-demostracion`).
+
+  Salida de 7.3, el 30/10/2026, cerrada a las 07:31 (los comprobantes son de las 07:28 y las 07:29), con `dotnet run --project src/Intelektron.INComedor.Kiosk` (sesión elevada). `%LOCALAPPDATA%\INComedor\demo\` no existía antes: el respaldo fue esa constatación y la restauración, borrarla al final (`demo existe: False`). UI Automation no ve el contenido de este WebView2 dentro de WPF (0 elementos en cinco intentos), y la variable de CDP no rige en un proceso elevado (spike del 29/10). Por eso cada toque fue un `PostMessage` de mouse o de teclado dirigido a la ventana hija `Chrome_WidgetWin_0` del proceso del Kiosk, sin mover el cursor ni tomar el foco. Las coordenadas salen de cada captura (`PrintWindow`). Capturas `01` a `19` en `ai4devs/gestion/evidencias/atender-seleccion-y-confirmacion/`:
+  - `0001`, con «Siguiente» dos veces (página 3 de 3, «Siguiente» atenuado) y «Anterior» dos veces, elige «Almuerzo común ARS 1.500,00» y confirma: «Consumo registrado. Retirá tu comprobante» (`03` a `07`). El comprobante quedó en `comprobantes\38373280-…-0.txt`, con `ORIGINAL`, la opción, la fecha de negocio `2026-10-30` y el cargo, sin persona ni código.
+  - `0001` otra vez con la misma opción: «Ya registraste este servicio. Consultá al responsable del comedor» (`08`).
+  - `0003`: «Esta credencial ya no está habilitada. Solicitá asistencia», con el campo vacío y sin el código en pantalla (`09`).
+  - Impresora en «Sin papel» y «Café con leche» de REFRIGERIO: «Tu consumo está registrado. El comprobante queda pendiente» (`10` y `11`).
+  - «Asistencia» con `9001`: los dos comprobantes del día, con «Falló» y «Recuperar» en el de café (`12`). Con la impresora en «Disponible» (el primer toque a «Disponible», desde el resultado, no tomó; se repitió, `13`), «Recuperar» da «Comprobante original enviado otra vez» y el estado «Enviado», con el mismo trabajo (`14`). «Reimprimir» muestra la lista fija de motivos (`15`), y «Papel ilegible» da «Copia 1 enviada con la leyenda DUPLICADO» (`16`), en `comprobantes\2afe495f-…-1.txt` con la línea `DUPLICADO · copia 1`.
+  - «Salir» vuelve a reposo (`17`). «Asistencia» con `9002`: «Tu permiso de operador está vencido» (`18`).
+  - La base al cerrar: `user_version 2`; 2 consumos; intenciones `AUTHORIZED` 2 y `DENIED` 1; trabajos de copia 0 `SUBMITTED` 2 y de copia 1 `SUBMITTED` 1; bitácora con `IDENTIFICATION_REJECTED` 1, `ASSISTANCE_GRANTED` 1, `ASSISTANCE_DENIED` 1, `PRINT_JOB_UPDATED` 8, `TICKET_RECOVERED` 1 y `TICKET_REPRINTED` 1. Ni `0003` ni `9002` aparecen en la bitácora ni en las sesiones.
+  - `dotnet run --project src/Intelektron.INComedor.Kiosk -- --demostracion` abre «INComedor · pantalla de demostración» con su botón «Confirmar» (`19`).
+
+  Cada Kiosk se cerró por PID con su árbol: 0 procesos del Kiosk y ningún `msedgewebview2` con su carpeta de datos.
 
 ## 8. Tallas y evidencia
 
