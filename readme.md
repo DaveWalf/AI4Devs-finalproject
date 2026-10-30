@@ -142,23 +142,53 @@ Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.js
 (11.0.100-rc.2). Los comandos se corren desde la raíz del repositorio, porque
 `global.json` se lee del directorio actual.
 
-**Puesto de demostración.**
+**Puesto: la atención.**
 
 ```powershell
 dotnet run --project src/Intelektron.INComedor.Kiosk
 ```
 
-La ventana muestra una persona y una opción sintéticas fijas y el botón «Confirmar». Cada
-toque confirma una intención nueva con la transacción de RB06 sobre SQLite, sin red:
+La ventana abre la atención del comensal, sin red. La identificación es simulada por código: el código
+solo abre la sesión, sin huella, porque la biometría es de la segunda ola (D-C24). Se tipea el código,
+se elige una opción de un catálogo de 15 en páginas de 6 y se confirma con la transacción de RB06.
+«Cancelar», o 30 s sin tocar nada antes de confirmar, vuelven a reposo sin escribir nada. El resultado
+vuelve a reposo con «Listo» o a los 10 s. Si la opción cambió de precio antes de confirmar, la pantalla
+muestra el valor vigente y pide reconfirmar.
 
-- El primer toque del día muestra `AUTHORIZED` con los identificadores de consumo y de comprobante.
-- El segundo muestra `DENIED` con `LOCAL_LIMIT_REACHED`, porque el límite de la persona es 1 por fecha de negocio.
+Códigos sintéticos:
 
-La base está en `%LOCALAPPDATA%\INComedor\demo\incomedor.db`. Se crea y se siembra con datos
-sintéticos al abrir la ventana por primera vez; una base que ya tiene datos no se vuelve a sembrar.
-Para repetir la demostración, cerrar la ventana y borrar la carpeta `%LOCALAPPDATA%\INComedor\demo\`.
-Es una pantalla de demostración: no cumple la atención completa de TK02.1 (identificación por código,
-catálogo de quince opciones, estados de reposo, timeout), que llega con `atender-seleccion-y-confirmacion`.
+| Código | Para qué sirve |
+|---|---|
+| `0001` | «Persona sintética 01», vigente: límite 1 en ALMUERZO y 2 en REFRIGERIO. La segunda confirmación de ALMUERZO del día muestra el mensaje de cupo |
+| `0002` | Credencial vencida: «Esta credencial está vencida» |
+| `0003` | Credencial revocada: «Esta credencial ya no está habilitada» |
+| `0004` | Credencial todavía no vigente: «No pudimos identificarte» |
+| `9001` | Operador con permiso `OPERATOR` vigente, por «Asistencia» |
+| `9002` | Operador con el permiso vencido: «Asistencia» se deniega |
+| `9003` | Operador con el permiso revocado: «Asistencia» se deniega |
+| `9004` | Administrador sin `OPERATOR`: «Asistencia» se deniega |
+
+El comprobante sale después del commit hacia una impresora simulada, que escribe un archivo de texto por
+copia en `%LOCALAPPDATA%\INComedor\demo\comprobantes\` (`<TicketId>-<copia>.txt`). La franja «Simulación de
+impresora (demostración)», al pie, la pone en Disponible, Sin papel o Incierta. Con «Sin papel», el consumo
+queda registrado y el comprobante, pendiente. Por «Asistencia», un operador con `9001` ve los comprobantes del
+día. Puede recuperar el original que falló, que es el mismo trabajo y no una copia nueva. También puede
+reimprimir con un motivo de una lista fija, y la copia sale con la leyenda DUPLICADO y su número.
+
+**Pantalla de demostración anterior.**
+
+```powershell
+dotnet run --project src/Intelektron.INComedor.Kiosk -- --demostracion
+```
+
+Muestra una persona y una opción sintéticas fijas y el botón «Confirmar». Cada toque confirma una
+intención nueva: el primero del día muestra `AUTHORIZED` con los identificadores de consumo y de
+comprobante, y el segundo `DENIED` con `LOCAL_LIMIT_REACHED`.
+
+Las dos pantallas comparten la base `%LOCALAPPDATA%\INComedor\demo\incomedor.db`, en la versión de esquema 2.
+Se crea y se siembra con datos sintéticos al abrir la ventana por primera vez, y una base que ya tiene datos
+no se vuelve a sembrar. Una base de la versión 1 se actualiza sin perder sus consumos. Para repetir la
+demostración, cerrar la ventana y borrar la carpeta `%LOCALAPPDATA%\INComedor\demo\`.
 
 **Receptor de lotes (esqueleto).**
 
@@ -252,8 +282,9 @@ src/
 tests/                                         un proyecto de pruebas por proyecto de src, más el E2E
 ```
 
-De ese árbol, hoy el Kiosk sólo implementa la pantalla de demostración, `Infrastructure.Sqlite`
-sólo el primer corte de la transacción y el outbox (sin bitácoras) y `Sync.Api` sólo el esqueleto
+De ese árbol, hoy el Kiosk implementa la atención con identificación simulada por código, la asistencia
+con impresora simulada y la pantalla de demostración; `Infrastructure.Sqlite`, el primer corte de la
+transacción, la identificación, la impresión y el outbox (sin bitácoras mensuales), y `Sync.Api` sólo el esqueleto
 que responde 501 y no acusa nada. Contracts hoy contiene los eventos de outbox, no todo el JSON versionado.
 
 ### 2.4. Infraestructura y despliegue

@@ -58,7 +58,8 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 - Build: `dotnet build INComedor.sln -warnaserror` (vigente).
 - Test: `dotnet test INComedor.sln` (vigente).
 - Spec: `openspec validate --all --strict` (vigente).
-- Puesto de demostración: `dotnet run --project src/Intelektron.INComedor.Kiosk` (ventana WPF; su base queda en
-  `%LOCALAPPDATA%\INComedor\demo\`, se reinicia borrando esa carpeta).
+- Puesto de demostración: `dotnet run --project src/Intelektron.INComedor.Kiosk` (ventana WPF con la atención; la
+  pantalla anterior, con `-- --demostracion`). La base y los comprobantes de la impresora simulada quedan en
+  `%LOCALAPPDATA%\INComedor\demo\`, que se reinicia borrando esa carpeta. Los códigos sintéticos están en el README.
 - Receptor esqueleto: `dotnet run --project src/Intelektron.INComedor.Sync.Api` (`http://localhost:5000`; responde 501).
 - Todos desde la raíz del repo: `global.json` se lee del directorio actual.
