@@ -12,7 +12,7 @@ información y consolida los hechos cuando se recupera la conexión.
 
 **Estado:** entrega 2 presentada el 29/10; entrega final en curso. Hay un puesto de demostración que atiende
 y confirma sobre SQLite con la transacción de RB06, y un receptor de lotes idempotente sobre SQL Server con
-TLS mutuo, al que el puesto envía su outbox; 318 pruebas en verde (ver §2.6). El resto del documento describe
+TLS mutuo, al que el puesto envía su outbox; 322 pruebas en verde (ver §2.6). El resto del documento describe
 el diseño del producto. La demostración usa datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
 
 ## Índice
@@ -350,9 +350,9 @@ El [plan de pruebas](docs/pruebas.md) cubre dominio, SQLite real, sincronizació
 contratos, E2E y dispositivos. Casos centrales: arranque offline, cupo local,
 doble confirmación, caída tras commit, reimpresión, snapshot parcial, acuse perdido
 y ambos modos biométricos. Incluye también saltos del reloj, cálculo del día de
-negocio y vigencias. Hoy corren 318 pruebas, todas en verde, con
-`dotnet test INComedor.sln` desde la raíz del repositorio: 68 de Domain, 114 de
-Infrastructure.Sqlite sobre un archivo SQLite real temporal, 52 del Kiosk, 61 del receptor y 23 de Contracts.
+negocio y vigencias. Hoy corren 322 pruebas, todas en verde, con
+`dotnet test INComedor.sln` desde la raíz del repositorio: 68 de Domain, 117 de
+Infrastructure.Sqlite sobre un archivo SQLite real temporal, 52 del Kiosk, 62 del receptor y 23 de Contracts.
 Las del receptor y las del envío integrado necesitan una instancia de SQL Server: `(localdb)\MSSQLLocalDB`
 por defecto, u otra en la variable `INCOMEDOR_SQLSERVER`; cada clase crea su base y la borra al terminar.
 Cubren la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después del commit, la

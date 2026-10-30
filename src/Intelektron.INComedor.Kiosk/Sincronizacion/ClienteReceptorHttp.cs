@@ -30,7 +30,8 @@ public sealed partial class ClienteReceptorHttp : IReceptorLotes, IDisposable
             LocalCertificateSelectionCallback = (_, _, _, _, _) => certificadoPuesto,
             RemoteCertificateValidationCallback = (_, servidor, _, errores) => ServidorDeLaAutoridad(servidor, errores, autoridad),
         };
-        _http = new HttpClient(new SocketsHttpHandler { SslOptions = tls })
+        // Sin redirecciones: el puesto sólo habla con la dirección configurada (OWASP A10).
+        _http = new HttpClient(new SocketsHttpHandler { SslOptions = tls, AllowAutoRedirect = false })
         {
             BaseAddress = direccion,
             Timeout = espera ?? TimeSpan.FromSeconds(10),

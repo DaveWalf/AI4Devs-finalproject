@@ -236,6 +236,23 @@ public class ColaSincronizacionTests : ConfirmacionTestBase
         Assert.Equal(codigoProblema, contexto.RootElement.GetProperty("CodigoProblema").GetString());
     }
 
+    [Theory(DisplayName = "OWASP A09 · El code que llega del receptor entra a la bitácora sólo con la forma de un código del contrato; si no, queda nulo")]
+    [InlineData("batch_payload_conflict")]
+    [InlineData("ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNO")]
+    [InlineData("BATCH\nFORJADO")]
+    public void Un_code_fuera_de_forma_no_entra_a_la_bitacora(string codigoProblema)
+    {
+        Confirmar(Fixture.AlmuerzoComun);
+        var lote = _cola.Preparar()!;
+
+        _cola.RegistrarError(lote.BatchId, "409", codigoProblema);
+
+        using var conexion = Abrir();
+        using var contexto = JsonDocument.Parse(Sql.Escalar<string>(conexion,
+            "SELECT combitContexto FROM tbComedorBitacora WHERE combitTipoEvento = 'SYNC_BATCH_FAILED'"));
+        Assert.Equal(JsonValueKind.Null, contexto.RootElement.GetProperty("CodigoProblema").ValueKind);
+    }
+
     [Fact(DisplayName = "RB16 · AT27 · Un conflicto no revierte el consumo: preparar y registrar un CONFLICT dejan iguales, byte por byte, intenciones, consumos, usos de cupo, comprobantes y trabajos")]
     public void Un_conflicto_no_revierte_el_consumo()
     {

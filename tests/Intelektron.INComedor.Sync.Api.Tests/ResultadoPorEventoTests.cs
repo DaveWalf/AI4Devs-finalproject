@@ -113,15 +113,31 @@ public class ResultadoPorEventoTests(ReceptorConKestrel receptor) : IClassFixtur
         var otro = (JsonObject)consumo.DeepClone();
         otro["MenuVersion"] = 3;
 
-        using var acuse = await EnviarAsync(receptor.Certificados.Puesto, otro, LotesDePrueba.ConsumoDenegado());
+        var denegacion = LotesDePrueba.ConsumoDenegado();
+
+        using var acuse = await EnviarAsync(receptor.Certificados.Puesto, otro, denegacion);
 
         Assert.Equal("OPEN", (await CasoAsync(consumo)).Estado);
         Assert.Equal(original, await ConsolidadoAsync(consumo));
+        Assert.Equal(("CONFLICT", "EVENT_PAYLOAD_CONFLICT"), LotesDePrueba.ResultadoDe(acuse, otro));
+        Assert.Equal(("ACCEPTED", "RECORDED"), LotesDePrueba.ResultadoDe(acuse, denegacion));
         Assert.All(LotesDePrueba.Resultados(acuse), r =>
         {
             Assert.Contains(r.Status, EstadosDelContrato);
             Assert.Contains(r.ReasonCode, MotivosDelContrato);
         });
+    }
+
+    [Fact(DisplayName = "SubmitSyncBatch · Una incidencia en revisión reenviada en otro lote vuelve a ser NEEDS_REVIEW/MULTI_KIOSK_POLICY_REVIEW, nunca DUPLICATE")]
+    public async Task Una_incidencia_reenviada_sigue_en_revision()
+    {
+        var incidencia = LotesDePrueba.IncidenciaConectividad();
+        using var primero = await EnviarAsync(receptor.Certificados.Puesto, incidencia);
+
+        using var acuse = await EnviarAsync(receptor.Certificados.Puesto, incidencia);
+
+        Assert.Equal(("NEEDS_REVIEW", "MULTI_KIOSK_POLICY_REVIEW"), LotesDePrueba.ResultadoDe(acuse, incidencia));
+        Assert.Equal("IN_REVIEW", await EstadoEntradaAsync(incidencia));
     }
 
     [Fact(DisplayName = "AT50 · Una carga con otra fecha de negocio: REJECTED/INVALID_EVENT, el evento queda guardado sin consolidarse y el otro evento del lote resulta ACCEPTED")]
