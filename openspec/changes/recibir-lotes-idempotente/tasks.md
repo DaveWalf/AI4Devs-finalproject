@@ -108,15 +108,23 @@ Las pruebas existentes no se tocan, salvo las siete que aprobó David en el gate
 
 ## 7. Sincronizador, cliente HTTP y envío integrado
 
-- [ ] 7.1 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/SincronizadorPuestoTests.cs` con «Reenvío idéntico ante un acuse perdido» y «Respuestas que no acusan». Usa un `IReceptorLotes` de prueba, el doble aprobado en el gate. Verificar que fallan antes de implementar, y pegar la salida
-- [ ] 7.2 Implementar `IReceptorLotes` y `SincronizadorPuesto` con su `EstadoSincronizacion` (D11). Verificar con el mismo filtro que pasan
-- [ ] 7.3 Crear `tests/Intelektron.INComedor.Kiosk.Tests/EnvioDeLotesIntegradoTests.cs`, con la referencia a `Sync.Api` y a `Microsoft.AspNetCore.Mvc.Testing`, sobre SQLite real, `ClienteReceptorHttp`, Kestrel con mTLS y LocalDB:
+- [x] 7.1 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/SincronizadorPuestoTests.cs` con «Reenvío idéntico ante un acuse perdido» y «Respuestas que no acusan». Usa un `IReceptorLotes` de prueba, el doble aprobado en el gate. Verificar que fallan antes de implementar, y pegar la salida
+- [x] 7.2 Implementar `IReceptorLotes` y `SincronizadorPuesto` con su `EstadoSincronizacion` (D11). Verificar con el mismo filtro que pasan
+- [x] 7.3 Crear `tests/Intelektron.INComedor.Kiosk.Tests/EnvioDeLotesIntegradoTests.cs`, con la referencia a `Sync.Api` y a `Microsoft.AspNetCore.Mvc.Testing`, sobre SQLite real, `ClienteReceptorHttp`, Kestrel con mTLS y LocalDB:
   - AT27: dos ciclos dan un solo consumo consolidado, y un corte después del commit del receptor se resuelve con la consulta;
   - AT13: un certificado vencido retiene los eventos y la confirmación siguiente es `AUTHORIZED`;
   - «Receptor inalcanzable».
 
   Verificar que fallan antes de implementar `ClienteReceptorHttp`, y pegar la salida
-- [ ] 7.4 Implementar `ClienteReceptorHttp` en `src/Intelektron.INComedor.Kiosk/Sincronizacion/` (D11). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~EnvioDeLotesIntegradoTests"` que pasan, y con `dotnet test INComedor.sln` que todo sigue en verde
+- [x] 7.4 Implementar `ClienteReceptorHttp` en `src/Intelektron.INComedor.Kiosk/Sincronizacion/` (D11). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~EnvioDeLotesIntegradoTests"` que pasan, y con `dotnet test INComedor.sln` que todo sigue en verde
+
+  Salida de 7.1 (antes de implementar): `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~SincronizadorPuestoTests"` no compiló: `error CS0246: … 'IReceptorLotes' no se encontró` y `… 'RespuestaReceptor' no se encontró`; exit 1. Además de los tres escenarios del reenvío y de «Respuestas que no acusan» (`Theory` de 202, 409, 422, 503 y la red), cubre «Nada pendiente» sin ningún pedido al receptor, el `401` y el `403` como error de credencial visible (HU02-G), la consulta obligada tras un reinicio, un lote nuevo que se envía sin consultar y un acuse inválido en un `201`.
+
+  Salida de 7.2: `ColaSincronizacion` suma `LoteSincronizacion.Nuevo` (el lote se armó en esa llamada y nadie pudo enviarlo antes) y `LeerConteos()`. `dotnet test … --filter "FullyQualifiedName~SincronizadorPuestoTests|FullyQualifiedName~ColaSincronizacionTests"`: `total: 34, error: 0, correcto: 34` (14 del sincronizador y las 20 de la cola, sin cambios).
+
+  Salida de 7.3 (antes de implementar): `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~EnvioDeLotesIntegradoTests"` no compiló: `error CS0234: … 'Sincronizacion' no existe en el espacio de nombres 'Intelektron.INComedor.Kiosk'` y `error CS0246: … 'ClienteReceptorHttp' no se encontró`; exit 1. `Kiosk.Tests` suma `Sync.Api` y `Microsoft.AspNetCore.Mvc.Testing`, fija `System.Security.Cryptography.Pkcs` como en la 4.1 (tampoco es web) y enlaza `CertificadosDePrueba.cs` y `ReceptorConKestrel.cs` de `Sync.Api.Tests` sin copiarlos. El corte después del commit es un middleware de prueba, `ReceptorQueCorta`: la ingesta hace commit y escribe el acuse en un buffer, y `HttpContext.Abort()` corta antes de responder. «Receptor inalcanzable» usa un `TcpListener` que acepta y no contesta, con 3 s de espera: la confirmación termina mientras el ciclo sigue esperando.
+
+  Salida de 7.4: el primer build falló con `CS0246` para `IOException` y `MemoryStream`, porque en un proyecto WPF los `using` implícitos excluyen `System.IO`; se agregó. Después, el filtro dio `total: 4, error: 0, correcto: 4` en 9 s. «Corte después del commit»: tras el primer ciclo, `UltimoError` es `NETWORK` y el receptor ya tiene el consumo consolidado; el segundo ciclo consulta, registra el acuse y queda con un recibo. `dotnet build INComedor.sln -warnaserror`: `0 Advertencia(s) 0 Errores`. `dotnet test INComedor.sln`: `total: 308, error: 0, correcto: 308` (290 más 18). No quedan bases `INComedorPruebas*`. `git diff --stat -- tests/`: sólo el `.csproj` de `Kiosk.Tests`.
 
 ## 8. Demostración conectada
 

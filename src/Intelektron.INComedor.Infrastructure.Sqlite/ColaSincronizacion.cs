@@ -9,7 +9,11 @@ using Microsoft.Data.Sqlite;
 namespace Intelektron.INComedor.Infrastructure.Sqlite;
 
 /// <summary>Un lote guardado: su BatchId, el cuerpo canónico que se envía tal cual y sus eventos, en orden.</summary>
-public sealed record LoteSincronizacion(Guid BatchId, byte[] Cuerpo, IReadOnlyList<Guid> EventIds);
+public sealed record LoteSincronizacion(Guid BatchId, byte[] Cuerpo, IReadOnlyList<Guid> EventIds)
+{
+    /// <summary>Se armó en esta llamada a Preparar: nadie pudo haberlo enviado antes, así que no hace falta consultarlo.</summary>
+    public bool Nuevo { get; init; }
+}
 
 public enum ResultadoRegistroAcuse
 {
@@ -86,7 +90,18 @@ public sealed partial class ColaSincronizacion
         }
 
         transaccion.Commit();
-        return new LoteSincronizacion(batchId, cuerpo, eventos.Select(e => e.Id).ToList());
+        return new LoteSincronizacion(batchId, cuerpo, eventos.Select(e => e.Id).ToList()) { Nuevo = true };
+    }
+
+    /// <summary>Eventos del outbox que esperan acuse y eventos retenidos para revisión (CONFLICT, REJECTED o NEEDS_REVIEW).</summary>
+    public (int Pendientes, int Retenidos) LeerConteos()
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        var pendientes = ComandosSqlite.EscalarLong(conexion, null,
+            "SELECT COUNT(*) FROM tbComedorEventosSalida WHERE comevsEstado = 'PENDING'");
+        var retenidos = ComandosSqlite.EscalarLong(conexion, null,
+            "SELECT COUNT(*) FROM tbComedorEventosSalida WHERE comevsEstado IN ('CONFLICT', 'REJECTED', 'NEEDS_REVIEW')");
+        return ((int)pendientes, (int)retenidos);
     }
 
     /// <summary>
