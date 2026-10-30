@@ -114,6 +114,46 @@ public sealed class EscenarioE2E : IAsyncDisposable
         return receptor;
     }
 
+    /// <summary>
+    /// El receptor escuchando. Si su puerto no responde en el plazo, otro proceso pudo haberlo tomado después de la
+    /// reserva: toma otros dos puertos y reintenta una vez, y el registro lo dice (Risks del design).
+    /// </summary>
+    public async Task<Process> ArrancarReceptorAsync(bool reintentar = true)
+    {
+        var receptor = LanzarReceptor();
+        try
+        {
+            await EsperarReceptorAsync(receptor);
+            return receptor;
+        }
+        catch (TimeoutException e) when (reintentar)
+        {
+            Registrar($"reintento con otros puertos: {e.Message}");
+            await DetenerAsync(receptor);
+            TomarPuertos();
+            Registrar($"puertos nuevos: CDP {PuertoCdp} · receptor {PuertoReceptor}");
+            return await ArrancarReceptorAsync(reintentar: false);
+        }
+    }
+
+    /// <summary>El puesto con CDP y su página de reposo, con el mismo único reintento por los puertos.</summary>
+    public async Task<(Process Puesto, IPage Pagina)> AbrirPuestoAsync(IPlaywright playwright, bool reintentar = true)
+    {
+        var puesto = LanzarPuesto(PuertoCdp.ToString());
+        try
+        {
+            return (puesto, await ConectarAsync(playwright));
+        }
+        catch (TimeoutException e) when (reintentar)
+        {
+            Registrar($"reintento con otros puertos: {e.Message}");
+            await DetenerAsync(puesto);
+            TomarPuertos();
+            Registrar($"puertos nuevos: CDP {PuertoCdp} · receptor {PuertoReceptor}");
+            return await AbrirPuestoAsync(playwright, reintentar: false);
+        }
+    }
+
     /// <summary>Espera a que el receptor acepte conexiones en su puerto; si el proceso termina antes, falla con su registro.</summary>
     public async Task EsperarReceptorAsync(Process receptor)
     {

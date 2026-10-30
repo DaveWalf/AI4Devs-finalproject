@@ -140,12 +140,43 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
 ## 4. El flujo principal de punta a punta
 
-- [ ] 4.1 Escribir la prueba del flujo principal con los siete pasos de D5, con una captura por paso en la carpeta de resultados de la prueba:
+- [x] 4.1 Escribir la prueba del flujo principal con los siete pasos de D5, con una captura por paso en la carpeta de resultados de la prueba:
   - para «Almuerzo común», pasar de página con `#siguiente` si no está en la primera;
   - el mensaje de cupo, la franja y la consulta a `tbComedorConsumosConsolidados`, como dicen las specs vivas de `atencion-puesto` y `envio-lotes`.
 
   Verificar que pasa y verla fallar con una mutación: `MainWindow` ignorando `INCOMEDOR_RECEPTOR_URL` hace fallar el paso 6. Restaurar la mutación y pegar las dos salidas
-- [ ] 4.2 Correr la prueba del flujo principal tres veces seguidas y pegar la duración de cada una. Si alguna pasa de 3 minutos o falla sin cambios en el código, parar: es una prueba inestable y se mira antes de seguir
+
+  Hecho en `FlujoPrincipalTests.cs`. Los textos esperados son los de las specs vivas, escritos en la prueba, porque el E2E no carga el ensamblado del puesto. Para contar los consumos de la base del puesto (AT02), en sólo lectura y sin pool, el proyecto suma `Microsoft.Data.Sqlite`, que ya estaba en `Directory.Packages.props`: es una precisión de D5, que nombraba sólo Playwright y SqlClient. El receptor y el puesto tienen el único reintento por puertos de los Risks del design (`ArrancarReceptorAsync` y `AbrirPuestoAsync`). Las capturas `02-reposo` a `06-al-dia` quedan en `TestResults\e2e\<corrida>\`, junto al ensamblado de la prueba.
+
+  ```text
+  correcto [+1/x0/?0] (1m 04s 624ms)
+  1. receptor preparado y apagado · 1,1 s
+  2. puesto en reposo · 3,1 s
+  3. consumo registrado y comprobante impreso · 3,6 s
+  4. cupo: un solo consumo en el puesto, 7822462a-832c-4b01-9564-577deb87004e · 4,0 s
+  5. franja: 2 pendientes · 37,6 s
+  6. receptor de vuelta, franja al día · 63,5 s
+  7. receptor: un consumo consolidado, 7822462a-832c-4b01-9564-577deb87004e · 63,5 s
+  PID 32000 cerrado con su árbol: 1 procesos, vivos después: 0 · PID 20228 cerrado con su árbol: 7 procesos, vivos después: 0
+  foto de %LOCALAPPDATA%\INComedor\demo\: igual (no existe)
+
+  mutación (ClienteReceptorHttp con https://localhost:5001/ fijo):
+  Microsoft.Playwright.PlaywrightException : Locator expected to contain text 'al día'
+  92 × locator resolved to <section role="status" aria-live="polite" class="franja-sincronizacion" aria-label="Sincronización con el receptor">…</section>
+  error con 1 errores [+0/x1/?0] (1m 23s 529ms)      (pasaron los pasos 1 a 5; falló el 6)
+  restaurada con git restore a las 13:19:02 · DLL del puesto 13:19:03 · posterior: True
+  ```
+- [x] 4.2 Correr la prueba del flujo principal tres veces seguidas y pegar la duración de cada una. Si alguna pasa de 3 minutos o falla sin cambios en el código, parar: es una prueba inestable y se mira antes de seguir
+
+  Hecho, sobre los binarios restaurados de la 4.1 y sin cambios entre corridas. Las tres duran lo mismo porque las esperas las marca el ciclo de envío, que arranca con el puesto: el paso 5 llega con el ciclo de los 30 s y el 6 con el de los 60.
+
+  ```text
+  corrida 1 · exit 0 · correcto [+1/x0/?0] (1m 03s 943ms) · reloj 64.7 s
+  corrida 2 · exit 0 · correcto [+1/x0/?0] (1m 03s 789ms) · reloj 64.5 s
+  corrida 3 · exit 0 · correcto [+1/x0/?0] (1m 04s 169ms) · reloj 64.9 s
+  carpeta demo existe: False
+  procesos del puesto vivos: 0
+  ```
 
 ## 5. El paquete del puesto
 
