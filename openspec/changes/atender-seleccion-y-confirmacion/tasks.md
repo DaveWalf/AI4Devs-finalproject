@@ -27,9 +27,15 @@ Las pruebas existentes no se tocan, salvo las dos de D1 que aprobó David en el 
 
 ## 3. Bitácora compartida e identificación por código
 
-- [ ] 3.1 Mover `InsertarBitacora` de `UnidadConfirmacion` a `RegistroBitacora` sin cambiar su conducta (D9). Verificar con `dotnet test INComedor.sln` que todas las pruebas siguen en verde y con `git diff --stat -- tests/` que no cambió ninguna prueba en este paso
-- [ ] 3.2 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/IdentificacionPorCodigoTests.cs`, con una prueba por escenario de «Identificación simulada por código» y «Rechazo de un código inválido» del delta de `atencion-puesto` (D3). La prueba de «Ningún rechazo registra el código» busca el código en todas las columnas de texto de `tbComedorBitacora` y `tbComedorSesionesIdentidad`. Verificar con `dotnet test … --filter "FullyQualifiedName~IdentificacionPorCodigoTests"` que fallan antes de implementar, y pegar la salida
-- [ ] 3.3 Implementar `IdentificacionPorCodigo` (D3 y D4). Verificar con el mismo filtro que pasan, y con `dotnet test INComedor.sln` que nada más cambió
+- [x] 3.1 Mover `InsertarBitacora` de `UnidadConfirmacion` a `RegistroBitacora` sin cambiar su conducta (D9). Verificar con `dotnet test INComedor.sln` que todas las pruebas siguen en verde y con `git diff --stat -- tests/` que no cambió ninguna prueba en este paso
+- [x] 3.2 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/IdentificacionPorCodigoTests.cs`, con una prueba por escenario de «Identificación simulada por código» y «Rechazo de un código inválido» del delta de `atencion-puesto` (D3). La prueba de «Ningún rechazo registra el código» busca el código en todas las columnas de texto de `tbComedorBitacora` y `tbComedorSesionesIdentidad`. Verificar con `dotnet test … --filter "FullyQualifiedName~IdentificacionPorCodigoTests"` que fallan antes de implementar, y pegar la salida
+- [x] 3.3 Implementar `IdentificacionPorCodigo` (D3 y D4). Verificar con el mismo filtro que pasan, y con `dotnet test INComedor.sln` que nada más cambió
+
+  Salida de 3.1: `dotnet build INComedor.sln -warnaserror`: `0 Advertencia(s) 0 Errores`; `dotnet test INComedor.sln`: `total: 128, error: 0, correcto: 128`; `git diff --stat -- tests/` vacío. Junto con `InsertarBitacora` salió a `PuestoLocal` la lectura del puesto activo (`LeerPuesto` y su record), porque la bitácora necesita el Id y la zona del puesto y la identificación lo lee igual; el SQL es el mismo, carácter por carácter. El componente de cada registro lo da quien crea su `RegistroBitacora` (`Infrastructure.Sqlite.UnidadConfirmacion` sigue igual).
+
+  Salida de 3.2 (antes de implementar): `dotnet test … --filter "FullyQualifiedName~IdentificacionPorCodigoTests"` no compiló: `error CS0246: El nombre del tipo o del espacio de nombres 'IdentificacionPorCodigo' no se encontró`, con `CS0103` para `PropositoSesion`; exit 1. Los cuatro códigos de los rechazos llevan letras fuera del hexadecimal (`SINTETICO-REVOCADO-77` y similares), para que un UUID no pueda contenerlos por azar.
+
+  Salida de 3.3: el filtro da `total: 8, error: 0, correcto: 8`. `dotnet test INComedor.sln`: `total: 136, error: 0, correcto: 136` (128 más 8); build con `0 Advertencia(s) 0 Errores`; `git diff --stat -- tests/` vacío.
 
 ## 4. Comprobante: envío después del commit
 
