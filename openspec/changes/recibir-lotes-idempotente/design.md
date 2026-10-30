@@ -222,6 +222,8 @@ Cambian cuatro pruebas existentes, con la aprobación del gate y sólo en esto:
 - `SemillaAtencionTests.Atencion_sobre_una_base_de_la_demostracion_en_version_1`: la línea 69 espera 3 y su `DisplayName` dice «de la versión 1 a la 3».
 - `MigracionesTests.Base_en_version_1_se_actualiza_sin_perder_el_consumo`: la línea 33 espera 3 y su `DisplayName` dice «queda en la versión 3».
 
+Agregado en el apply, con la aprobación de David del 30/10: el ayudante `LlevarAVersion1` de `SemillaAtencionTests` (línea 85) borra también `tbComedorLotesSincronizacion_Eventos` y `tbComedorLotesSincronizacion`. Simula una base de la versión 1 borrando las tablas de las migraciones posteriores, y sin esto la `0003` choca con «table tbComedorLotesSincronizacion already exists» al volver a migrar. Descartada: crear las tablas de la `0003` con `IF NOT EXISTS`, que aceptaría en una base de versión 1 o 2 tablas de lotes de cualquier forma; la `0001` y la `0002` tampoco lo hacen.
+
 Descartadas:
 
 - Reconstruir el cuerpo desde los eventos en cada reintento: depende de que el orden y el texto de cada evento no cambien nunca, y el contrato pide reenviar «exactamente el lote original».
