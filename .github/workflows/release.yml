@@ -29,21 +29,20 @@ jobs:
       - name: Restore
         run: dotnet restore INComedor.sln
 
-      # El mismo script que corre en local: compila, publica, corre el E2E contra el EXE publicado y sólo entonces
-      # escribe el zip y su suma. Si falla, el job borrador no corre y no queda Release. El tag entra por el entorno,
-      # nunca interpolado en el script (OWASP A03), y el script lo valida.
-      - name: Paquete probado
-        shell: pwsh
-        env:
-          VERSION: ${{ github.ref_name }}
-        run: ./.github/scripts/publicar-puesto.ps1 -Version $env:VERSION
-
-      # Después del paquete y no antes, como en ci.yml, donde nada restaura después de la auditoría: en windows-latest,
-      # un restore posterior a ella falló con MSB4181 (corridas 41132357042 y 41139494001). Un paquete vulnerable sigue
-      # cortando el job antes de subir el zip, así que no hay borrador.
       - name: Dependencias vulnerables
         shell: pwsh
         run: ./.github/scripts/auditar-dependencias.ps1
+
+      # El mismo script que corre en local: compila, publica, corre el E2E contra el EXE publicado y sólo entonces
+      # escribe el zip y su suma. Si falla, el job borrador no corre y no queda Release. El tag entra por el entorno,
+      # nunca interpolado en el script (OWASP A03), y el script lo valida. La variable no se llama VERSION: MSBuild
+      # toma el entorno como propiedades sin distinguir mayúsculas, y «v0.0.0-ensayo» como Version hizo fallar el
+      # restore con MSB4181 y sin advertencias (corridas 41132357042, 41139494001 y 41140418958).
+      - name: Paquete probado
+        shell: pwsh
+        env:
+          INCOMEDOR_TAG: ${{ github.ref_name }}
+        run: ./.github/scripts/publicar-puesto.ps1 -Version $env:INCOMEDOR_TAG
 
       # Sólo si el job falla: los binlog del script, para ver la causa. Sin datos del repo ni secretos en el entorno.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -81,15 +80,15 @@ jobs:
       - name: Suma del zip
         working-directory: artifacts
         env:
-          VERSION: ${{ github.ref_name }}
-        run: sha256sum --check "INComedor-Puesto-$VERSION-win-x64.zip.sha256"
+          INCOMEDOR_TAG: ${{ github.ref_name }}
+        run: sha256sum --check "INComedor-Puesto-$INCOMEDOR_TAG-win-x64.zip.sha256"
 
       # Un borrador: publicarlo, y sumarle el video, es de David. Sin clon, gh toma el repo de GH_REPO.
       - name: Release en borrador
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          VERSION: ${{ github.ref_name }}
+          INCOMEDOR_TAG: ${{ github.ref_name }}
         run: |
-          zip="artifacts/INComedor-Puesto-$VERSION-win-x64.zip"
-          gh release create "$VERSION" "$zip" "$zip.sha256" --draft --verify-tag --title "INComedor $VERSION" --notes "Puesto autocontenido para Windows x64. El E2E del flujo principal pasó contra este EXE antes de armar el zip; la suma SHA-256 va al lado."
+          zip="artifacts/INComedor-Puesto-$INCOMEDOR_TAG-win-x64.zip"
+          gh release create "$INCOMEDOR_TAG" "$zip" "$zip.sha256" --draft --verify-tag --title "INComedor $INCOMEDOR_TAG" --notes "Puesto autocontenido para Windows x64. El E2E del flujo principal pasó contra este EXE antes de armar el zip; la suma SHA-256 va al lado."

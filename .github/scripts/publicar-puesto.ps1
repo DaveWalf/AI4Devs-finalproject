@@ -37,9 +37,8 @@ Remove-Item -LiteralPath $zip, $suma -Force -ErrorAction SilentlyContinue
 if (Test-Path -LiteralPath $publicacion) { Remove-Item -LiteralPath $publicacion -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $artefactos | Out-Null
 
-# Restore y build separados, como en ci.yml. Cada paso deja su binlog en artifacts/, fuera del zip: en windows-latest,
-# un restore posterior a «Dependencias vulnerables» falló con MSB4181 y sin advertencias (corridas 41132357042 y
-# 41139494001), y en local no se reprodujo. release.yml sube los binlog si el job falla.
+# Restore y build separados, como en ci.yml. Cada paso deja su binlog en artifacts/, fuera del zip, y release.yml los
+# sube si el job falla: así se vio que una variable de entorno VERSION llegaba a MSBuild como la propiedad Version.
 $binlog = { param([string] $Paso) '-bl:' + (Join-Path $artefactos "$Paso.binlog") }
 Invocar 'El restore' { dotnet restore INComedor.sln (& $binlog 'restore') }
 Invocar 'El build' { dotnet build INComedor.sln -c Release -warnaserror --no-restore (& $binlog 'build') }
