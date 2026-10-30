@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
     <ProjectReference Include="..\Intelektron.INComedor.Contracts\Intelektron.INComedor.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Ingesta\Migraciones\0001_receptor.sql" LogicalName="Ingesta.Migraciones.0001_receptor.sql" />
   </ItemGroup>
 </Project>
