@@ -1,0 +1,114 @@
+# Tasks
+
+Se aplica con `opus` · `xhigh`, supervisado. Es un plan diseñado con su verificador, pero tiene seguridad en alcance (mTLS y la primera entrada externa del sistema), y el apéndice de Claude Code manda para eso la línea de seguridad. Los comandos corren desde la raíz del repo y su salida se pega en la tarea. Al cerrar cada grupo hay un commit por rutas, en español, con `git commit -F <archivo>`.
+
+Las pruebas existentes no se tocan, salvo las siete que aprobó David en el gate: las cuatro de D9 y las tres que borra D14. `git diff --stat -- tests/` sólo puede mostrar los archivos nuevos, esos cuatro archivos y `ReceptorEsqueletoTests.cs`. Si otra tarea necesitara cambiar una prueba existente, se para y se le pregunta a David. Los chequeos de enlaces relativos y del mapa son los de D8 en `openspec/changes/archive/2026-10-29-mostrar-aplicacion-del-curso/design.md`.
+
+## 1. Precondiciones y JSON canónico
+
+- [ ] 1.1 Comprobar que `atender-seleccion-y-confirmacion` ya está archivado, porque el delta de `modo-demostracion` modifica un requirement que ese change agrega. Verificar con `openspec list` que no figura entre los changes activos y con `openspec validate --all --strict` que no queda el aviso «Archive would refuse this delta». Si sigue activo, parar y avisarle a David: el archivado es suyo
+- [ ] 1.2 Crear `tests/Intelektron.INComedor.Contracts.Tests` (xUnit v3, en la solución) con `JsonCanonicoTests.cs`. Cubrir:
+  - el orden de propiedades por unidades UTF-16 y el escape de cadenas, con los ejemplos del RFC 8785;
+  - enteros en los extremos de ±(2^53 − 1);
+  - el rechazo de un número decimal, de un exponente y de una propiedad repetida;
+  - que el mismo objeto con otro orden y otros espacios da los mismos bytes.
+
+  Verificar con `dotnet test tests/Intelektron.INComedor.Contracts.Tests` que no compilan o fallan antes de implementar, y pegar la salida
+- [ ] 1.3 Implementar `JsonCanonico` y `JsonCanonicoException` en `src/Intelektron.INComedor.Contracts` (D4), y los records del lote y del acuse con los nombres del OpenAPI (`SyncBatchRequest`, `CompletedBatchAck`, `EventAck`). Verificar con el mismo comando que pasan, y con `dotnet test INComedor.sln` que las 183 anteriores siguen en verde
+
+## 2. Migración `0003` y versión de esquema 3
+
+- [ ] 2.1 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/MigracionLotesTests.cs` con los escenarios nuevos del delta de `registro-consumo`: «Base en la versión 2 con eventos pendientes» y «Un evento no se repite dentro de un lote». Sumar las columnas de las dos tablas contra el mapa y el `CHECK` de `comlotEstado`. Verificar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~MigracionLotesTests"` que fallan por el motivo correcto antes de implementar, y pegar la salida
+- [ ] 2.2 Cambiar las cuatro pruebas existentes de D9, y nada más, con la aprobación de David en el gate:
+  - `AperturaBaseTests.Base_vacia_queda_en_version_2_con_las_21_tablas`: versión 3, las dos tablas en `TablasEsperadas`, y su nombre y su `DisplayName`;
+  - `ServicioDemostracionTests.cs:27` y su `DisplayName`;
+  - `SemillaAtencionTests.cs:69` y su `DisplayName`;
+  - `MigracionesTests.cs:33` y su `DisplayName`.
+
+  Verificar con `git diff -- tests/` que el diff toca sólo esas líneas, y pegarlo
+- [ ] 2.3 Crear `Migraciones/0003_lotes_sincronizacion.sql`, embebido como recurso, y llevar `BaseComedor` a `UltimaVersionConocida = 3` (D9). Agregar `comlotContenidoLote` y `comcasEvidencia` a `docs/nomenclatura-campos-er.csv`. Verificar:
+  - con `dotnet test INComedor.sln`, que pasan las nuevas, las cuatro cambiadas y todas las demás;
+  - con el chequeo del mapa, que las columnas de la `0003` están en el CSV;
+  - con `git diff --stat -- tests/`, que sólo aparecen los cuatro archivos de 2.2 y `MigracionLotesTests.cs`.
+
+## 3. Cola de lotes del puesto
+
+- [ ] 3.1 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/ColaSincronizacionTests.cs`, con una prueba por escenario de «Lote durable antes de enviar», «La cola avanza sólo con un acuse durable» y «El envío no toca las decisiones» del delta de `envio-lotes` (D10). La foto de «El envío no toca las decisiones» compara byte por byte las filas de intenciones, consumos, usos de cupo, comprobantes y trabajos. La de «El lote no lleva el código» busca el código en `comlotContenidoLote` y `comlotContenidoAcuse`. Verificar con `dotnet test … --filter "FullyQualifiedName~ColaSincronizacionTests"` que fallan antes de implementar, y pegar la salida
+- [ ] 3.2 Implementar `ColaSincronizacion` con `Preparar`, `RegistrarAcuse` y `RegistrarError`, y los registros de bitácora `SYNC_ACK_INVALID`, `SYNC_BATCH_ACKNOWLEDGED` y `SYNC_BATCH_FAILED` (D10). Verificar con el mismo filtro que pasan, con `dotnet test INComedor.sln` que nada más cambió y con `git diff --stat -- tests/` que no apareció ninguna prueba existente nueva
+
+## 4. Receptor: base, autenticación y el fin del esqueleto
+
+- [ ] 4.1 Agregar `Microsoft.Data.SqlClient` a `Directory.Packages.props` (la versión estable vigente) y a `Sync.Api`. Verificar:
+  - con `dotnet build INComedor.sln -warnaserror`, que NuGet Audit no marca vulnerabilidades;
+  - con `dotnet list src/Intelektron.INComedor.Sync.Api package --vulnerable --format json`, leyendo el veredicto del JSON y no el código de salida.
+- [ ] 4.2 Crear en `Sync.Api.Tests` los auxiliares `CertificadosDePrueba.cs` y `ReceptorConKestrel.cs` (D2 y D13):
+  - la autoridad y los certificados en memoria, exportados e importados como PFX;
+  - Kestrel real en el puerto 0;
+  - una base temporal de LocalDB por clase, borrada al terminar.
+
+  Escribir primero una prueba de humo que abra TLS mutuo con un certificado registrado contra un endpoint de prueba, y pegar su salida antes y después. Si `WebApplicationFactory.UseKestrel` no existe en esta versión, usar `WebApplication` en el puerto 0 y anotarlo en la tarea
+- [ ] 4.3 Crear `AutenticacionEquipoTests.cs` con los cuatro escenarios de «Equipo autenticado por certificado», cada uno contando que no se guardó ninguna fila. Verificar que fallan antes de implementar, y pegar la salida
+- [ ] 4.4 Implementar el script `0001_receptor.sql`, su aplicación al arrancar, la conducta sin cadena de conexión (`503`), el filtro de autenticación (D1 y D2) y `ProblemasReceptor` (D8). Borrar en `ReceptorEsqueletoTests.cs` las tres pruebas de D14 y ajustar su resumen, con la aprobación del gate. Verificar:
+  - con `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests`, que pasan las de autenticación y `Ruta_no_declarada_responde_404`;
+  - con `git diff -- tests/Intelektron.INComedor.Sync.Api.Tests/ReceptorEsqueletoTests.cs`, que sólo se borraron las tres pruebas y cambió el resumen.
+
+## 5. Receptor: ingesta idempotente y resultado por evento
+
+- [ ] 5.1 Crear `LoteIdempotenteTests.cs`, con «Lote idempotente por BatchId» y «Lote inválido sin efectos». La prueba de concurrencia manda dos `POST` en paralelo con `Task.WhenAll` y cuenta recibos y consumos consolidados. Verificar que fallan antes de implementar, y pegar la salida
+- [ ] 5.2 Crear `ResultadoPorEventoTests.cs` con:
+  - «Deduplicación y consolidación por evento»;
+  - «Ningún acuse reautoriza ni revierte»;
+  - «Validación por aplicación de cada evento»;
+  - «Eventos que esperan una referencia o una revisión».
+
+  Cada `DisplayName` cita su AT o el texto del contrato. Verificar que fallan antes de implementar, y pegar la salida
+- [ ] 5.3 Implementar `ValidadorLote` (D5) e `IngestaLotes` (D3, D6 y D7). Verificar con `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests` que pasan las de 5.1 y 5.2, y con `dotnet test INComedor.sln` que nada más cambió
+
+## 6. Receptor: consulta y errores
+
+- [ ] 6.1 Crear `ConsultaYErroresTests.cs` con:
+  - «Consulta del acuse original»;
+  - «Errores que no reflejan la entrada»;
+  - la prueba de que sin cadena de conexión las dos operaciones responden `503` con `code` `SERVICE_UNAVAILABLE`.
+
+  La de «Lote de otro puesto» compara las dos respuestas `404` campo por campo, salvo `correlationId`. Verificar que fallan antes de implementar, y pegar la salida
+- [ ] 6.2 Implementar el `GET`, el tope de 1 MiB y el manejador de excepciones (D7 y D8). Verificar con `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests` que pasan todas, y validar contra el OpenAPI que cada cuerpo de error y de acuse de las pruebas cumple `ProblemDetails` o `CompletedBatchAck` (prueba de contrato en el mismo archivo)
+
+## 7. Sincronizador, cliente HTTP y envío integrado
+
+- [ ] 7.1 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/SincronizadorPuestoTests.cs` con «Reenvío idéntico ante un acuse perdido» y «Respuestas que no acusan». Usa un `IReceptorLotes` de prueba, el doble aprobado en el gate. Verificar que fallan antes de implementar, y pegar la salida
+- [ ] 7.2 Implementar `IReceptorLotes` y `SincronizadorPuesto` con su `EstadoSincronizacion` (D11). Verificar con el mismo filtro que pasan
+- [ ] 7.3 Crear `tests/Intelektron.INComedor.Kiosk.Tests/EnvioDeLotesIntegradoTests.cs`, con la referencia a `Sync.Api` y a `Microsoft.AspNetCore.Mvc.Testing`, sobre SQLite real, `ClienteReceptorHttp`, Kestrel con mTLS y LocalDB:
+  - AT27: dos ciclos dan un solo consumo consolidado, y un corte después del commit del receptor se resuelve con la consulta;
+  - AT13: un certificado vencido retiene los eventos y la confirmación siguiente es `AUTHORIZED`;
+  - «Receptor inalcanzable».
+
+  Verificar que fallan antes de implementar `ClienteReceptorHttp`, y pegar la salida
+- [ ] 7.4 Implementar `ClienteReceptorHttp` en `src/Intelektron.INComedor.Kiosk/Sincronizacion/` (D11). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~EnvioDeLotesIntegradoTests"` que pasan, y con `dotnet test INComedor.sln` que todo sigue en verde
+
+## 8. Demostración conectada
+
+- [ ] 8.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/FranjaSincronizacionTests.cs` (bUnit, los cinco mensajes de D11) y `ModoDemostracionReceptorTests.cs`, con el requirement «Receptor y puesto de demostración conectados» sobre una carpeta temporal. Verificar que fallan antes de implementar, y pegar la salida
+- [ ] 8.2 Implementar `--demostracion` en `Sync.Api` (D12), el ciclo periódico en `ServicioAtencion` y `FranjaSincronizacion.razor` (D11). Verificar con `dotnet test INComedor.sln` que todo pasa, y con `git status --short` que no aparece ningún `.pfx` ni `.cer` en el repo
+- [ ] 8.3 Actualizar `AGENTS.md` (el comando del receptor deja de decir «responde 501»), `readme.md` («Cómo ver la demostración», con el receptor, la carpeta de certificados, el riesgo de los PFX sin contraseña y cómo reiniciar) y `docs/cobertura-entrega.md`. Verificar con el chequeo de enlaces relativos que no hay enlaces rotos
+
+## 9. Verificación integrada y revisión OWASP
+
+- [ ] 9.1 Revisar contra OWASP Top 10 2021 lo que toca entrada externa: el receptor, el cuerpo del acuse que lee el puesto y los certificados de la demostración. Escribir en esta tarea una tabla A01 a A10 con lo que se encontró y la prueba o la decisión que lo cubre. Verificar que cada fila nombra una prueba existente o un riesgo del design, y correr `gitleaks detect --no-banner` sobre el repo, leyendo que diga `commits scanned` mayor que 0
+- [ ] 9.2 Correr el receptor con `--demostracion` y el puesto real. Recorrer:
+  - una autorización y un rechazo, con «Sincronización: al día» y los dos eventos en el receptor;
+  - el receptor detenido, con «N pendientes» y la atención andando;
+  - el receptor de vuelta, con un solo consumo consolidado.
+
+  Guardar las capturas en `C:\AI\INComedor\ai4devs\gestion\evidencias\recibir-lotes-idempotente\`. Al final, borrar `%LOCALAPPDATA%\INComedor\demo\` y la base `INComedorReceptorDemo`, si no existían antes. Pegar la consulta SQL que cuenta los consumos consolidados
+- [ ] 9.3 Correr `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y `openspec validate --all --strict`, y pegar la línea final de cada uno, con la tabla de escenarios contra pruebas del change. Verificar con `git diff --stat dac38e5..HEAD -- tests/` que las únicas pruebas existentes cambiadas son las siete del gate
+
+## 10. Tallas y evidencia
+
+- [ ] 10.1 Registrar en `docs/plan-academico.md` (tallas por change) las horas reales de reloj del apply contra la talla de la IA y la de David, sin promediar. Agregar la fila de `recibir-lotes-idempotente` en `docs/aplicacion-del-curso.md` y, si el change dejó un workflow o un ajuste humano nuevo, su entrada en `prompts.md`. Verificar con el chequeo de enlaces relativos que no hay enlaces rotos
+
+## Workflow follow-up
+
+- `/openspec-verify-change` y su informe en el arnés.
+- PR, merge y archivado del change: son de David.
+- Si la CI no tiene LocalDB, el paso en `ci.yml` lo decide David.
