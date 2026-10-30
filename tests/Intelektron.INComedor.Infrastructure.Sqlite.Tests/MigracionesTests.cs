@@ -20,7 +20,7 @@ public class MigracionesTests
         "compopFechaRevocacionUtc",
     ];
 
-    [Fact(DisplayName = "AT51 · RB06 · Base en la versión 1: queda en la versión 2 con tbComedorPermisosOperadores vacía, y el consumo, su comprobante y su trabajo siguen iguales")]
+    [Fact(DisplayName = "AT51 · RB06 · Base en la versión 1: queda en la versión 3 con tbComedorPermisosOperadores vacía, y el consumo, su comprobante y su trabajo siguen iguales")]
     public void Base_en_version_1_se_actualiza_sin_perder_el_consumo()
     {
         using var archivo = new ArchivoTemporal();
@@ -30,7 +30,7 @@ public class MigracionesTests
         var base_ = BaseComedor.Abrir(archivo.Ruta);
 
         using var conexion = base_.AbrirConexion();
-        Assert.Equal(2L, Sql.Escalar<long>(conexion, "PRAGMA user_version"));
+        Assert.Equal(3L, Sql.Escalar<long>(conexion, "PRAGMA user_version"));
         Assert.Equal(0L, Sql.Contar(conexion, "tbComedorPermisosOperadores"));
         Assert.Equal(antes, FotoDelConsumo(archivo.Ruta));
         Assert.Equal(3, antes.Count);

@@ -2,7 +2,7 @@
 
 Se aplica con `opus` · `xhigh`, supervisado. Es un plan diseñado con su verificador, pero tiene seguridad en alcance (mTLS y la primera entrada externa del sistema), y el apéndice de Claude Code manda para eso la línea de seguridad. Los comandos corren desde la raíz del repo y su salida se pega en la tarea. Al cerrar cada grupo hay un commit por rutas, en español, con `git commit -F <archivo>`.
 
-Las pruebas existentes no se tocan, salvo las siete que aprobó David en el gate: las cuatro de D9 y las tres que borra D14. `git diff --stat -- tests/` sólo puede mostrar los archivos nuevos, esos cuatro archivos y `ReceptorEsqueletoTests.cs`. Si otra tarea necesitara cambiar una prueba existente, se para y se le pregunta a David. Los chequeos de enlaces relativos y del mapa son los de D8 en `openspec/changes/archive/2026-10-29-mostrar-aplicacion-del-curso/design.md`.
+Las pruebas existentes no se tocan, salvo las siete que aprobó David en el gate: las cuatro de D9 y las tres que borra D14. En el apply David aprobó además la línea 85 de `SemillaAtencionTests.cs`, el ayudante `LlevarAVersion1` (D9). `git diff --stat -- tests/` sólo puede mostrar los archivos nuevos, esos cuatro archivos y `ReceptorEsqueletoTests.cs`. Si otra tarea necesitara cambiar una prueba existente, se para y se le pregunta a David. Los chequeos de enlaces relativos y del mapa son los de D8 en `openspec/changes/archive/2026-10-29-mostrar-aplicacion-del-curso/design.md`.
 
 ## 1. Precondiciones y JSON canónico
 
@@ -24,18 +24,24 @@ Las pruebas existentes no se tocan, salvo las siete que aprobó David en el gate
 
 ## 2. Migración `0003` y versión de esquema 3
 
-- [ ] 2.1 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/MigracionLotesTests.cs` con los escenarios nuevos del delta de `registro-consumo`: «Base en la versión 2 con eventos pendientes» y «Un evento no se repite dentro de un lote». Sumar las columnas de las dos tablas contra el mapa y el `CHECK` de `comlotEstado`. Verificar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~MigracionLotesTests"` que fallan por el motivo correcto antes de implementar, y pegar la salida
-- [ ] 2.2 Cambiar las cuatro pruebas existentes de D9, y nada más, con la aprobación de David en el gate:
+- [x] 2.1 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/MigracionLotesTests.cs` con los escenarios nuevos del delta de `registro-consumo`: «Base en la versión 2 con eventos pendientes» y «Un evento no se repite dentro de un lote». Sumar las columnas de las dos tablas contra el mapa y el `CHECK` de `comlotEstado`. Verificar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~MigracionLotesTests"` que fallan por el motivo correcto antes de implementar, y pegar la salida
+- [x] 2.2 Cambiar las cuatro pruebas existentes de D9, y nada más, con la aprobación de David en el gate:
   - `AperturaBaseTests.Base_vacia_queda_en_version_2_con_las_21_tablas`: versión 3, las dos tablas en `TablasEsperadas`, y su nombre y su `DisplayName`;
   - `ServicioDemostracionTests.cs:27` y su `DisplayName`;
   - `SemillaAtencionTests.cs:69` y su `DisplayName`;
   - `MigracionesTests.cs:33` y su `DisplayName`.
 
   Verificar con `git diff -- tests/` que el diff toca sólo esas líneas, y pegarlo
-- [ ] 2.3 Crear `Migraciones/0003_lotes_sincronizacion.sql`, embebido como recurso, y llevar `BaseComedor` a `UltimaVersionConocida = 3` (D9). Agregar `comlotContenidoLote` y `comcasEvidencia` a `docs/nomenclatura-campos-er.csv`. Verificar:
+- [x] 2.3 Crear `Migraciones/0003_lotes_sincronizacion.sql`, embebido como recurso, y llevar `BaseComedor` a `UltimaVersionConocida = 3` (D9). Agregar `comlotContenidoLote` y `comcasEvidencia` a `docs/nomenclatura-campos-er.csv`. Verificar:
   - con `dotnet test INComedor.sln`, que pasan las nuevas, las cuatro cambiadas y todas las demás;
   - con el chequeo del mapa, que las columnas de la `0003` están en el CSV;
   - con `git diff --stat -- tests/`, que sólo aparecen los cuatro archivos de 2.2 y `MigracionLotesTests.cs`.
+
+  Salida de 2.1 (antes de implementar): `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~MigracionLotesTests"`: `total: 7, error: 7, correcto: 0`. Las dos de versión: `Expected: 3, Actual: 2`; las dos de columnas: `Actual: List<string> []`; el `CHECK` del estado: `Expected: 275, Actual: 1`; la clave primaria y la foránea: `SqliteException : SQLite Error 1: 'no such table: tbComedorLotesSincronizacion'` al armar el lote. Además del escenario de la versión 2, una prueba cubre la parte del escenario «Base en la versión 1» que la prueba existente no afirma («y las tablas de lotes vacías»), porque el gate sólo deja cambiarle la línea 33.
+
+  Salida de 2.2: `git diff -- tests/` toca sólo lo aprobado. `AperturaBaseTests.cs`: `+ "tbComedorLotesSincronizacion",` y `+ "tbComedorLotesSincronizacion_Eventos",` en `TablasEsperadas`; el `DisplayName` de «versión de esquema 2 … 21 tablas» a «versión de esquema 3 … 23 tablas»; `Base_vacia_queda_en_version_2_con_las_21_tablas` a `Base_vacia_queda_en_version_3_con_las_23_tablas`, y `2L` a `3L`. `ServicioDemostracionTests.cs`: «esquema 2» a «esquema 3» y la línea 27 de `2L` a `3L`. `SemillaAtencionTests.cs`: «de la versión 1 a la 2» a «a la 3» y la línea 69 de `2L` a `3L`. `MigracionesTests.cs`: «queda en la versión 2» a «en la versión 3» y la línea 33 de `2L` a `3L`. `11 insertions(+), 9 deletions(-)`.
+
+  Salida de 2.3: con la `0003`, `dotnet test INComedor.sln` dio `total: 213, error: 1`: `SemillaAtencionTests` «Atención sobre una base de la demostración en uso» devolvió `ErrorAlmacenamiento` en la línea 67. Causa, reproducida aparte con el `sqlite3` de Python y los tres scripts: su ayudante `LlevarAVersion1` simula la versión 1 borrando sólo la tabla de la `0002`, y la `0003` choca con `table tbComedorLotesSincronizacion already exists`. Se paró y se le preguntó a David, que aprobó ampliar el `DROP` de la línea 85 a las dos tablas de lotes (registrado en D9, `8076852`, antes del código). Después: `dotnet build INComedor.sln -warnaserror`, `0 Advertencia(s) 0 Errores`; `dotnet test INComedor.sln`, `total: 213, error: 0, correcto: 213` (206 más las 7 de `MigracionLotesTests`). Chequeo del mapa: el de D8 del change del curso revisa el mapa de prácticas, no columnas; para la `0003` se cruzó cada columna de sus `CREATE TABLE` con las filas `(table, column)` del CSV: `columnas de la migración: 7 · sin fila en el mapa: 0`; control negativo con el CSV de `HEAD`: `FALTA EN EL MAPA: tbComedorLotesSincronizacion.comlotContenidoLote`, 1; control positivo con la `0002`: 7 y 0. `comcasEvidencia` se cruza con el script del receptor en el grupo 4. `git diff --stat -- tests/`: sólo los cuatro archivos de 2.2 (`SemillaAtencionTests.cs` con la línea 85), `12 insertions(+), 10 deletions(-)`, más `MigracionLotesTests.cs` sin versionar.
 
 ## 3. Cola de lotes del puesto
 

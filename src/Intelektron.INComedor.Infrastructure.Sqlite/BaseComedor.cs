@@ -10,6 +10,7 @@ public sealed class BaseComedor
     [
         (1, "Migraciones.0001_transaccion_consumo.sql"),
         (2, "Migraciones.0002_permisos_operadores.sql"),
+        (3, "Migraciones.0003_lotes_sincronizacion.sql"),
     ];
 
     private static readonly int UltimaVersionConocida = Migraciones[^1].Version;

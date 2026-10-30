@@ -54,7 +54,7 @@ public class SemillaAtencionTests : IDisposable
         Assert.Equal(1L, Escalar<long>(conexion, "SELECT COUNT(*) FROM tbComedorConsumos"));
     }
 
-    [Fact(DisplayName = "RB06 · Atención sobre una base de la demostración en uso: de la versión 1 a la 2 con los datos de atención, un solo puesto y el consumo anterior")]
+    [Fact(DisplayName = "RB06 · Atención sobre una base de la demostración en uso: de la versión 1 a la 3 con los datos de atención, un solo puesto y el consumo anterior")]
     public void Atencion_sobre_una_base_de_la_demostracion_en_version_1()
     {
         var demostracion = new ServicioDemostracion(_archivo.Ruta, _reloj);
@@ -66,7 +66,7 @@ public class SemillaAtencionTests : IDisposable
 
         Assert.Equal(EstadoPreparacion.Lista, estado);
         using var conexion = Abrir();
-        Assert.Equal(2L, Escalar<long>(conexion, "PRAGMA user_version"));
+        Assert.Equal(3L, Escalar<long>(conexion, "PRAGMA user_version"));
         Assert.Equal(15L, Escalar<long>(conexion, "SELECT COUNT(*) FROM tbComedorOpcionesMenu"));
         Assert.Equal(4L, Escalar<long>(conexion, "SELECT COUNT(*) FROM tbComedorPermisosOperadores"));
         Assert.Equal(1L, Escalar<long>(conexion, "SELECT COUNT(*) FROM tbComedorConfiguracionPuestos"));
@@ -82,7 +82,7 @@ public class SemillaAtencionTests : IDisposable
         using var conexion = new SqliteConnection($"Data Source={_archivo.Ruta};Pooling=False");
         conexion.Open();
         using var comando = conexion.CreateCommand();
-        comando.CommandText = "DROP TABLE tbComedorPermisosOperadores; PRAGMA user_version = 1";
+        comando.CommandText = "DROP TABLE tbComedorLotesSincronizacion_Eventos; DROP TABLE tbComedorLotesSincronizacion; DROP TABLE tbComedorPermisosOperadores; PRAGMA user_version = 1";
         comando.ExecuteNonQuery();
     }
 
