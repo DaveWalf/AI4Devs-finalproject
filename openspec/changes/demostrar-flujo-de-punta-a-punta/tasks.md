@@ -180,17 +180,63 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
 ## 5. El paquete del puesto
 
-- [ ] 5.1 Escribir `.github/scripts/publicar-puesto.ps1 -Version <v>` (D7) y el modo paquete de la preparación: con `INCOMEDOR_E2E_KIOSK_EXE`, el puesto se lanza con un `PATH` sin carpetas de `dotnet` y con `DOTNET_ROOT` en una carpeta vacía. Agregar `artifacts/` al `.gitignore` si falta. Verificar con `git check-ignore artifacts/x` que se ignora
-- [ ] 5.2 Correr `./.github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`. Verificar y pegar:
+- [x] 5.1 Escribir `.github/scripts/publicar-puesto.ps1 -Version <v>` (D7) y el modo paquete de la preparación: con `INCOMEDOR_E2E_KIOSK_EXE`, el puesto se lanza con un `PATH` sin carpetas de `dotnet` y con `DOTNET_ROOT` en una carpeta vacía. Agregar `artifacts/` al `.gitignore` si falta. Verificar con `git check-ignore artifacts/x` que se ignora
+
+  Hecho. Además de lo que dice la tarea:
+  - el script valida la versión (sólo letras, dígitos, punto y guion), porque en el workflow llega del nombre de un tag (OWASP A03);
+  - revisa la publicación dos veces, antes del E2E y después, por si la corrida dejó algo junto al EXE, y una tercera vez las entradas del zip ya escrito;
+  - en el modo paquete, la prueba comprueba que el `coreclr.dll` cargado por el proceso del puesto sale de la carpeta del EXE. Es una prueba más directa que el entorno de que el runtime es el del paquete.
+
+  ```text
+  .gitignore:4:artifacts/	artifacts/x
+  exit 0
+  dotnet build INComedor.sln -warnaserror: 0 Errores, exit 0
+  ```
+- [x] 5.2 Correr `./.github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`. Verificar y pegar:
   - que el E2E corrió contra el EXE publicado;
   - el listado del zip, sin `.db`, `.pfx`, `.key`, `.pem`, `comprobantes` ni `certificados`;
   - el tamaño del zip;
   - que `Get-FileHash` coincide con el `.sha256`.
-- [ ] 5.3 Controles negativos del script:
+
+  Hecho el 30/10 a las 13:25, en 85 s, con el build en `Release` en 0 advertencias y 0 errores.
+
+  ```text
+  publicación revisada: 474 entradas, ninguna con datos ni secretos
+  modo paquete: PATH sin 5 carpetas de dotnet (C:\Program Files\dotnet\, C:\Users\dwalfisch\.dotnet\tools, …) · DOTNET_ROOT=…\incomedor-e2e\8abe1f1f-sin-dotnet, vacía
+  puesto PID 8048 · artifacts\publicacion\puesto\Intelektron.INComedor.Kiosk.exe · INCOMEDOR_CDP_PORT=19439
+  pantalla de reposo en https://0.0.0.1/ a los 2415 ms
+  modo paquete: coreclr.dll cargado desde artifacts\publicacion\puesto\coreclr.dll
+  2. puesto en reposo · 5,5 s … 6. receptor de vuelta, franja al día · 65,9 s · 7. receptor: un consumo consolidado
+  Intelektron.INComedor.E2E.Tests.dll (net11.0|x64) correcto [+1/x0/?0] (1m 07s 563ms)
+  zip: artifacts\INComedor-Puesto-0.0.0-local-win-x64.zip · 76978066 bytes · sha256 aa05a1e63ebeb0d90a82a34657af5aa148edaa125e46d6b0b26b005af4de4074
+
+  listado: 456 entradas; con .db/.pfx/.key/.pem o bajo comprobantes/certificados: 0
+  raíz del zip: Accessibility.dll, clretwrc.dll, clrgc.dll, clrgcexp.dll, clrjit.dll, coreclr.dll, createdump.exe, D3DCompiler_47_cor3.dll, DirectWriteForwarder.dll, e_sqlite3.dll, hostfxr.dll, hostpolicy.dll …
+  carpetas de primer nivel: cs, de, es, fr, it, ja, ko, pl, pt-BR, ru, runtimes, tr, wwwroot, zh-Hans, zh-Hant
+  .sha256: aa05a1e63ebeb0d90a82a34657af5aa148edaa125e46d6b0b26b005af4de4074  INComedor-Puesto-0.0.0-local-win-x64.zip
+  Get-FileHash: AA05A1E63EBEB0D90A82A34657AF5AA148EDAA125E46D6B0B26B005AF4DE4074 · coincide: True
+  ```
+- [x] 5.3 Controles negativos del script:
   - con un `.db` plantado en la carpeta de publicación, falla, nombra el archivo y no deja zip;
   - con `INCOMEDOR_SQLSERVER` en una instancia inexistente, el E2E falla y no queda zip.
 
   Pegar las dos salidas y `Test-Path` del zip en cada caso
+
+  Hecho, cada control con su propia versión, para no pisar el zip de la 5.2. El `.db` se plantó en `src/Intelektron.INComedor.Kiosk/wwwroot/plantado.db`, que es por donde se colaría por error: `wwwroot` se publica entero, y `*.db` lo ignora git. Se borró al terminar.
+
+  ```text
+  .db plantado (-Version 0.0.0-control-db):
+  script: La publicación trae datos o secretos: wwwroot\plantado.db.
+  zip del control: False · suma: False · ¿corrió el E2E?: False · plantado en src: False
+
+  SQL Server inexistente (-Version 0.0.0-control-sql, INCOMEDOR_SQLSERVER=E2E-NO-EXISTE\NINGUNA sólo en ese proceso):
+  publicación revisada: 474 entradas, ninguna con datos ni secretos
+  - SQL Server: no hay conexión con «E2E-NO-EXISTE\NINGUNA» (INCOMEDOR_SQLSERVER, o LocalDB por defecto; en la CI, «sqllocaldb start MSSQLLocalDB» en ci.yml): Error relacionado […]
+  Intelektron.INComedor.E2E.Tests.dll (net11.0|x64) error con 1 errores [+0/x1/?0] (20s 834ms)
+  script: El E2E contra el EXE publicado salió 2.
+  zip del control: False · suma: False · procesos del puesto o del receptor vivos: 0
+  en artifacts\ queda sólo INComedor-Puesto-0.0.0-local-win-x64.zip y su .sha256, de la 5.2
+  ```
 
 ## 6. El workflow del Release
 

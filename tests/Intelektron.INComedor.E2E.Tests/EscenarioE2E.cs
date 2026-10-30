@@ -25,6 +25,7 @@ public sealed class EscenarioE2E : IAsyncDisposable
     private static readonly Lock Registros = new();
 
     private readonly string _hex = Guid.NewGuid().ToString("N")[..8];
+    private readonly string _sinDotnet;
     private readonly string _fotoAntes;
     private readonly List<Process> _lanzados = [];
     private int _receptores;
@@ -32,6 +33,7 @@ public sealed class EscenarioE2E : IAsyncDisposable
     private EscenarioE2E(string prueba)
     {
         Carpeta = Path.Combine(Path.GetTempPath(), "incomedor-e2e", _hex);
+        _sinDotnet = Path.Combine(Path.GetTempPath(), "incomedor-e2e", $"{_hex}-sin-dotnet");
         Base = $"INComedorE2E_{_hex}";
         Resultados = Path.Combine(AppContext.BaseDirectory, "TestResults", "e2e", $"{DateTime.Now:yyyyMMdd-HHmmss}-{prueba}-{_hex}");
         Directory.CreateDirectory(Resultados);
@@ -69,7 +71,7 @@ public sealed class EscenarioE2E : IAsyncDisposable
     /// </summary>
     public Process LanzarPuesto(string? puertoCdp)
     {
-        var exe = ExeDelProyecto("Intelektron.INComedor.Kiosk", "net11.0-windows10.0.17763.0");
+        var exe = ExeDelPaquete ?? ExeDelProyecto("Intelektron.INComedor.Kiosk", "net11.0-windows10.0.17763.0");
         var inicio = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
         foreach (var heredada in inicio.Environment.Keys.Where(EsDelPuesto).ToList())
         {
@@ -83,9 +85,43 @@ public sealed class EscenarioE2E : IAsyncDisposable
             inicio.Environment["INCOMEDOR_CDP_PORT"] = puertoCdp;
         }
 
+        if (ExeDelPaquete is not null)
+        {
+            SinDotnet(inicio);
+        }
+
         var puesto = Lanzar(inicio, "puesto");
         Registrar($"puesto PID {puesto.Id} · {exe} · INCOMEDOR_CDP_PORT={puertoCdp ?? "(sin definir)"}");
         return puesto;
+    }
+
+    /// <summary>
+    /// Con INCOMEDOR_E2E_KIOSK_EXE, el puesto es el EXE del paquete publicado (D7) en lugar del de la salida del proyecto.
+    /// </summary>
+    public static string? ExeDelPaquete =>
+        Environment.GetEnvironmentVariable("INCOMEDOR_E2E_KIOSK_EXE") is { Length: > 0 } exe
+            ? Path.IsPathFullyQualified(exe) && File.Exists(exe) ? exe : throw new FileNotFoundException($"INCOMEDOR_E2E_KIOSK_EXE no es un EXE que exista: {exe}.", exe)
+            : null;
+
+    /// <summary>
+    /// En el modo paquete, el runtime que carga el puesto tiene que ser el que viaja a su lado: el coreclr.dll del
+    /// proceso sale de la carpeta del EXE, no de una instalación de .NET (escenario «Abre sin .NET instalado»).
+    /// </summary>
+    public void ComprobarRuntimeDelPaquete(Process puesto)
+    {
+        if (ExeDelPaquete is not { } exe)
+        {
+            return;
+        }
+
+        puesto.Refresh();
+        var coreclr = puesto.Modules.Cast<ProcessModule>().Select(m => m.FileName)
+            .SingleOrDefault(m => Path.GetFileName(m).Equals("coreclr.dll", StringComparison.OrdinalIgnoreCase));
+        Registrar($"modo paquete: coreclr.dll cargado desde {coreclr ?? "(ninguno)"}");
+        if (coreclr is null || !string.Equals(Path.GetDirectoryName(coreclr), Path.GetDirectoryName(exe), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"El puesto del paquete no cargó el runtime de su carpeta: {coreclr ?? "sin coreclr.dll"}.");
+        }
     }
 
     /// <summary>El receptor de demostración con la carpeta de certificados, la base y el puerto de esta prueba.</summary>
@@ -142,7 +178,9 @@ public sealed class EscenarioE2E : IAsyncDisposable
         var puesto = LanzarPuesto(PuertoCdp.ToString());
         try
         {
-            return (puesto, await ConectarAsync(playwright));
+            var pagina = await ConectarAsync(playwright);
+            ComprobarRuntimeDelPaquete(puesto);
+            return (puesto, pagina);
         }
         catch (TimeoutException e) when (reintentar)
         {
@@ -356,7 +394,8 @@ public sealed class EscenarioE2E : IAsyncDisposable
         try
         {
             await BorrarBaseAsync();
-            await BorrarCarpetaAsync();
+            await BorrarCarpetaAsync(Carpeta);
+            await BorrarCarpetaAsync(_sinDotnet);
         }
         catch (Exception e)
         {
@@ -457,6 +496,25 @@ public sealed class EscenarioE2E : IAsyncDisposable
         return carpeta?.FullName ?? throw new DirectoryNotFoundException("No se encontró INComedor.sln arriba de " + AppContext.BaseDirectory);
     }
 
+    /// <summary>
+    /// Un entorno sin .NET a la vista (D7): el PATH sin las carpetas que tienen dotnet.exe o se llaman dotnet, y
+    /// DOTNET_ROOT en una carpeta vacía. Un EXE autocontenido abre igual; uno que dependiera del runtime instalado, no.
+    /// </summary>
+    private void SinDotnet(ProcessStartInfo inicio)
+    {
+        var carpetas = (inicio.Environment["PATH"] ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries);
+        var deDotnet = carpetas.Where(c => c.Contains("dotnet", StringComparison.OrdinalIgnoreCase) || File.Exists(Path.Combine(c.Trim('"'), "dotnet.exe"))).ToList();
+        inicio.Environment["PATH"] = string.Join(';', carpetas.Except(deDotnet));
+        foreach (var raiz in inicio.Environment.Keys.Where(k => k.StartsWith("DOTNET_ROOT", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            inicio.Environment.Remove(raiz);
+        }
+
+        Directory.CreateDirectory(_sinDotnet);
+        inicio.Environment["DOTNET_ROOT"] = _sinDotnet;
+        Registrar($"modo paquete: PATH sin {deDotnet.Count} carpetas de dotnet ({string.Join(", ", deDotnet)}) · DOTNET_ROOT={_sinDotnet}, vacía");
+    }
+
     /// <summary>Las variables que cambian al puesto o a su WebView2 salen del entorno heredado: la prueba fija las suyas.</summary>
     private static bool EsDelPuesto(string variable) =>
         variable.StartsWith("INCOMEDOR_", StringComparison.OrdinalIgnoreCase) || variable.StartsWith("WEBVIEW2_", StringComparison.OrdinalIgnoreCase);
@@ -530,19 +588,20 @@ public sealed class EscenarioE2E : IAsyncDisposable
     }
 
     /// <summary>Los procesos del WebView2 pueden tardar un momento en soltar sus archivos después de cerrarse.</summary>
-    private async Task BorrarCarpetaAsync()
+    private async Task BorrarCarpetaAsync(string carpeta)
     {
         var reloj = Stopwatch.StartNew();
         while (true)
         {
             try
             {
-                if (Directory.Exists(Carpeta))
+                if (!Directory.Exists(carpeta))
                 {
-                    Directory.Delete(Carpeta, recursive: true);
+                    return;
                 }
 
-                Registrar($"carpeta {Carpeta} borrada");
+                Directory.Delete(carpeta, recursive: true);
+                Registrar($"carpeta {carpeta} borrada");
                 return;
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException && reloj.Elapsed < TimeSpan.FromSeconds(15))
