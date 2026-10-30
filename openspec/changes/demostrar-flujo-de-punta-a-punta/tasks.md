@@ -240,12 +240,35 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
 ## 6. El workflow del Release
 
-- [ ] 6.1 Escribir `.github/workflows/release.yml` (D8): `push: tags: ['v*']`, `contents: read` arriba y `contents: write` sólo en el job, `windows-latest`, `actions/checkout@v7`, `actions/setup-dotnet@v6` con `global-json-file`, el script de 5.1 y `gh release create <tag> --draft` con el zip y su suma. Verificar:
+- [x] 6.1 Escribir `.github/workflows/release.yml` (D8): `push: tags: ['v*']`, `contents: read` arriba y `contents: write` sólo en el job, `windows-latest`, `actions/checkout@v7`, `actions/setup-dotnet@v6` con `global-json-file`, el script de 5.1 y `gh release create <tag> --draft` con el zip y su suma. Verificar:
   - que el YAML parsea;
   - con `rg -n "softprops|uses:" .github/workflows/release.yml`, que no hay acciones de terceros;
   - con `git diff --stat -- .github/workflows/ci.yml`, que `ci.yml` no cambió.
 
   Si `actionlint` no se puede correr (el 29/10 el clasificador de auto mode lo denegó), decirlo y dejarlo para David. Pegar las salidas
+
+  Hecho. Antes del script van `Restore` y «Dependencias vulnerables», como en `ci.yml`, porque la auditoría necesita el restore. Además:
+  - el clon va con `persist-credentials: false`, porque `gh` usa su propio token y nadie empuja desde el job;
+  - el tag entra por `env:`, nunca interpolado en `run:` (OWASP A03);
+  - `gh release create` lleva `--verify-tag`;
+  - el job tiene un tope de 30 minutos.
+
+  El YAML se parseó con la biblioteca `yaml` del CLI de OpenSpec, porque no hay PyYAML. Control: con la sangría rota, el mismo parser falla.
+
+  ```text
+  parsea: sí
+  on: {"push":{"tags":["v*"]}}
+  permissions arriba: {"contents":"read"}
+  job paquete: runs-on windows-latest · permissions {"contents":"write"} · timeout 30
+    - actions/checkout@v7 · actions/setup-dotnet@v6 · Restore · Dependencias vulnerables · Paquete probado · Release en borrador
+  control con la sangría rota: errores: Flow sequence in block collection must be sufficiently indented and end with a ] at line 15, column 4
+  rg -n "softprops|uses:" .github/workflows/release.yml
+  21:      - uses: actions/checkout@v7
+  26:      - uses: actions/setup-dotnet@v6
+  git diff --stat -- .github/workflows/ci.yml: (vacío)
+  ```
+
+  `actionlint` no está instalado en este equipo (`Get-Command actionlint` no lo encuentra), y bajarlo es lo que el clasificador denegó el 29/10: no se intentó. Queda para David.
 
 ## 7. «Cómo revisar», `.env.example` y el guion del video
 

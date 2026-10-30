@@ -1,0 +1,54 @@
+name: Release
+
+# Sólo un tag de versión arma el paquete; ningún push a una rama lo hace (D8 de demostrar-flujo-de-punta-a-punta).
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  paquete:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    # La escritura es sólo para crear el borrador del Release, y sólo en este job.
+    permissions:
+      contents: write
+    steps:
+      # Sin credenciales guardadas en el clon: gh usa su propio token y nadie empuja desde acá.
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # El SDK sale de global.json, como en ci.yml.
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore INComedor.sln
+
+      - name: Dependencias vulnerables
+        shell: pwsh
+        run: ./.github/scripts/auditar-dependencias.ps1
+
+      # El mismo script que corre en local: compila, publica, corre el E2E contra el EXE publicado y sólo entonces
+      # escribe el zip y su suma. Si falla, no se llega a gh y no queda Release. El tag entra por el entorno, nunca
+      # interpolado en el script (OWASP A03), y el script lo valida.
+      - name: Paquete probado
+        shell: pwsh
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: ./.github/scripts/publicar-puesto.ps1 -Version $env:VERSION
+
+      # Un borrador: publicarlo, y sumarle el video, es de David.
+      - name: Release en borrador
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          $zip = "artifacts/INComedor-Puesto-$env:VERSION-win-x64.zip"
+          gh release create $env:VERSION $zip "$zip.sha256" --draft --verify-tag --title "INComedor $env:VERSION" --notes "Puesto autocontenido para Windows x64. El E2E del flujo principal pasó contra este EXE antes de armar el zip; la suma SHA-256 va al lado."
