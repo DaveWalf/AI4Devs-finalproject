@@ -286,9 +286,48 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
   corrida 3 · exit 0 · commits escaneados: 82 · esperados: 82 · exit de gitleaks: 0 · scanned ~3143954 bytes (3.14 MB) in 855ms
   INF no leaks found
   ```
-- [ ] 7.2 Escribir «Cómo revisar» al principio del §1.4 del `readme.md` (D10): el Release, el código y el E2E; las credenciales de prueba, con enlace a la tabla de códigos; los datos sembrados; `.env.example`; «`docker-compose`: no aplica», con su motivo; y el enlace al video, que queda pendiente hasta que David lo suba. Poner al día el §2.6 con el E2E y los conteos de `dotnet test`. Verificar siguiendo el camino del código desde un clon limpio del repo en el scratchpad (`git clone` de la carpeta local, en esta rama), con los comandos tal cual los dice el README, y pegar la línea final de cada uno
-- [ ] 7.3 Escribir `docs/guion-video.md` (D9): los ocho pasos con su tiempo, 2 a 3 minutos en total, la herramienta de grabación y la carpeta propia con `INCOMEDOR_DEMO_DIR`. Verificar que los pasos suman entre 120 y 180 s, y pegar la suma
-- [ ] 7.4 Sumar a `AGENTS.md` el comando del E2E y las tres variables. Verificar que el archivo no pasa de 80 líneas y que el chequeo de enlaces sobre `readme.md`, `AGENTS.md` y `docs/guion-video.md` da `enlaces rotos: 0`. Pegar las salidas
+- [x] 7.2 Escribir «Cómo revisar» al principio del §1.4 del `readme.md` (D10): el Release, el código y el E2E; las credenciales de prueba, con enlace a la tabla de códigos; los datos sembrados; `.env.example`; «`docker-compose`: no aplica», con su motivo; y el enlace al video, que queda pendiente hasta que David lo suba. Poner al día el §2.6 con el E2E y los conteos de `dotnet test`. Verificar siguiendo el camino del código desde un clon limpio del repo en el scratchpad (`git clone` de la carpeta local, en esta rama), con los comandos tal cual los dice el README, y pegar la línea final de cada uno
+
+  Hecho en `af84112`. También quedaron al día el estado del principio (355 pruebas), lo pendiente del §1.4 (el paquete existe; falta un instalador) y el §2.3, que contaba cuatro proyectos de pruebas cuando ya eran cinco y decía que el E2E no existía.
+
+  **La verificación tuvo dos intentos fallidos, y se cuentan:**
+  1. `git clone` de la carpeta local pasa por `sh.exe`, que en esta sesión muere con `add_item ... errno 1`. El script no cortaba ante el error, así que el `Set-Location` falló en silencio y el build y el test corrieron en el repo de trabajo. Los 355 de esa corrida no cuentan como verificación desde un clon.
+  2. Se rehízo con `git archive` de la rama en una carpeta nueva del scratchpad: los mismos archivos versionados, sin `bin`, `obj` ni `artifacts`, y sin pasar por `sh`. El build pasó, pero 6 del E2E y 16 de `Kiosk.Tests` fallaron con `DllNotFoundException: Microsoft.Data.SqlClient.SNI.dll ... El nombre del archivo o la extensión es demasiado largo (0x800700CE)`. Las rutas del DLL medían 254 y 256 caracteres, en la ventana de 250 a 259 donde esa DLL no carga, medida el 04/10 en otro proyecto. En el repo de trabajo miden 166. La fragilidad es anterior al change (`Kiosk.Tests` ya la tenía), y queda en el informe.
+  3. La misma extracción, con la carpeta montada en `Q:` con `subst` (sigue físicamente en el scratchpad, con rutas cortas), con los comandos del README:
+
+  ```text
+  == git archive de feature/demostrar-flujo-de-punta-a-punta-dw (af84112): 885295 bytes
+  == carpeta: Q:\cl · bin u obj presentes: 0
+  dotnet build INComedor.sln → 0 Advertencia(s) · 0 Errores · exit build 0
+  dotnet test INComedor.sln → Contracts 23 · Domain 68 · Sync.Api 62 · Infrastructure.Sqlite 117 · Kiosk 79 · E2E 6 (1m 43s 223ms)
+    total: 355 · error: 0 · correcto: 355 · exit test 0
+  dotnet run --project src/Intelektron.INComedor.Kiosk (con $env:INCOMEDOR_DEMO_DIR, como sugiere el README)
+    → puesto PID 41300 · ventana «INComedor · puesto de demostración» · base en la carpeta propia: True a los 3 s
+    → carpeta demo del usuario existe: False · cerrado por el PID del dotnet run con su árbol: vivos 0
+  ```
+
+  `Q:` se desmontó y las copias se borraron al terminar.
+- [x] 7.3 Escribir `docs/guion-video.md` (D9): los ocho pasos con su tiempo, 2 a 3 minutos en total, la herramienta de grabación y la carpeta propia con `INCOMEDOR_DEMO_DIR`. Verificar que los pasos suman entre 120 y 180 s, y pegar la suma
+
+  Hecho. La carpeta propia lleva también `Receptor__CarpetaDemostracion` y `Receptor__BaseDemostracion`, para que el receptor del paso 7 deje sus certificados donde el puesto los busca y no use la base de demostración de siempre. Suma, leída de la tabla:
+
+  ```text
+  paso 1: 15 s · paso 2: 15 s · paso 3: 30 s · paso 4: 15 s · paso 5: 20 s · paso 6: 30 s · paso 7: 30 s · paso 8: 15 s
+  pasos: 8 · suma: 170 s · entre 120 y 180: True
+  total escrito: 170 s
+  ```
+- [x] 7.4 Sumar a `AGENTS.md` el comando del E2E y las tres variables. Verificar que el archivo no pasa de 80 líneas y que el chequeo de enlaces sobre `readme.md`, `AGENTS.md` y `docs/guion-video.md` da `enlaces rotos: 0`. Pegar las salidas
+
+  Hecho, con el comando del paquete en la misma línea que las variables. El chequeo es el de D8, guardado tal cual en el scratchpad. Su control negativo es un `.md` con un archivo inexistente, un ancla falsa y un ancla válida, contra una copia del README.
+
+  ```text
+  líneas de AGENTS.md: 76
+  enlaces rotos: 0
+  control negativo:
+  ROTO control.md:1 no-existe.md
+  ANCLA control.md:2 readme.md#no-hay-tal-ancla
+  enlaces rotos: 2
+  ```
 
 ## 8. Verificación integrada y evidencia
 
@@ -300,6 +339,42 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
   - `git diff --stat 5843152 -- tests/`, que muestra sólo archivos nuevos;
   - `git diff --stat 5843152 -- api/ .github/workflows/ci.yml src/Intelektron.INComedor.Infrastructure.Sqlite/Migraciones src/Intelektron.INComedor.Sync.Api/Ingesta/Migraciones`, vacío.
 - [ ] 8.2 Escribir en esta tarea la tabla de los escenarios de las dos specs contra la prueba que los cubre, y la revisión OWASP A01 a A10 de las tres variables, del puerto de depuración y del workflow. Verificar que cada escenario tiene una prueba o, en los del workflow, la razón por la que se verifica recién con el primer tag
+
+  **Escenarios contra pruebas** (16 de 16):
+
+  | Spec · escenario | Prueba o verificación | Cobertura |
+  |---|---|---|
+  | modo-demostracion · Carpeta elegida por la variable | `EntornoDemostracionTests.Con_una_ruta_absoluta_todo_va_a_esa_carpeta`; con la ventana real, `FlujoPrincipalTests` (la base con el consumo y el comprobante en la carpeta de la prueba, y la foto de `%LOCALAPPDATA%\INComedor\demo\` igual) | completa |
+  | modo-demostracion · Sin la variable | `EntornoDemostracionTests.Sin_la_variable_de_la_carpeta_usa_la_de_siempre`; con la ventana real, la tarea 3.4 (el puesto sin variables creó su base en `%LOCALAPPDATA%\INComedor\demo\`) | completa; la parte con ventana, manual |
+  | modo-demostracion · Ruta relativa | `EntornoDemostracionTests.Con_una_ruta_relativa_usa_la_carpeta_por_defecto` (`demo-relativa`, `C:demo-relativa`, `\demo-relativa` y vacía) | completa, sin ventana |
+  | modo-demostracion · Dirección https elegida por la variable | `FlujoPrincipalTests`, pasos 6 y 7 (receptor en un puerto libre, franja al día y el consumo consolidado), visto fallar con la mutación de la 4.1; `EntornoDemostracionTests.Con_una_direccion_https_usa_esa_direccion` | completa |
+  | modo-demostracion · Dirección sin TLS | `EntornoDemostracionTests.Sin_una_direccion_https_usa_la_de_siempre` (`http://`) | parcial: se prueba que el puesto resuelve `https://localhost:5001/`; que ningún pedido llegue al puerto `http` no tiene prueba con la ventana |
+  | modo-demostracion · Valor que no es una dirección | `EntornoDemostracionTests.Sin_una_direccion_https_usa_la_de_siempre` (`localhost:5001`) | completa, sin ventana |
+  | modo-demostracion · Puerto válido | `CosturasDelPuestoTests.Con_un_puerto_valido_se_conecta_por_cdp_y_escucha_solo_en_loopback`, visto fallar sin el puerto (3.2); `EntornoDemostracionTests` (1024, 9333 y 65535) | completa |
+  | modo-demostracion · Sin la variable (puerto) | `CosturasDelPuestoTests.Sin_la_variable_ningun_proceso_del_puesto_escucha`; `EntornoDemostracionTests` (sin la variable) | completa |
+  | modo-demostracion · Valor fuera de rango o que no es un número | `CosturasDelPuestoTests.Con_un_valor_invalido_ningun_proceso_del_puesto_escucha` (`abc`, `80` y `70000`), visto fallar con la mutación de la 3.3; `EntornoDemostracionTests` (diez valores) | completa |
+  | distribucion-puesto · Abre sin .NET instalado | `FlujoPrincipalTests` en el modo paquete, desde `publicar-puesto.ps1` (5.2): `PATH` sin dotnet, `DOTNET_ROOT` vacía y `coreclr.dll` de la carpeta del paquete | completa |
+  | distribucion-puesto · Sin datos ni secretos | `publicar-puesto.ps1`, que revisa la publicación dos veces y las entradas del zip; el listado de la 5.2 | completa |
+  | distribucion-puesto · Un archivo de datos colado en la publicación | control de la 5.3 con `wwwroot\plantado.db` | completa |
+  | distribucion-puesto · La suma acompaña al zip | 5.2: `Get-FileHash` igual al `.sha256` | completa |
+  | distribucion-puesto · Prueba en verde | el script, en la 5.2; el borrador lo crea `release.yml` | parcial: el paso de `gh release create --draft` corre recién con el primer tag, porque sólo un tag `v*` dispara el workflow y empujarlo es de David |
+  | distribucion-puesto · Prueba en rojo | control de la 5.3 con SQL Server inexistente: el script falla sin zip, y en el workflow el paso de `gh` no llega a correr | parcial: el script, en local; el workflow, con el primer tag que falle, por lo mismo |
+  | distribucion-puesto · Push a una rama | `release.yml` sólo tiene `push: tags: ['v*']` (parseado en la 6.1), y `ci.yml`, que corre en `feature/**`, no tiene pasos de publicación ni de Release | por lectura; se confirma en el primer push de David, que no tiene que dejar ningún Release |
+
+  **OWASP A01 a A10**, sobre las tres variables, el puerto de depuración y el workflow:
+
+  | Categoría | Revisión |
+  |---|---|
+  | A01 Control de acceso | Con el puerto de CDP abierto, cualquier proceso del equipo maneja la pantalla y lee lo que muestra. Por eso abre sólo con la variable, sólo en loopback (sin `--remote-debugging-address`, comprobado con la tabla de escuchas) y nunca por defecto. En el workflow, `contents: write` sólo en su job, y la escritura sólo crea un borrador; empujar un tag `v*` exige permiso de escritura en el repo. |
+  | A02 Fallas criptográficas | `INCOMEDOR_RECEPTOR_URL` sólo admite `https`: ningún valor hace viajar un lote sin TLS. El TLS mutuo no cambia, y el cliente sigue validando el servidor contra la autoridad configurada, aunque la dirección sea otra. El zip va con su SHA-256, que da integridad pero no autoría, porque el EXE no se firma (non-goal). |
+  | A03 Inyección | `INCOMEDOR_DEMO_DIR` sólo como ruta absoluta y normalizada con `GetFullPath`; nada se arma con texto de las variables en SQL ni en un shell. La versión del Release llega por `env:` y no interpolada en `run:`, y el script la valida (`^[0-9A-Za-z][0-9A-Za-z.\-]{0,63}$`), así que un tag no arma otra ruta. |
+  | A04 Diseño inseguro | Las tres costuras son inertes sin su variable, y separadas (D3): aislar los datos no abre la depuración. El Release es un borrador probado antes de ofrecerse. |
+  | A05 Configuración insegura | Por defecto, ningún puerto; un valor inválido vuelve al de siempre, nunca a un destino relativo ni a `http`. `.env.example` y el README marcan `INCOMEDOR_CDP_PORT` como sólo para pruebas. El workflow clona sin credenciales guardadas (`persist-credentials: false`) y tiene un tope de 30 minutos. |
+  | A06 Componentes vulnerables | `Microsoft.Playwright` 1.64.1 y sus transitivos, sin vulnerables (`auditar-dependencias.ps1`, 11 de 11 proyectos); `Pkcs` fijado en el proyecto E2E como en `Kiosk.Tests`. El workflow corre la misma auditoría antes de empaquetar. |
+  | A07 Autenticación | CDP no tiene autenticación: lo cubren el loopback y que sea opcional. Una dirección de receptor ajena no recibe lotes, porque el puesto sólo acepta un servidor emitido por la autoridad de la demostración. |
+  | A08 Integridad del software | Sin acciones de terceros: sólo `actions/checkout@v7` y `actions/setup-dotnet@v6`, las de `ci.yml`. El zip es la carpeta que probó el E2E, con su suma, y `gh release create --verify-tag` exige que el tag exista. |
+  | A09 Registro y monitoreo | El registro del E2E lleva puertos, PID, rutas y tiempos, nunca un código tipeado. El puesto no registra que abrió el puerto de depuración: queda como sugerencia, porque hoy no tiene bitácora propia de arranque. |
+  | A10 SSRF | La dirección del receptor la fija quien controla el entorno del proceso, que ya controla el puesto; sólo `https` y sin redirecciones (`AllowAutoRedirect = false`, de `recibir-lotes-idempotente`). |
 - [ ] 8.3 Evidencia (D11):
   - las filas de `docs/aplicacion-del-curso.md`;
   - `docs/cobertura-entrega.md` y `docs/pruebas.md:46`;

@@ -58,6 +58,12 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 - Build: `dotnet build INComedor.sln -warnaserror` (vigente).
 - Test: `dotnet test INComedor.sln` (vigente). Las pruebas del receptor usan SQL Server: `(localdb)\MSSQLLocalDB`,
   u otra instancia en `INCOMEDOR_SQLSERVER`; cada clase crea su base y la borra.
+- E2E: `dotnet test tests/Intelektron.INComedor.E2E.Tests` (vigente, ~1 min 45 s, entra también con el test de la
+  solución). Lanza el receptor y el puesto compilados y maneja la pantalla con Playwright por CDP; necesita WebView2
+  Runtime, SQL Server y escritorio. Cada prueba usa su carpeta, sus puertos y su base, y cierra sus procesos por PID.
+- Variables del puesto, inertes sin valor (ver `.env.example`): `INCOMEDOR_DEMO_DIR` (carpeta absoluta de la
+  demostración), `INCOMEDOR_RECEPTOR_URL` (sólo `https`) e `INCOMEDOR_CDP_PORT` (1024 a 65535, sólo loopback, sólo
+  para pruebas). Paquete: `pwsh .github/scripts/publicar-puesto.ps1 -Version <v>`, que corre el E2E contra el EXE.
 - Spec: `openspec validate --all --strict` (vigente).
 - Puesto de demostración: `dotnet run --project src/Intelektron.INComedor.Kiosk` (ventana WPF con la atención; la
   pantalla anterior, con `-- --demostracion`). La base y los comprobantes de la impresora simulada quedan en
