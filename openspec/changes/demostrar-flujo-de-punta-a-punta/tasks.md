@@ -45,7 +45,26 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
   - el puerto en 1024, 9333 y 65535, sin la variable, `abc`, `80`, `1023`, `65536` y `70000`.
 
   También, que la carpeta de datos del WebView2 sólo se fija con `INCOMEDOR_DEMO_DIR`. La variable se lee de un diccionario, nunca del entorno del proceso. Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` que no compilan antes de implementar, y pegar la salida
-- [ ] 2.2 Implementar `EntornoDemostracion` en `src/Intelektron.INComedor.Kiosk` (D1 y D3). Verificar con el mismo comando que pasan, y con `dotnet test INComedor.sln` que las 322 anteriores siguen en verde. Pegar los totales
+
+  Hecho: 8 pruebas, 27 casos. Además de los de la tarea, la carpeta suma `C:demo-relativa`, `\demo-relativa` y el valor vacío (relativas a la unidad o a la raíz, que no son absolutas); la dirección, `ftp://` y una ruta sin servidor; y el puerto, `-9333`, `+9333` y ` 9333`, que un `int.TryParse` común aceptaría con signo o espacios.
+
+  ```text
+  EntornoDemostracionTests.cs(116,20): error CS0246: El nombre del tipo o del espacio de nombres 'EntornoDemostracion' no se encontró
+  exit 1
+  ```
+- [x] 2.2 Implementar `EntornoDemostracion` en `src/Intelektron.INComedor.Kiosk` (D1 y D3). Verificar con el mismo comando que pasan, y con `dotnet test INComedor.sln` que las 322 anteriores siguen en verde. Pegar los totales
+
+  Hecho: un record con `Resolver(variable, datosLocales)`. La carpeta exige `Path.IsPathFullyQualified`, la dirección `https` absoluta y el puerto sólo dígitos (`NumberStyles.None`) entre 1024 y 65535.
+
+  ```text
+  Kiosk.Tests correcto [+79/x0/?0]            (52 anteriores + 27 casos nuevos)
+  E2E.Tests No se ejecutaron pruebas [+0/x0/?0]
+  Contracts.Tests 23 · Domain.Tests 68 · Sync.Api.Tests 62 · Infrastructure.Sqlite.Tests 117
+    total: 349
+    error: 0
+    correcto: 349
+  exit 0
+  ```
 
 ## 3. Las costuras en la ventana real
 
