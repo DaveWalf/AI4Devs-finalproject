@@ -210,7 +210,7 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
   Intelektron.INComedor.E2E.Tests.dll (net11.0|x64) correcto [+1/x0/?0] (1m 07s 563ms)
   zip: artifacts\INComedor-Puesto-0.0.0-local-win-x64.zip · 76978066 bytes · sha256 aa05a1e63ebeb0d90a82a34657af5aa148edaa125e46d6b0b26b005af4de4074
 
-  listado: 456 entradas; con .db/.pfx/.key/.pem o bajo comprobantes/certificados: 0
+  listado: 456 entradas (los 456 archivos de la publicación; sus 474 entradas de arriba suman además 18 carpetas); con .db/.pfx/.key/.pem o bajo comprobantes/certificados: 0
   raíz del zip: Accessibility.dll, clretwrc.dll, clrgc.dll, clrgcexp.dll, clrjit.dll, coreclr.dll, createdump.exe, D3DCompiler_47_cor3.dll, DirectWriteForwarder.dll, e_sqlite3.dll, hostfxr.dll, hostpolicy.dll …
   carpetas de primer nivel: cs, de, es, fr, it, ja, ko, pl, pt-BR, ru, runtimes, tr, wwwroot, zh-Hans, zh-Hant
   .sha256: aa05a1e63ebeb0d90a82a34657af5aa148edaa125e46d6b0b26b005af4de4074  INComedor-Puesto-0.0.0-local-win-x64.zip
@@ -363,8 +363,8 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
   | Spec · escenario | Prueba o verificación | Cobertura |
   |---|---|---|
-  | modo-demostracion · Carpeta elegida por la variable | `EntornoDemostracionTests.Con_una_ruta_absoluta_todo_va_a_esa_carpeta`; con la ventana real, `FlujoPrincipalTests` (la base con el consumo y el comprobante en la carpeta de la prueba, y la foto de `%LOCALAPPDATA%\INComedor\demo\` igual) | completa |
-  | modo-demostracion · Sin la variable | `EntornoDemostracionTests.Sin_la_variable_de_la_carpeta_usa_la_de_siempre`; con la ventana real, la tarea 3.4 (el puesto sin variables creó su base en `%LOCALAPPDATA%\INComedor\demo\`) | completa; la parte con ventana, manual |
+  | modo-demostracion · Carpeta elegida por la variable | `EntornoDemostracionTests.Con_una_ruta_absoluta_todo_va_a_esa_carpeta`; con la ventana real, `FlujoPrincipalTests` (la base con el consumo, el comprobante y, desde el verify, los datos del WebView2 en la carpeta de la prueba, y la foto de `%LOCALAPPDATA%\INComedor\demo\` igual) | completa |
+  | modo-demostracion · Sin la variable | `EntornoDemostracionTests.Sin_la_variable_de_la_carpeta_usa_la_de_siempre` y, desde el verify, `Sin_las_variables_el_webview2_arranca_como_siempre` (sin variables, `MainWindow` no toca el arranque del WebView2); con la ventana real, la tarea 3.4 (el puesto sin variables creó su base en `%LOCALAPPDATA%\INComedor\demo\`) | completa; la parte con ventana, manual |
   | modo-demostracion · Ruta relativa | `EntornoDemostracionTests.Con_una_ruta_relativa_usa_la_carpeta_por_defecto` (`demo-relativa`, `C:demo-relativa`, `\demo-relativa` y vacía) | completa, sin ventana |
   | modo-demostracion · Dirección https elegida por la variable | `FlujoPrincipalTests`, pasos 6 y 7 (receptor en un puerto libre, franja al día y el consumo consolidado), visto fallar con la mutación de la 4.1; `EntornoDemostracionTests.Con_una_direccion_https_usa_esa_direccion` | completa |
   | modo-demostracion · Dirección sin TLS | `EntornoDemostracionTests.Sin_una_direccion_https_usa_la_de_siempre` (`http://`) | parcial: se prueba que el puesto resuelve `https://localhost:5001/`; que ningún pedido llegue al puerto `http` no tiene prueba con la ventana |
@@ -379,6 +379,8 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
   | distribucion-puesto · Prueba en verde | el script, en la 5.2; el borrador lo crea `release.yml` | parcial: el paso de `gh release create --draft` corre recién con el primer tag, porque sólo un tag `v*` dispara el workflow y empujarlo es de David |
   | distribucion-puesto · Prueba en rojo | control de la 5.3 con SQL Server inexistente: el script falla sin zip, y en el workflow el paso de `gh` no llega a correr | parcial: el script, en local; el workflow, con el primer tag que falle, por lo mismo |
   | distribucion-puesto · Push a una rama | `release.yml` sólo tiene `push: tags: ['v*']` (parseado en la 6.1), y `ci.yml`, que corre en `feature/**`, no tiene pasos de publicación ni de Release | por lectura; se confirma en el primer push de David, que no tiene que dejar ningún Release |
+
+  **Elevación.** El requirement del puerto dice «esto vale también cuando el puesto corre elevado». Las corridas de este apply fueron todas sin elevar: el registro del E2E lo anota desde el verify («proceso de prueba elevado: no»), y `whoami /groups` da `Medium Mandatory Level`. La costura se ejerció igual, porque el E2E saca del entorno del puesto las variables `WEBVIEW2_*` y el puerto entra sólo por `INCOMEDOR_CDP_PORT`. El caso elevado lo midió el spike del 29/10, con la misma costura, en 4 corridas de 4; en este apply queda sin verificar.
 
   **OWASP A01 a A10**, sobre las tres variables, el puerto de depuración y el workflow:
 
@@ -423,5 +425,6 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
 - David revisa el informe de `/openspec-verify-change`, el E2E y el paquete local, y decide el push y el PR.
 - El primer push muestra si `windows-latest` corre el E2E (D6). Si falta algo, el paso en `ci.yml` es de David.
+- Lo que `ci.yml` necesite en `windows-latest` (por ejemplo `sqllocaldb start MSSQLLocalDB`) le va a faltar también a `release.yml`, que corre el mismo E2E. Antes del primer tag real conviene ensayar el workflow con un tag descartable, por ejemplo `v0.0.0-ensayo`, y borrar después el tag y su borrador (WARNING 3 del verify). El ensayo y el tag son de David.
 - Después del SDK estable del 10/11 (D-C25), David empuja el tag, revisa el borrador, le suma el video y lo publica. El enlace del video en el README se completa entonces.
 - El change se archiva en su PR, con los enlaces a su carpeta pasados a `archive/`.

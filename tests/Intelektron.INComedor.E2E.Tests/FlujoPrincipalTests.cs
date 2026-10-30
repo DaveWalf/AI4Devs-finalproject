@@ -46,7 +46,9 @@ public class FlujoPrincipalTests : IAsyncLifetime
         var (_, pagina) = await _escenario.AbrirPuestoAsync(playwright);
         await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
         await _escenario.CapturarAsync(pagina, "02-reposo");
-        Paso(reloj, "2. puesto en reposo");
+        // La carpeta elegida lleva también los datos del WebView2 (modo-demostracion, D4).
+        Assert.True(Directory.Exists(Path.Combine(_escenario.Carpeta, "webview2")), "El WebView2 no guardó sus datos en la carpeta de la prueba.");
+        Paso(reloj, "2. puesto en reposo, con los datos del WebView2 en la carpeta de la prueba");
 
         // 3. 0001, «Almuerzo común», confirmación y comprobante, sin red.
         await Pedir(pagina, "0001");

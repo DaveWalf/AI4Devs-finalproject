@@ -113,6 +113,33 @@ public class EntornoDemostracionTests
         Assert.Equal(CarpetaPorDefecto, entorno.Carpeta);
     }
 
+    [Fact(DisplayName = "modo-demostracion · Sin la variable: sin ninguna de las tres, el puesto no toca el arranque de su WebView2, ni la carpeta de datos ni los argumentos")]
+    public void Sin_las_variables_el_webview2_arranca_como_siempre()
+    {
+        var entorno = Resolver();
+
+        Assert.False(entorno.AjustaWebView2);
+        Assert.Null(entorno.ArgumentosNavegador);
+    }
+
+    [Fact(DisplayName = "D2 · Puerto válido: el único argumento es --remote-debugging-port, sin --remote-debugging-address, así que Chromium escucha sólo en loopback")]
+    public void Con_un_puerto_valido_el_argumento_abre_la_depuracion_en_loopback()
+    {
+        var entorno = Resolver(("INCOMEDOR_CDP_PORT", "9333"));
+
+        Assert.True(entorno.AjustaWebView2);
+        Assert.Equal("--remote-debugging-port=9333", entorno.ArgumentosNavegador);
+    }
+
+    [Fact(DisplayName = "D4 · Con la carpeta y sin el puerto, el WebView2 cambia sólo su carpeta de datos, sin ningún argumento")]
+    public void Con_la_carpeta_sola_el_webview2_no_lleva_argumentos()
+    {
+        var entorno = Resolver(("INCOMEDOR_DEMO_DIR", Path.Combine(Path.GetTempPath(), "incomedor-tests", "e2e-carpeta")));
+
+        Assert.True(entorno.AjustaWebView2);
+        Assert.Null(entorno.ArgumentosNavegador);
+    }
+
     private static EntornoDemostracion Resolver(params (string Nombre, string Valor)[] variables)
     {
         var diccionario = variables.ToDictionary(v => v.Nombre, v => v.Valor, StringComparer.Ordinal);

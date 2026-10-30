@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Security.Principal;
 using Microsoft.Data.SqlClient;
 using Microsoft.Playwright;
 using Microsoft.Win32;
@@ -40,6 +41,8 @@ public sealed class EscenarioE2E : IAsyncDisposable
         TomarPuertos();
         _fotoAntes = FotoDeLaDemostracion();
         Registrar($"escenario {_hex}: carpeta {Carpeta} · base {Base} · instancia {Instancia} · CDP {PuertoCdp} · receptor {PuertoReceptor}");
+        // El puerto entra por código porque un proceso elevado ignora la variable de WebView2 (D2): el registro lo dice.
+        Registrar($"proceso de prueba elevado: {(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator) ? "sí" : "no")}");
     }
 
     /// <summary>La carpeta de la demostración de esta prueba (INCOMEDOR_DEMO_DIR); no existe hasta que el puesto o el receptor la crean.</summary>

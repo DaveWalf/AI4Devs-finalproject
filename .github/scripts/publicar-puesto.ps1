@@ -5,7 +5,7 @@ param([Parameter(Mandatory)] [string] $Version)
 $ErrorActionPreference = 'Stop'
 
 # La versión llega del nombre de un tag: sólo letras, dígitos, punto y guion, para que no arme otra ruta (OWASP A03).
-if ($Version -notmatch '^[0-9A-Za-z][0-9A-Za-z.\-]{0,63}$') { throw "Versión inválida: «$Version»." }
+if ($Version -notmatch '^[0-9A-Za-z][0-9A-Za-z.\-]{0,63}\z') { throw "Versión inválida: «$Version»." }
 if (-not (Test-Path -LiteralPath 'INComedor.sln')) { throw 'Correr desde la raíz del repo: global.json se lee del directorio actual.' }
 
 $artefactos = Join-Path (Get-Location).Path 'artifacts'

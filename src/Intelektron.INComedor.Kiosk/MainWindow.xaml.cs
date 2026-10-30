@@ -52,7 +52,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void ConfigurarWebView2(EntornoDemostracion entorno)
     {
-        if (entorno.CarpetaDatosWebView2 is null && entorno.PuertoCdp is null)
+        if (!entorno.AjustaWebView2)
         {
             return;
         }
@@ -64,9 +64,9 @@ public partial class MainWindow : Window
                 e.UserDataFolder = datos;
             }
 
-            if (entorno.PuertoCdp is { } puerto)
+            if (entorno.ArgumentosNavegador is { } argumentos)
             {
-                e.EnvironmentOptions = new CoreWebView2EnvironmentOptions { AdditionalBrowserArguments = $"--remote-debugging-port={puerto}" };
+                e.EnvironmentOptions = new CoreWebView2EnvironmentOptions { AdditionalBrowserArguments = argumentos };
             }
         };
     }

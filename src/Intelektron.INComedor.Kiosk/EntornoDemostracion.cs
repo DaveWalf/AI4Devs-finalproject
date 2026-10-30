@@ -22,6 +22,15 @@ public sealed record EntornoDemostracion(string Carpeta, Uri DireccionReceptor, 
 
     public string CarpetaCertificados => Path.Combine(Carpeta, "certificados");
 
+    /// <summary>Sin carpeta elegida ni puerto, el WebView2 arranca como siempre: MainWindow no toca su inicialización.</summary>
+    public bool AjustaWebView2 => CarpetaDatosWebView2 is not null || PuertoCdp is not null;
+
+    /// <summary>
+    /// El argumento de Chromium para la depuración remota, o ninguno. Sin --remote-debugging-address, Chromium escucha
+    /// sólo en loopback (D2).
+    /// </summary>
+    public string? ArgumentosNavegador => PuertoCdp is { } puerto ? $"--remote-debugging-port={puerto}" : null;
+
     /// <summary>Lee las variables con <paramref name="variable"/>; <paramref name="datosLocales"/> es %LOCALAPPDATA%.</summary>
     public static EntornoDemostracion Resolver(Func<string, string?> variable, string datosLocales)
     {

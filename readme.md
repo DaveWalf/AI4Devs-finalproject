@@ -12,7 +12,7 @@ información y consolida los hechos cuando se recupera la conexión.
 
 **Estado:** entrega 2 presentada el 29/10; entrega final en curso. Hay un puesto de demostración que atiende
 y confirma sobre SQLite con la transacción de RB06, y un receptor de lotes idempotente sobre SQL Server con
-TLS mutuo, al que el puesto envía su outbox; 355 pruebas en verde, con un E2E del flujo principal (ver §2.6). El resto del documento describe
+TLS mutuo, al que el puesto envía su outbox; 358 pruebas en verde, con un E2E del flujo principal (ver §2.6). El resto del documento describe
 el diseño del producto. La demostración usa datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
 
 ## Índice
@@ -153,7 +153,10 @@ dotnet run --project src/Intelektron.INComedor.Kiosk
 
 `dotnet test` necesita una instancia de SQL Server para las pruebas del receptor y el E2E (ver §2.6). Lo que
 se puede recorrer en la ventana está en «Cómo ver la demostración», más abajo. Para no usar la carpeta de siempre,
-antes de `dotnet run` se elige una propia: `$env:INCOMEDOR_DEMO_DIR = "$env:TEMP\incomedor-revision"`.
+antes de `dotnet run` se elige una propia: `$env:INCOMEDOR_DEMO_DIR = "$env:TEMP\incomedor-revision"`. Con una carpeta
+propia, el puesto busca los certificados del receptor en ella: para la demostración conectada, en la terminal del
+receptor va además `$env:Receptor__CarpetaDemostracion = "$env:TEMP\incomedor-revision\certificados"`, y si no, el
+puesto atiende con «Sin receptor configurado».
 
 **3. El E2E.**
 
@@ -182,7 +185,9 @@ sus certificados sintéticos y su base al arrancar («Receptor de lotes y puesto
 **Variables de entorno.** [`.env.example`](.env.example) lista las cuatro, vacías y comentadas. Nada lo carga,
 porque el puesto y el receptor leen el entorno del proceso: cada una se fija en la terminal, por ejemplo
 `$env:INCOMEDOR_SQLSERVER = 'MI-SERVIDOR'`. Todas son opcionales. `INCOMEDOR_CDP_PORT` es sólo para pruebas: con
-el puerto abierto, cualquier proceso del equipo puede manejar la pantalla.
+el puerto abierto, cualquier proceso del equipo puede manejar la pantalla. Aparte de las del puesto, un puesto que
+corre sin elevar también obedece la variable propia de WebView2, `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`: si alguien
+la definió con `--remote-debugging-port`, abre el puerto aunque `INCOMEDOR_CDP_PORT` no esté.
 
 **`docker-compose`: no aplica.** Es una app de escritorio con su base SQLite local, y el receptor usa la instancia
 de SQL Server del equipo. Docker quedó fuera del corte ([lo que no se aplica](docs/aplicacion-del-curso.md#lo-que-no-se-aplica)).
@@ -425,9 +430,9 @@ El [plan de pruebas](docs/pruebas.md) cubre dominio, SQLite real, sincronizació
 contratos, E2E y dispositivos. Casos centrales: arranque offline, cupo local,
 doble confirmación, caída tras commit, reimpresión, snapshot parcial, acuse perdido
 y ambos modos biométricos. Incluye también saltos del reloj, cálculo del día de
-negocio y vigencias. Hoy corren 355 pruebas, todas en verde, con
+negocio y vigencias. Hoy corren 358 pruebas, todas en verde, con
 `dotnet test INComedor.sln` desde la raíz del repositorio: 68 de Domain, 117 de
-Infrastructure.Sqlite sobre un archivo SQLite real temporal, 79 del Kiosk, 62 del receptor, 23 de Contracts y
+Infrastructure.Sqlite sobre un archivo SQLite real temporal, 82 del Kiosk, 62 del receptor, 23 de Contracts y
 6 del E2E. Las del receptor, las del envío integrado y el E2E necesitan una instancia de SQL Server:
 `(localdb)\MSSQLLocalDB` por defecto, u otra en la variable `INCOMEDOR_SQLSERVER`; cada clase crea su base y la
 borra al terminar. Cubren la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después
