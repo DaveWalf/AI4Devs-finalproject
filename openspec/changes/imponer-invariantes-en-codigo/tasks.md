@@ -77,7 +77,30 @@ Se aplica con `opus` · `medium`, porque toca configuración compartida (la CI y
   ruta: C:/AI/INComedor/INComedor-AI4DEVS/.claude/hooks/confirmar-edicion-de-test.ps1
   Test-Path: True
   ```
-- [ ] 2.2 David: abrir una sesión nueva de Claude Code en `C:\AI\INComedor` y pedirle que edite `tests/Intelektron.INComedor.Domain.Tests/ValueObjectsTests.cs`; verificar que aparece el pedido de confirmación con `[settings]` y el motivo del hook, rechazarlo y pegar el texto del pedido
+- [x] 2.2 David: abrir una sesión nueva de Claude Code en `C:\AI\INComedor` y pedirle que edite `tests/Intelektron.INComedor.Domain.Tests/ValueObjectsTests.cs`; verificar que aparece el pedido de confirmación con `[settings]` y el motivo del hook, rechazarlo y pegar el texto del pedido
+
+  Hecho por David el 29/10/2026, en una sesión nueva de Claude Code 2.1.312 abierta en `C:\AI\INComedor`, con dos intentos rechazados. La transcripción registra el primero en modo `auto` y el segundo en `acceptEdits`, un modo en el que una edición dentro de la carpeta de trabajo no pregunta. Los dos mostraron este pedido:
+
+  ```text
+  ● Update(INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs)
+   Edit file
+   INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs
+  // prueba del hook
+  using Intelektron.INComedor.Domain;
+   Do you want to make this edit to ValueObjectsTests.cs?
+   ❯ 1. Yes
+     2. No
+  ```
+
+  Diferencia con lo esperado: en esta versión el diálogo no muestra la etiqueta `[settings]` ni el motivo del hook, y la transcripción tampoco los guarda. El pedido sólo puede venir del puntero: el hook global de ediciones del usuario (`pretooluse-fuente-no-destino.ps1`) nunca devuelve `ask` y no hay reglas `ask` en la configuración. Para dejar el motivo literal, el mismo día se corrió desde `C:\AI\INComedor`, con el permiso de David, `claude -p "<editar ese test con Edit>" --model haiku --permission-mode acceptEdits --output-format json`:
+
+  ```text
+  permission_denials: [('Edit', 'C:\\AI\\INComedor\\INComedor-AI4DEVS\\tests\\Intelektron.INComedor.Domain.Tests\\ValueObjectsTests.cs')]
+  result: … La herramienta Edit devolvió este motivo, textual:
+  > Test existente: C:\AI\INComedor\INComedor-AI4DEVS\tests\Intelektron.INComedor.Domain.Tests\ValueObjectsTests.cs. AGENTS.md pide la aprobación explícita de David para modificarlo.
+  git status --short -- tests/
+  (vacío)
+  ```
 
 ## 3. CI: scripts, controles locales y workflow
 
@@ -152,15 +175,20 @@ Se aplica con `opus` · `medium`, porque toca configuración compartida (la CI y
   exit=0
   ```
 
-- [ ] 3.5 Pedirle permiso a David para bajar `actionlint` 1.7.12 al scratchpad, verificado con el SHA-256 de su `checksums.txt`, y correrlo con `-shellcheck= -pyflakes=` sobre `ci.yml`: debe salir sin hallazgos. Si David no lo autoriza, anotar en la tarea que no corrió y por qué
+- [x] 3.5 Pedirle permiso a David para bajar `actionlint` 1.7.12 al scratchpad, verificado con el SHA-256 de su `checksums.txt`, y correrlo con `-shellcheck= -pyflakes=` sobre `ci.yml`: debe salir sin hallazgos. Si David no lo autoriza, anotar en la tarea que no corrió y por qué
 
-  No corrió. David lo autorizó el 29/10 (decisión 3 del plan del goal). La descarga y el hash pasaron: `actionlint_1.7.12_windows_amd64.zip`, `6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9` en `checksums.txt` y en `sha256sum`. Ejecutarlo lo denegó el clasificador de auto mode de Claude Code, y no se reintentó por otra vía:
+  David lo autorizó el 29/10 (decisión 3 del plan del goal). La descarga y el hash pasaron: `actionlint_1.7.12_windows_amd64.zip`, `6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9` en `checksums.txt` y en `sha256sum`. En la sesión del goal, ejecutarlo lo denegó el clasificador de auto mode de Claude Code, y no se reintentó por otra vía:
 
   ```text
   Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Code from External].
   ```
 
-  Queda para David: correrlo él desde la raíz del repo, con el binario verificado.
+  Ese mismo día lo corrió David desde la raíz del repo, con el binario verificado, y salió sin hallazgos:
+
+  ```text
+  $ actionlint.exe -shellcheck= -pyflakes= .github/workflows/ci.yml; echo "exit=$?"
+  exit=0
+  ```
 
 - [x] 3.6 Correr `dotnet build INComedor.sln -warnaserror` (0 advertencias, 0 errores), `dotnet test INComedor.sln` (61 de 61) y `openspec validate --all --strict` (sin errores), pegar las tres salidas y hacer el commit por rutas de `ci.yml` y los dos scripts
 
