@@ -15,7 +15,7 @@ public class ServicioDemostracionTests : IDisposable
 
     private ServicioDemostracion NuevoServicio() => new(_archivo.Ruta, _reloj);
 
-    [Fact(DisplayName = "AT51 · AT01 · Primer arranque sobre una base inexistente: esquema 1 con un puesto, una persona, una opción y una regla de límite 1, sin consumos")]
+    [Fact(DisplayName = "AT51 · AT01 · Primer arranque sobre una base inexistente: esquema 2 con un puesto, una persona, una opción y una regla de límite 1, sin consumos")]
     public void Primer_arranque_siembra_los_datos_sinteticos()
     {
         var servicio = NuevoServicio();
@@ -24,7 +24,7 @@ public class ServicioDemostracionTests : IDisposable
 
         Assert.Equal(EstadoPreparacion.Lista, estado);
         using var conexion = Abrir();
-        Assert.Equal(1L, Escalar<long>(conexion, "PRAGMA user_version"));
+        Assert.Equal(2L, Escalar<long>(conexion, "PRAGMA user_version"));
         Assert.Equal(1L, Escalar<long>(conexion, "SELECT COUNT(*) FROM tbComedorConfiguracionPuestos"));
         Assert.Equal(1L, Escalar<long>(conexion, "SELECT COUNT(*) FROM tbComedorPersonas WHERE comperActivo = 1"));
         Assert.Equal(1L, Escalar<long>(conexion, "SELECT COUNT(*) FROM tbComedorOpcionesMenu"));

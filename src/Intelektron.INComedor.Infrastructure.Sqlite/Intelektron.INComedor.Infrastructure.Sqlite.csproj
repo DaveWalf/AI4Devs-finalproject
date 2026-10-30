@@ -7,5 +7,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Migraciones\0001_transaccion_consumo.sql" LogicalName="Migraciones.0001_transaccion_consumo.sql" />
+    <EmbeddedResource Include="Migraciones\0002_permisos_operadores.sql" LogicalName="Migraciones.0002_permisos_operadores.sql" />
   </ItemGroup>
 </Project>

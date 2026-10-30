@@ -5,8 +5,14 @@ namespace Intelektron.INComedor.Infrastructure.Sqlite;
 /// <summary>Base SQLite del puesto: apertura, versión de esquema y transacción de escritura.</summary>
 public sealed class BaseComedor
 {
-    private const int UltimaVersionConocida = 1;
-    private const string RecursoMigracion0001 = "Migraciones.0001_transaccion_consumo.sql";
+    /// <summary>Migraciones conocidas, en orden: cada una lleva la base a su versión (D1 de atender-seleccion-y-confirmacion).</summary>
+    private static readonly (int Version, string Recurso)[] Migraciones =
+    [
+        (1, "Migraciones.0001_transaccion_consumo.sql"),
+        (2, "Migraciones.0002_permisos_operadores.sql"),
+    ];
+
+    private static readonly int UltimaVersionConocida = Migraciones[^1].Version;
 
     private readonly string _cadenaConexion;
 
@@ -23,7 +29,7 @@ public sealed class BaseComedor
     public string Ruta { get; }
 
     /// <summary>
-    /// Abre la base: lee la versión de esquema, aplica la migración 0001 a una base vacía y rechaza una
+    /// Abre la base: lee la versión de esquema, aplica en orden las migraciones que le faltan y rechaza una
     /// versión desconocida sin modificar el archivo (D6).
     /// </summary>
     public static BaseComedor Abrir(string ruta)
@@ -39,9 +45,12 @@ public sealed class BaseComedor
             throw new EsquemaDesconocidoException(version, UltimaVersionConocida);
         }
 
-        if (version == 0)
+        foreach (var (versionMigracion, recurso) in Migraciones)
         {
-            AplicarMigracion0001(conexion);
+            if (versionMigracion > version)
+            {
+                AplicarMigracion(conexion, versionMigracion, recurso);
+            }
         }
 
         Ejecutar(conexion, "PRAGMA journal_mode = WAL");
@@ -67,15 +76,16 @@ public sealed class BaseComedor
         return conexion.BeginTransaction(deferred: false);
     }
 
-    private static void AplicarMigracion0001(SqliteConnection conexion)
+    /// <summary>Cada migración en su propia transacción BEGIN IMMEDIATE.</summary>
+    private static void AplicarMigracion(SqliteConnection conexion, int version, string recurso)
     {
         using var transaccion = IniciarTransaccionEscritura(conexion);
 
         // Otra apertura pudo migrar entre la lectura previa y el bloqueo.
-        if (LeerVersion(conexion) == 0)
+        if (LeerVersion(conexion) < version)
         {
-            Ejecutar(conexion, LeerRecurso(RecursoMigracion0001));
-            Ejecutar(conexion, "PRAGMA user_version = 1");
+            Ejecutar(conexion, LeerRecurso(recurso));
+            Ejecutar(conexion, $"PRAGMA user_version = {version}");
         }
 
         transaccion.Commit();
