@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -49,7 +50,7 @@ public class ReceptorConKestrel : IAsyncLifetime
         {
             constructor.UseSetting("ConnectionStrings:Receptor", CadenaConexion);
             constructor.UseSetting("Receptor:Autoridad", _archivoAutoridad);
-            constructor.ConfigureServices(ConfigurarServicios);
+            constructor.ConfigureTestServices(ConfigurarServicios);
         });
         _fabrica.UseKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0, escucha => escucha.UseHttps(Certificados.Servidor, https =>
         {

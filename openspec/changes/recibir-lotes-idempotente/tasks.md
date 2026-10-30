@@ -94,13 +94,17 @@ Las pruebas existentes no se tocan, salvo las siete que aprobó David en el gate
 
 ## 6. Receptor: consulta y errores
 
-- [ ] 6.1 Crear `ConsultaYErroresTests.cs` con:
+- [x] 6.1 Crear `ConsultaYErroresTests.cs` con:
   - «Consulta del acuse original»;
   - «Errores que no reflejan la entrada»;
   - la prueba de que sin cadena de conexión las dos operaciones responden `503` con `code` `SERVICE_UNAVAILABLE`.
 
   La de «Lote de otro puesto» compara las dos respuestas `404` campo por campo, salvo `correlationId`. Verificar que fallan antes de implementar, y pegar la salida
-- [ ] 6.2 Implementar el `GET`, el tope de 1 MiB y el manejador de excepciones (D7 y D8). Verificar con `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests` que pasan todas, y validar contra el OpenAPI que cada cuerpo de error y de acuse de las pruebas cumple `ProblemDetails` o `CompletedBatchAck` (prueba de contrato en el mismo archivo)
+- [x] 6.2 Implementar el `GET`, el tope de 1 MiB y el manejador de excepciones (D7 y D8). Verificar con `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests` que pasan todas, y validar contra el OpenAPI que cada cuerpo de error y de acuse de las pruebas cumple `ProblemDetails` o `CompletedBatchAck` (prueba de contrato en el mismo archivo)
+
+  Salida de 6.1 (antes de implementar): `dotnet test … --filter "FullyQualifiedName~ConsultaYErroresTests|FullyQualifiedName~ExcepcionNoPrevistaTests"`: `total: 13, error: 6`. Las cuatro del `GET` y la de contrato, con `Actual: NotImplemented`; la de la excepción no prevista, `Expected: ServiceUnavailable, Actual: InternalServerError`. Las otras siete ya pasaban, porque el tope de 1 MiB y los `400` del cuerpo entraron en la 5.3 (leer el cuerpo los necesitaba) y el `503` sin configuración, en la 4.4. Para verlas fallar por su motivo se mutó el código con `src` limpio y se restauró con `git restore`: con el tope en 64 MiB, «Cuerpo de más de 1 MiB» dio `Actual: UnprocessableEntity`; sin el chequeo de configuración completa, «Sin cadena de conexión» dio `Actual: Unauthorized`. La excepción no prevista se provoca con un `TimeProvider` que falla, registrado con `ConfigureTestServices` en una subclase de `ReceptorConKestrel`, en la clase `ExcepcionNoPrevistaTests` del mismo archivo.
+
+  Salida de 6.2: el primer build falló (`CS4010` y `CS0029`, el ternario del `GET` sin tipo común), y la corrida con `--no-build` usó los binarios de la mutación; se tipó la lambda como `Task<IResult>` y se recompiló antes de leer resultados. Después, `total: 61, error: 1`: la prueba de contrato decía «CompletedBatchAck no declara la propiedad Status», por un error de su lector de esquemas, que con `\n` al principio de cada coincidencia salteaba una propiedad de cada dos; se pasó a `(?m)^`. La prueba suma un control de ese lector: lista exactamente las propiedades de `ProblemDetails`, `CompletedBatchAck` y `EventAck`, los 12 `code` del enum, y rechaza una propiedad no declarada, un `code` fuera del enum y un `Status` `DENIED`. Con eso: `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests`, `total: 61, error: 0, correcto: 61`; `dotnet build INComedor.sln -warnaserror`, `0 Advertencia(s) 0 Errores`; `dotnet test INComedor.sln`, `total: 290, error: 0, correcto: 290` (277 más 13). La prueba de contrato valida tres acuses (`201`, el `200` del reenvío y el `200` del `GET`) y siete errores (`400` de cuerpo, `400` de clave, `401`, `403`, `404`, `409` y `422`) contra los esquemas leídos de `api/openapi.yaml`. El `GET` con un `batchId` que no es UUID responde `400 INVALID_REQUEST`. No quedan bases `INComedorPruebas*`.
 
 ## 7. Sincronizador, cliente HTTP y envío integrado
 

@@ -87,6 +87,14 @@ internal sealed class IngestaLotes(ConfiguracionReceptor configuracion, TimeProv
         return new RespuestaAcuse(acuse, StatusCodes.Status201Created);
     }
 
+    /// <summary>El acuse guardado de un lote del puesto; null si no existe o es de otro puesto, que se presenta igual (AT13).</summary>
+    public async Task<string?> ConsultarAsync(Guid puesto, Guid batchId, CancellationToken cancelacion)
+    {
+        await using var conexion = new SqlConnection(configuracion.CadenaConexion);
+        await conexion.OpenAsync(cancelacion);
+        return (await LeerReciboAsync(new Sql(conexion, null, cancelacion), puesto, batchId))?.Acuse;
+    }
+
     private static async Task<EventAck> DecidirAsync(Sql sql, Guid puesto, Guid batchId, JsonElement evento, DateTimeOffset ahora)
     {
         var eventId = evento.GetProperty("EventId").GetGuid();

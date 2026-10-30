@@ -1,5 +1,6 @@
 using Intelektron.INComedor.Sync.Api;
 using Intelektron.INComedor.Sync.Api.Ingesta;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -20,6 +21,17 @@ builder.Services.AddSingleton<IngestaLotes>();
 
 var app = builder.Build();
 
+// Una excepción no prevista responde 503 SERVICE_UNAVAILABLE con Retry-After: el puesto reintenta el mismo lote, y
+// eso es inocuo porque el lote es idempotente. El registro lleva el correlationId y el tipo, nunca el cuerpo (D8).
+app.UseExceptionHandler(rama => rama.Run(async contexto =>
+{
+    var problema = ProblemasReceptor.Crear("SERVICE_UNAVAILABLE");
+    var tipo = contexto.Features.Get<IExceptionHandlerFeature>()?.Error.GetType().FullName;
+    contexto.RequestServices.GetRequiredService<ILogger<Program>>()
+        .LogError("Excepción no prevista {Tipo}. CorrelationId {CorrelationId}", tipo, problema.CorrelationId);
+    await problema.ExecuteAsync(contexto);
+}));
+
 if (app.Services.GetRequiredService<ConfiguracionReceptor>().CadenaConexion is { } cadenaConexion)
 {
     MigracionReceptor.Aplicar(cadenaConexion);
@@ -37,7 +49,17 @@ lotes.MapPost("", async (HttpContext contexto, IngestaLotes ingesta) =>
     var clave = contexto.Request.Headers["Idempotency-Key"];
     return await ingesta.ProcesarAsync(FiltroEquipo.PuestoAutenticado(contexto), clave.Count == 1 ? clave[0] : null, cuerpo, contexto.RequestAborted);
 });
-lotes.MapGet("/{batchId}", () => Results.Problem(statusCode: 501, title: "Consulta de lotes no implementada"));
+lotes.MapGet("/{batchId}", async Task<IResult> (string batchId, HttpContext contexto, IngestaLotes ingesta) =>
+{
+    if (!Guid.TryParseExact(batchId, "D", out var lote))
+    {
+        return ProblemasReceptor.Crear("INVALID_REQUEST");
+    }
+
+    return await ingesta.ConsultarAsync(FiltroEquipo.PuestoAutenticado(contexto), lote, contexto.RequestAborted) is { } acuse
+        ? new RespuestaAcuse(acuse, StatusCodes.Status200OK)
+        : ProblemasReceptor.Crear("BATCH_NOT_FOUND");
+});
 
 app.Run();
 
