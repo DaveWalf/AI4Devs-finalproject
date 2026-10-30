@@ -47,6 +47,7 @@ El motivo está en proposal.md («Why»). Lo que condiciona el cómo:
 - **Conexión**: sale de la configuración (`ConnectionStrings:Receptor`), nunca del código ni del repo.
 - **Sin cadena de conexión**: el receptor arranca igual, y las dos operaciones responden `503 SERVICE_UNAVAILABLE`. Así la prueba existente de la ruta no declarada, que no configura nada, sigue pasando sin tocarse (D14).
 - **Pruebas**: cada clase crea una base `INComedorPruebas_<guid>` en `(localdb)\MSSQLLocalDB` y la borra al terminar, con `SET SINGLE_USER WITH ROLLBACK IMMEDIATE`.
+- **Instancia** (agregado en el apply, por decisión de David del 30/10): la de las pruebas y la de la demostración salen de la variable de entorno `INCOMEDOR_SQLSERVER`, con `(localdb)\MSSQLLocalDB` por defecto, que es la de la CI. En el equipo de David `MSSQLLocalDB` no arranca desde que se creó, el 13/04/2026: su `master` apunta `model` y `msdb` a rutas de la compilación de Microsoft que no existen, y el servidor se apaga con el código 18. Una instancia de LocalDB nueva sí arrancaba. David eligió su instancia completa `INMO-DW-AR` (SQL Server 2025 Developer, 17.0.1145.4). Descartadas: recrear `MSSQLLocalDB`, que borra una instancia de su equipo, y fijar el nombre de la instancia en el código, que dejaría la CI o su equipo afuera.
 
 Descartadas:
 
@@ -284,7 +285,7 @@ Descartadas:
    - `puesto.pfx`, con `CN=INComedor Puesto Demostracion`.
 
    Los tres van sin contraseña.
-2. Usa la base `INComedorReceptorDemo` de LocalDB.
+2. Usa la base `INComedorReceptorDemo` en la instancia de `INCOMEDOR_SQLSERVER` (LocalDB por defecto, D1).
 3. Registra la huella del puesto con el `KioskId` del puesto de la semilla de la demostración.
 4. Escucha en `https://localhost:5001`.
 
@@ -343,5 +344,5 @@ Descartada: cambiarlas a `400` y `201` en el mismo archivo. Sin certificado, las
 
 - **Puesto**: abrir la base aplica la `0003`, sin pasos manuales. Los eventos `PENDING` que ya existan salen en el primer lote.
 - **Receptor**: el script `0001_receptor.sql` corre al arrancar con una cadena de conexión configurada.
-- **Vuelta atrás**: borrar `%LOCALAPPDATA%\INComedor\demo\` y la base `INComedorReceptorDemo` de LocalDB.
+- **Vuelta atrás**: borrar `%LOCALAPPDATA%\INComedor\demo\` y la base `INComedorReceptorDemo` de la instancia de `INCOMEDOR_SQLSERVER`.
 - **CI**: puede necesitar el paso de LocalDB (Risks).
