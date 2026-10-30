@@ -39,8 +39,12 @@ Las pruebas existentes no se tocan, salvo las dos de D1 que aprobó David en el 
 
 ## 4. Comprobante: envío después del commit
 
-- [ ] 4.1 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/TrabajosImpresionTests.cs` y su `ImpresoraDePrueba` (disponible, sin papel, incierta y una excepción que simula la caída durante el envío), con una prueba por escenario de «Envío del comprobante después del commit» del delta de `comprobante-local` (D7). Verificar con `dotnet test … --filter "FullyQualifiedName~TrabajosImpresionTests"` que fallan antes de implementar, y pegar la salida
-- [ ] 4.2 Implementar `IImpresoraComprobantes`, `ComprobanteAImprimir` y `TrabajosImpresion.EnviarPendientes()`, con `UNKNOWN` antes de enviar y los registros `PRINT_JOB_UPDATED` (D7). Verificar con el mismo filtro que pasan, y con una consulta en la prueba de «Impresora sin papel» que el consumo, el uso de cupo y el comprobante son idénticos antes y después
+- [x] 4.1 Crear `tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests/TrabajosImpresionTests.cs` y su `ImpresoraDePrueba` (disponible, sin papel, incierta y una excepción que simula la caída durante el envío), con una prueba por escenario de «Envío del comprobante después del commit» del delta de `comprobante-local` (D7). Verificar con `dotnet test … --filter "FullyQualifiedName~TrabajosImpresionTests"` que fallan antes de implementar, y pegar la salida
+- [x] 4.2 Implementar `IImpresoraComprobantes`, `ComprobanteAImprimir` y `TrabajosImpresion.EnviarPendientes()`, con `UNKNOWN` antes de enviar y los registros `PRINT_JOB_UPDATED` (D7). Verificar con el mismo filtro que pasan, y con una consulta en la prueba de «Impresora sin papel» que el consumo, el uso de cupo y el comprobante son idénticos antes y después
+
+  Salida de 4.1 (antes de implementar): `dotnet test … --filter "FullyQualifiedName~TrabajosImpresionTests"` no compiló: `error CS0246` para `ComprobanteAImprimir`, `IImpresoraComprobantes`, `RespuestaImpresora` y `TrabajosImpresion`; exit 1. `ImpresoraDePrueba` tiene los cuatro modos: disponible, sin papel (`PAPER_OUT`), incierta y caída (lanza `CaidaSimuladaException` antes de responder).
+
+  Salida de 4.2: el filtro da `total: 5, error: 0, correcto: 5`. `Impresora_sin_papel_no_toca_el_consumo` compara, fila por fila, `tbComedorConsumos`, `tbComedorUsosCupo` y `tbComedorComprobantes` antes y después del envío, y cuenta un solo trabajo. La bitácora registra `QUEUED>UNKNOWN` y después `UNKNOWN>SUBMITTED`, `UNKNOWN>FAILED` o `UNKNOWN>UNKNOWN`. `dotnet test INComedor.sln`: `total: 141, error: 0, correcto: 141`; build con `0 Advertencia(s) 0 Errores`; `git diff --stat -- tests/` vacío.
 
 ## 5. Asistencia: permiso, recuperación y reimpresión
 
