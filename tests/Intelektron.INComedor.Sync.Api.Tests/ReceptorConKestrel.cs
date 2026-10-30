@@ -101,6 +101,25 @@ public class ReceptorConKestrel : IAsyncLifetime
             "INSERT INTO tbComedorPuestos (compueCodigo, comInstalacionCodigo, comOrganizacionCodigo, compueIdentidadCertificado) VALUES (@pue, @sitio, @org, @huella)",
             ("@pue", kioskId), ("@sitio", Guid.NewGuid()), ("@org", Guid.NewGuid()), ("@huella", CertificadosDePrueba.Huella(certificado)));
 
+    /// <summary>El KioskId registrado para ese certificado; si no lo está, lo registra con un KioskId nuevo.</summary>
+    public async Task<Guid> AsegurarPuestoAsync(X509Certificate2 certificado)
+    {
+        await using (var conexion = new SqlConnection(CadenaConexion))
+        {
+            await conexion.OpenAsync();
+            await using var comando = Crear(conexion, "SELECT compueCodigo FROM tbComedorPuestos WHERE compueIdentidadCertificado = @huella",
+                [("@huella", CertificadosDePrueba.Huella(certificado))]);
+            if (await comando.ExecuteScalarAsync() is Guid existente)
+            {
+                return existente;
+            }
+        }
+
+        var nuevo = Guid.NewGuid();
+        await RegistrarPuestoAsync(nuevo, certificado);
+        return nuevo;
+    }
+
     public async Task<T> EscalarAsync<T>(string sql, params (string Nombre, object Valor)[] parametros)
     {
         await using var conexion = new SqlConnection(CadenaConexion);

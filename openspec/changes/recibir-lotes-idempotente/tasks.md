@@ -78,15 +78,19 @@ Las pruebas existentes no se tocan, salvo las siete que aprobó David en el gate
 
 ## 5. Receptor: ingesta idempotente y resultado por evento
 
-- [ ] 5.1 Crear `LoteIdempotenteTests.cs`, con «Lote idempotente por BatchId» y «Lote inválido sin efectos». La prueba de concurrencia manda dos `POST` en paralelo con `Task.WhenAll` y cuenta recibos y consumos consolidados. Verificar que fallan antes de implementar, y pegar la salida
-- [ ] 5.2 Crear `ResultadoPorEventoTests.cs` con:
+- [x] 5.1 Crear `LoteIdempotenteTests.cs`, con «Lote idempotente por BatchId» y «Lote inválido sin efectos». La prueba de concurrencia manda dos `POST` en paralelo con `Task.WhenAll` y cuenta recibos y consumos consolidados. Verificar que fallan antes de implementar, y pegar la salida
+- [x] 5.2 Crear `ResultadoPorEventoTests.cs` con:
   - «Deduplicación y consolidación por evento»;
   - «Ningún acuse reautoriza ni revierte»;
   - «Validación por aplicación de cada evento»;
   - «Eventos que esperan una referencia o una revisión».
 
   Cada `DisplayName` cita su AT o el texto del contrato. Verificar que fallan antes de implementar, y pegar la salida
-- [ ] 5.3 Implementar `ValidadorLote` (D5) e `IngestaLotes` (D3, D6 y D7). Verificar con `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests` que pasan las de 5.1 y 5.2, y con `dotnet test INComedor.sln` que nada más cambió
+- [x] 5.3 Implementar `ValidadorLote` (D5) e `IngestaLotes` (D3, D6 y D7). Verificar con `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests` que pasan las de 5.1 y 5.2, y con `dotnet test INComedor.sln` que nada más cambió
+
+  Salida de 5.1 y 5.2 (antes de implementar), con `INCOMEDOR_SQLSERVER=INMO-DW-AR`: `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests --filter "FullyQualifiedName~LoteIdempotenteTests|FullyQualifiedName~ResultadoPorEventoTests"`: `total: 39, error: 39`, todas con `Actual: NotImplemented` (28 `Expected: Created`, 6 `UnprocessableEntity`, 2 `OK`, 1 `BadRequest`, 1 `Conflict` y la de concurrencia `[NotImplemented, NotImplemented]`): el receptor autenticaba y respondía el `501` del esqueleto. `LoteIdempotenteTests`: 6 pruebas y una `Theory` de 6 lotes inválidos (los tres escenarios más «sin eventos», «un evento sin EventId legible» y una propiedad que `SyncBatchRequest` no declara). `ResultadoPorEventoTests`: 14 pruebas, una por escenario de los cuatro requirements, y una `Theory` de 13 eventos fuera del esquema de su tipo (OWASP A08). «Llega la referencia» verifica el acuse original del primer lote reenviándolo, porque el `GET` es del grupo 6; la consulta por `GET` se suma en `ConsultaYErroresTests`.
+
+  Salida de 5.3: `dotnet test tests/Intelektron.INComedor.Sync.Api.Tests`: la primera corrida dio `total: 48, error: 1`, en la prueba de concurrencia, por un error de la prueba: `Order()` ordena los estados por su número (200 antes que 201) y el esperado decía `[Created, OK]`; se corrigió a `[OK, Created]` y la conducta no cambió. Después: `total: 48, error: 0, correcto: 48`, y la de concurrencia, `correcto: 1` en cinco corridas seguidas. `dotnet build INComedor.sln -warnaserror`: `0 Advertencia(s) 0 Errores`. `dotnet test INComedor.sln`: `total: 277, error: 0, correcto: 277` (238 más 39). No quedan bases `INComedorPruebas*` en la instancia. `git diff --stat -- tests/`: sólo `LotesDePrueba.cs` y `ReceptorConKestrel.cs`, dos ayudantes creados en el grupo 4 de este change. La clave ausente responde `400 INVALID_REQUEST` y una clave que no es el BatchId, `400 IDEMPOTENCY_KEY_MISMATCH`; un cuerpo sin BatchId legible es `422` antes de mirar la clave, porque sin BatchId no hay con qué compararla.
 
 ## 6. Receptor: consulta y errores
 

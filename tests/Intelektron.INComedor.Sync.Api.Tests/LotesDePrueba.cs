@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Intelektron.INComedor.Sync.Api.Tests;
@@ -102,6 +103,18 @@ public static class LotesDePrueba
 
         return await cliente.SendAsync(pedido, TestContext.Current.CancellationToken);
     }
+
+    /// <summary>Los resultados del acuse por EventId; si un EventId se repite, la prueba lo ve al contar.</summary>
+    public static List<(Guid EventId, string Status, string ReasonCode)> Resultados(JsonDocument acuse) =>
+        acuse.RootElement.GetProperty("Results").EnumerateArray()
+            .Select(r => (r.GetProperty("EventId").GetGuid(), r.GetProperty("Status").GetString()!, r.GetProperty("ReasonCode").GetString()!))
+            .ToList();
+
+    public static (string Status, string ReasonCode) ResultadoDe(JsonDocument acuse, JsonNode evento) =>
+        Resultados(acuse).Where(r => r.EventId == EventId(evento)).Select(r => (r.Status, r.ReasonCode)).Single();
+
+    public static async Task<JsonDocument> LeerAsync(HttpResponseMessage respuesta) =>
+        JsonDocument.Parse(await respuesta.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
 
     private static JsonObject Carga() => new()
     {

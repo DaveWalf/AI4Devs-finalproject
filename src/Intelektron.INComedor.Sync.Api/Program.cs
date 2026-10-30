@@ -16,6 +16,7 @@ builder.WebHost.ConfigureKestrel(kestrel => kestrel.ConfigureHttpsDefaults(https
 }));
 builder.Services.TryAddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ConfiguracionReceptor>();
+builder.Services.AddSingleton<IngestaLotes>();
 
 var app = builder.Build();
 
@@ -25,9 +26,50 @@ if (app.Services.GetRequiredService<ConfiguracionReceptor>().CadenaConexion is {
 }
 
 var lotes = app.MapGroup(RutaLotes).AddEndpointFilter<FiltroEquipo>();
-lotes.MapPost("", () => Results.Problem(statusCode: 501, title: "Ingesta de lotes no implementada"));
-lotes.MapGet("/{batchId}", () => Results.Problem(statusCode: 501, title: "Ingesta de lotes no implementada"));
+lotes.MapPost("", async (HttpContext contexto, IngestaLotes ingesta) =>
+{
+    var cuerpo = await LeerCuerpoAsync(contexto.Request, IngestaLotes.TopeCuerpo);
+    if (cuerpo is null)
+    {
+        return ProblemasReceptor.Crear("INVALID_REQUEST");
+    }
+
+    var clave = contexto.Request.Headers["Idempotency-Key"];
+    return await ingesta.ProcesarAsync(FiltroEquipo.PuestoAutenticado(contexto), clave.Count == 1 ? clave[0] : null, cuerpo, contexto.RequestAborted);
+});
+lotes.MapGet("/{batchId}", () => Results.Problem(statusCode: 501, title: "Consulta de lotes no implementada"));
 
 app.Run();
+
+// El cuerpo con un tope propio de 1 MiB (D5): más grande, o cortado por Kestrel, es null y el pedido responde 400.
+static async Task<byte[]?> LeerCuerpoAsync(HttpRequest pedido, int tope)
+{
+    if (pedido.ContentLength > tope)
+    {
+        return null;
+    }
+
+    using var memoria = new MemoryStream();
+    var bloque = new byte[16 * 1024];
+    try
+    {
+        int leidos;
+        while ((leidos = await pedido.Body.ReadAsync(bloque, pedido.HttpContext.RequestAborted)) > 0)
+        {
+            if (memoria.Length + leidos > tope)
+            {
+                return null;
+            }
+
+            memoria.Write(bloque, 0, leidos);
+        }
+    }
+    catch (BadHttpRequestException)
+    {
+        return null;
+    }
+
+    return memoria.ToArray();
+}
 
 public partial class Program;
