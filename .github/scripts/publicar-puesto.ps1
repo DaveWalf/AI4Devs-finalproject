@@ -36,7 +36,10 @@ function RevisarPublicacion {
 Remove-Item -LiteralPath $zip, $suma -Force -ErrorAction SilentlyContinue
 if (Test-Path -LiteralPath $publicacion) { Remove-Item -LiteralPath $publicacion -Recurse -Force }
 
-Invocar 'El build' { dotnet build INComedor.sln -c Release -warnaserror }
+# Restore y build separados, como en ci.yml: en windows-latest, el restore implícito del build con -warnaserror
+# falló con MSB4181 y ninguna advertencia (ensayo v0.0.0-ensayo, corrida 41132357042), y en local no se reprodujo.
+Invocar 'El restore' { dotnet restore INComedor.sln }
+Invocar 'El build' { dotnet build INComedor.sln -c Release -warnaserror --no-restore }
 Invocar 'La publicación' { dotnet publish src/Intelektron.INComedor.Kiosk -c Release -r win-x64 --self-contained true -o $publicacion }
 RevisarPublicacion
 
