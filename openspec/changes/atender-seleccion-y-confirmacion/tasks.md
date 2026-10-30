@@ -18,8 +18,12 @@ Las pruebas existentes no se tocan, salvo las dos de D1 que aprobó David en el 
 
 ## 2. Dominio: credencial y permiso
 
-- [ ] 2.1 Crear `tests/Intelektron.INComedor.Domain.Tests/ClasificadorCredencialTests.cs` y `EvaluadorPermisoOperadorTests.cs`, con los bordes exactos de D2: revocada y vencida a la vez, `ValidToUtc` igual al instante, `ValidFromUtc` un milisegundo después, extremos ausentes, un rol sin herencia y `PERMISSION_NOT_YET_VALID`. Sumar la prueba que compara la precedencia con `EvaluadorHabilitacion` sobre la misma credencial. Verificar con `dotnet test tests/Intelektron.INComedor.Domain.Tests` que fallan o no compilan antes de implementar, y pegar la salida
-- [ ] 2.2 Implementar `ClasificadorCredencial`, `EvaluadorPermisoOperador` y sus modelos (D2), sin cambiar `EvaluadorHabilitacion` ni `EvaluadorCupo`. Verificar con `dotnet test tests/Intelektron.INComedor.Domain.Tests` que pasan las nuevas y las 46 anteriores
+- [x] 2.1 Crear `tests/Intelektron.INComedor.Domain.Tests/ClasificadorCredencialTests.cs` y `EvaluadorPermisoOperadorTests.cs`, con los bordes exactos de D2: revocada y vencida a la vez, `ValidToUtc` igual al instante, `ValidFromUtc` un milisegundo después, extremos ausentes, un rol sin herencia y `PERMISSION_NOT_YET_VALID`. Sumar la prueba que compara la precedencia con `EvaluadorHabilitacion` sobre la misma credencial. Verificar con `dotnet test tests/Intelektron.INComedor.Domain.Tests` que fallan o no compilan antes de implementar, y pegar la salida
+- [x] 2.2 Implementar `ClasificadorCredencial`, `EvaluadorPermisoOperador` y sus modelos (D2), sin cambiar `EvaluadorHabilitacion` ni `EvaluadorCupo`. Verificar con `dotnet test tests/Intelektron.INComedor.Domain.Tests` que pasan las nuevas y las 46 anteriores
+
+  Salida de 2.1 (antes de implementar): `dotnet test tests/Intelektron.INComedor.Domain.Tests` no compiló: `error CS0246: El nombre del tipo o del espacio de nombres 'PermisoOperador' no se encontró` y `… 'RolOperador' no se encontró`, con `CS0103` para `ClasificadorCredencial`, `MotivoIdentificacion`, `CausaIdentificacion` y `EvaluadorPermisoOperador`; exit 1.
+
+  Salida de 2.2: `total: 68, error: 0, correcto: 68`: las 46 anteriores, 12 de `ClasificadorCredencialTests` (la comparación con `EvaluadorHabilitacion` es un `Theory` de tres casos) y 10 de `EvaluadorPermisoOperadorTests`. `EvaluadorHabilitacion.cs` y `EvaluadorCupo.cs` sin cambios (`git status --short` muestra sólo los cuatro archivos nuevos).
 
 ## 3. Bitácora compartida e identificación por código
 
