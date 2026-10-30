@@ -26,3 +26,4 @@ rules:
     - Cada tarea nombra la prueba o el comando que la verifica.
     - Las pruebas de un grupo van dentro del grupo, no al final.
     - Ninguna tarea modifica un test existente sin aprobación de David.
+    - "La última tarea del change agrega su evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` y, si deja un workflow o un ajuste humano nuevo, su entrada en `prompts.md`; se verifica con el chequeo de enlaces relativos."

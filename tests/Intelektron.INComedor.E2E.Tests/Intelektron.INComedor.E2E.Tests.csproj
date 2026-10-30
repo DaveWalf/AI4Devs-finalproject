@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- El E2E del flujo principal (D5 de demostrar-flujo-de-punta-a-punta): lanza el receptor y el puesto compilados como
+       procesos y maneja la pantalla con Playwright por CDP. No baja navegadores: el navegador es el WebView2 del equipo. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0-windows10.0.17763.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <!-- Para contar, en sólo lectura, los consumos de la base del puesto (AT02); la misma versión que usa el puesto. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <!-- Microsoft.Data.SqlClient 7.1.1 trae Pkcs 9.0.18 (CVE-2026-84008 y CVE-2026-70162); este proyecto no es web y no
+         lo poda, así que se fija la versión corregida del tren de D-C25, como en Kiosk.Tests. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <!-- Sólo para que se compilen antes: la prueba lanza sus EXE desde la salida de cada proyecto, nunca los carga. -->
+    <ProjectReference Include="..\..\src\Intelektron.INComedor.Kiosk\Intelektron.INComedor.Kiosk.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Intelektron.INComedor.Sync.Api\Intelektron.INComedor.Sync.Api.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- La configuración de la propia prueba elige la carpeta de salida de los EXE (Debug o Release). -->
+    <AssemblyMetadata Include="Configuracion" Value="$(Configuration)" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>
