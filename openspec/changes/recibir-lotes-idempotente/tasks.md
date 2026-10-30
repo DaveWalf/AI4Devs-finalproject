@@ -202,7 +202,9 @@ Las pruebas existentes no se tocan, salvo las siete que aprobó David en el gate
 
 ## 10. Tallas y evidencia
 
-- [ ] 10.1 Registrar en `docs/plan-academico.md` (tallas por change) las horas reales de reloj del apply contra la talla de la IA y la de David, sin promediar. Agregar la fila de `recibir-lotes-idempotente` en `docs/aplicacion-del-curso.md` y, si el change dejó un workflow o un ajuste humano nuevo, su entrada en `prompts.md`. Verificar con el chequeo de enlaces relativos que no hay enlaces rotos
+- [x] 10.1 Registrar en `docs/plan-academico.md` (tallas por change) las horas reales de reloj del apply contra la talla de la IA y la de David, sin promediar. Agregar la fila de `recibir-lotes-idempotente` en `docs/aplicacion-del-curso.md` y, si el change dejó un workflow o un ajuste humano nuevo, su entrada en `prompts.md`. Verificar con el chequeo de enlaces relativos que no hay enlaces rotos
+
+  Salida de 10.1: `docs/plan-academico.md` suma las dos filas de tallas (S de David y S de la IA, 2,9 a 5,7 h con el colchón) y las horas reales: **2,0 h** de reloj de la IA (de las 08:52 a las 10:50), en el medio de su estimación de 1,5 a 2,5 h y en el piso de la S. En `docs/aplicacion-del-curso.md`, las filas existentes que este change toca: tallas con 30 % y la IA como par (las tres mediciones), TDD (las 138 en rojo y las mutaciones) y dobles en las fronteras (el receptor sin dobles y la excepción aprobada de `IReceptorLotes`). `prompts.md` suma dos entradas al criterio humano: la 10, el gate y lo que cambió en el apply, y la 11, la instancia de SQL Server. Chequeo de enlaces relativos sobre `docs/plan-academico.md`, `docs/aplicacion-del-curso.md`, `docs/cobertura-entrega.md`, `prompts.md`, `readme.md` y `AGENTS.md`: `enlaces rotos: 0`; control negativo con un archivo inexistente y un ancla falsa: `ROTO`, `ANCLA` y `enlaces rotos: 2`. Chequeo del mapa de D8: `filas del mapa: 82 · defectuosas: 0`.
 
 ## Workflow follow-up
 
