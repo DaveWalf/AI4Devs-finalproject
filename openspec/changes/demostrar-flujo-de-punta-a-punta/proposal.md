@@ -57,7 +57,7 @@ Ningún cambio es **BREAKING**: no cambia una prueba existente, una migración, 
 
 | Quién | Talla | Horas | Con el colchón del 30 % |
 |---|---|---|---|
-| David (en el gate) | | | |
+| David, 30/10/2026 (en el gate) | **S** | 2 a 4 h | 2,9 a 5,7 h de capacidad |
 | La IA (Claude Code, Opus 5.5), 30/10/2026 | **S** | 2 a 4 h | 2,9 a 5,7 h de capacidad |
 
 El colchón es el de la lección 50 («Buffers realistas: 30-40%, no 10%»): se compromete el 70 % de la capacidad, así que cada talla pide su valor dividido por 0,7.
@@ -78,6 +78,8 @@ No se promedia (lección 50: «Se converge por discusión»): si tu talla difier
 
 ## Para el gate de David
 
+**Resultado del gate, 30/10/2026:** David lo aprobó tal cual, los doce puntos, y puso talla **S**, la misma de la IA, así que no hay diferencia que conversar.
+
 Cada punto lleva la opción que se tomó y la que se descartó. El detalle está en el design.
 
 1. **El E2E corre en la CI y en local** (D6). Tomada: entra a la solución, así que `dotnet test INComedor.sln` lo corre en los dos lados sin tocar `ci.yml`, y el evaluador lo ve en verde en la CI. El runner `windows-latest` nunca abrió una ventana WPF con WebView2 en este repo, y LocalDB sigue sin probar (WARNING 4 del change 5). Si la primera corrida falla por el entorno, el E2E lo dice con un mensaje propio y no se saltea. El paso que falte en `ci.yml` (instalar el runtime de WebView2, arrancar LocalDB, o filtrar el E2E) es tuyo. Descartada: sólo en local, fuera de la solución, que deja el E2E sin barrera automática y sin evidencia en la CI.
@@ -93,4 +95,4 @@ Cada punto lleva la opción que se tomó y la que se descartó. El detalle está
 9. **Tres variables y no una** (D3). Cada una tiene su motivo: la carpeta aísla los datos, la dirección evita el choque de puertos y el puerto de CDP abre la depuración. Descartada: una sola variable «modo E2E», que mezcla aislamiento con depuración, cuando una demostración aislada sin puerto abierto también sirve.
 10. **Ninguna prueba existente cambia.** `git diff --stat -- tests/` sólo puede mostrar archivos nuevos.
 11. **Aplicar con `opus` · `xhigh`, supervisado.** El apéndice manda la línea de seguridad cuando hay seguridad en alcance: un puerto de depuración y un workflow con permiso de escritura. Descartado: `opus` · `medium`.
-12. **Tu talla**: queda vacía para que la pongas acá.
+12. **Tu talla**: S (arriba, en «Tallas»).
