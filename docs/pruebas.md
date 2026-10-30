@@ -43,7 +43,7 @@ intercambio de forma independiente. Estas reglas son fixtures académicos, no ap
 | Integración | Red restaurada con feed incompleto o pendientes sin recepción | Suspensión continúa hasta cortes de recepción/feed recuperados; no reanuda por un ping. CONTINUE_LOCAL conserva atención. |
 | Integración | Cambio de política mediante snapshot completo y caída durante activación | Cambio atómico auditable para futuras confirmaciones; reinicio o snapshot incompleto no restablecen el valor inicial. |
 | Contrato | Apertura/cierre de incidencia repetidos o fuera de orden | Un incidente central, sin cupo ni impresión; cierre antes de apertura queda pendiente de referencia, luego se proyecta sin duplicar. |
-| E2E | Monopuesto/CONTINUE_LOCAL: identificación, selección, commit local, ticket y sincronización | Circuito completo con servidor apagado y luego recuperado. |
+| E2E | Monopuesto/CONTINUE_LOCAL: identificación, selección, commit local, ticket y sincronización | Circuito completo con servidor apagado y luego recuperado. Ejecutado desde el 30/10 en [`FlujoPrincipalTests`](../tests/Intelektron.INComedor.E2E.Tests/FlujoPrincipalTests.cs), sobre los EXE del puesto y del receptor de demostración, por CDP: consumo y comprobante sin red, cupo, pendientes y el consumo consolidado una sola vez al volver el receptor (AT01, AT02 y AT27). |
 | Hardware posterior | Serie, BioMini 1:N/1:1 e impresora reales | Modelos/SDK/templates, desconexión y recuperación homologados. |
 | Recuperación | Restaurar base con lote ya recibido | IDs conservados; reenvío sin duplicación central. |
 | UX | Quince opciones, teclado y escalado | Recorrido usable y sin mezcla de personas. |

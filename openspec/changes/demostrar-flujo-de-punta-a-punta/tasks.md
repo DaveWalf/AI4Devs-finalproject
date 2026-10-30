@@ -331,14 +331,33 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
 ## 8. Verificación integrada y evidencia
 
-- [ ] 8.1 Desde la raíz, pegar la línea final de cada uno:
+- [x] 8.1 Desde la raíz, pegar la línea final de cada uno:
   - `dotnet build INComedor.sln -warnaserror`;
   - `dotnet test INComedor.sln`, con el total por proyecto;
   - `openspec validate --all --strict`;
   - gitleaks con el script del job `secretos`;
   - `git diff --stat 5843152 -- tests/`, que muestra sólo archivos nuevos;
   - `git diff --stat 5843152 -- api/ .github/workflows/ci.yml src/Intelektron.INComedor.Infrastructure.Sqlite/Migraciones src/Intelektron.INComedor.Sync.Api/Ingesta/Migraciones`, vacío.
-- [ ] 8.2 Escribir en esta tarea la tabla de los escenarios de las dos specs contra la prueba que los cubre, y la revisión OWASP A01 a A10 de las tres variables, del puerto de depuración y del workflow. Verificar que cada escenario tiene una prueba o, en los del workflow, la razón por la que se verifica recién con el primer tag
+
+  Hecho el 30/10 sobre `b320b83`. gitleaks, con el traslado a PowerShell del script del job (7.1), porque Git Bash sigue sin arrancar en esta sesión:
+
+  ```text
+  build: 0 Advertencia(s) · 0 Errores · exit 0
+  Contracts.Tests 23 · Domain.Tests 68 · Sync.Api.Tests 62 · Infrastructure.Sqlite.Tests 117 · Kiosk.Tests 79 · E2E.Tests 6 (1m 39s 572ms)
+    total: 355 · error: 0 · correcto: 355 · exit test 0
+  Totals: 9 passed, 0 failed (9 items)
+  commits escaneados: 84 · esperados: 84 · exit de gitleaks: 0 · INF no leaks found
+  git diff --stat 5843152 -- tests/: 7 files changed, 1127 insertions(+), sólo archivos nuevos
+    (CosturasDelPuestoTests.cs, EscenarioE2E.cs, FlujoPrincipalTests.cs, Intelektron.INComedor.E2E.Tests.csproj,
+     ProcesosYPuertos.cs, Propiedades.cs y EntornoDemostracionTests.cs)
+  git diff --stat --diff-filter=MDR 5843152 -- tests/: (vacío)
+  git diff --stat 5843152 -- api/ .github/workflows/ci.yml …/Migraciones …/Ingesta/Migraciones: (vacío)
+  ```
+- [x] 8.2 Escribir en esta tarea la tabla de los escenarios de las dos specs contra la prueba que los cubre, y la revisión OWASP A01 a A10 de las tres variables, del puerto de depuración y del workflow. Verificar que cada escenario tiene una prueba o, en los del workflow, la razón por la que se verifica recién con el primer tag
+
+  Cerrada a las 13:47:33. Verificación: los 16 escenarios tienen fila. Doce tienen prueba completa y cuatro son parciales, cada uno con su razón:
+  - «Dirección sin TLS», sin prueba con la ventana de que ningún pedido llegue al puerto `http`;
+  - «Prueba en verde», «Prueba en rojo» y «Push a una rama», que se confirman recién con el primer tag o el primer push de David.
 
   **Escenarios contra pruebas** (16 de 16):
 
@@ -375,13 +394,30 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
   | A08 Integridad del software | Sin acciones de terceros: sólo `actions/checkout@v7` y `actions/setup-dotnet@v6`, las de `ci.yml`. El zip es la carpeta que probó el E2E, con su suma, y `gh release create --verify-tag` exige que el tag exista. |
   | A09 Registro y monitoreo | El registro del E2E lleva puertos, PID, rutas y tiempos, nunca un código tipeado. El puesto no registra que abrió el puerto de depuración: queda como sugerencia, porque hoy no tiene bitácora propia de arranque. |
   | A10 SSRF | La dirección del receptor la fija quien controla el entorno del proceso, que ya controla el puesto; sólo `https` y sin redirecciones (`AllowAutoRedirect = false`, de `recibir-lotes-idempotente`). |
-- [ ] 8.3 Evidencia (D11):
+- [x] 8.3 Evidencia (D11):
   - las filas de `docs/aplicacion-del-curso.md`;
   - `docs/cobertura-entrega.md` y `docs/pruebas.md:46`;
   - el ajuste humano de la elevación en `prompts.md`;
   - las tallas y las horas reales del apply en `docs/plan-academico.md`.
 
-  Verificar con el chequeo del mapa y con el de enlaces sobre esos cuatro, `readme.md` y el change: `enlaces rotos: 0`. Pegar las salidas
+  Hecho. En el mapa del curso pasan a `Aplicada` ocho filas:
+  - el spike con tope;
+  - el E2E vertical;
+  - `.env.example`;
+  - construir una vez y promover el mismo artefacto;
+  - las tres de la L58 (el E2E, la evidencia, con la tercera opción, y el README);
+  - y la del pipeline que publica, en la tabla de la devolución.
+
+  En la cobertura, las cuatro filas de la acción 3 pasan a `Cubierto`, con el Release y el video como del autor. `prompts.md` suma el punto 12 del criterio humano. El plan, las tallas S de los dos y 1,0 h de apply. Los chequeos son los de D8, guardados tal cual en el scratchpad; el control del mapa le suma a una copia una fila con un estado inválido y una `Aplicada` sin enlace:
+
+  ```text
+  filas del mapa: 82 · defectuosas: 0
+  control negativo: ESTADO INVÁLIDO: | Práctica falsa | lección 0 | Hecha | algo |
+                    SIN EVIDENCIA: | Otra falsa | lección 0 | Aplicada | sin enlace |
+                    filas del mapa: 83 · defectuosas: 2
+  enlaces, sobre aplicacion-del-curso.md, cobertura-entrega.md, pruebas.md, plan-academico.md, prompts.md, readme.md,
+  AGENTS.md, guion-video.md y los cinco archivos del change: enlaces rotos: 0
+  ```
 
 ## Workflow follow-up
 
