@@ -12,7 +12,7 @@ información y consolida los hechos cuando se recupera la conexión.
 
 **Estado:** entrega 2 presentada el 29/10; entrega final en curso. Hay un puesto de demostración que atiende
 y confirma sobre SQLite con la transacción de RB06, y un receptor de lotes idempotente sobre SQL Server con
-TLS mutuo, al que el puesto envía su outbox; 322 pruebas en verde (ver §2.6). El resto del documento describe
+TLS mutuo, al que el puesto envía su outbox; 355 pruebas en verde, con un E2E del flujo principal (ver §2.6). El resto del documento describe
 el diseño del producto. La demostración usa datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
 
 ## Índice
@@ -118,6 +118,80 @@ recuperación. Una nueva lectura no sustituye la identidad de una sesión ocupad
 
 ### 1.4. Instrucciones de instalación
 
+#### Cómo revisar
+
+Hay tres caminos, y los tres usan sólo datos sintéticos. Las únicas credenciales son los
+[códigos sintéticos](#cómo-ver-la-demostración) de la tabla de más abajo, y no hay contraseñas.
+
+**1. El Release, sin instalar .NET.** En [Releases](https://github.com/DaveWalf/AI4Devs-finalproject/releases),
+bajar `INComedor-Puesto-<versión>-win-x64.zip` y su `.sha256`, comprobar la suma y abrir el EXE:
+
+```powershell
+$zip = '.\INComedor-Puesto-<versión>-win-x64.zip'
+(Get-FileHash $zip -Algorithm SHA256).Hash -eq (Get-Content "$zip.sha256").Split(' ')[0]   # True
+Expand-Archive $zip -DestinationPath .\INComedor-Puesto
+.\INComedor-Puesto\Intelektron.INComedor.Kiosk.exe
+```
+
+Requisito: Windows 11 x64 con el WebView2 Runtime, que Windows 11 ya trae. El paquete lleva el runtime de .NET
+al lado del EXE y no trae datos: la base se crea y se siembra al abrirlo. El EXE no está firmado, así que
+SmartScreen puede pedir «Más información» y «Ejecutar de todas formas». El Release trae sólo el puesto: el
+receptor necesita SQL Server y se revisa desde el código. El primer Release sale después del SDK estable de
+.NET 11, el 10/11. Hasta entonces, el mismo zip se arma en local con
+`pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
+el EXE publicado y lo deja en `artifacts/`.
+
+**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.2), desde la raíz de un clon:
+
+```powershell
+git clone https://github.com/DaveWalf/AI4Devs-finalproject.git
+cd AI4Devs-finalproject
+dotnet build INComedor.sln
+dotnet test INComedor.sln
+dotnet run --project src/Intelektron.INComedor.Kiosk
+```
+
+`dotnet test` necesita una instancia de SQL Server para las pruebas del receptor y el E2E (ver §2.6). Lo que
+se puede recorrer en la ventana está en «Cómo ver la demostración», más abajo. Para no usar la carpeta de siempre,
+antes de `dotnet run` se elige una propia: `$env:INCOMEDOR_DEMO_DIR = "$env:TEMP\incomedor-revision"`.
+
+**3. El E2E.**
+
+```powershell
+dotnet test tests/Intelektron.INComedor.E2E.Tests
+```
+
+Recorre el flujo principal del [plan de pruebas](docs/pruebas.md#pruebas-previstas) con el puesto y el
+receptor compilados, como procesos, y la pantalla manejada por Playwright por CDP (el protocolo de depuración
+del WebView2):
+- `0001` confirma «Almuerzo común» con el receptor apagado y sale el comprobante;
+- el segundo almuerzo choca con el cupo;
+- la franja cuenta 2 pendientes;
+- al volver el receptor, queda al día, con el consumo consolidado una sola vez.
+
+Suma cinco pruebas de las costuras del puesto. Tarda cerca de 1 min 45 s, porque espera el ciclo real de envío,
+de 30 s, y mientras corre abre la ventana del puesto. Necesita el WebView2 Runtime, SQL Server y una sesión con
+escritorio: si falta algo, falla nombrándolo. Cada prueba usa su carpeta temporal, sus puertos y su base, y no
+toca `%LOCALAPPDATA%\INComedor\demo\`. Las capturas de cada paso quedan en
+`tests/Intelektron.INComedor.E2E.Tests/bin/Debug/net11.0-windows10.0.17763.0/TestResults/e2e/`.
+
+**Datos sembrados.** La base del puesto se crea y se siembra al abrirlo: un catálogo sintético de ALMUERZO y
+REFRIGERIO, cuatro personas y cuatro operadores, con los códigos de la tabla. El receptor de demostración genera
+sus certificados sintéticos y su base al arrancar («Receptor de lotes y puesto conectados», más abajo).
+
+**Variables de entorno.** [`.env.example`](.env.example) lista las cuatro, vacías y comentadas. Nada lo carga,
+porque el puesto y el receptor leen el entorno del proceso: cada una se fija en la terminal, por ejemplo
+`$env:INCOMEDOR_SQLSERVER = 'MI-SERVIDOR'`. Todas son opcionales. `INCOMEDOR_CDP_PORT` es sólo para pruebas: con
+el puerto abierto, cualquier proceso del equipo puede manejar la pantalla.
+
+**`docker-compose`: no aplica.** Es una app de escritorio con su base SQLite local, y el receptor usa la instancia
+de SQL Server del equipo. Docker quedó fuera del corte ([lo que no se aplica](docs/aplicacion-del-curso.md#lo-que-no-se-aplica)).
+
+**Video.** Un recorrido de 2 a 3 minutos, con su [guion](docs/guion-video.md). Pendiente: va como archivo del
+Release cuando se publique.
+
+#### Consultar el diseño
+
 Para consultar el diseño, abrir este README y sus anexos. Las instrucciones ejecutables
 están en «Cómo ver la demostración», más abajo: SDK fijado en `global.json`
 (11.0.100-rc.2), paquetes con versión exacta en `Directory.Packages.props`, comandos
@@ -131,9 +205,9 @@ multipuesto con suspensión conserva el arranque, diagnóstico y recuperación
 locales, pero no admite nuevos consumos hasta recuperar la comunicación. Sin ninguna configuración inicial válida, el puesto informará
 que requiere provisionamiento y mantendrá deshabilitadas las confirmaciones.
 
-Ya existen las versiones exactas, los comandos probados y la carga del conjunto sintético.
-Siguen pendientes la recuperación, un script de verificación del entorno, el
-provisionamiento por sincronización o paquete local y el paquete de instalación (EXE).
+Ya existen las versiones exactas, los comandos probados, la carga del conjunto sintético y el paquete del
+puesto (el EXE autocontenido en un zip, en «Cómo revisar»). Siguen pendientes la recuperación, un script de
+verificación del entorno, el provisionamiento por sincronización o paquete local y un instalador.
 
 #### Cómo ver la demostración
 
@@ -268,15 +342,16 @@ docs/
   decisiones.md                 decisiones del autor y condiciones del diseño
   cobertura-entrega.md          relación entre la consigna y cada artefacto
   aplicacion-del-curso.md       prácticas del curso, su evidencia y la respuesta a la devolución
+  guion-video.md                recorrido del video de 2 a 3 minutos
+.env.example                    las variables de entorno, vacías y comentadas
 api/openapi.yaml                contrato de las tres operaciones de sincronización
 diagrams/                       fuentes .dot y .mmd editables y sus SVG
 ```
 
 Estructura prevista de la solución, la misma en todos los documentos. Existen hoy cinco
-proyectos en `src/` (Domain, Contracts, Infrastructure.Sqlite, Kiosk y Sync.Api) y cuatro
-en `tests/` (uno por Domain, Infrastructure.Sqlite, Kiosk y Sync.Api). Application,
-Biometrics.Broker, Devices e Integration.INWeb siguen previstos y no existen; el E2E
-tampoco. Marcados con `[existe]` los que están:
+proyectos en `src/` (Domain, Contracts, Infrastructure.Sqlite, Kiosk y Sync.Api) y seis
+en `tests/`: uno por cada proyecto de `src/` y el E2E. Application, Biometrics.Broker,
+Devices e Integration.INWeb siguen previstos y no existen. Marcados con `[existe]` los que están:
 
 ```text
 src/
@@ -289,7 +364,7 @@ src/
   Intelektron.INComedor.Devices/               adaptadores de serie e impresora y dobles de prueba de dispositivos
   Intelektron.INComedor.Sync.Api/              [existe] receptor ASP.NET Core de configuración y lotes
   Intelektron.INComedor.Integration.INWeb/     adaptador a INWeb y consolidación con EF Core y SQL Server
-tests/                                         un proyecto de pruebas por proyecto de src, más el E2E
+tests/                                         [existe] un proyecto de pruebas por proyecto de src, más el E2E
 ```
 
 De ese árbol, hoy el Kiosk implementa la atención con identificación simulada por código, la asistencia
@@ -350,15 +425,23 @@ El [plan de pruebas](docs/pruebas.md) cubre dominio, SQLite real, sincronizació
 contratos, E2E y dispositivos. Casos centrales: arranque offline, cupo local,
 doble confirmación, caída tras commit, reimpresión, snapshot parcial, acuse perdido
 y ambos modos biométricos. Incluye también saltos del reloj, cálculo del día de
-negocio y vigencias. Hoy corren 322 pruebas, todas en verde, con
+negocio y vigencias. Hoy corren 355 pruebas, todas en verde, con
 `dotnet test INComedor.sln` desde la raíz del repositorio: 68 de Domain, 117 de
-Infrastructure.Sqlite sobre un archivo SQLite real temporal, 52 del Kiosk, 62 del receptor y 23 de Contracts.
-Las del receptor y las del envío integrado necesitan una instancia de SQL Server: `(localdb)\MSSQLLocalDB`
-por defecto, u otra en la variable `INCOMEDOR_SQLSERVER`; cada clase crea su base y la borra al terminar.
-Cubren la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después del commit, la
-concurrencia por el último cupo, la atención y el comprobante, y el envío de lotes: el acuse perdido, el
-reenvío idéntico, el TLS mutuo real y la deduplicación en el receptor (AT13, AT27 y AT50). El
-resto de los casos del plan sigue especificado, no ejecutado.
+Infrastructure.Sqlite sobre un archivo SQLite real temporal, 79 del Kiosk, 62 del receptor, 23 de Contracts y
+6 del E2E. Las del receptor, las del envío integrado y el E2E necesitan una instancia de SQL Server:
+`(localdb)\MSSQLLocalDB` por defecto, u otra en la variable `INCOMEDOR_SQLSERVER`; cada clase crea su base y la
+borra al terminar. Cubren la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después
+del commit, la concurrencia por el último cupo, la atención y el comprobante, y el envío de lotes: el acuse
+perdido, el reenvío idéntico, el TLS mutuo real y la deduplicación en el receptor (AT13, AT27 y AT50).
+
+El E2E (`tests/Intelektron.INComedor.E2E.Tests`) recorre el escenario E2E del plan, monopuesto con el servidor
+apagado y luego recuperado (AT01, AT02 y AT27), sobre los EXE compilados del puesto y del receptor. Lo maneja
+Playwright por CDP, sin bajar navegadores: el navegador es el WebView2 del equipo. Suma las costuras del puesto
+(`INCOMEDOR_DEMO_DIR`, `INCOMEDOR_RECEPTOR_URL` e `INCOMEDOR_CDP_PORT`): el puerto de depuración sólo abre con un
+valor válido y sólo en loopback. Además de SQL Server, necesita el WebView2 Runtime y una sesión con escritorio,
+y si falta algo falla con un mensaje que lo nombra, nunca con un salto. Con `INCOMEDOR_E2E_KIOSK_EXE`, corre
+contra el EXE del paquete publicado, sin .NET a la vista: es lo que hace el script del Release antes de armar
+el zip. El resto de los casos del plan sigue especificado, no ejecutado.
 
 ## 3. Modelo de datos
 

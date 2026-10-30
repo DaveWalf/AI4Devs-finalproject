@@ -272,7 +272,20 @@ Ninguna prueba existente se toca: `git diff --stat -- tests/` sólo puede mostra
 
 ## 7. «Cómo revisar», `.env.example` y el guion del video
 
-- [ ] 7.1 Crear `.env.example` con las cuatro variables vacías y comentadas (D10). Verificar con gitleaks, con el script del job `secretos`, que no da hallazgos, y pegar la salida
+- [x] 7.1 Crear `.env.example` con las cuatro variables vacías y comentadas (D10). Verificar con gitleaks, con el script del job `secretos`, que no da hallazgos, y pegar la salida
+
+  Hecho, y commiteado aparte en `794e9d3` para que el escaneo de la historia lo incluya. En esta sesión Git Bash no arranca (`add_item ... errno 1` de MSYS), y el remedio conocido mata por nombre los `bash.exe` de otras sesiones, que este apply tiene prohibido. Por eso el script del job se trasladó a PowerShell en el scratchpad, con el mismo rango, el mismo conteo de commits esperados (incluido el `NF == 3` del awk), las mismas opciones de `gitleaks git` y las mismas dos fallas.
+
+  La primera corrida dio `77 commits scanned` de 82, con `~1.41 MB in 15.5s`, `no leaks found` y exit 0 de gitleaks. Fue una falla abierta, y la compuerta del conteo la atajó (exit 1). Cada uno de los 82 commits escaneado solo dio 1. El rango con el SHA de `HEAD` y tres corridas más del traslado, sin cambios, dieron 82 de 82:
+
+  ```text
+  gitleaks 8.30.1
+  primera: commits escaneados: 77 · esperados: 82 · exit de gitleaks: 0 → ::error::gitleaks escaneó 77 commits y se esperaban 82.
+  corrida 1 · exit 0 · commits escaneados: 82 · esperados: 82 · exit de gitleaks: 0 · scanned ~3143954 bytes (3.14 MB) in 847ms
+  corrida 2 · exit 0 · commits escaneados: 82 · esperados: 82 · exit de gitleaks: 0 · scanned ~3143954 bytes (3.14 MB) in 872ms
+  corrida 3 · exit 0 · commits escaneados: 82 · esperados: 82 · exit de gitleaks: 0 · scanned ~3143954 bytes (3.14 MB) in 855ms
+  INF no leaks found
+  ```
 - [ ] 7.2 Escribir «Cómo revisar» al principio del §1.4 del `readme.md` (D10): el Release, el código y el E2E; las credenciales de prueba, con enlace a la tabla de códigos; los datos sembrados; `.env.example`; «`docker-compose`: no aplica», con su motivo; y el enlace al video, que queda pendiente hasta que David lo suba. Poner al día el §2.6 con el E2E y los conteos de `dotnet test`. Verificar siguiendo el camino del código desde un clon limpio del repo en el scratchpad (`git clone` de la carpeta local, en esta rama), con los comandos tal cual los dice el README, y pegar la línea final de cada uno
 - [ ] 7.3 Escribir `docs/guion-video.md` (D9): los ocho pasos con su tiempo, 2 a 3 minutos en total, la herramienta de grabación y la carpeta propia con `INCOMEDOR_DEMO_DIR`. Verificar que los pasos suman entre 120 y 180 s, y pegar la suma
 - [ ] 7.4 Sumar a `AGENTS.md` el comando del E2E y las tres variables. Verificar que el archivo no pasa de 80 líneas y que el chequeo de enlaces sobre `readme.md`, `AGENTS.md` y `docs/guion-video.md` da `enlaces rotos: 0`. Pegar las salidas
