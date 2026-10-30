@@ -14,7 +14,7 @@ Al arrancar en modo demostración, el puesto SHALL abrir su base SQLite local y,
 Origen: AT51 (base vacía válida), TK03.1, y AT01 (persona sintética habilitada).
 - **GIVEN** que no existe el archivo de la base del puesto
 - **WHEN** el puesto arranca en modo demostración
-- **THEN** la base queda en la versión de esquema 1, con un puesto, una persona habilitada, una opción de menú y una regla de límite 1, todos sintéticos
+- **THEN** la base queda en la versión de esquema 2, con un puesto, una persona habilitada, una opción de menú y una regla de límite 1, todos sintéticos
 - **AND** no contiene ningún consumo
 
 #### Scenario: Un segundo arranque no duplica ni borra
@@ -54,3 +54,27 @@ Origen: D6 de `fijar-primer-corte` y `AGENTS.md`.
 - **GIVEN** una confirmación autorizada desde la pantalla
 - **WHEN** se revisan la sesión de identidad creada y el texto de la pantalla
 - **THEN** la sesión no tiene credencial asociada y ningún valor de credencial aparece en la pantalla
+
+### Requirement: Conjunto sintético de atención
+
+Al arrancar la atención, el puesto SHALL sembrar primero la base de demostración si hace falta y agregar después, en una sola transacción y sólo si todavía no están, los datos sintéticos de atención sobre ese mismo snapshot: opciones hasta sumar 15, personas con un código sintético en cada estado de credencial y personas con permisos de operador en cada estado. MUST NOT borrar ni duplicar nada.
+
+#### Scenario: Primer arranque de la atención
+Origen: AT16 («catálogo de 15 opciones»), AT52 (códigos vigente, vencido, revocado, futuro y desconocido) y AT54 (operador vigente, vencido, revocado y administrador sin OPERATOR).
+- **GIVEN** que no existe el archivo de la base del puesto
+- **WHEN** arranca la atención
+- **THEN** la base tiene 15 opciones de menú, un código vigente, uno vencido, uno revocado y uno todavía no vigente, y permisos `OPERATOR` vigente, vencido y revocado, y uno `SYSTEM_ADMINISTRATOR` sin `OPERATOR`
+- **AND** no contiene ningún consumo
+
+#### Scenario: Un segundo arranque de la atención no duplica
+Origen: sin AT propio; RB06, «un consumo ya confirmado no se revierte».
+- **GIVEN** una base en la que la atención ya arrancó y se autorizó un consumo
+- **WHEN** la atención vuelve a arrancar
+- **THEN** la cantidad de filas de opciones, personas, credenciales y permisos no cambia y el consumo sigue registrado
+
+#### Scenario: Atención sobre una base de la demostración en uso
+Origen: RB06, «un consumo ya confirmado no se revierte», y la semilla de la demostración sin cambios.
+- **GIVEN** una base sembrada por la demostración, en la versión de esquema 1, con un consumo autorizado
+- **WHEN** arranca la atención
+- **THEN** la base queda en la versión 2 con los datos de atención agregados
+- **AND** sigue habiendo un solo puesto y el consumo anterior sigue registrado
