@@ -36,7 +36,7 @@ el diseño del producto. La demostración usa datos sintéticos y adaptadores de
 | Descripción breve | Kiosco autónomo de comedor, táctil, con identificación, reglas locales, ticket y sincronización. |
 | Organización | INTELEKTRON. Caso empresarial con cliente anonimizado y datos sintéticos. |
 | URL del proyecto | Aplicación de escritorio Windows con ejecución local; no corresponde una URL de aplicación en esta etapa. |
-| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`. La final irá en la rama `final-project-dw`. |
+| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`. La final va en la rama `final-project-dw`. |
 | Etapa | Entrega final en curso. Presentadas: la entrega 1, documentación técnica, y la entrega 2, scaffolds conectados (puesto, base SQLite y receptor). |
 | Modalidad del MVP | Adaptadores de prueba para servicios y dispositivos; persistencia y reglas reales en la implementación académica. |
 
@@ -356,7 +356,7 @@ consistencia eventual. [Justificación y alternativas](docs/arquitectura.md).
 | Adaptadores | Serie, biometría, impresión y simuladores | Entradas y resultados independientes de reglas. |
 | Broker BioMini | Proceso local y SDK homologado | Captura y matching 1:N/1:1 sobre padrón protegido. |
 | Sincronizador | Worker C# | Configuración y envío de hechos con IDs estables. |
-| API central | ASP.NET Core 10 REST/HTTPS | Configuración y recepción idempotente de lotes. |
+| API central | ASP.NET Core 11 REST/HTTPS | Configuración y recepción idempotente de lotes. |
 | Consolidación | Adaptador INWeb, EF Core y SQL Server | Hechos centrales, acuses y conflictos. |
 
 Las operaciones SQLite se ejecutarán en una cola de trabajo fuera de la interfaz;
@@ -435,6 +435,22 @@ La puesta en marcha prevista comprende:
 Cada puesto conserva su archivo SQLite; la sincronización intercambia hechos
 por API. Actualizaciones, reinicios y restauración preservan eventos pendientes.
 La integración física y el despliegue productivo requieren homologación.
+
+**El proceso que existe hoy.** Dos workflows de GitHub Actions, con sus acciones fijadas por SHA:
+
+- [`ci.yml`](.github/workflows/ci.yml), en cada pull request y en cada push a `feature/**` y a `final-project-*`:
+  en `windows-latest`, restore, auditoría de dependencias vulnerables, build con `-warnaserror`, arranque de
+  LocalDB y las 358 pruebas, con el E2E; en `ubuntu-latest`, `openspec validate --all --strict` y gitleaks sobre la
+  historia. La punta de `final-project-dw` está en verde en la
+  [corrida 41154943372](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41154943372).
+- [`release.yml`](.github/workflows/release.yml), sólo con un tag `v*`: un job de sólo lectura compila, publica el
+  puesto autocontenido para Windows x64 con [`publicar-puesto.ps1`](.github/scripts/publicar-puesto.ps1), corre el
+  E2E contra ese EXE y recién entonces arma el zip y su suma; otro job, el único con escritura, comprueba la suma y
+  deja el Release en borrador. Se ensayó con un tag descartable, en verde en la
+  [corrida 41141226298](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41141226298), y el tag y su
+  borrador se borraron. El primer Release real sale después del SDK estable de .NET 11, el 10/11.
+
+El receptor no se despliega: se corre desde el código, como dice «Receptor de lotes y puesto conectados».
 
 La demostración final es la de un puesto, con el primer corte de D-C24. Multipuesto, cuenta local de mantenimiento y diagnóstico quedan en la segunda ola, diseñados y no demostrados. El [plan](docs/plan-academico.md#capacidad-y-reestimación) registra 6 h semanales y viabilidad todavía no demostrada.
 
@@ -527,7 +543,9 @@ fuera de consumos, payloads y bitácoras.
 
 ## 4. Especificación de la API
 
-El [OpenAPI 3.1](api/openapi.yaml), versión 0.6.0-draft, define tres operaciones por construir:
+El [OpenAPI 3.1](api/openapi.yaml), versión 0.6.0-draft, define tres operaciones. El receptor `Sync.Api`
+implementa las dos de lotes desde `recibir-lotes-idempotente`, sobre SQL Server y con TLS mutuo; la de
+configuración es de la segunda ola:
 
 | Operación | Propósito |
 |---|---|
