@@ -5,18 +5,21 @@ on:
   push:
     branches:
       - "feature/**"
+      # La rama que se entrega recibe el trabajo por merge: su punta tiene que tener corrida propia.
+      - "final-project-*"
 
 permissions:
   contents: read
 
+# Las acciones van fijadas por SHA, con su versión al lado, como en release.yml: una etiqueta puede moverse (OWASP A08).
 jobs:
   build-test:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # El SDK sale de global.json (RC fijada con versión exacta: se instala tal cual, sin rollForward).
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
@@ -31,15 +34,22 @@ jobs:
       - name: Build
         run: dotnet build INComedor.sln -warnaserror --no-restore
 
+      # LocalDB arranca en frío con la primera conexión, y con las pruebas en paralelo no respondió en 160 s
+      # (corrida 41141219430). Arrancarla antes deja la instancia lista (D6 de demostrar-flujo-de-punta-a-punta).
+      - name: LocalDB
+        run: |
+          sqllocaldb start MSSQLLocalDB
+          sqllocaldb info MSSQLLocalDB
+
       - name: Test
         run: dotnet test INComedor.sln --no-build
 
   specs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
 
@@ -57,7 +67,7 @@ jobs:
       GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
     steps:
       # Historia completa: el escaneo recorre los commits propios desde el fork, no sólo el último.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
