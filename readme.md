@@ -115,6 +115,8 @@ local → ticket → reposo**. La sincronización ocurre aparte.
 Los [bocetos de pantallas](docs/experiencia.md) son diseños, no capturas de software.
 Incluyen cancelación, rechazo por cupo, huella no coincidente, falta de papel y
 recuperación. Una nueva lectura no sustituye la identidad de una sesión ocupada.
+Las capturas del puesto real, tomadas por el E2E en cada paso del flujo principal, están en
+[«Capturas del flujo principal»](#capturas-del-flujo-principal).
 
 ### 1.4. Instrucciones de instalación
 
@@ -194,6 +196,23 @@ de SQL Server del equipo. Docker quedó fuera del corte ([lo que no se aplica](d
 
 **Video.** Un recorrido de 2 a 3 minutos, con su [guion](docs/guion-video.md). Pendiente: va como archivo del
 Release cuando se publique.
+
+#### Capturas del flujo principal
+
+Las tomó el E2E del camino 3 en este equipo el 30/10/2026, sobre los EXE compilados del puesto y del receptor, con
+la base y los códigos sintéticos de la demostración. Siguen el escenario E2E del
+[plan de pruebas](docs/pruebas.md#pruebas-previstas): el receptor arranca apagado y vuelve al final.
+
+| 1. Selección de `0001` | 2. Consumo registrado | 3. Segundo almuerzo: cupo |
+|---|---|---|
+| ![Catálogo paginado con «Almuerzo común» elegido y su cargo informado](docs/capturas/01-seleccion-de-servicio.png) | ![«Consumo registrado. Retirá tu comprobante»](docs/capturas/02-consumo-registrado.png) | ![«Ya registraste este servicio»](docs/capturas/03-cupo-alcanzado.png) |
+
+| 4. Receptor apagado: 2 pendientes | 5. Receptor de vuelta: al día |
+|---|---|
+| ![Reposo con la franja «Sincronización: 2 pendientes»](docs/capturas/04-sincronizacion-pendiente.png) | ![Reposo con la franja «Sincronización: al día»](docs/capturas/05-sincronizacion-al-dia.png) |
+
+En las dos primeras la franja todavía dice «al día»: se actualiza en cada ciclo de envío, de 30 s, y la cuarta
+captura es la del primer ciclo con el receptor apagado.
 
 #### Consultar el diseño
 
