@@ -33,6 +33,12 @@ jobs:
         shell: pwsh
         run: ./.github/scripts/auditar-dependencias.ps1
 
+      # El E2E del script usa LocalDB, que arranca en frío; como en ci.yml, se arranca antes (corrida 41141219430).
+      - name: LocalDB
+        run: |
+          sqllocaldb start MSSQLLocalDB
+          sqllocaldb info MSSQLLocalDB
+
       # El mismo script que corre en local: compila, publica, corre el E2E contra el EXE publicado y sólo entonces
       # escribe el zip y su suma. Si falla, el job borrador no corre y no queda Release. El tag entra por el entorno,
       # nunca interpolado en el script (OWASP A03), y el script lo valida. La variable no se llama VERSION: MSBuild

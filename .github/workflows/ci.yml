@@ -31,6 +31,13 @@ jobs:
       - name: Build
         run: dotnet build INComedor.sln -warnaserror --no-restore
 
+      # LocalDB arranca en frío con la primera conexión, y con las pruebas en paralelo no respondió en 160 s
+      # (corrida 41141219430). Arrancarla antes deja la instancia lista (D6 de demostrar-flujo-de-punta-a-punta).
+      - name: LocalDB
+        run: |
+          sqllocaldb start MSSQLLocalDB
+          sqllocaldb info MSSQLLocalDB
+
       - name: Test
         run: dotnet test INComedor.sln --no-build
 
