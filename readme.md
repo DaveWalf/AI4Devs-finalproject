@@ -143,7 +143,8 @@ receptor necesita SQL Server y se revisa desde el código. El primer Release sal
 `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
 el EXE publicado y lo deja en `artifacts/`.
 
-**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.2), desde la raíz de un clon:
+**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.2) o uno posterior de .NET 11, que
+`global.json` acepta con `rollForward: latestFeature` (probado con la rc.3), desde la raíz de un clon:
 
 ```powershell
 git clone https://github.com/DaveWalf/AI4Devs-finalproject.git
@@ -194,6 +195,23 @@ la definió con `--remote-debugging-port`, abre el puerto aunque `INCOMEDOR_CDP_
 **`docker-compose`: no aplica.** Es una app de escritorio con su base SQLite local, y el receptor usa la instancia
 de SQL Server del equipo. Docker quedó fuera del corte ([lo que no se aplica](docs/aplicacion-del-curso.md#lo-que-no-se-aplica)).
 
+**Recorrido de verificación.** Con el puesto abierto por el camino 1 o el 2 y la base recién creada, sin el
+receptor, en la ventana:
+
+1. `0001` e «Ingresar», «Almuerzo común» y «Confirmar»: «Consumo registrado. Retirá tu comprobante», y el
+   comprobante queda como archivo de texto en `%LOCALAPPDATA%\INComedor\demo\comprobantes\`.
+2. «Listo», y otra vez `0001` con «Almuerzo común»: «Ya registraste este servicio. Consultá al responsable del
+   comedor». El cupo de ALMUERZO es 1 y no se registra otro consumo.
+3. `0002` e «Ingresar»: «Esta credencial está vencida. Solicitá asistencia».
+4. En la franja de la impresora, «Sin papel»; `0001` con «Café con leche», un REFRIGERIO: «Tu consumo está
+   registrado. El comprobante queda pendiente».
+5. La impresora en «Disponible», `9001` y «Asistencia»: los comprobantes del día. «Recuperar» saca el pendiente
+   del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con la leyenda DUPLICADO.
+6. `9002` y «Asistencia»: «Tu permiso de operador está vencido».
+
+La sincronización con el receptor se ve en «Receptor de lotes y puesto conectados», más abajo, y el E2E la recorre
+sola.
+
 **Video.** Un recorrido de 2 a 3 minutos, con su [guion](docs/guion-video.md). Pendiente: va como archivo del
 Release cuando se publique.
 
@@ -236,7 +254,7 @@ verificación del entorno, el provisionamiento por sincronización o paquete loc
 #### Cómo ver la demostración
 
 Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.json`
-(11.0.100-rc.2). Los comandos se corren desde la raíz del repositorio, porque
+(11.0.100-rc.2, o uno posterior de .NET 11). Los comandos se corren desde la raíz del repositorio, porque
 `global.json` se lee del directorio actual.
 
 **Puesto: la atención.**
