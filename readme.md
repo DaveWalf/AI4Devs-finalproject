@@ -36,7 +36,7 @@ el diseño del producto. La demostración usa datos sintéticos y adaptadores de
 | Descripción breve | Kiosco autónomo de comedor, táctil, con identificación, reglas locales, ticket y sincronización. |
 | Organización | INTELEKTRON. Caso empresarial con cliente anonimizado y datos sintéticos. |
 | URL del proyecto | Aplicación de escritorio Windows con ejecución local; no corresponde una URL de aplicación en esta etapa. |
-| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`. La final irá en la rama `final-project-dw`. |
+| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`. La final va en la rama `final-project-dw`. |
 | Etapa | Entrega final en curso. Presentadas: la entrega 1, documentación técnica, y la entrega 2, scaffolds conectados (puesto, base SQLite y receptor). |
 | Modalidad del MVP | Adaptadores de prueba para servicios y dispositivos; persistencia y reglas reales en la implementación académica. |
 
@@ -115,6 +115,8 @@ local → ticket → reposo**. La sincronización ocurre aparte.
 Los [bocetos de pantallas](docs/experiencia.md) son diseños, no capturas de software.
 Incluyen cancelación, rechazo por cupo, huella no coincidente, falta de papel y
 recuperación. Una nueva lectura no sustituye la identidad de una sesión ocupada.
+Las capturas del puesto real, tomadas por el E2E en cada paso del flujo principal, están en
+[«Capturas del flujo principal»](#capturas-del-flujo-principal).
 
 ### 1.4. Instrucciones de instalación
 
@@ -141,7 +143,8 @@ receptor necesita SQL Server y se revisa desde el código. El primer Release sal
 `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
 el EXE publicado y lo deja en `artifacts/`.
 
-**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.2), desde la raíz de un clon:
+**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.2) o uno posterior de .NET 11, que
+`global.json` acepta con `rollForward: latestFeature` (probado con la rc.3), desde la raíz de un clon:
 
 ```powershell
 git clone https://github.com/DaveWalf/AI4Devs-finalproject.git
@@ -192,8 +195,42 @@ la definió con `--remote-debugging-port`, abre el puerto aunque `INCOMEDOR_CDP_
 **`docker-compose`: no aplica.** Es una app de escritorio con su base SQLite local, y el receptor usa la instancia
 de SQL Server del equipo. Docker quedó fuera del corte ([lo que no se aplica](docs/aplicacion-del-curso.md#lo-que-no-se-aplica)).
 
+**Recorrido de verificación.** Con el puesto abierto por el camino 1 o el 2 y la base recién creada, sin el
+receptor, en la ventana:
+
+1. `0001` e «Ingresar», «Almuerzo común» y «Confirmar»: «Consumo registrado. Retirá tu comprobante», y el
+   comprobante queda como archivo de texto en `%LOCALAPPDATA%\INComedor\demo\comprobantes\`.
+2. «Listo», y otra vez `0001` con «Almuerzo común»: «Ya registraste este servicio. Consultá al responsable del
+   comedor». El cupo de ALMUERZO es 1 y no se registra otro consumo.
+3. `0002` e «Ingresar»: «Esta credencial está vencida. Solicitá asistencia».
+4. En la franja de la impresora, «Sin papel»; `0001` con «Café con leche», un REFRIGERIO: «Tu consumo está
+   registrado. El comprobante queda pendiente».
+5. La impresora en «Disponible», `9001` y «Asistencia»: los comprobantes del día. «Recuperar» saca el pendiente
+   del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con la leyenda DUPLICADO.
+6. `9002` y «Asistencia»: «Tu permiso de operador está vencido».
+
+La sincronización con el receptor se ve en «Receptor de lotes y puesto conectados», más abajo, y el E2E la recorre
+sola.
+
 **Video.** Un recorrido de 2 a 3 minutos, con su [guion](docs/guion-video.md). Pendiente: va como archivo del
 Release cuando se publique.
+
+#### Capturas del flujo principal
+
+Las tomó el E2E del camino 3 en este equipo el 30/10/2026, sobre los EXE compilados del puesto y del receptor, con
+la base y los códigos sintéticos de la demostración. Siguen el escenario E2E del
+[plan de pruebas](docs/pruebas.md#pruebas-previstas): el receptor arranca apagado y vuelve al final.
+
+| 1. Selección de `0001` | 2. Consumo registrado | 3. Segundo almuerzo: cupo |
+|---|---|---|
+| ![Catálogo paginado con «Almuerzo común» elegido y su cargo informado](docs/capturas/01-seleccion-de-servicio.png) | ![«Consumo registrado. Retirá tu comprobante»](docs/capturas/02-consumo-registrado.png) | ![«Ya registraste este servicio»](docs/capturas/03-cupo-alcanzado.png) |
+
+| 4. Receptor apagado: 2 pendientes | 5. Receptor de vuelta: al día |
+|---|---|
+| ![Reposo con la franja «Sincronización: 2 pendientes»](docs/capturas/04-sincronizacion-pendiente.png) | ![Reposo con la franja «Sincronización: al día»](docs/capturas/05-sincronizacion-al-dia.png) |
+
+En las dos primeras la franja todavía dice «al día»: se actualiza en cada ciclo de envío, de 30 s, y la cuarta
+captura es la del primer ciclo con el receptor apagado.
 
 #### Consultar el diseño
 
@@ -217,7 +254,7 @@ verificación del entorno, el provisionamiento por sincronización o paquete loc
 #### Cómo ver la demostración
 
 Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.json`
-(11.0.100-rc.2). Los comandos se corren desde la raíz del repositorio, porque
+(11.0.100-rc.2, o uno posterior de .NET 11). Los comandos se corren desde la raíz del repositorio, porque
 `global.json` se lee del directorio actual.
 
 **Puesto: la atención.**
@@ -319,7 +356,7 @@ consistencia eventual. [Justificación y alternativas](docs/arquitectura.md).
 | Adaptadores | Serie, biometría, impresión y simuladores | Entradas y resultados independientes de reglas. |
 | Broker BioMini | Proceso local y SDK homologado | Captura y matching 1:N/1:1 sobre padrón protegido. |
 | Sincronizador | Worker C# | Configuración y envío de hechos con IDs estables. |
-| API central | ASP.NET Core 10 REST/HTTPS | Configuración y recepción idempotente de lotes. |
+| API central | ASP.NET Core 11 REST/HTTPS | Configuración y recepción idempotente de lotes. |
 | Consolidación | Adaptador INWeb, EF Core y SQL Server | Hechos centrales, acuses y conflictos. |
 
 Las operaciones SQLite se ejecutarán en una cola de trabajo fuera de la interfaz;
@@ -398,6 +435,22 @@ La puesta en marcha prevista comprende:
 Cada puesto conserva su archivo SQLite; la sincronización intercambia hechos
 por API. Actualizaciones, reinicios y restauración preservan eventos pendientes.
 La integración física y el despliegue productivo requieren homologación.
+
+**El proceso que existe hoy.** Dos workflows de GitHub Actions, con sus acciones fijadas por SHA:
+
+- [`ci.yml`](.github/workflows/ci.yml), en cada pull request y en cada push a `feature/**` y a `final-project-*`:
+  en `windows-latest`, restore, auditoría de dependencias vulnerables, build con `-warnaserror`, arranque de
+  LocalDB y las 358 pruebas, con el E2E; en `ubuntu-latest`, `openspec validate --all --strict` y gitleaks sobre la
+  historia. La punta de `final-project-dw` está en verde en la
+  [corrida 41154943372](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41154943372).
+- [`release.yml`](.github/workflows/release.yml), sólo con un tag `v*`: un job de sólo lectura compila, publica el
+  puesto autocontenido para Windows x64 con [`publicar-puesto.ps1`](.github/scripts/publicar-puesto.ps1), corre el
+  E2E contra ese EXE y recién entonces arma el zip y su suma; otro job, el único con escritura, comprueba la suma y
+  deja el Release en borrador. Se ensayó con un tag descartable, en verde en la
+  [corrida 41141226298](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41141226298), y el tag y su
+  borrador se borraron. El primer Release real sale después del SDK estable de .NET 11, el 10/11.
+
+El receptor no se despliega: se corre desde el código, como dice «Receptor de lotes y puesto conectados».
 
 La demostración final es la de un puesto, con el primer corte de D-C24. Multipuesto, cuenta local de mantenimiento y diagnóstico quedan en la segunda ola, diseñados y no demostrados. El [plan](docs/plan-academico.md#capacidad-y-reestimación) registra 6 h semanales y viabilidad todavía no demostrada.
 
@@ -490,7 +543,9 @@ fuera de consumos, payloads y bitácoras.
 
 ## 4. Especificación de la API
 
-El [OpenAPI 3.1](api/openapi.yaml), versión 0.6.0-draft, define tres operaciones por construir:
+El [OpenAPI 3.1](api/openapi.yaml), versión 0.6.0-draft, define tres operaciones. El receptor `Sync.Api`
+implementa las dos de lotes desde `recibir-lotes-idempotente`, sobre SQL Server y con TLS mutuo; la de
+configuración es de la segunda ola:
 
 | Operación | Propósito |
 |---|---|
@@ -620,9 +675,12 @@ asigna cada AT a un único responsable.
 
 ## 7. Pull requests
 
-Cada PR corresponde a un change de OpenSpec, lleva la salida de `/openspec-verify-change`
-y el CI de `windows-latest` en verde. Están apilados: la base del segundo es la rama del
-primero, así cada diff muestra sólo su change. La entrega 1 documentó el diseño, sin código,
+Los PR de changes de OpenSpec llevan la salida de `/openspec-verify-change`, y todos corren
+el CI de `windows-latest`. Los tres primeros están apilados: la base de cada uno es la rama del
+anterior, así cada diff muestra sólo lo suyo. Las ramas de las entregas 1 y 2 quedaron
+congeladas tal como se enviaron, con el ruleset «Entregas congeladas» de GitHub: esos PR siguen
+abiertos como evidencia y no se integran. La entrega final vive en `final-project-dw`, que recibe
+cada trabajo por su propio PR, como el cuarto. La entrega 1 documentó el diseño, sin código,
 en el [#1](https://github.com/DaveWalf/AI4Devs-finalproject/pull/1).
 
 **Pull Request 1:** [#2 · registrar-consumo-atomico (TK03.1)](https://github.com/DaveWalf/AI4Devs-finalproject/pull/2).
@@ -636,8 +694,29 @@ Puesto Kiosk WPF con la pantalla Razor de demostración sobre SQLite, contrato d
 `Contracts` y receptor `Sync.Api` que responde `501`; 61 pruebas
 ([CI](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40795276016)).
 
-**Pull Request 3:** llega con la entrega final, con `atender-seleccion-y-confirmacion` o
-`recibir-lotes-idempotente`.
+**Pull Request 3:** [#4 · los seis changes de la final](https://github.com/DaveWalf/AI4Devs-finalproject/pull/4).
+De `feature/demostrar-flujo-de-punta-a-punta-dw` hacia `feature/entrega-2-DW`: `mostrar-aplicacion-del-curso`,
+`imponer-invariantes-en-codigo`, `evaluar-habilitacion-local`, `atender-seleccion-y-confirmacion` (TK02.1),
+`recibir-lotes-idempotente` (TK01.1) y `demostrar-flujo-de-punta-a-punta`, archivados en el mismo PR, con el verify
+del último completo; 358 pruebas, con el E2E. Queda abierto y bloqueado a propósito por el ruleset, como evidencia,
+porque su base es la rama de la entrega 2; `final-project-dw` se creó desde su punta. Sus checks muestran
+`build-test` en rojo sobre esa punta, `de24100`
+([41141219430](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41141219430) y
+[41141401980](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41141401980)), por dos pruebas
+intermitentes que ya estaban: una prueba bUnit de la pantalla de atención que no esperaba cada toque, y el arranque
+en frío de LocalDB en el runner. La misma rama había pasado en verde antes
+([41130320995](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41130320995)). La corrección no podía
+ir en el #4, congelado, y es el PR siguiente.
+
+**Pull Request 4:** [#5 · CI estable](https://github.com/DaveWalf/AI4Devs-finalproject/pull/5).
+De `feature/estabilizar-ci-dw` hacia `final-project-dw`, integrado el 30/10 en `22aef1a`. La prueba bUnit espera
+cada toque: con una demora plantada, la clase original cayó en 10 de 10 corridas y la corregida en 0 de 20. `ci.yml`
+y `release.yml` arrancan LocalDB antes de las pruebas, y `ci.yml` corre también en los push a `final-project-*` y
+fija sus acciones por SHA. Sin cambios de producto. CI en verde en el push y en el PR
+([41151732885](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41151732885),
+[41151877862](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41151877862)) y en la punta de
+`final-project-dw`, [41154943372](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41154943372), con
+cuatro intentos en verde sobre el mismo commit.
 
 ## 8. Uso de IA y cobertura
 
