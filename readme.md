@@ -620,9 +620,12 @@ asigna cada AT a un único responsable.
 
 ## 7. Pull requests
 
-Cada PR corresponde a un change de OpenSpec, lleva la salida de `/openspec-verify-change`
-y el CI de `windows-latest` en verde. Están apilados: la base del segundo es la rama del
-primero, así cada diff muestra sólo su change. La entrega 1 documentó el diseño, sin código,
+Los PR de changes de OpenSpec llevan la salida de `/openspec-verify-change`, y todos corren
+el CI de `windows-latest`. Los tres primeros están apilados: la base de cada uno es la rama del
+anterior, así cada diff muestra sólo lo suyo. Las ramas de las entregas 1 y 2 quedaron
+congeladas tal como se enviaron, con el ruleset «Entregas congeladas» de GitHub: esos PR siguen
+abiertos como evidencia y no se integran. La entrega final vive en `final-project-dw`, que recibe
+cada trabajo por su propio PR, como el cuarto. La entrega 1 documentó el diseño, sin código,
 en el [#1](https://github.com/DaveWalf/AI4Devs-finalproject/pull/1).
 
 **Pull Request 1:** [#2 · registrar-consumo-atomico (TK03.1)](https://github.com/DaveWalf/AI4Devs-finalproject/pull/2).
@@ -636,8 +639,29 @@ Puesto Kiosk WPF con la pantalla Razor de demostración sobre SQLite, contrato d
 `Contracts` y receptor `Sync.Api` que responde `501`; 61 pruebas
 ([CI](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/40795276016)).
 
-**Pull Request 3:** llega con la entrega final, con `atender-seleccion-y-confirmacion` o
-`recibir-lotes-idempotente`.
+**Pull Request 3:** [#4 · los seis changes de la final](https://github.com/DaveWalf/AI4Devs-finalproject/pull/4).
+De `feature/demostrar-flujo-de-punta-a-punta-dw` hacia `feature/entrega-2-DW`: `mostrar-aplicacion-del-curso`,
+`imponer-invariantes-en-codigo`, `evaluar-habilitacion-local`, `atender-seleccion-y-confirmacion` (TK02.1),
+`recibir-lotes-idempotente` (TK01.1) y `demostrar-flujo-de-punta-a-punta`, archivados en el mismo PR, con el verify
+del último completo; 358 pruebas, con el E2E. Queda abierto y bloqueado a propósito por el ruleset, como evidencia,
+porque su base es la rama de la entrega 2; `final-project-dw` se creó desde su punta. Sus checks muestran
+`build-test` en rojo sobre esa punta, `de24100`
+([41141219430](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41141219430) y
+[41141401980](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41141401980)), por dos pruebas
+intermitentes que ya estaban: una prueba bUnit de la pantalla de atención que no esperaba cada toque, y el arranque
+en frío de LocalDB en el runner. La misma rama había pasado en verde antes
+([41130320995](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41130320995)). La corrección no podía
+ir en el #4, congelado, y es el PR siguiente.
+
+**Pull Request 4:** [#5 · CI estable](https://github.com/DaveWalf/AI4Devs-finalproject/pull/5).
+De `feature/estabilizar-ci-dw` hacia `final-project-dw`, integrado el 30/10 en `22aef1a`. La prueba bUnit espera
+cada toque: con una demora plantada, la clase original cayó en 10 de 10 corridas y la corregida en 0 de 20. `ci.yml`
+y `release.yml` arrancan LocalDB antes de las pruebas, y `ci.yml` corre también en los push a `final-project-*` y
+fija sus acciones por SHA. Sin cambios de producto. CI en verde en el push y en el PR
+([41151732885](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41151732885),
+[41151877862](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41151877862)) y en la punta de
+`final-project-dw`, [41154943372](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41154943372), con
+cuatro intentos en verde sobre el mismo commit.
 
 ## 8. Uso de IA y cobertura
 
