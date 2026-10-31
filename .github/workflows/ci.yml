@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - "feature/**"
+      # La rama que se entrega recibe el trabajo por merge: su punta tiene que tener corrida propia.
+      - "final-project-*"
 
 permissions:
   contents: read
