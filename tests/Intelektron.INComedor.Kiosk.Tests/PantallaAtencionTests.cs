@@ -1,5 +1,6 @@
 using Bunit;
 using Intelektron.INComedor.Kiosk.Atencion;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -9,6 +10,10 @@ namespace Intelektron.INComedor.Kiosk.Tests;
 /// La pantalla de la atención con bUnit sobre un <see cref="ServicioAtencion"/> real y un archivo SQLite temporal; los
 /// únicos dobles son la impresora y el reloj manual (D12 de atender-seleccion-y-confirmacion).
 /// </summary>
+/// <remarks>
+/// Cada toque se espera con su versión asíncrona: el temporizador de la pantalla entra al despachador cada segundo, y
+/// un <c>Click()</c> síncrono que lo encuentra ocupado vuelve sin haber corrido el manejador (corrida 41141401980).
+/// </remarks>
 public class PantallaAtencionTests : IDisposable
 {
     private readonly ArchivoTemporal _archivo = new();
@@ -31,10 +36,10 @@ public class PantallaAtencionTests : IDisposable
     }
 
     [Fact(DisplayName = "TK02.1 · Opciones y navegación alcanzables con el teclado: cada opción, «Anterior», «Siguiente», «Cancelar» y «Confirmar» son botones sin tabindex negativo")]
-    public void Controles_de_la_seleccion_son_botones()
+    public async Task Controles_de_la_seleccion_son_botones()
     {
         var pantalla = Dibujar();
-        Ingresar(pantalla, "0001");
+        await Ingresar(pantalla, "0001");
 
         var controles = pantalla.FindAll(".opcion").Concat(new[] { "#anterior", "#siguiente", "#cancelar", "#confirmar" }.Select(pantalla.Find)).ToList();
 
@@ -50,20 +55,20 @@ public class PantallaAtencionTests : IDisposable
     }
 
     [Fact(DisplayName = "AT52 · AT01 · Código vigente abre la selección (pantalla): muestra el nombre visible y el catálogo, y el campo del código queda vacío")]
-    public void Codigo_vigente_muestra_el_nombre_y_el_catalogo()
+    public async Task Codigo_vigente_muestra_el_nombre_y_el_catalogo()
     {
         var pantalla = Dibujar();
 
-        Ingresar(pantalla, "0001");
+        await Ingresar(pantalla, "0001");
 
         Assert.Contains("Persona sintética 01", pantalla.Find("#saludo").TextContent);
         Assert.Equal(6, pantalla.FindAll(".opcion").Count);
-        pantalla.Find("#cancelar").Click();
+        await pantalla.Find("#cancelar").ClickAsync(new());
         Assert.Equal("", pantalla.Find("#codigo").GetAttribute("value") ?? "");
     }
 
     [Fact(DisplayName = "AT52 · Rechazo de un código (pantalla): cada motivo muestra su mensaje, vuelve a reposo con el campo vacío y la pantalla no contiene el código")]
-    public void Cada_rechazo_muestra_su_mensaje_sin_el_codigo()
+    public async Task Cada_rechazo_muestra_su_mensaje_sin_el_codigo()
     {
         var pantalla = Dibujar();
         var esperados = new Dictionary<string, string>
@@ -76,8 +81,8 @@ public class PantallaAtencionTests : IDisposable
 
         foreach (var (codigo, mensaje) in esperados)
         {
-            pantalla.Find("#codigo").Input(codigo);
-            pantalla.Find("#ingresar").Click();
+            await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = codigo });
+            await pantalla.Find("#ingresar").ClickAsync(new());
 
             Assert.Equal(mensaje, pantalla.Find("#aviso").TextContent.Trim());
             Assert.Equal("", pantalla.Find("#codigo").GetAttribute("value") ?? "");
@@ -92,13 +97,13 @@ public class PantallaAtencionTests : IDisposable
     public async Task Autorizacion_muestra_el_mensaje_y_listo_limpia()
     {
         var pantalla = Dibujar();
-        Ingresar(pantalla, "0001");
-        pantalla.FindAll(".opcion")[0].Click();
+        await Ingresar(pantalla, "0001");
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
 
         await pantalla.Find("#confirmar").ClickAsync(new());
 
         pantalla.WaitForAssertion(() => Assert.Equal(MensajesAtencion.Exito, pantalla.Find("#mensaje").TextContent.Trim()));
-        pantalla.Find("#listo").Click();
+        await pantalla.Find("#listo").ClickAsync(new());
         Assert.NotNull(pantalla.Find("#codigo"));
         Assert.DoesNotContain("Persona sintética 01", pantalla.Markup);
     }
@@ -108,8 +113,8 @@ public class PantallaAtencionTests : IDisposable
     {
         _impresora.Modo = ModoImpresoraDePrueba.SinPapel;
         var pantalla = Dibujar();
-        Ingresar(pantalla, "0001");
-        pantalla.FindAll(".opcion")[0].Click();
+        await Ingresar(pantalla, "0001");
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
 
         await pantalla.Find("#confirmar").ClickAsync(new());
 
@@ -117,16 +122,17 @@ public class PantallaAtencionTests : IDisposable
     }
 
     [Fact(DisplayName = "AT26 · Confirmación en curso (pantalla): el puesto se muestra ocupado y «Confirmar» queda ocupado hasta el resultado")]
-    public void Confirmacion_en_curso_muestra_ocupado()
+    public async Task Confirmacion_en_curso_muestra_ocupado()
     {
         var pantalla = Dibujar();
-        Ingresar(pantalla, "0001");
-        pantalla.FindAll(".opcion")[0].Click();
+        await Ingresar(pantalla, "0001");
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
 
         using (var conexion = new SqliteConnection($"Data Source={_archivo.Ruta};Pooling=False"))
         {
             conexion.Open();
             using var bloqueo = conexion.BeginTransaction(deferred: false);
+            // Sin esperar: la confirmación queda trabada en el bloqueo, y lo que sigue la espera con WaitForAssertion.
             pantalla.Find("#confirmar").Click();
 
             pantalla.WaitForAssertion(() => Assert.Contains("ocupado", pantalla.Find("#ocupado").TextContent, StringComparison.OrdinalIgnoreCase));
@@ -142,32 +148,32 @@ public class PantallaAtencionTests : IDisposable
     {
         _impresora.Modo = ModoImpresoraDePrueba.Incierta;
         var pantalla = Dibujar();
-        Ingresar(pantalla, "0001");
-        pantalla.FindAll(".opcion")[0].Click();
+        await Ingresar(pantalla, "0001");
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
         await pantalla.Find("#confirmar").ClickAsync(new());
         pantalla.WaitForAssertion(() => pantalla.Find("#listo"));
-        pantalla.Find("#listo").Click();
-        EntrarAsistencia(pantalla, "9001");
+        await pantalla.Find("#listo").ClickAsync(new());
+        await EntrarAsistencia(pantalla, "9001");
 
-        pantalla.Find(".reimprimir").Click();
+        await pantalla.Find(".reimprimir").ClickAsync(new());
 
         var markup = pantalla.Markup;
         Assert.Equal(MensajesAtencion.Incertidumbre, pantalla.Find("#aviso-incertidumbre").TextContent.Trim());
         Assert.Equal(4, pantalla.FindAll(".motivo").Count);
         Assert.True(markup.IndexOf("aviso-incertidumbre", StringComparison.Ordinal) < markup.IndexOf("class=\"motivo", StringComparison.Ordinal));
         _impresora.Modo = ModoImpresoraDePrueba.Disponible;
-        pantalla.FindAll(".motivo")[1].Click();
+        await pantalla.FindAll(".motivo")[1].ClickAsync(new());
         Assert.Contains("Copia 1", pantalla.Find("#mensaje-asistencia").TextContent);
         Assert.Equal("DUPLICADO · copia 1", _impresora.Recibidos[^1].Leyenda);
     }
 
     [Fact(DisplayName = "HU03-C · Persona sin permiso (pantalla): informa que no tiene permiso y sigue en reposo")]
-    public void Persona_sin_permiso_sigue_en_reposo()
+    public async Task Persona_sin_permiso_sigue_en_reposo()
     {
         var pantalla = Dibujar();
 
-        pantalla.Find("#codigo").Input("0001");
-        pantalla.Find("#asistencia").Click();
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#asistencia").ClickAsync(new());
 
         Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_MISSING"), pantalla.Find("#aviso").TextContent.Trim());
         Assert.NotNull(pantalla.Find("#codigo"));
@@ -175,13 +181,13 @@ public class PantallaAtencionTests : IDisposable
     }
 
     [Fact(DisplayName = "RB26 · Salir de la asistencia (pantalla): vuelve a reposo sin privilegios ni el nombre del operador")]
-    public void Salir_de_la_asistencia_vuelve_a_reposo()
+    public async Task Salir_de_la_asistencia_vuelve_a_reposo()
     {
         var pantalla = Dibujar();
-        EntrarAsistencia(pantalla, "9001");
+        await EntrarAsistencia(pantalla, "9001");
         Assert.Contains("Operador sintético 01", pantalla.Markup);
 
-        pantalla.Find("#salir").Click();
+        await pantalla.Find("#salir").ClickAsync(new());
 
         Assert.NotNull(pantalla.Find("#codigo"));
         Assert.DoesNotContain("Operador sintético 01", pantalla.Markup);
@@ -192,11 +198,11 @@ public class PantallaAtencionTests : IDisposable
     public async Task Permiso_que_vence_durante_la_sesion_vuelve_a_reposo()
     {
         var pantalla = Dibujar();
-        Ingresar(pantalla, "0001");
-        pantalla.FindAll(".opcion")[0].Click();
+        await Ingresar(pantalla, "0001");
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
         await pantalla.Find("#confirmar").ClickAsync(new());
         pantalla.WaitForAssertion(() => pantalla.Find("#listo"));
-        pantalla.Find("#listo").Click();
+        await pantalla.Find("#listo").ClickAsync(new());
         using (var conexion = new SqliteConnection($"Data Source={_archivo.Ruta};Pooling=False"))
         {
             conexion.Open();
@@ -205,11 +211,11 @@ public class PantallaAtencionTests : IDisposable
             Assert.Equal(1, comando.ExecuteNonQuery());
         }
 
-        EntrarAsistencia(pantalla, "9001");
+        await EntrarAsistencia(pantalla, "9001");
         _reloj.Avanzar(TimeSpan.FromSeconds(20));
 
-        pantalla.Find(".reimprimir").Click();
-        pantalla.FindAll(".motivo")[0].Click();
+        await pantalla.Find(".reimprimir").ClickAsync(new());
+        await pantalla.FindAll(".motivo")[0].ClickAsync(new());
 
         Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_EXPIRED"), pantalla.Find("#aviso").TextContent.Trim());
         Assert.NotNull(pantalla.Find("#codigo"));
@@ -246,17 +252,17 @@ public class PantallaAtencionTests : IDisposable
         return texto + string.Concat(pantalla.FindAll("input").Select(i => i.GetAttribute("value")));
     }
 
-    private static void Ingresar(IRenderedComponent<PantallaAtencion> pantalla, string codigo)
+    private static async Task Ingresar(IRenderedComponent<PantallaAtencion> pantalla, string codigo)
     {
-        pantalla.Find("#codigo").Input(codigo);
-        pantalla.Find("#ingresar").Click();
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = codigo });
+        await pantalla.Find("#ingresar").ClickAsync(new());
         Assert.NotEmpty(pantalla.FindAll(".opcion"));
     }
 
-    private static void EntrarAsistencia(IRenderedComponent<PantallaAtencion> pantalla, string codigo)
+    private static async Task EntrarAsistencia(IRenderedComponent<PantallaAtencion> pantalla, string codigo)
     {
-        pantalla.Find("#codigo").Input(codigo);
-        pantalla.Find("#asistencia").Click();
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = codigo });
+        await pantalla.Find("#asistencia").ClickAsync(new());
         Assert.NotNull(pantalla.Find("#salir"));
     }
 }
