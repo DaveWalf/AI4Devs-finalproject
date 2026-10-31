@@ -230,7 +230,8 @@ la base y los códigos sintéticos de la demostración. Siguen el escenario E2E 
 | ![Reposo con la franja «Sincronización: 2 pendientes»](docs/capturas/04-sincronizacion-pendiente.png) | ![Reposo con la franja «Sincronización: al día»](docs/capturas/05-sincronizacion-al-dia.png) |
 
 En las dos primeras la franja todavía dice «al día»: se actualiza en cada ciclo de envío, de 30 s, y la cuarta
-captura es la del primer ciclo con el receptor apagado.
+captura es la del primer ciclo con el receptor apagado. Cuenta 2 pendientes con un solo consumo: el puesto envía
+también el rechazo por cupo de la tercera.
 
 #### Consultar el diseño
 
