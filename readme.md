@@ -508,7 +508,7 @@ INComedor adopta las convenciones de datos y C# del ecosistema INWeb. El
 [mapa lógico/físico/C#](docs/nomenclatura-integracion.md) define tablas
 `tbComedor...`, columnas mnemónicas y negocio en español. Los DTO mantienen
 el contrato JSON; las claves nativas de INWeb y los UUID del módulo conservan
-su tipo y ámbito. Es diseño de implementación, sin afirmar tablas ya creadas.
+su tipo y ámbito. Es el diseño completo: el primer corte crea 28 de sus 44 entidades, entre ellas las nueve de la tabla de §3.2, en las migraciones del puesto y del receptor ([cobertura](docs/cobertura-entrega.md)).
 
 ### 3.1. Diagrama del modelo de datos
 
@@ -681,7 +681,7 @@ el CI de `windows-latest`. Los tres primeros están apilados: la base de cada un
 anterior, así cada diff muestra sólo lo suyo. Las ramas de las entregas 1 y 2 quedaron
 congeladas tal como se enviaron, con el ruleset «Entregas congeladas» de GitHub: esos PR siguen
 abiertos como evidencia y no se integran. La entrega final vive en `final-project-dw`, que recibe
-cada trabajo por su propio PR, como el cuarto. La entrega 1 documentó el diseño, sin código,
+cada trabajo por su propio PR, desde el cuarto. La entrega 1 documentó el diseño, sin código,
 en el [#1](https://github.com/DaveWalf/AI4Devs-finalproject/pull/1).
 
 **Pull Request 1:** [#2 · registrar-consumo-atomico (TK03.1)](https://github.com/DaveWalf/AI4Devs-finalproject/pull/2).
@@ -718,6 +718,21 @@ fija sus acciones por SHA. Sin cambios de producto. CI en verde en el push y en 
 [41151877862](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41151877862)) y en la punta de
 `final-project-dw`, [41154943372](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41154943372), con
 cuatro intentos en verde sobre el mismo commit.
+
+**Pull Request 5:** [#6 · README y evidencia para quien corrige](https://github.com/DaveWalf/AI4Devs-finalproject/pull/6).
+De `feature/pulir-entrega-final-dw` hacia `final-project-dw`, integrado el 31/10 en `aa1b4f7`. Sólo documentación:
+este §7 con el #4 y el #5, las [capturas del flujo principal](#capturas-del-flujo-principal), el recorrido de
+verificación, la ficha, los componentes, el despliegue, la API, la cobertura y `prompts.md`. CI en verde en el push y
+en el PR ([41233918601](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41233918601),
+[41233922630](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41233922630)) y en su integración
+([41234517271](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41234517271)).
+
+**Pull Request 6:** [#7 · cifras con fecha y capacidad en pasado](https://github.com/DaveWalf/AI4Devs-finalproject/pull/7).
+De `feature/cerrar-hallazgos-revision-dw` hacia `final-project-dw`, integrado el 01/11 en `e18b726`. Sólo
+documentación, de la revisión del #6: la cifra de pruebas con fecha en la [§2.6](#26-tests), la capacidad de la §2.4
+como la declarada al empezar y la cobertura al día. CI en verde en el push y en el PR
+([41236547866](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236547866),
+[41236552616](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236552616)).
 
 ## 8. Uso de IA y cobertura
 
