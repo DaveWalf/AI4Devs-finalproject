@@ -508,7 +508,7 @@ INComedor adopta las convenciones de datos y C# del ecosistema INWeb. El
 [mapa lógico/físico/C#](docs/nomenclatura-integracion.md) define tablas
 `tbComedor...`, columnas mnemónicas y negocio en español. Los DTO mantienen
 el contrato JSON; las claves nativas de INWeb y los UUID del módulo conservan
-su tipo y ámbito. Es diseño de implementación, sin afirmar tablas ya creadas.
+su tipo y ámbito. Es el diseño completo: el primer corte crea 28 de sus 44 entidades, entre ellas las nueve de la tabla de §3.2, en las migraciones del puesto y del receptor ([cobertura](docs/cobertura-entrega.md)).
 
 ### 3.1. Diagrama del modelo de datos
 
