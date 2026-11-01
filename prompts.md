@@ -1,6 +1,6 @@
 # Registro de trabajo con IA — INComedor
 
-Actualizado el 29/10/2026. Autor: David Walfisch. Este archivo registra cómo se usó la IA en INComedor, en las cinco partes que pide la lección 58 del curso (L58:137-145): herramientas por fase, modelos y para qué, contexto avanzado, prompts y workflows clave, y criterio humano. La IA está en el proceso de construcción y no en el producto: INComedor no llama a ningún modelo, y las decisiones de consumo son reglas deterministas de la aplicación.
+Actualizado el 31/10/2026. Autor: David Walfisch. Este archivo registra cómo se usó la IA en INComedor, en las cinco partes que pide la lección 58 del curso (L58:137-145): herramientas por fase, modelos y para qué, contexto avanzado, prompts y workflows clave, y criterio humano. La IA está en el proceso de construcción y no en el producto: INComedor no llama a ningún modelo, y las decisiones de consumo son reglas deterministas de la aplicación.
 
 Las secciones 1 a 5 son lo vigente. Los anexos A y B conservan, sin cambios, el registro de las entregas 1 y 2 a su fecha. Qué prácticas del curso se aplicaron, con su evidencia, está en [aplicacion-del-curso.md](docs/aplicacion-del-curso.md). Las citas son extractos reales del autor o resúmenes rotulados «resumen, no cita literal»; no se enlazan conversaciones privadas.
 
