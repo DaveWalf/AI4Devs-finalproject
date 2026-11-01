@@ -143,7 +143,7 @@ receptor necesita SQL Server y se revisa desde el código. El primer Release sal
 `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
 el EXE publicado y lo deja en `artifacts/`.
 
-**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.2) o uno posterior de .NET 11, que
+**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.3) o uno posterior de .NET 11, que
 `global.json` acepta con `rollForward: latestFeature` (probado con la rc.3), desde la raíz de un clon:
 
 ```powershell
@@ -237,7 +237,7 @@ también el rechazo por cupo de la tercera.
 
 Para consultar el diseño, abrir este README y sus anexos. Las instrucciones ejecutables
 están en «Cómo ver la demostración», más abajo: SDK fijado en `global.json`
-(11.0.100-rc.2), paquetes con versión exacta en `Directory.Packages.props`, comandos
+(11.0.100-rc.3), paquetes con versión exacta en `Directory.Packages.props`, comandos
 de build, test y run, y base creada y sembrada con datos sintéticos al abrir el puesto.
 
 La demostración corre en Windows 11, .NET 11, WebView2 y almacenamiento local
@@ -255,7 +255,7 @@ verificación del entorno, el provisionamiento por sincronización o paquete loc
 #### Cómo ver la demostración
 
 Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.json`
-(11.0.100-rc.2, o uno posterior de .NET 11). Los comandos se corren desde la raíz del repositorio, porque
+(11.0.100-rc.3, o uno posterior de .NET 11). Los comandos se corren desde la raíz del repositorio, porque
 `global.json` se lee del directorio actual.
 
 **Puesto: la atención.**
