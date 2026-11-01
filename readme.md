@@ -12,7 +12,7 @@ información y consolida los hechos cuando se recupera la conexión.
 
 **Estado:** entrega 2 presentada el 29/10; entrega final en curso. Hay un puesto de demostración que atiende
 y confirma sobre SQLite con la transacción de RB06, y un receptor de lotes idempotente sobre SQL Server con
-TLS mutuo, al que el puesto envía su outbox; 358 pruebas en verde, con un E2E del flujo principal (ver §2.6). El resto del documento describe
+TLS mutuo, al que el puesto envía su outbox; todas sus pruebas en verde, con un E2E del flujo principal (cifras en §2.6). El resto del documento describe
 el diseño del producto. La demostración usa datos sintéticos y adaptadores de prueba para INWeb y dispositivos.
 
 ## Índice
@@ -441,8 +441,8 @@ La integración física y el despliegue productivo requieren homologación.
 
 - [`ci.yml`](.github/workflows/ci.yml), en cada pull request y en cada push a `feature/**` y a `final-project-*`:
   en `windows-latest`, restore, auditoría de dependencias vulnerables, build con `-warnaserror`, arranque de
-  LocalDB y las 358 pruebas, con el E2E; en `ubuntu-latest`, `openspec validate --all --strict` y gitleaks sobre la
-  historia. La punta de `final-project-dw` está en verde en la
+  LocalDB y todas las pruebas, con el E2E; en `ubuntu-latest`, `openspec validate --all --strict` y gitleaks sobre
+  la historia. La integración del #5 en `final-project-dw` quedó en verde en la
   [corrida 41154943372](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41154943372).
 - [`release.yml`](.github/workflows/release.yml), sólo con un tag `v*`: un job de sólo lectura compila, publica el
   puesto autocontenido para Windows x64 con [`publicar-puesto.ps1`](.github/scripts/publicar-puesto.ps1), corre el
@@ -453,7 +453,7 @@ La integración física y el despliegue productivo requieren homologación.
 
 El receptor no se despliega: se corre desde el código, como dice «Receptor de lotes y puesto conectados».
 
-La demostración final es la de un puesto, con el primer corte de D-C24. Multipuesto, cuenta local de mantenimiento y diagnóstico quedan en la segunda ola, diseñados y no demostrados. El [plan](docs/plan-academico.md#capacidad-y-reestimación) registra 6 h semanales y viabilidad todavía no demostrada.
+La demostración final es la de un puesto, con el primer corte de D-C24. Multipuesto, cuenta local de mantenimiento y diagnóstico quedan en la segunda ola, diseñados y no demostrados. El [plan](docs/plan-academico.md#capacidad-y-reestimación) conserva la capacidad declarada al empezar, 6 h semanales, y el riesgo que se veía entonces de no llegar con el corte; el corte quedó construido y en verde ([§2.6](#26-tests)).
 
 ### 2.5. Seguridad
 
@@ -484,7 +484,7 @@ El [plan de pruebas](docs/pruebas.md) cubre dominio, SQLite real, sincronizació
 contratos, E2E y dispositivos. Casos centrales: arranque offline, cupo local,
 doble confirmación, caída tras commit, reimpresión, snapshot parcial, acuse perdido
 y ambos modos biométricos. Incluye también saltos del reloj, cálculo del día de
-negocio y vigencias. Hoy corren 358 pruebas, todas en verde, con
+negocio y vigencias. Al 31/10/2026 corren 358 pruebas, todas en verde, con
 `dotnet test INComedor.sln` desde la raíz del repositorio: 68 de Domain, 117 de
 Infrastructure.Sqlite sobre un archivo SQLite real temporal, 82 del Kiosk, 62 del receptor, 23 de Contracts y
 6 del E2E. Las del receptor, las del envío integrado y el E2E necesitan una instancia de SQL Server:
