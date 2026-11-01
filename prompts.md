@@ -1,6 +1,6 @@
 # Registro de trabajo con IA — INComedor
 
-Actualizado el 31/10/2026. Autor: David Walfisch. Este archivo registra cómo se usó la IA en INComedor, en las cinco partes que pide la lección 58 del curso (L58:137-145): herramientas por fase, modelos y para qué, contexto avanzado, prompts y workflows clave, y criterio humano. La IA está en el proceso de construcción y no en el producto: INComedor no llama a ningún modelo, y las decisiones de consumo son reglas deterministas de la aplicación.
+Actualizado el 01/11/2026. Autor: David Walfisch. Este archivo registra cómo se usó la IA en INComedor, en las cinco partes que pide la lección 58 del curso (L58:137-145): herramientas por fase, modelos y para qué, contexto avanzado, prompts y workflows clave, y criterio humano. La IA está en el proceso de construcción y no en el producto: INComedor no llama a ningún modelo, y las decisiones de consumo son reglas deterministas de la aplicación.
 
 Las secciones 1 a 5 son lo vigente. Los anexos A y B conservan, sin cambios, el registro de las entregas 1 y 2 a su fecha. Qué prácticas del curso se aplicaron, con su evidencia, está en [aplicacion-del-curso.md](docs/aplicacion-del-curso.md). Las citas son extractos reales del autor o resúmenes rotulados «resumen, no cita literal»; no se enlazan conversaciones privadas.
 
@@ -27,6 +27,12 @@ Cada modelo se eligió por lo que la etapa pide, no por el nombre.
 | 1 | Revisión independiente y evaluación simulada | Claude Code, `claude-opus-5-5[1m]` (esfuerzo `max` en la revisión independiente, según su registro) | Contrastar el planeamiento y detectar inconsistencias con otro modelo y sin heredar el contexto de quien lo escribió: esa revisión cruzada mejoró la auditoría dentro de la transacción de negocio y el detalle de historias y tickets (Anexo A). |
 | 2 | Analizar, explorar y proponer un change | Claude Code, `opus` (Opus 5.5) | Lo difícil de proponer es ponderar: qué entra en el corte, qué alternativa se descarta y por qué. Es una decisión de criterio, y el humano la revisa en el gate. |
 | 2 | Aplicar un change | Claude Code, `sonnet` (Sonnet 5.5), en una sesión nueva (`/clear`) | El apply sigue tareas que ya se decidieron y se revisaron, y cada una tiene su prueba o su comando de verificación; no hay criterio nuevo que ponderar. |
+| Final | Proponer un change | Claude Code, `opus` (Opus 5.5), en los seis changes; `evaluar-habilitacion-local` lo propuso una sesión desatendida con esfuerzo `xhigh` | Como en la entrega 2: proponer es ponderar qué entra al corte y qué alternativa se descarta, y el autor lo revisa en el gate. |
+| Final | Aplicar un change de tareas ya decididas | Claude Code, `sonnet` (Sonnet 5.5): `mostrar-aplicacion-del-curso` y `evaluar-habilitacion-local` | Cada tarea trae su verificador y no queda criterio nuevo que ponderar. |
+| Final | Aplicar un change que cruza capas o toca configuración compartida | Claude Code, `opus` (Opus 5.5): `imponer-invariantes-en-codigo` (la CI y los hooks; 17 de sus 19 tareas, en una sesión desatendida con esfuerzo `xhigh`) y `atender-seleccion-y-confirmacion` (dominio, SQLite, Razor y la ventana real, con una migración) | Con varias capas, `sonnet` puede quedarse en una; con configuración compartida, pesa el criterio. |
+| Final | Aplicar con seguridad en alcance | Claude Code, `opus` (Opus 5.5), con `opus` · `xhigh` supervisado como punto aprobado en el gate: `recibir-lotes-idempotente` (TLS mutuo y la primera entrada externa del sistema) y `demostrar-flujo-de-punta-a-punta` (un puerto de depuración y un workflow con permiso de escritura) | Donde hay seguridad en juego, la lectura más profunda y alguien mirando. |
+| Final | Verificar un change | Un agente aparte, en sólo lectura; `sonnet` en `recibir-lotes-idempotente` y `demostrar-flujo-de-punta-a-punta` | Una lectura que no hereda el contexto del apply. |
+| Final | Revisar el mapa del curso contra el repo | Claude Code, `opus` (Opus 5.5) | Releer las 81 filas contra commits, archivos y la devolución es una revisión de criterio, no una tarea mecánica. |
 
 ## 3. Contexto avanzado
 
