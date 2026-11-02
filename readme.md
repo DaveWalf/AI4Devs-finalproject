@@ -36,7 +36,7 @@ el diseño del producto. La demostración usa datos sintéticos y adaptadores de
 | Descripción breve | Kiosco autónomo de comedor, táctil, con identificación, reglas locales, ticket y sincronización. |
 | Organización | INTELEKTRON. Caso empresarial con cliente anonimizado y datos sintéticos. |
 | URL del proyecto | Aplicación de escritorio Windows con ejecución local; no corresponde una URL de aplicación en esta etapa. |
-| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`. La final va en la rama `final-project-dw`. |
+| URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`. Final: rama [`final-project-dw`](https://github.com/DaveWalf/AI4Devs-finalproject/tree/final-project-dw); `main` tiene sólo las plantillas del curso. |
 | Etapa | Entrega final en curso. Presentadas: la entrega 1, documentación técnica, y la entrega 2, scaffolds conectados (puesto, base SQLite y receptor). |
 | Modalidad del MVP | Adaptadores de prueba para servicios y dispositivos; persistencia y reglas reales en la implementación académica. |
 
@@ -139,15 +139,16 @@ Requisito: Windows 11 x64 con el WebView2 Runtime, que Windows 11 ya trae. El pa
 al lado del EXE y no trae datos: la base se crea y se siembra al abrirlo. El EXE no está firmado, así que
 SmartScreen puede pedir «Más información» y «Ejecutar de todas formas». El Release trae sólo el puesto: el
 receptor necesita SQL Server y se revisa desde el código. El primer Release sale después del SDK estable de
-.NET 11, el 10/11. Hasta entonces, el mismo zip se arma en local con
+.NET 11, esperado para el 10/11. Hasta entonces, el mismo zip se arma en local con
 `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
 el EXE publicado y lo deja en `artifacts/`.
 
-**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.2) o uno posterior de .NET 11, que
-`global.json` acepta con `rollForward: latestFeature` (probado con la rc.3), desde la raíz de un clon:
+**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.3) o uno posterior de .NET 11, que
+`global.json` acepta con `rollForward: latestFeature`, desde la raíz de un clon de la rama
+`final-project-dw` (la rama por defecto, `main`, tiene sólo las plantillas del curso):
 
 ```powershell
-git clone https://github.com/DaveWalf/AI4Devs-finalproject.git
+git clone --branch final-project-dw https://github.com/DaveWalf/AI4Devs-finalproject.git
 cd AI4Devs-finalproject
 dotnet build INComedor.sln
 dotnet test INComedor.sln
@@ -237,7 +238,7 @@ también el rechazo por cupo de la tercera.
 
 Para consultar el diseño, abrir este README y sus anexos. Las instrucciones ejecutables
 están en «Cómo ver la demostración», más abajo: SDK fijado en `global.json`
-(11.0.100-rc.2), paquetes con versión exacta en `Directory.Packages.props`, comandos
+(11.0.100-rc.3), paquetes con versión exacta en `Directory.Packages.props`, comandos
 de build, test y run, y base creada y sembrada con datos sintéticos al abrir el puesto.
 
 La demostración corre en Windows 11, .NET 11, WebView2 y almacenamiento local
@@ -255,7 +256,7 @@ verificación del entorno, el provisionamiento por sincronización o paquete loc
 #### Cómo ver la demostración
 
 Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.json`
-(11.0.100-rc.2, o uno posterior de .NET 11). Los comandos se corren desde la raíz del repositorio, porque
+(11.0.100-rc.3, o uno posterior de .NET 11). Los comandos se corren desde la raíz del repositorio, porque
 `global.json` se lee del directorio actual.
 
 **Puesto: la atención.**
@@ -449,7 +450,7 @@ La integración física y el despliegue productivo requieren homologación.
   E2E contra ese EXE y recién entonces arma el zip y su suma; otro job, el único con escritura, comprueba la suma y
   deja el Release en borrador. Se ensayó con un tag descartable, en verde en la
   [corrida 41141226298](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41141226298), y el tag y su
-  borrador se borraron. El primer Release real sale después del SDK estable de .NET 11, el 10/11.
+  borrador se borraron. El primer Release real sale después del SDK estable de .NET 11, esperado para el 10/11.
 
 El receptor no se despliega: se corre desde el código, como dice «Receptor de lotes y puesto conectados».
 
@@ -473,8 +474,8 @@ se definirán y verificarán antes de una instalación productiva.
 **Protección en reposo del primer corte (D-C24):**
 
 - El código de identificación no es un secreto: identifica, no prueba identidad. No se cifra, pero no se escribe en logs, tickets ni eventos.
-- Si el corte usa mTLS con el receptor, la clave privada del certificado del puesto va al almacén de certificados de Windows, marcada como no exportable.
-- La ACL de la base SQLite queda limitada a la cuenta que corre el puesto.
+- Certificado del puesto para el mTLS con el receptor: la demostración usa `puesto.pfx`, sintético y sin contraseña, que el receptor genera en `%LOCALAPPDATA%\INComedor\demo\certificados\` («Receptor de lotes y puesto conectados», más arriba). En una instalación, la clave privada va al almacén de certificados de Windows, marcada como no exportable; esta versión no lo implementa.
+- En una instalación, la ACL de la base SQLite se limita a la cuenta que corre el puesto; en la demostración, la base hereda los permisos de `%LOCALAPPDATA%` y esta versión no los cambia.
 - El cifrado de disco (BitLocker) es requisito de instalación, no una función del producto.
 - Los templates biométricos y el verificador de la cuenta de mantenimiento quedan fuera del corte: no existen en esta versión.
 
