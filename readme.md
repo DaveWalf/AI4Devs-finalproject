@@ -139,7 +139,7 @@ Requisito: Windows 11 x64 con el WebView2 Runtime, que Windows 11 ya trae. El pa
 al lado del EXE y no trae datos: la base se crea y se siembra al abrirlo. El EXE no está firmado, así que
 SmartScreen puede pedir «Más información» y «Ejecutar de todas formas». El Release trae sólo el puesto: el
 receptor necesita SQL Server y se revisa desde el código. El primer Release sale después del SDK estable de
-.NET 11, el 10/11. Hasta entonces, el mismo zip se arma en local con
+.NET 11, esperado para el 10/11. Hasta entonces, el mismo zip se arma en local con
 `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
 el EXE publicado y lo deja en `artifacts/`.
 
@@ -450,7 +450,7 @@ La integración física y el despliegue productivo requieren homologación.
   E2E contra ese EXE y recién entonces arma el zip y su suma; otro job, el único con escritura, comprueba la suma y
   deja el Release en borrador. Se ensayó con un tag descartable, en verde en la
   [corrida 41141226298](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41141226298), y el tag y su
-  borrador se borraron. El primer Release real sale después del SDK estable de .NET 11, el 10/11.
+  borrador se borraron. El primer Release real sale después del SDK estable de .NET 11, esperado para el 10/11.
 
 El receptor no se despliega: se corre desde el código, como dice «Receptor de lotes y puesto conectados».
 
