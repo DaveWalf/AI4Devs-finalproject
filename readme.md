@@ -474,8 +474,8 @@ se definirán y verificarán antes de una instalación productiva.
 **Protección en reposo del primer corte (D-C24):**
 
 - El código de identificación no es un secreto: identifica, no prueba identidad. No se cifra, pero no se escribe en logs, tickets ni eventos.
-- Si el corte usa mTLS con el receptor, la clave privada del certificado del puesto va al almacén de certificados de Windows, marcada como no exportable.
-- La ACL de la base SQLite queda limitada a la cuenta que corre el puesto.
+- Certificado del puesto para el mTLS con el receptor: la demostración usa `puesto.pfx`, sintético y sin contraseña, que el receptor genera en `%LOCALAPPDATA%\INComedor\demo\certificados\` («Receptor de lotes y puesto conectados», más arriba). En una instalación, la clave privada va al almacén de certificados de Windows, marcada como no exportable; esta versión no lo implementa.
+- En una instalación, la ACL de la base SQLite se limita a la cuenta que corre el puesto; en la demostración, la base hereda los permisos de `%LOCALAPPDATA%` y esta versión no los cambia.
 - El cifrado de disco (BitLocker) es requisito de instalación, no una función del producto.
 - Los templates biométricos y el verificador de la cuenta de mantenimiento quedan fuera del corte: no existen en esta versión.
 
