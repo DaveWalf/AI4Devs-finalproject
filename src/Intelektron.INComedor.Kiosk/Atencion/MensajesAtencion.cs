@@ -43,9 +43,17 @@ public static class MensajesAtencion
         _ => "No se pudo completar la operación",
     };
 
-    /// <summary>El cargo con la cultura es-AR y la escala de la opción: «ARS 1.500,00» (D6).</summary>
+    /// <summary>
+    /// El cargo con la cultura es-AR y la escala de la opción: «ARS 1.500,00» (D6). Con importe cero, vacío: la opción
+    /// sin cargo no muestra importe (D2 de presentar-atencion-tactil).
+    /// </summary>
     public static string Cargo(string moneda, int escala, long importeUnidadesMenores)
     {
+        if (importeUnidadesMenores == 0)
+        {
+            return string.Empty;
+        }
+
         var valor = importeUnidadesMenores / (decimal)Math.Pow(10, escala);
         return moneda + " " + valor.ToString("N" + escala.ToString(CultureInfo.InvariantCulture), Cultura);
     }

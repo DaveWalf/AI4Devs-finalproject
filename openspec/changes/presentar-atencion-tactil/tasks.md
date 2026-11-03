@@ -23,9 +23,38 @@ Las pruebas existentes no se tocan, salvo las tres de D1 que aprobó David en el
 
 ## 2. Distribución por cantidad y cargo cero
 
-- [ ] 2.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/DistribucionCatalogoTests.cs` (máquina: `ColumnasPagina` y `TotalPaginas` con 8, 9, 10 y 15 opciones; 15 en una página de diez y otra de cinco; `MensajesAtencion.Cargo` con importe cero devuelve vacío) y `PantallaDistribucionTests.cs` (bUnit: la lista lleva una o dos columnas según la cantidad, sin «Anterior» ni «Siguiente» hasta diez; nueve con las cinco primeras en la primera columna; la opción tocada dice «Elegida» y la marca se mueve al tocar otra; la opción sin cargo no muestra importe y «Confirmar» queda habilitado; con nueve, cada opción, «Cancelar» y «Confirmar» son botones sin `tabindex` negativo). Los catálogos de 8 y 10 se arman sobre la semilla de nueve, borrando o agregando una opción en la base temporal (D9). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~Distribucion"` que fallan antes de implementar, y pegar la salida
-- [ ] 2.2 Cambiar las tres pruebas existentes de D1, y nada más, con la aprobación de David en el gate: en `MaquinaAtencionTests.Recorre_las_15_opciones_paginadas`, `Assert.Equal(3, maquina.TotalPaginas)` a `2`; en `PantallaAtencionTests.Controles_de_la_seleccion_son_botones`, `6 + 4` a `10 + 4`; en `PantallaAtencionTests.Codigo_vigente_muestra_el_nombre_y_el_catalogo`, `Assert.Equal(6, …)` a `10`. Verificar con `git diff -- tests/` que el diff toca sólo esas tres líneas, y pegarlo
-- [ ] 2.3 Implementar D1 y D2: `TamanoPagina = 10`, `ColumnasPagina`, controles de página sólo con más de una página, la grilla por columnas con la consulta de contenedor, la marca «Elegida» y el cargo vacío para importe cero. Verificar con `dotnet test INComedor.sln` que pasan las nuevas, las tres cambiadas y el resto, y con `git diff --stat -- tests/` que sólo aparecen los archivos nuevos y los dos de 2.2
+- [x] 2.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/DistribucionCatalogoTests.cs` (máquina: `ColumnasPagina` y `TotalPaginas` con 8, 9, 10 y 15 opciones; 15 en una página de diez y otra de cinco; `MensajesAtencion.Cargo` con importe cero devuelve vacío) y `PantallaDistribucionTests.cs` (bUnit: la lista lleva una o dos columnas según la cantidad, sin «Anterior» ni «Siguiente» hasta diez; nueve con las cinco primeras en la primera columna; la opción tocada dice «Elegida» y la marca se mueve al tocar otra; la opción sin cargo no muestra importe y «Confirmar» queda habilitado; con nueve, cada opción, «Cancelar» y «Confirmar» son botones sin `tabindex` negativo). Los catálogos de 8 y 10 se arman sobre la semilla de nueve, borrando o agregando una opción en la base temporal (D9). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~Distribucion"` que fallan antes de implementar, y pegar la salida
+  ```
+  DistribucionCatalogoTests.cs(26,40): error CS1061: "MaquinaAtencion" no contiene una definición para "ColumnasPagina" …
+  DistribucionCatalogoTests.cs(40,33): error CS1061: "MaquinaAtencion" no contiene una definición para "ColumnasPagina" …
+  DistribucionCatalogoTests.cs(45,33): error CS1061: "MaquinaAtencion" no contiene una definición para "ColumnasPagina" …
+  ```
+  Los catálogos de 8 y 10 los arma `CatalogoDePrueba.cs`, también nuevo.
+- [x] 2.2 Cambiar las tres pruebas existentes de D1, y nada más, con la aprobación de David en el gate: en `MaquinaAtencionTests.Recorre_las_15_opciones_paginadas`, `Assert.Equal(3, maquina.TotalPaginas)` a `2`; en `PantallaAtencionTests.Controles_de_la_seleccion_son_botones`, `6 + 4` a `10 + 4`; en `PantallaAtencionTests.Codigo_vigente_muestra_el_nombre_y_el_catalogo`, `Assert.Equal(6, …)` a `10`. Verificar con `git diff -- tests/` que el diff toca sólo esas tres líneas, y pegarlo
+  ```diff
+  --- a/tests/Intelektron.INComedor.Kiosk.Tests/MaquinaAtencionTests.cs
+  @@ -49,7 +49,7 @@ public class MaquinaAtencionTests : IDisposable
+  -        Assert.Equal(3, maquina.TotalPaginas);
+  +        Assert.Equal(2, maquina.TotalPaginas);
+  --- a/tests/Intelektron.INComedor.Kiosk.Tests/PantallaAtencionTests.cs
+  @@ -43,7 +43,7 @@ public class PantallaAtencionTests : IDisposable
+  -        Assert.Equal(6 + 4, controles.Count);
+  +        Assert.Equal(10 + 4, controles.Count);
+  @@ -62,7 +62,7 @@ public class PantallaAtencionTests : IDisposable
+  -        Assert.Equal(6, pantalla.FindAll(".opcion").Count);
+  +        Assert.Equal(10, pantalla.FindAll(".opcion").Count);
+   2 files changed, 3 insertions(+), 3 deletions(-)
+  ```
+- [x] 2.3 Implementar D1 y D2: `TamanoPagina = 10`, `ColumnasPagina`, controles de página sólo con más de una página, la grilla por columnas con la consulta de contenedor, la marca «Elegida» y el cargo vacío para importe cero. Verificar con `dotnet test INComedor.sln` que pasan las nuevas, las tres cambiadas y el resto, y con `git diff --stat -- tests/` que sólo aparecen los archivos nuevos y los dos de 2.2
+  ```
+  Contracts.Tests correcto [+23/x0/?0] · Domain.Tests [+68/x0/?0] · Sync.Api.Tests [+62/x0/?0]
+  Kiosk.Tests [+105/x0/?0] · Infrastructure.Sqlite.Tests [+117/x0/?0] · E2E.Tests [+6/x0/?0] (1m 48s)
+    total: 381 · error: 0 · correcto: 381
+  git diff --stat -- tests/
+   tests/Intelektron.INComedor.Kiosk.Tests/MaquinaAtencionTests.cs  | 2 +-
+   tests/Intelektron.INComedor.Kiosk.Tests/PantallaAtencionTests.cs | 4 ++--
+  ?? CatalogoDePrueba.cs, DistribucionCatalogoTests.cs, PantallaDistribucionTests.cs (nuevos)
+  ```
 
 ## 3. Aspecto, cabecera y ventana
 

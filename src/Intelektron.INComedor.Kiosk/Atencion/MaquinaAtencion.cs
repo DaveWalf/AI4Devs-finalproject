@@ -30,7 +30,11 @@ public enum ResultadoToque
 /// </summary>
 public sealed class MaquinaAtencion
 {
-    public const int TamanoPagina = 6;
+    /// <summary>Hasta diez opciones van juntas; desde once, en páginas de diez (D1 de presentar-atencion-tactil).</summary>
+    public const int TamanoPagina = 10;
+
+    /// <summary>Una página de hasta ocho opciones va en una columna; de nueve o diez, en dos de hasta cinco (D1).</summary>
+    public const int MaximoUnaColumna = 8;
     public static readonly TimeSpan PlazoInactividad = TimeSpan.FromSeconds(30);
     public static readonly TimeSpan PlazoResultado = TimeSpan.FromSeconds(10);
 
@@ -62,6 +66,9 @@ public sealed class MaquinaAtencion
 
     public IReadOnlyList<OpcionCatalogo> PaginaActual =>
         _catalogo.Skip((Pagina - 1) * TamanoPagina).Take(TamanoPagina).ToList();
+
+    /// <summary>Cuántas columnas lleva la página actual: la pantalla sólo lo dibuja (D1).</summary>
+    public int ColumnasPagina => PaginaActual.Count > MaximoUnaColumna ? 2 : 1;
 
     public OpcionCatalogo? Elegida { get; private set; }
 

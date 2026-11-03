@@ -43,7 +43,7 @@ public class PantallaAtencionTests : IDisposable
 
         var controles = pantalla.FindAll(".opcion").Concat(new[] { "#anterior", "#siguiente", "#cancelar", "#confirmar" }.Select(pantalla.Find)).ToList();
 
-        Assert.Equal(6 + 4, controles.Count);
+        Assert.Equal(10 + 4, controles.Count);
         Assert.All(controles, c =>
         {
             Assert.Equal("BUTTON", c.TagName);
@@ -62,7 +62,7 @@ public class PantallaAtencionTests : IDisposable
         await Ingresar(pantalla, "0001");
 
         Assert.Contains("Persona sintética 01", pantalla.Find("#saludo").TextContent);
-        Assert.Equal(6, pantalla.FindAll(".opcion").Count);
+        Assert.Equal(10, pantalla.FindAll(".opcion").Count);
         await pantalla.Find("#cancelar").ClickAsync(new());
         Assert.Equal("", pantalla.Find("#codigo").GetAttribute("value") ?? "");
     }

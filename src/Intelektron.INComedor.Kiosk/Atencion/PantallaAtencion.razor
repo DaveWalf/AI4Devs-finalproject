@@ -6,8 +6,13 @@
 <style>
     .atencion { font-family: "Segoe UI", sans-serif; max-width: 52rem; margin: 1.5rem auto; padding: 0 1rem; }
     .atencion button { font-size: 1.25rem; padding: .75rem 1.25rem; min-width: 9rem; margin: .25rem; }
-    .atencion .grilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin: 1rem 0; }
-    .atencion .opcion { min-height: 5rem; text-align: left; }
+    .atencion .lista { container-type: inline-size; margin: 1rem 0; }
+    .atencion .opciones { display: grid; gap: .5rem; grid-template-columns: 1fr; }
+    .atencion .opciones[data-columnas="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); grid-auto-flow: column; }
+    @@container (max-width: 655px) { .atencion .opciones[data-columnas="2"] { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-flow: row; } }
+    .atencion .opcion { min-height: 56px; text-align: left; display: flex; align-items: center; gap: 1rem; margin: 0; }
+    .atencion .opcion .nombre { flex: 1; }
+    .atencion .marca-elegida { font-weight: 700; }
     .atencion .opcion.elegida { outline: 4px solid #1b5e20; }
     .atencion .cargo { display: block; font-size: 1rem; color: #333; }
     .atencion .aviso { color: #8a4b00; font-size: 1.15rem; }
@@ -51,24 +56,39 @@
             {
                 <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
             }
-            <div class="grilla">
-                @foreach (var opcion in Maquina.PaginaActual)
-                {
-                    <button type="button" class="opcion @(opcion.Id == Maquina.Elegida?.Id ? "elegida" : "")"
-                            aria-pressed="@(opcion.Id == Maquina.Elegida?.Id ? "true" : "false")"
-                            @onclick="() => Maquina.Elegir(opcion.Id)">
-                        @opcion.Nombre <span class="cargo">@opcion.Cargo</span>
-                    </button>
-                }
+            <div class="lista">
+                @* Con dos columnas, cinco filas y el flujo por columna: la primera se completa antes que la segunda (D1). *@
+                <div class="opciones" data-columnas="@Maquina.ColumnasPagina" data-filas="@(Maquina.ColumnasPagina == 2 ? "5" : Maquina.PaginaActual.Count.ToString())">
+                    @foreach (var opcion in Maquina.PaginaActual)
+                    {
+                        var elegida = opcion.Id == Maquina.Elegida?.Id;
+                        <button type="button" class="opcion @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
+                                @onclick="() => Maquina.Elegir(opcion.Id)">
+                            <span class="nombre">@opcion.Nombre</span>
+                            @if (opcion.Cargo.Length > 0)
+                            {
+                                <span class="cargo">@opcion.Cargo</span>
+                            }
+                            @if (elegida)
+                            {
+                                <span class="marca-elegida">Elegida</span>
+                            }
+                        </button>
+                    }
+                </div>
             </div>
-            <div>
-                <button id="anterior" type="button" aria-disabled="@(Maquina.PuedeRetroceder ? "false" : "true")" @onclick="Maquina.Anterior">Anterior</button>
-                <span>Página @Maquina.Pagina de @Maquina.TotalPaginas</span>
-                <button id="siguiente" type="button" aria-disabled="@(Maquina.PuedeAvanzar ? "false" : "true")" @onclick="Maquina.Siguiente">Siguiente</button>
-            </div>
-            @if (Maquina.Elegida is { } elegida)
+            @if (Maquina.TotalPaginas > 1)
             {
-                <p>Confirmar: <strong>@elegida.Nombre</strong> · Cargo informado: @elegida.Cargo</p>
+                <div class="paginas">
+                    <button id="anterior" type="button" aria-disabled="@(Maquina.PuedeRetroceder ? "false" : "true")" @onclick="Maquina.Anterior">Anterior</button>
+                    <span>Página @Maquina.Pagina de @Maquina.TotalPaginas</span>
+                    <button id="siguiente" type="button" aria-disabled="@(Maquina.PuedeAvanzar ? "false" : "true")" @onclick="Maquina.Siguiente">Siguiente</button>
+                </div>
+            }
+            @if (Maquina.Elegida is { } eleccion)
+            {
+                <p id="eleccion">Confirmar: <strong>@eleccion.Nombre</strong>@if (eleccion.Cargo.Length > 0)
+                    {<span> · Cargo informado: @eleccion.Cargo</span>}</p>
             }
             <div>
                 <button id="cancelar" type="button" disabled="@(Maquina.Estado == EstadoAtencion.Confirmando)" @onclick="Maquina.Cancelar">Cancelar</button>
