@@ -15,17 +15,20 @@ public sealed class ServicioAtencion : IDisposable
     private static readonly TimeSpan IntervaloEnvio = TimeSpan.FromSeconds(30);
 
     private readonly IReceptorLotes? _receptor;
+    private readonly bool _catalogoNueve;
     private BaseComedor? _base;
     private ColaSincronizacion? _cola;
     private SincronizadorPuesto? _sincronizador;
     private CancellationTokenSource? _ciclo;
 
-    public ServicioAtencion(string rutaBase, TimeProvider reloj, IImpresoraComprobantes impresora, IReceptorLotes? receptor = null)
+    /// <param name="catalogoNueve">Si una base nueva se siembra con el catálogo de nueve (D6 de presentar-atencion-tactil).</param>
+    public ServicioAtencion(string rutaBase, TimeProvider reloj, IImpresoraComprobantes impresora, IReceptorLotes? receptor = null, bool catalogoNueve = false)
     {
         RutaBase = rutaBase;
         Reloj = reloj;
         Impresora = impresora;
         _receptor = receptor;
+        _catalogoNueve = catalogoNueve;
     }
 
     public string RutaBase { get; }
@@ -64,7 +67,7 @@ public sealed class ServicioAtencion : IDisposable
         {
             var baseComedor = BaseComedor.Abrir(RutaBase);
             SemillaDemostracion.Aplicar(baseComedor);
-            SemillaAtencion.Aplicar(baseComedor);
+            SemillaAtencion.Aplicar(baseComedor, _catalogoNueve);
             _base = baseComedor;
             Identificacion = new IdentificacionPorCodigo(baseComedor, Reloj);
             Catalogo = new ConsultaCatalogo(baseComedor);

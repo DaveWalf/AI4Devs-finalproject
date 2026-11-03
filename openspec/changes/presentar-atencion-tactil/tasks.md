@@ -6,8 +6,20 @@ Las pruebas existentes no se tocan, salvo las tres de D1 que aprobó David en el
 
 ## 1. Catálogo sintético de nueve opciones
 
-- [ ] 1.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/CatalogoNueveTests.cs` con los escenarios del delta de `modo-demostracion`: `nueve`, ` NUEVE ` y `9` en la variable, ausente, base nueva con nueve opciones y tres en cero, base ya sembrada sin cambios, y `0001` abriendo la selección con el catálogo de nueve. Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~CatalogoNueveTests"` que fallan o no compilan antes de implementar, y pegar la salida
-- [ ] 1.2 Partir la semilla en `semilla_atencion_comun.sql`, `opciones_quince.sql` y `opciones_nueve.sql`, con las ocho opciones de la tabla de D6; sumar `VariableCatalogo` y `CatalogoNueve` a `EntornoDemostracion` y pasarlo de `MainWindow` a `ServicioAtencion` y `SemillaAtencion` (D6). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` que pasan las nuevas y todas las anteriores, incluidas `SemillaAtencionTests` sin cambios
+- [x] 1.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/CatalogoNueveTests.cs` con los escenarios del delta de `modo-demostracion`: `nueve`, ` NUEVE ` y `9` en la variable, ausente, base nueva con nueve opciones y tres en cero, base ya sembrada sin cambios, y `0001` abriendo la selección con el catálogo de nueve. Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~CatalogoNueveTests"` que fallan o no compilan antes de implementar, y pegar la salida
+  ```
+  CatalogoNueveTests.cs(30,53): error CS0117: 'EntornoDemostracion' no contiene una definición para 'VariableCatalogo'
+  CatalogoNueveTests.cs(32,64): error CS0117: 'EntornoDemostracion' no contiene una definición para 'VariableCatalogo'
+  CatalogoNueveTests.cs(33,37): error CS1061: "EntornoDemostracion" no contiene una definición para "CatalogoNueve" …
+  CatalogoNueveTests.cs(39,91): error CS1739: La mejor sobrecarga para 'ServicioAtencion' no tiene un parámetro denominado 'catalogoNueve'
+  ```
+  ` NUEVE ` con espacios cuenta como valor desconocido («sólo con `nueve` sin espacios alrededor», D6).
+- [x] 1.2 Partir la semilla en `semilla_atencion_comun.sql`, `opciones_quince.sql` y `opciones_nueve.sql`, con las ocho opciones de la tabla de D6; sumar `VariableCatalogo` y `CatalogoNueve` a `EntornoDemostracion` y pasarlo de `MainWindow` a `ServicioAtencion` y `SemillaAtencion` (D6). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` que pasan las nuevas y todas las anteriores, incluidas `SemillaAtencionTests` sin cambios
+  ```
+  Intelektron.INComedor.Kiosk.Tests.dll (net11.0|x64) correcto [+92/x0/?0] (5s 348ms)
+    error: 0
+    correcto: 92
+  ```
 
 ## 2. Distribución por cantidad y cargo cero
 

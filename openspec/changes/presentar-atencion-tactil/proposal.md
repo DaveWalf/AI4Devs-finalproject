@@ -76,4 +76,4 @@ Lo que en otras exploraciones se te preguntaba; cada punto con la opción que se
 5. **El fondo de los chefs.** Tomada: la imagen generada por Codex el 03/11 entra al repo con su prompt como procedencia (D3).
 6. **Engranaje sin clave en este change.** Tomada: abre Configuración directo, con «Estilo visual» y los modos de la impresora simulada (D5). Si este change entrara solo a la final, cualquiera podría cambiar el estilo o simular una impresora sin papel; la clave llega con el segundo change.
 7. **Catálogo de nueve con una variable.** Tomada: `INCOMEDOR_CATALOGO=nueve`, sólo al crear la base (D6). Usa la opción «Almuerzo de demostración» que la base ya trae y suma ocho con los nombres genéricos del cartel e importes inventados; tres sin cargo.
-8. **Tallas.** La de la IA es M; la tuya la das acá.
+8. **Tallas.** La de la IA es M; la de David es M.

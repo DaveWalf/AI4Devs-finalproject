@@ -5,14 +5,16 @@ namespace Intelektron.INComedor.Kiosk;
 
 /// <summary>
 /// Dónde guarda la demostración sus datos, a qué receptor envía y si abre la depuración (D1 a D4 de
-/// demostrar-flujo-de-punta-a-punta). Sale de tres variables de entorno, y sin ellas es lo de siempre:
-/// %LOCALAPPDATA%\INComedor\demo\, https://localhost:5001/ y ningún puerto. Un valor inválido se ignora.
+/// demostrar-flujo-de-punta-a-punta), y con qué catálogo siembra una base nueva (D6 de presentar-atencion-tactil). Sale
+/// de cuatro variables de entorno, y sin ellas es lo de siempre: %LOCALAPPDATA%\INComedor\demo\,
+/// https://localhost:5001/, ningún puerto y el catálogo de quince. Un valor inválido se ignora.
 /// </summary>
 public sealed record EntornoDemostracion(string Carpeta, Uri DireccionReceptor, int? PuertoCdp, string? CarpetaDatosWebView2)
 {
     public const string VariableCarpeta = "INCOMEDOR_DEMO_DIR";
     public const string VariableReceptor = "INCOMEDOR_RECEPTOR_URL";
     public const string VariablePuertoCdp = "INCOMEDOR_CDP_PORT";
+    public const string VariableCatalogo = "INCOMEDOR_CATALOGO";
 
     private static readonly Uri ReceptorPorDefecto = new("https://localhost:5001/");
 
@@ -21,6 +23,9 @@ public sealed record EntornoDemostracion(string Carpeta, Uri DireccionReceptor, 
     public string CarpetaComprobantes => Path.Combine(Carpeta, "comprobantes");
 
     public string CarpetaCertificados => Path.Combine(Carpeta, "certificados");
+
+    /// <summary>Si una base nueva se siembra con nueve opciones en lugar de quince; sólo cuenta al crear la base (D6).</summary>
+    public bool CatalogoNueve { get; init; }
 
     /// <summary>Sin carpeta elegida ni puerto, el WebView2 arranca como siempre: MainWindow no toca su inicialización.</summary>
     public bool AjustaWebView2 => CarpetaDatosWebView2 is not null || PuertoCdp is not null;
@@ -49,6 +54,12 @@ public sealed record EntornoDemostracion(string Carpeta, Uri DireccionReceptor, 
             : null;
 
         // Dos WebView2 con argumentos distintos no comparten carpeta de datos: la carpeta elegida lleva la suya (D4).
-        return new EntornoDemostracion(carpeta, receptor, puerto, elegida is null ? null : Path.Combine(elegida, "webview2"));
+        // Sólo «nueve», sin espacios alrededor y sin distinguir mayúsculas; «9» o « nueve » dejan las quince (D6).
+        var nueve = string.Equals(variable(VariableCatalogo), "nueve", StringComparison.OrdinalIgnoreCase);
+
+        return new EntornoDemostracion(carpeta, receptor, puerto, elegida is null ? null : Path.Combine(elegida, "webview2"))
+        {
+            CatalogoNueve = nueve,
+        };
     }
 }
