@@ -39,9 +39,38 @@ Las pruebas existentes no se tocan, salvo `CabeceraTests.En_reposo_un_solo_boton
 
 ## 2. Evidencia y documentos
 
-- [ ] 2.1 Rehacer `docs/capturas/06` a `10` con el procedimiento de D4, mirarlas (engranaje en el borde inferior derecho, cabecera sin control, nada cortado a 1024 × 768) y verificar con `git diff --stat -- docs/capturas` que sólo cambian esas cinco
-- [ ] 2.2 Actualizar en `readme.md` el texto que ubica el engranaje en la cabecera (línea 314 en `2ca6559`) y el texto alternativo de la captura 06; en `openspec/specs/presentacion-puesto/spec.md`, el `Purpose`, que nombra «la cabecera con los logos y el engranaje». Verificar con `git grep -n -i "engranaje de la cabecera\|cabecera con los logos y el engranaje"` sin resultados
-- [ ] 2.3 Llevar los enlaces de D5 a `openspec/changes/archive/2026-11-03-presentar-atencion-tactil/` y sumar `mover-engranaje-al-pie` a la fila de accesibilidad de `docs/aplicacion-del-curso.md`. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo) y con `git grep -n "openspec/changes/presentar-atencion-tactil/" -- "*.md"` sin resultados fuera de `openspec/changes/archive/`
+- [x] 2.1 Rehacer `docs/capturas/06` a `10` con el procedimiento de D4, mirarlas (engranaje en el borde inferior derecho, cabecera sin control, nada cortado a 1024 × 768) y verificar con `git diff --stat -- docs/capturas` que sólo cambian esas cinco
+  Capturas por CDP a 1024 × 768 (JPEG a escala CSS, calidad 85), con el puesto compilado de este commit en una carpeta nueva de `INCOMEDOR_DEMO_DIR` por corrida y sin receptor, como las anteriores: `06-reposo-tactil.jpg`, `07-seleccion-nueve.jpg`, `09-comprobante-en-pantalla.jpg` y `10-configuracion.jpg` con `INCOMEDOR_CATALOGO=nueve`; `08-quince-primera-pagina.jpg` sin la variable. Procedimiento: PowerShell 7 con WebSocket crudo sobre el CDP del puesto (`Emulation.setDeviceMetricsOverride` y `Page.captureScreenshot`), un script de la sesión que no entra al repo; cada corrida cierra el puesto con `taskkill /T` y borra su carpeta.
+  Miradas con `Read` contra D4: **06** engranaje en el borde inferior derecho, a la derecha de la marca Intelektron, cabecera con los dos logos y el título y sin ningún control; **10** Configuración abierta sobre el reposo, con el engranaje del pie atenuado detrás del velo (el pie es inerte) y el diálogo entero dentro de 768; **07** nueve opciones en 5 + 4 con «Almuerzo con gaseosa» y «Elegida», «Cancelar» y «Confirmar» visibles, y en el pie el lugar del engranaje vacío; **08** diez opciones en dos columnas, «Página 1 de 2», pie igual; **09** el comprobante completo, pie igual. En las cinco la cabecera no tiene control, nada queda cortado y el pie no cambia de alto. No hizo falta corregir nada.
+  ```
+  git diff --stat -- docs/capturas
+   docs/capturas/06-reposo-tactil.jpg           | Bin 131817 -> 128986 bytes
+   docs/capturas/07-seleccion-nueve.jpg         | Bin 136162 -> 133496 bytes
+   docs/capturas/08-quince-primera-pagina.jpg   | Bin 134608 -> 131886 bytes
+   docs/capturas/09-comprobante-en-pantalla.jpg | Bin 136282 -> 132959 bytes
+   docs/capturas/10-configuracion.jpg           | Bin 111766 -> 109571 bytes
+   5 files changed
+  ```
+- [x] 2.2 Actualizar en `readme.md` el texto que ubica el engranaje en la cabecera (línea 314 en `2ca6559`) y el texto alternativo de la captura 06; en `openspec/specs/presentacion-puesto/spec.md`, el `Purpose`, que nombra «la cabecera con los logos y el engranaje». Verificar con `git grep -n -i "engranaje de la cabecera\|cabecera con los logos y el engranaje"` sin resultados
+  `readme.md:314` pasa a «El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre Configuración…»; el texto alternativo de la captura 06 suma «en el borde inferior derecho»; el `Purpose` de `openspec/specs/presentacion-puesto/spec.md` pasa a «la cabecera con los logos, el engranaje en el pie, la ventana…».
+  ```
+  git grep -n -i "engranaje de la cabecera\|cabecera con los logos y el engranaje" -- . ':!openspec/changes/archive' ':!openspec/changes/mover-engranaje-al-pie'
+  (sin salida)  exit=1
+  ```
+  Con el literal de la tarea, sin exclusiones, el grep todavía encuentra dos líneas que no son texto vivo: el delta congelado de `openspec/changes/archive/2026-11-03-presentar-atencion-tactil/specs/presentacion-puesto/spec.md:5` y esta misma tarea, que cita la frase.
+- [x] 2.3 Llevar los enlaces de D5 a `openspec/changes/archive/2026-11-03-presentar-atencion-tactil/` y sumar `mover-engranaje-al-pie` a la fila de accesibilidad de `docs/aplicacion-del-curso.md`. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo) y con `git grep -n "openspec/changes/presentar-atencion-tactil/" -- "*.md"` sin resultados fuera de `openspec/changes/archive/`
+  Los siete enlaces de D5 (`prompts.md:123` ×3, `docs/aplicacion-del-curso.md:70`, `docs/cobertura-entrega.md:7`, `docs/plan-academico.md:83-84`) van a `openspec/changes/archive/2026-11-03-presentar-atencion-tactil/`; la fila de accesibilidad de `docs/aplicacion-del-curso.md` suma `mover-engranaje-al-pie` como nombre, sin enlace propio, para no repetir el defecto de D5 cuando este change se archive. Chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (el script, copiado tal cual a un archivo de la sesión), sobre `prompts.md`, `readme.md`, `docs/aplicacion-del-curso.md`, `docs/cobertura-entrega.md` y `docs/plan-academico.md`:
+  ```
+  antes:  ROTO prompts.md:123 ×3 · ROTO docs/aplicacion-del-curso.md:70 · ROTO docs/cobertura-entrega.md:7 · ROTO docs/plan-academico.md:83 y :84
+          enlaces rotos: 7
+  control negativo (.md con un archivo inexistente, un ancla falsa y un ancla válida):
+          ROTO …\a.md:2 noexiste.md · ANCLA …\a.md:2 a.md#falsa
+          enlaces rotos: 2
+  después: enlaces rotos: 0
+  git grep -n "openspec/changes/presentar-atencion-tactil/" -- "*.md"   (archivos con resultados)
+          openspec/changes/archive/2026-11-03-presentar-atencion-tactil/tasks.md · openspec/changes/mover-engranaje-al-pie/design.md · openspec/changes/mover-engranaje-al-pie/tasks.md
+  ```
+  Ninguno está fuera de `openspec/changes/archive/` salvo `design.md` y `tasks.md` de este change, que citan la ruta vieja para describir el defecto.
 
 ## 3. Integración
 

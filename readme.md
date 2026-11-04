@@ -311,7 +311,7 @@ dejarlos en la carpeta de datos como `marcas\empresa.png` y `marcas\concesionari
 de hasta 2 MB; con dos formatos gana el `.png`). Un archivo que no corresponde a su extensión, que pasa de 2 MB o
 un SVG con DTD se ignora y queda el de ejemplo. Se leen al abrir la atención.
 
-El engranaje de la cabecera, sólo en reposo, abre Configuración **sin clave en este corte** (la clave llega con el
+El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre Configuración **sin clave en este corte** (la clave llega con el
 segundo change): «Estilo visual», con la opacidad de las superficies (72 a 88 %, 76 % por defecto) y el
 desenfoque del fondo (0 a 12 px, 4 px por defecto) con vista previa, «Guardar» en `estilo-visual.json` de la
 carpeta de datos y «Cancelar» o Escape; y, con la impresora simulada, sus modos. Cualquiera que toque el puesto en
@@ -319,7 +319,7 @@ reposo puede cambiar el estilo o simular una impresora sin papel.
 
 | Reposo | Nueve opciones: 5 + 4 | Quince: primera página de diez |
 |---|---|---|
-| ![Reposo con el fondo de cocina, los logos de ejemplo y el engranaje](docs/capturas/06-reposo-tactil.jpg) | ![Nueve opciones en dos columnas con «Almuerzo con gaseosa» elegida](docs/capturas/07-seleccion-nueve.jpg) | ![Diez opciones en dos columnas, «Página 1 de 2»](docs/capturas/08-quince-primera-pagina.jpg) |
+| ![Reposo con el fondo de cocina, los logos de ejemplo y el engranaje en el borde inferior derecho](docs/capturas/06-reposo-tactil.jpg) | ![Nueve opciones en dos columnas con «Almuerzo con gaseosa» elegida](docs/capturas/07-seleccion-nueve.jpg) | ![Diez opciones en dos columnas, «Página 1 de 2»](docs/capturas/08-quince-primera-pagina.jpg) |
 
 | Comprobante en pantalla | Configuración |
 |---|---|

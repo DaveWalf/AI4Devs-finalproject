@@ -1,7 +1,7 @@
 # presentacion-puesto Specification
 
 ## Purpose
-Cómo se ve y se adapta el puesto en una pantalla táctil: el aspecto, la cabecera con los logos y el engranaje, la ventana y el estilo visual configurable, sin cambiar lo que la atención decide ni registra.
+Cómo se ve y se adapta el puesto en una pantalla táctil: el aspecto, la cabecera con los logos, el engranaje en el pie, la ventana y el estilo visual configurable, sin cambiar lo que la atención decide ni registra.
 
 ## Requirements
 
