@@ -5,7 +5,7 @@
 @inject IServiceProvider Proveedor
 
 @* La presentación táctil (D3 de presentar-atencion-tactil): los estilos están en wwwroot/css/puesto.css. *@
-<div class="puesto">
+<div class="puesto" style="@_vista.VariablesCss">
     <header class="cabecera">
         <img class="logo-empresa" src="@_logos.Empresa" alt="Logo de la empresa" />
         <span class="servicio">Comedor · tu pausa del día</span>
@@ -13,7 +13,7 @@
         @* El engranaje es el único control de la cabecera, y sólo en reposo (D5). *@
         @if (Maquina.Estado == EstadoAtencion.Reposo)
         {
-            <button type="button" class="engranaje" aria-label="Configuración"><span aria-hidden="true">&#9881;</span></button>
+            <button type="button" class="engranaje" aria-label="Configuración" @onclick="AbrirConfiguracion"><span aria-hidden="true">&#9881;</span></button>
         }
         else
         {
@@ -195,23 +195,29 @@
                 </section>
                 break;
         }
-
-        @if (Servicio.Impresora is ImpresoraSimulada simulada)
-        {
-            <FranjaImpresora Impresora="simulada" />
-        }
     </main>
 
     <footer class="pie">
         <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
         <img class="marca-intelektron" src="img/intelektron.svg" alt="Intelektron" />
     </footer>
+
+    @* Configuración sólo se abre en reposo, y no cambia el estado de la máquina (D5). *@
+    @if (_configuracion && Maquina.Estado == EstadoAtencion.Reposo)
+    {
+        <PanelConfiguracion Estilo="_vista" Impresora="@(Servicio.Impresora as ImpresoraSimulada)"
+                            VistaPrevia="estilo => _vista = estilo" Guardar="GuardarConfiguracion" Cancelar="CancelarConfiguracion" />
+    }
 </div>
 
 @code {
     private string _codigo = string.Empty;
     private Timer? _temporizador;
     private Logos _logos = new(LogosLocales.EmpresaDeEjemplo, LogosLocales.ConcesionariaDeEjemplo);
+    private AlmacenEstiloVisual? _almacenEstilo;
+    private EstiloVisual _guardado = EstiloVisual.PorDefecto;
+    private EstiloVisual _vista = EstiloVisual.PorDefecto;
+    private bool _configuracion;
 
     /// <summary>Cinco filas con dos columnas; con una, tantas como opciones (D1).</summary>
     private string Filas => Maquina.ColumnasPagina == 2 ? "5" : Maquina.PaginaActual.Count.ToString();
@@ -224,6 +230,10 @@
         {
             _logos = logos.Leer();
         }
+
+        // Sin almacén registrado, el estilo por defecto y «Guardar» sólo dura la sesión (D5).
+        _almacenEstilo = Proveedor.GetService(typeof(AlmacenEstiloVisual)) as AlmacenEstiloVisual;
+        _guardado = _vista = _almacenEstilo?.Leer() ?? EstiloVisual.PorDefecto;
 
         Maquina.Iniciar();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
@@ -253,6 +263,28 @@
     }
 
     private Task Confirmar() => Maquina.ConfirmarAsync();
+
+    private void AbrirConfiguracion()
+    {
+        if (Maquina.Estado == EstadoAtencion.Reposo)
+        {
+            _vista = _guardado;
+            _configuracion = true;
+        }
+    }
+
+    private void GuardarConfiguracion()
+    {
+        _almacenEstilo?.Guardar(_vista);
+        _guardado = _vista;
+        _configuracion = false;
+    }
+
+    private void CancelarConfiguracion()
+    {
+        _vista = _guardado;
+        _configuracion = false;
+    }
 
     private Task Reconfirmar() => Maquina.ReconfirmarAsync();
 

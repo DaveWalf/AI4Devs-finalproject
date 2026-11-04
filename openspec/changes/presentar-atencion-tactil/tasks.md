@@ -106,8 +106,21 @@ Las pruebas existentes no se tocan, salvo las tres de D1 que aprobó David en el
 
 ## 5. Configuración: estilo visual e impresora simulada
 
-- [ ] 5.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/AlmacenEstiloVisualTests.cs` (sin archivo: 76 y 4; guardar y volver a leer; opacidad 150 o desenfoque -3: 76 y 4; JSON roto: 76 y 4; después de guardar no queda el archivo temporal) y `PanelConfiguracionTests.cs` (bUnit: el engranaje abre un diálogo modal; los rangos van de 72 a 88 y de 0 a 12; mover un rango cambia la variable CSS al instante; «Guardar» escribe el archivo; «Cancelar» y Escape restauran y no escriben; la sección «Impresora simulada» aparece sólo con `ImpresoraSimulada`; elegir «Sin papel» y confirmar deja el comprobante pendiente; la atención no muestra los botones de modo). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~EstiloVisual|FullyQualifiedName~PanelConfiguracion"` que fallan o no compilan antes de implementar, y pegar la salida
-- [ ] 5.2 Implementar D5: `EstiloVisual`, `AlmacenEstiloVisual` con escritura por archivo temporal, `PanelConfiguracion.razor` con sus dos secciones, y la franja de impresora fuera de la atención, con los mismos `id` dentro del panel. Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` en verde y con `git diff --stat -- tests/` que no cambió ninguna prueba existente en este grupo
+- [x] 5.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/AlmacenEstiloVisualTests.cs` (sin archivo: 76 y 4; guardar y volver a leer; opacidad 150 o desenfoque -3: 76 y 4; JSON roto: 76 y 4; después de guardar no queda el archivo temporal) y `PanelConfiguracionTests.cs` (bUnit: el engranaje abre un diálogo modal; los rangos van de 72 a 88 y de 0 a 12; mover un rango cambia la variable CSS al instante; «Guardar» escribe el archivo; «Cancelar» y Escape restauran y no escriben; la sección «Impresora simulada» aparece sólo con `ImpresoraSimulada`; elegir «Sin papel» y confirmar deja el comprobante pendiente; la atención no muestra los botones de modo). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~EstiloVisual|FullyQualifiedName~PanelConfiguracion"` que fallan o no compilan antes de implementar, y pegar la salida
+  ```
+  AlmacenEstiloVisualTests.cs(31,26): error CS0246: El nombre del tipo o del espacio de nombres 'AlmacenEstiloVisual' no se encontró
+  AlmacenEstiloVisualTests.cs(33,26): error CS0246: El nombre del tipo o del espacio de nombres 'EstiloVisual' no se encontró
+  AlmacenEstiloVisualTests.cs(34,22): error CS0103: El nombre 'EstiloVisual' no existe en el contexto actual
+  ```
+  Suman bordes: los extremos 72/0 y 88/12 se aceptan, y un valor como texto (`"80"`) o un JSON cortado dan 76 y 4.
+- [x] 5.2 Implementar D5: `EstiloVisual`, `AlmacenEstiloVisual` con escritura por archivo temporal, `PanelConfiguracion.razor` con sus dos secciones, y la franja de impresora fuera de la atención, con los mismos `id` dentro del panel. Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` en verde y con `git diff --stat -- tests/` que no cambió ninguna prueba existente en este grupo
+  ```
+  Kiosk.Tests → error: 0 · correcto: 137
+  git diff --stat -- tests/ → (vacío: ninguna prueba existente cambió en este grupo)
+  ?? tests/Intelektron.INComedor.Kiosk.Tests/AlmacenEstiloVisualTests.cs
+  ?? tests/Intelektron.INComedor.Kiosk.Tests/PanelConfiguracionTests.cs
+  ```
+  El modo de la impresora aplica al tocarlo, como antes en la franja; «Cancelar» restaura sólo el estilo visual.
 
 ## 6. Comprobante en pantalla
 

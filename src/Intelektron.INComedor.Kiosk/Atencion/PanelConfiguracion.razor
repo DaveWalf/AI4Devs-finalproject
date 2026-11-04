@@ -1,0 +1,82 @@
+@using Microsoft.AspNetCore.Components.Web
+
+@*
+    Configuración en este corte (D5 de presentar-atencion-tactil): un diálogo modal que no cambia el estado de la
+    máquina, con «Estilo visual» y, sólo con la impresora simulada, sus modos. Se abre sin clave; la clave llega con el
+    segundo change. Mover un rango sólo avisa la vista previa; «Guardar» y «Cancelar» (o Escape) los decide la pantalla.
+*@
+<div class="fondo-dialogo">
+    <div class="dialogo superficie" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
+         @ref="_dialogo" @onkeydown="Tecla">
+        <h2 id="titulo-configuracion">Configuración</h2>
+
+        <section aria-labelledby="titulo-estilo">
+            <h3 id="titulo-estilo">Estilo visual</h3>
+            <div class="parametro">
+                <label for="opacidad">Opacidad de las superficies</label>
+                <output id="valor-opacidad" for="opacidad">@Estilo.Opacidad %</output>
+                <input id="opacidad" type="range" min="@EstiloVisual.OpacidadMinima" max="@EstiloVisual.OpacidadMaxima" step="1"
+                       value="@Estilo.Opacidad" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Opacidad = valor })" />
+            </div>
+            <div class="parametro">
+                <label for="desenfoque">Desenfoque del fondo</label>
+                <output id="valor-desenfoque" for="desenfoque">@Estilo.Desenfoque px</output>
+                <input id="desenfoque" type="range" min="@EstiloVisual.DesenfoqueMinimo" max="@EstiloVisual.DesenfoqueMaximo" step="1"
+                       value="@Estilo.Desenfoque" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Desenfoque = valor })" />
+            </div>
+        </section>
+
+        @if (Impresora is not null)
+        {
+            <FranjaImpresora Impresora="Impresora" />
+        }
+
+        <div class="acciones">
+            <button id="cancelar-configuracion" type="button" @onclick="Cancelar">Cancelar</button>
+            <button id="guardar-configuracion" type="button" class="principal" @onclick="Guardar">Guardar</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ElementReference _dialogo;
+
+    /// <summary>El estilo de la vista previa.</summary>
+    [Parameter, EditorRequired]
+    public EstiloVisual Estilo { get; set; } = EstiloVisual.PorDefecto;
+
+    /// <summary>La impresora simulada, o null con cualquier otra: entonces no hay sección de impresora.</summary>
+    [Parameter]
+    public ImpresoraSimulada? Impresora { get; set; }
+
+    [Parameter]
+    public EventCallback<EstiloVisual> VistaPrevia { get; set; }
+
+    [Parameter]
+    public EventCallback Guardar { get; set; }
+
+    [Parameter]
+    public EventCallback Cancelar { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool primera)
+    {
+        // El foco entra al diálogo para que Escape funcione sin tocarlo antes.
+        if (primera)
+        {
+            await _dialogo.FocusAsync();
+        }
+    }
+
+    private Task Cambiar(ChangeEventArgs e, Func<EstiloVisual, int, EstiloVisual> aplicar)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var valor))
+        {
+            return Task.CompletedTask;
+        }
+
+        var estilo = aplicar(Estilo, valor);
+        return estilo.EnRango ? VistaPrevia.InvokeAsync(estilo) : Task.CompletedTask;
+    }
+
+    private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar.InvokeAsync() : Task.CompletedTask;
+}

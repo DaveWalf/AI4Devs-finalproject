@@ -37,6 +37,7 @@ public partial class MainWindow : Window
             servicios.AddSingleton(atencion);
             servicios.AddSingleton(new MaquinaAtencion(atencion));
             servicios.AddSingleton(new LogosLocales(entorno.Carpeta));
+            servicios.AddSingleton(new AlmacenEstiloVisual(entorno.Carpeta));
         }
 
         blazorWebView.Services = servicios.BuildServiceProvider();
