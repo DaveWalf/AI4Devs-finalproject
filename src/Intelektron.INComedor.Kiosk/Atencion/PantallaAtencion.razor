@@ -123,7 +123,11 @@
                 <section class="tarjeta superficie">
                     <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
                     <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
-                    <p>Valor vigente: <strong>@Maquina.Vigente?.Nombre</strong> · <span id="cargo-vigente">@Maquina.Vigente?.Cargo</span></p>
+                    <p id="vigente">Valor vigente: <strong>@Maquina.Vigente?.Nombre</strong>@if (!string.IsNullOrEmpty(Maquina.Vigente?.Cargo))
+                    {
+                        @* El separador y el cargo, sólo si hay cargo (D2). *@
+                        <text> · </text><span id="cargo-vigente">@Maquina.Vigente.Cargo</span>
+                    }</p>
                     <div class="acciones">
                         <button id="volver" type="button" @onclick="Maquina.Volver">Volver</button>
                         <button id="reconfirmar" type="button" class="principal" @onclick="Reconfirmar">Reconfirmar</button>

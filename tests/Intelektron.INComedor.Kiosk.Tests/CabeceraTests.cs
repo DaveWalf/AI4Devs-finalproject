@@ -21,7 +21,7 @@ public class CabeceraTests : IDisposable
         _archivo.Dispose();
     }
 
-    [Fact(DisplayName = "presentacion-puesto · Un solo control en la cabecera: en reposo hay un botón, con el nombre «Configuración» y el área de toque de 56 px")]
+    [Fact(DisplayName = "presentacion-puesto · Un solo control en la cabecera: en reposo hay un botón, con el nombre «Configuración»")]
     public void En_reposo_un_solo_boton_configuracion()
     {
         var pantalla = Dibujar();

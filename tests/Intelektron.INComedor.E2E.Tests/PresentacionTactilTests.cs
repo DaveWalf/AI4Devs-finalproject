@@ -69,6 +69,7 @@ public class PresentacionTactilTests : IAsyncLifetime
             Assert.True(c.Abajo <= 768, $"{c.Texto}: termina en {c.Abajo} px");
         });
         Assert.True(ancha.AltoDocumento <= 768, $"La página mide {ancha.AltoDocumento} px de alto");
+        Assert.True(ancha.AlfaTextoOpcion == 1, $"El texto de las opciones es {ancha.ColorTextoOpcion}, con alfa {ancha.AlfaTextoOpcion}");
 
         await Area(cdp, 600, 768);
         await _escenario.CapturarAsync(pagina, "seleccion-600");
@@ -79,6 +80,7 @@ public class PresentacionTactilTests : IAsyncLifetime
         Assert.Single(angosta.Opciones.Select(o => o.X).Distinct());
         Assert.Equal(ancha.LetraOpcion, angosta.LetraOpcion);
         Assert.All(angosta.Opciones, o => Assert.True(o.Alto >= 56, $"{o.Texto}: {o.Alto} px de alto"));
+        Assert.True(angosta.AltoDocumento > 768, $"La página mide {angosta.AltoDocumento} px de alto: no se desplaza en vertical");
     }
 
     [Fact(DisplayName = "comprobante-local · Movimiento reducido: el comprobante en pantalla aparece completo, sin animación")]
@@ -155,19 +157,24 @@ public class PresentacionTactilTests : IAsyncLifetime
         await Assertions.Expect(pagina.Locator(".opcion")).ToHaveCountAsync(9);
     }
 
-    /// <summary>Las cajas de las opciones y de las dos acciones, el alto del documento y la letra de una opción.</summary>
+    /// <summary>Las cajas de las opciones y de las dos acciones, el alto del documento, y la letra y el color calculado (con su alfa) del nombre de una opción.</summary>
     private static async Task<Medida> Medir(IPage pagina)
     {
         var json = await pagina.EvaluateAsync<string>(
             """
             () => {
+              const nombre = document.querySelector('.opcion .nombre');
+              const color = getComputedStyle(nombre).color;
+              const canales = color.match(/[\d.]+/g) ?? [];
               const caja = e => { const r = e.getBoundingClientRect(); return { Texto: e.innerText.split('\n')[0], X: Math.round(r.left + scrollX), Alto: r.height, Abajo: r.bottom + scrollY }; };
               return JSON.stringify({
                 Opciones: [...document.querySelectorAll('.opcion')].map(caja),
                 Cancelar: caja(document.querySelector('#cancelar')),
                 Confirmar: caja(document.querySelector('#confirmar')),
                 AltoDocumento: document.documentElement.scrollHeight,
-                LetraOpcion: getComputedStyle(document.querySelector('.opcion .nombre')).fontSize,
+                LetraOpcion: getComputedStyle(nombre).fontSize,
+                ColorTextoOpcion: color,
+                AlfaTextoOpcion: canales.length > 3 ? Number(canales[3]) : 1,
               });
             }
             """);
@@ -194,10 +201,10 @@ public class PresentacionTactilTests : IAsyncLifetime
 
     private sealed record Caja(string Texto, double X, double Alto, double Abajo);
 
-    private sealed record Medida(Caja[] Opciones, Caja Cancelar, Caja Confirmar, double AltoDocumento, string LetraOpcion)
+    private sealed record Medida(Caja[] Opciones, Caja Cancelar, Caja Confirmar, double AltoDocumento, string LetraOpcion, string ColorTextoOpcion, double AlfaTextoOpcion)
     {
         public override string ToString() =>
             $"{Opciones.Length} opciones en {Opciones.Select(o => o.X).Distinct().Count()} columnas, alto mínimo {Opciones.Concat([Cancelar, Confirmar]).Min(c => c.Alto):F0} px, " +
-            $"última caja en {Opciones.Concat([Cancelar, Confirmar]).Max(c => c.Abajo):F0} px, documento {AltoDocumento:F0} px, letra {LetraOpcion}";
+            $"última caja en {Opciones.Concat([Cancelar, Confirmar]).Max(c => c.Abajo):F0} px, documento {AltoDocumento:F0} px, letra {LetraOpcion}, texto {ColorTextoOpcion}";
     }
 }

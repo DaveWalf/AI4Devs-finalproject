@@ -4,7 +4,7 @@
 
 ### Requirement: Catálogo sintético de nueve opciones
 
-Cuando `INCOMEDOR_CATALOGO` vale `nueve`, sin espacios alrededor ni distinción de mayúsculas, la siembra de atención SHALL crear ocho opciones en lugar de catorce, que con «Almuerzo de demostración» suman nueve, tres con importe cero, con las mismas personas, códigos y operadores sintéticos. Otro valor, o ninguno, MUST dejar las quince. Una base ya sembrada MUST NOT cambiar.
+Cuando `INCOMEDOR_CATALOGO` vale exactamente `nueve`, sin distinguir mayúsculas (con espacios alrededor es otro valor), la siembra de atención SHALL crear ocho opciones en lugar de catorce, que con «Almuerzo de demostración» suman nueve, tres con importe cero, con las mismas personas, códigos y operadores sintéticos. Otro valor, o ninguno, MUST dejar las quince. Una base ya sembrada MUST NOT cambiar.
 
 #### Scenario: Base nueva con el catálogo de nueve
 Origen: decisión de David del 03/11/2026 («empezar a hacer pruebas con el ejecutable … referencia real de cómo quedará») y AT01 (persona sintética habilitada).
