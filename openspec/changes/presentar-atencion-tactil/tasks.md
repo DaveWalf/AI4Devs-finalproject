@@ -81,8 +81,28 @@ Las pruebas existentes no se tocan, salvo las tres de D1 que aprobó David en el
 
 ## 4. Logos locales
 
-- [ ] 4.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/LogosLocalesTests.cs` con los escenarios del requirement de logos y los bordes de D4: PNG, WebP y SVG válidos devuelven una URI `data:` de su tipo; 2 MB exactos se aceptan y 2 MB más un byte no; un `.png` con texto se rechaza; un SVG con DTD se rechaza; un SVG con `script` se entrega como imagen y el marcado de la pantalla no contiene `<script`; con `.png` y `.svg` gana el `.png`; sin carpeta `marcas`, los de ejemplo. Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~LogosLocalesTests"` que fallan o no compilan antes de implementar, y pegar la salida
-- [ ] 4.2 Implementar `LogosLocales` y usarlo en la cabecera (D4). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` en verde y revisar con OWASP A03, A05 y A08 la lectura del archivo; anotar el resultado en la tarea
+- [x] 4.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/LogosLocalesTests.cs` con los escenarios del requirement de logos y los bordes de D4: PNG, WebP y SVG válidos devuelven una URI `data:` de su tipo; 2 MB exactos se aceptan y 2 MB más un byte no; un `.png` con texto se rechaza; un SVG con DTD se rechaza; un SVG con `script` se entrega como imagen y el marcado de la pantalla no contiene `<script`; con `.png` y `.svg` gana el `.png`; sin carpeta `marcas`, los de ejemplo. Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~LogosLocalesTests"` que fallan o no compilan antes de implementar, y pegar la salida
+  ```
+  LogosLocalesTests.cs(37,25): error CS0246: El nombre del tipo o del espacio de nombres 'LogosLocales' no se encontró
+  LogosLocalesTests.cs(40,22): error CS0103: El nombre 'LogosLocales' no existe en el contexto actual
+  LogosLocalesTests.cs(49,25): error CS0246: El nombre del tipo o del espacio de nombres 'LogosLocales' no se encontró
+  ```
+  Suma un caso de borde: un SVG mal formado o con otra raíz se rechaza.
+- [x] 4.2 Implementar `LogosLocales` y usarlo en la cabecera (D4). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` en verde y revisar con OWASP A03, A05 y A08 la lectura del archivo; anotar el resultado en la tarea
+  ```
+  Kiosk.Tests → error: 0 · correcto: 118
+  ```
+  Revisión OWASP de `LogosLocales`:
+  - **A03 (inyección)**: el SVG nunca entra al DOM; va como URI `data:` en el `src` de un `img`, donde el navegador no
+    ejecuta scripts. Razor codifica el atributo. Lo prueba «Un SVG con un script se muestra como imagen».
+  - **A05 (configuración insegura)**: las rutas son fijas (`marcas\empresa.*`, `marcas\concesionaria.*`) bajo la carpeta
+    de datos, que sólo acepta una ruta absoluta; nada del archivo arma una ruta. El XML se lee con
+    `DtdProcessing.Prohibit` y sin `XmlResolver`, sin entidades ni recursos externos. El tope de 2 MB se mide antes y
+    durante la lectura, con un búfer acotado.
+  - **A08 (integridad)**: no hay red ni descarga; el contenido se valida contra su extensión (firma PNG, `RIFF`/`WEBP`,
+    raíz `svg`) y un archivo inválido deja el de ejemplo, registrado en la consola de depuración, sin cortar la atención.
+  - Queda abierto, fuera de este change: quien escribe en la carpeta de datos del puesto ya controla la base; un enlace
+    simbólico en `marcas\` lee otro archivo, que sólo se muestra si pasa la misma validación.
 
 ## 5. Configuración: estilo visual e impresora simulada
 
