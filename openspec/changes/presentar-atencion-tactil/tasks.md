@@ -146,8 +146,31 @@ Las pruebas existentes no se tocan, salvo las tres de D1 que aprobó David en el
 
 ## 7. La ventana real
 
-- [ ] 7.1 Correr el puesto con `INCOMEDOR_CATALOGO=nueve` en una carpeta nueva de `INCOMEDOR_DEMO_DIR` y sin ella, y sacar por CDP capturas de 1024 × 768 del reposo, la selección de nueve, la primera página de quince y el comprobante en pantalla, guardadas en `docs/capturas/`. Mirarlas y corregir lo que no coincida con D3 (fondo a los costados, texto opaco, nada cortado). Verificar con `dotnet test INComedor.sln` completo en verde y pegar los totales por proyecto
-- [ ] 7.2 Correr `dotnet build INComedor.sln -warnaserror`, `openspec validate --all --strict` y `git diff --stat -- tests/`, y pegar las tres salidas
+- [x] 7.1 Correr el puesto con `INCOMEDOR_CATALOGO=nueve` en una carpeta nueva de `INCOMEDOR_DEMO_DIR` y sin ella, y sacar por CDP capturas de 1024 × 768 del reposo, la selección de nueve, la primera página de quince y el comprobante en pantalla, guardadas en `docs/capturas/`. Mirarlas y corregir lo que no coincida con D3 (fondo a los costados, texto opaco, nada cortado). Verificar con `dotnet test INComedor.sln` completo en verde y pegar los totales por proyecto
+  Capturas por CDP a 1024 × 768 (JPEG a escala CSS, ~130 KB cada una, como las anteriores de la carpeta), cada corrida
+  en una carpeta nueva de `INCOMEDOR_DEMO_DIR`: `06-reposo-tactil.jpg`, `07-seleccion-nueve.jpg`,
+  `09-comprobante-en-pantalla.jpg` y `10-configuracion.jpg` con `INCOMEDOR_CATALOGO=nueve`; `08-quince-primera-pagina.jpg`
+  sin la variable. Las cinco miradas contra D3: fondo con los chefs a los costados del panel, texto opaco, nada cortado,
+  nueve opciones en 5 + 4 con «Elegida» y las acciones dentro de 768; con quince, diez en dos columnas y «Página 1 de 2».
+  No hizo falta corregir nada.
+  ```
+  Domain.Tests [+68/x0/?0] · Contracts.Tests [+23/x0/?0] · Sync.Api.Tests [+62/x0/?0]
+  Infrastructure.Sqlite.Tests [+117/x0/?0] · Kiosk.Tests [+144/x0/?0] · E2E.Tests [+9/x0/?0] (1m 50s)
+    total: 423 · error: 0 · correcto: 423
+  ```
+- [x] 7.2 Correr `dotnet build INComedor.sln -warnaserror`, `openspec validate --all --strict` y `git diff --stat -- tests/`, y pegar las tres salidas
+  ```
+  dotnet build INComedor.sln -warnaserror → 0 Advertencia(s) · 0 Errores
+  openspec validate --all --strict → Totals: 9 passed, 0 failed (9 items), con ✓ change/presentar-atencion-tactil
+  git diff --stat 875f612 -- tests/ (todo el change; los archivos ya están commiteados)
+   E2E.Tests/PresentacionTactilTests.cs | 203 + · Kiosk.Tests/AlmacenEstiloVisualTests.cs | 74 +
+   Kiosk.Tests/CabeceraTests.cs | 84 + · Kiosk.Tests/CatalogoDePrueba.cs | 39 + · Kiosk.Tests/CatalogoNueveTests.cs | 92 +
+   Kiosk.Tests/ComprobanteEnPantallaTests.cs | 142 + · Kiosk.Tests/DistribucionCatalogoTests.cs | 82 +
+   Kiosk.Tests/LogosLocalesTests.cs | 161 + · Kiosk.Tests/MaquinaAtencionTests.cs | 2 +-
+   Kiosk.Tests/PanelConfiguracionTests.cs | 177 + · Kiosk.Tests/PantallaAtencionTests.cs | 4 +-
+   Kiosk.Tests/PantallaDistribucionTests.cs | 152 +
+   12 files changed, 1209 insertions(+), 3 deletions(-)
+  ```
 
 ## 8. Tallas y evidencia
 
