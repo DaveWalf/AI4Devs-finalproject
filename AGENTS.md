@@ -62,8 +62,9 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
   solución). Lanza el receptor y el puesto compilados y maneja la pantalla con Playwright por CDP; necesita WebView2
   Runtime, SQL Server y escritorio. Cada prueba usa su carpeta, sus puertos y su base, y cierra sus procesos por PID.
 - Variables del puesto, inertes sin valor (ver `.env.example`): `INCOMEDOR_DEMO_DIR` (carpeta absoluta de la
-  demostración), `INCOMEDOR_RECEPTOR_URL` (sólo `https`) e `INCOMEDOR_CDP_PORT` (1024 a 65535, sólo loopback, sólo
-  para pruebas). Paquete: `pwsh .github/scripts/publicar-puesto.ps1 -Version <v>`, que corre el E2E contra el EXE.
+  demostración), `INCOMEDOR_RECEPTOR_URL` (sólo `https`), `INCOMEDOR_CDP_PORT` (1024 a 65535, sólo loopback, sólo
+  para pruebas) e `INCOMEDOR_CATALOGO` (`nueve` siembra una base nueva con nueve opciones; sólo al crear la base).
+  Paquete: `pwsh .github/scripts/publicar-puesto.ps1 -Version <v>`, que corre el E2E contra el EXE.
 - Spec: `openspec validate --all --strict` (vigente).
 - Puesto de demostración: `dotnet run --project src/Intelektron.INComedor.Kiosk` (ventana WPF con la atención; la
   pantalla anterior, con `-- --demostracion`). La base y los comprobantes de la impresora simulada quedan en
