@@ -74,7 +74,25 @@ Las pruebas existentes no se tocan, salvo `CabeceraTests.En_reposo_un_solo_boton
 
 ## 3. Integración
 
-- [ ] 3.1 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además `git diff --diff-filter=M --stat 2ca6559 -- tests/` contra el párrafo de arriba
+- [x] 3.1 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además `git diff --diff-filter=M --stat 2ca6559 -- tests/` contra el párrafo de arriba
+  Corrida del 04/11 20:53 a 20:55, `INCOMEDOR_SQLSERVER=INMO-DW-AR`, sobre `2e9be8d`:
+  ```
+  openspec validate --all --strict      Totals: 10 passed, 0 failed (10 items)   (incluye change/mover-engranaje-al-pie)
+  dotnet build INComedor.sln -warnaserror   Compilación correcta · 0 Advertencia(s) · 0 Errores
+  dotnet test INComedor.sln
+    Domain.Tests [+68/x0/?0] · Contracts.Tests [+23/x0/?0] · Sync.Api.Tests [+62/x0/?0]
+    Infrastructure.Sqlite.Tests [+117/x0/?0] · Kiosk.Tests [+151/x0/?0] · E2E.Tests [+10/x0/?0] (1m 54s)
+    total: 431 · error: 0 · correcto: 431 · exit 0
+  ```
+  El E2E del flujo principal no falló en esta corrida: no hizo falta repetirlo (punto 6 del paso).
+  ```
+  git diff --diff-filter=M --stat 2ca6559 -- tests/
+   .../E2E.Tests/PresentacionTactilTests.cs | 66 ++++++++++++++++++++++   (66 agregadas, 0 borradas)
+   .../Kiosk.Tests/CabeceraTests.cs         |  5 +-                      (3 agregadas, 2 borradas: la prueba de D3)
+   2 files changed, 69 insertions(+), 2 deletions(-)
+  archivo nuevo: tests/Intelektron.INComedor.Kiosk.Tests/PieEngranajeTests.cs
+  ```
+  Coincide con el párrafo de arriba: sólo `CabeceraTests.cs` y el E2E con líneas agregadas.
 
 ## Workflow follow-up
 
