@@ -23,6 +23,7 @@ public static class MensajesAtencion
     public const string Incertidumbre = "El papel pudo haber salido. La copia nueva va a decir DUPLICADO";
     public const string ErrorAlmacenamiento = "Error de almacenamiento: la base no es de una versión conocida";
     public const string NoConfirmado = "No se pudo confirmar. Identificate de nuevo";
+    public const string EstiloNoGuardado = "No se pudo guardar el estilo: queda el anterior";
 
     /// <summary>El mensaje de cada motivo, distinto del de los demás.</summary>
     public static string DeMotivo(string? motivo) => motivo switch

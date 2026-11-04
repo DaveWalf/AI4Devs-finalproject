@@ -74,7 +74,28 @@ public sealed class AlmacenEstiloVisual
 
         Directory.CreateDirectory(_carpeta);
         var temporal = Ruta + ".tmp";
-        File.WriteAllText(temporal, JsonSerializer.Serialize(new { opacidad = estilo.Opacidad, desenfoque = estilo.Desenfoque }));
-        File.Move(temporal, Ruta, overwrite: true);
+        try
+        {
+            File.WriteAllText(temporal, JsonSerializer.Serialize(new { opacidad = estilo.Opacidad, desenfoque = estilo.Desenfoque }));
+            File.Move(temporal, Ruta, overwrite: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // El anterior queda intacto; no se deja el temporal. Quien llama decide cómo avisar.
+            BorrarSiSePuede(temporal);
+            throw;
+        }
+    }
+
+    private static void BorrarSiSePuede(string ruta)
+    {
+        try
+        {
+            File.Delete(ruta);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Sin escritura tampoco se puede borrar: queda un temporal que Leer nunca mira.
+        }
     }
 }

@@ -31,6 +31,11 @@
             <FranjaImpresora Impresora="Impresora" />
         }
 
+        @if (Aviso is not null)
+        {
+            <p id="aviso-configuracion" class="aviso" role="alert">@Aviso</p>
+        }
+
         <div class="acciones">
             <button id="cancelar-configuracion" type="button" @onclick="Cancelar">Cancelar</button>
             <button id="guardar-configuracion" type="button" class="principal" @onclick="Guardar">Guardar</button>
@@ -48,6 +53,10 @@
     /// <summary>La impresora simulada, o null con cualquier otra: entonces no hay sección de impresora.</summary>
     [Parameter]
     public ImpresoraSimulada? Impresora { get; set; }
+
+    /// <summary>Lo que el diálogo avisa, por ejemplo que no se pudo guardar; null sin aviso.</summary>
+    [Parameter]
+    public string? Aviso { get; set; }
 
     [Parameter]
     public EventCallback<EstiloVisual> VistaPrevia { get; set; }

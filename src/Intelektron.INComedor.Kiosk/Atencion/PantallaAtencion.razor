@@ -6,7 +6,8 @@
 
 @* La presentación táctil (D3 de presentar-atencion-tactil): los estilos están en wwwroot/css/puesto.css. *@
 <div class="puesto" style="@_vista.VariablesCss">
-    <header class="cabecera">
+    @* Con Configuración abierta, el resto de la página es inerte: el foco no sale del diálogo (D5). *@
+    <header class="cabecera" inert="@ConfiguracionAbierta">
         <img class="logo-empresa" src="@_logos.Empresa" alt="Logo de la empresa" />
         <span class="servicio">Comedor · tu pausa del día</span>
         <img class="logo-concesionaria" src="@_logos.Concesionaria" alt="Logo de la concesionaria" />
@@ -21,7 +22,7 @@
         }
     </header>
 
-    <main class="atencion">
+    <main class="atencion" inert="@ConfiguracionAbierta">
         @switch (Maquina.Estado)
         {
             case EstadoAtencion.ErrorAlmacenamiento:
@@ -222,15 +223,15 @@
         }
     </main>
 
-    <footer class="pie">
+    <footer class="pie" inert="@ConfiguracionAbierta">
         <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
         <img class="marca-intelektron" src="img/intelektron.svg" alt="Intelektron" />
     </footer>
 
     @* Configuración sólo se abre en reposo, y no cambia el estado de la máquina (D5). *@
-    @if (_configuracion && Maquina.Estado == EstadoAtencion.Reposo)
+    @if (ConfiguracionAbierta)
     {
-        <PanelConfiguracion Estilo="_vista" Impresora="@(Servicio.Impresora as ImpresoraSimulada)"
+        <PanelConfiguracion Estilo="_vista" Impresora="@(Servicio.Impresora as ImpresoraSimulada)" Aviso="@_avisoEstilo"
                             VistaPrevia="estilo => _vista = estilo" Guardar="GuardarConfiguracion" Cancelar="CancelarConfiguracion" />
     }
 </div>
@@ -243,6 +244,9 @@
     private EstiloVisual _guardado = EstiloVisual.PorDefecto;
     private EstiloVisual _vista = EstiloVisual.PorDefecto;
     private bool _configuracion;
+    private string? _avisoEstilo;
+
+    private bool ConfiguracionAbierta => _configuracion && Maquina.Estado == EstadoAtencion.Reposo;
 
     /// <summary>Cinco filas con dos columnas; con una, tantas como opciones (D1).</summary>
     private string Filas => Maquina.ColumnasPagina == 2 ? "5" : Maquina.PaginaActual.Count.ToString();
@@ -268,6 +272,7 @@
     {
         if (Maquina.RevisarInactividad())
         {
+            CancelarConfiguracionFueraDeReposo();
             StateHasChanged();
         }
     }
@@ -278,6 +283,7 @@
         var codigo = _codigo;
         _codigo = string.Empty;
         Maquina.Identificar(codigo);
+        CancelarConfiguracionFueraDeReposo();
     }
 
     private void EntrarAsistencia()
@@ -285,6 +291,19 @@
         var codigo = _codigo;
         _codigo = string.Empty;
         Maquina.EntrarAsistencia(codigo);
+        CancelarConfiguracionFueraDeReposo();
+    }
+
+    /// <summary>
+    /// Si se sale de reposo con Configuración abierta (el resto de la página es inerte, pero por si acaso), se cancela
+    /// como con «Cancelar»: la vista previa sin guardar no queda aplicada ni el panel reaparece al volver a reposo.
+    /// </summary>
+    private void CancelarConfiguracionFueraDeReposo()
+    {
+        if (_configuracion && Maquina.Estado != EstadoAtencion.Reposo)
+        {
+            CancelarConfiguracion();
+        }
     }
 
     private Task Confirmar() => Maquina.ConfirmarAsync();
@@ -294,20 +313,36 @@
         if (Maquina.Estado == EstadoAtencion.Reposo)
         {
             _vista = _guardado;
+            _avisoEstilo = null;
             _configuracion = true;
         }
     }
 
+    /// <summary>
+    /// Sin escritura en la carpeta de datos, el estilo guardado queda como estaba y el diálogo lo avisa: la atención sigue
+    /// («Estilo por defecto y validado»).
+    /// </summary>
     private void GuardarConfiguracion()
     {
-        _almacenEstilo?.Guardar(_vista);
+        try
+        {
+            _almacenEstilo?.Guardar(_vista);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            _avisoEstilo = MensajesAtencion.EstiloNoGuardado;
+            return;
+        }
+
         _guardado = _vista;
+        _avisoEstilo = null;
         _configuracion = false;
     }
 
     private void CancelarConfiguracion()
     {
         _vista = _guardado;
+        _avisoEstilo = null;
         _configuracion = false;
     }
 
