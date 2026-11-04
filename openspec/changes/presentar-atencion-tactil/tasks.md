@@ -58,8 +58,26 @@ Las pruebas existentes no se tocan, salvo las tres de D1 que aprobó David en el
 
 ## 3. Aspecto, cabecera y ventana
 
-- [ ] 3.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/CabeceraTests.cs` (bUnit: en reposo, un solo botón en la cabecera, con el nombre «Configuración»; ninguno durante la selección; los logos de ejemplo con su texto alternativo; el pie con la marca Intelektron y la franja de sincronización con su rol y su nombre) y `tests/Intelektron.INComedor.E2E.Tests/PresentacionTactilTests.cs` (ventana real con `INCOMEDOR_CATALOGO=nueve`: la ventana maximizada según `IsZoomed`; en un área de 1024 × 768 fijada por CDP, las nueve opciones, «Cancelar» y «Confirmar» dentro de 768 y de al menos 56 px de alto; en 600 de ancho, una columna con el mismo tamaño de letra; con `prefers-reduced-motion: reduce`, el comprobante sin animación) (D8, D9). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~CabeceraTests"` y `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~PresentacionTactilTests"` que fallan antes de implementar, y pegar las dos salidas
-- [ ] 3.2 Implementar D3 y D8: `wwwroot/css/puesto.css` enlazada desde `index.html`, el fondo `wwwroot/img/fondo-cocina.jpg` copiado de `C:\AI\INComedor\investigacion\estilos-graficos-20261103\cocina-sonrisas\fondo-chefs.jpg`, `wwwroot/img/PROCEDENCIA.md` con el prompt de `PROMPT-IMAGEN.txt` de esa carpeta y el origen de la marca, `intelektron.svg` copiado de `C:\AI\INComedor\investigacion\interfaces-comedor-20261101\opcion-4-20261102\marcas-20261103\intelektron.svg`, los dos logos de ejemplo dibujados para el repo, las variables CSS del estilo, el engranaje sólo en reposo, el rediseño de reposo, selección, reconfirmación, resultado y asistencia, y `WindowState="Maximized"`. Verificar con `dotnet build INComedor.sln -warnaserror`, con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` en verde y con `CabeceraTests` en verde; las partes del E2E que dependen de los grupos 5 y 6 pueden seguir en rojo hasta entonces
+- [x] 3.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/CabeceraTests.cs` (bUnit: en reposo, un solo botón en la cabecera, con el nombre «Configuración»; ninguno durante la selección; los logos de ejemplo con su texto alternativo; el pie con la marca Intelektron y la franja de sincronización con su rol y su nombre) y `tests/Intelektron.INComedor.E2E.Tests/PresentacionTactilTests.cs` (ventana real con `INCOMEDOR_CATALOGO=nueve`: la ventana maximizada según `IsZoomed`; en un área de 1024 × 768 fijada por CDP, las nueve opciones, «Cancelar» y «Confirmar» dentro de 768 y de al menos 56 px de alto; en 600 de ancho, una columna con el mismo tamaño de letra; con `prefers-reduced-motion: reduce`, el comprobante sin animación) (D8, D9). Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~CabeceraTests"` y `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~PresentacionTactilTests"` que fallan antes de implementar, y pegar las dos salidas
+  ```
+  CabeceraTests: error: 4 · correcto: 0 (los cuatro casos)
+  PresentacionTactilTests: error: 3 · correcto: 0
+    Abre maximizada: la ventana no está maximizada según IsZoomed
+    1024 × 768: 9 opciones en 2 columnas, alto mínimo 50 px, última caja en 635 px, documento 812 px, letra 20px
+    Movimiento reducido: Locator expected to be visible (.comprobante)
+  ```
+  El E2E lanza el puesto desde la prueba nueva con `INCOMEDOR_CATALOGO=nueve`, porque `EscenarioE2E.LanzarPuesto` quita
+  las variables `INCOMEDOR_*` heredadas y no se modifica; lo cierra con `DetenerAsync` del escenario.
+- [x] 3.2 Implementar D3 y D8: `wwwroot/css/puesto.css` enlazada desde `index.html`, el fondo `wwwroot/img/fondo-cocina.jpg` copiado de `C:\AI\INComedor\investigacion\estilos-graficos-20261103\cocina-sonrisas\fondo-chefs.jpg`, `wwwroot/img/PROCEDENCIA.md` con el prompt de `PROMPT-IMAGEN.txt` de esa carpeta y el origen de la marca, `intelektron.svg` copiado de `C:\AI\INComedor\investigacion\interfaces-comedor-20261101\opcion-4-20261102\marcas-20261103\intelektron.svg`, los dos logos de ejemplo dibujados para el repo, las variables CSS del estilo, el engranaje sólo en reposo, el rediseño de reposo, selección, reconfirmación, resultado y asistencia, y `WindowState="Maximized"`. Verificar con `dotnet build INComedor.sln -warnaserror`, con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` en verde y con `CabeceraTests` en verde; las partes del E2E que dependen de los grupos 5 y 6 pueden seguir en rojo hasta entonces
+  ```
+  dotnet build INComedor.sln -warnaserror → Compilación correcta.
+  Kiosk.Tests → error: 0 · correcto: 109 (incluidas las cuatro de CabeceraTests)
+  E2E.Tests → error: 1 · correcto: 8; sigue en rojo «Movimiento reducido» (comprobante en pantalla, grupo 6)
+    1024 × 768: 9 opciones en 2 columnas, alto mínimo 56 px, última caja en 580 px, documento 768 px, letra 20px
+    600: 9 opciones en 1 columnas, alto mínimo 56 px, última caja en 946 px, documento 1139 px, letra 20px
+  ```
+  Captura de 1024 × 768 mirada: chefs a los costados, texto opaco, nada cortado; la franja de la impresora todavía
+  está en la atención hasta el grupo 5.
 
 ## 4. Logos locales
 

@@ -3,181 +3,216 @@
 @inject MaquinaAtencion Maquina
 @inject ServicioAtencion Servicio
 
-<style>
-    .atencion { font-family: "Segoe UI", sans-serif; max-width: 52rem; margin: 1.5rem auto; padding: 0 1rem; }
-    .atencion button { font-size: 1.25rem; padding: .75rem 1.25rem; min-width: 9rem; margin: .25rem; }
-    .atencion .lista { container-type: inline-size; margin: 1rem 0; }
-    .atencion .opciones { display: grid; gap: .5rem; grid-template-columns: 1fr; }
-    .atencion .opciones[data-columnas="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); grid-auto-flow: column; }
-    @@container (max-width: 655px) { .atencion .opciones[data-columnas="2"] { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-flow: row; } }
-    .atencion .opcion { min-height: 56px; text-align: left; display: flex; align-items: center; gap: 1rem; margin: 0; }
-    .atencion .opcion .nombre { flex: 1; }
-    .atencion .marca-elegida { font-weight: 700; }
-    .atencion .opcion.elegida { outline: 4px solid #1b5e20; }
-    .atencion .cargo { display: block; font-size: 1rem; color: #333; }
-    .atencion .aviso { color: #8a4b00; font-size: 1.15rem; }
-    .atencion .error { color: #b00020; font-size: 1.25rem; }
-    .atencion .mensaje { font-size: 1.5rem; margin: 1.5rem 0; }
-    .atencion input { font-size: 1.5rem; padding: .5rem; width: 14rem; }
-    .atencion table { border-collapse: collapse; width: 100%; }
-    .atencion td, .atencion th { border-bottom: 1px solid #ccc; padding: .4rem; text-align: left; }
-    .atencion [aria-disabled="true"] { opacity: .5; }
-</style>
+@* La presentación táctil (D3 de presentar-atencion-tactil): los estilos están en wwwroot/css/puesto.css. *@
+<div class="puesto">
+    <header class="cabecera">
+        <img class="logo-empresa" src="img/empresa-ejemplo.svg" alt="Logo de la empresa" />
+        <span class="servicio">Comedor · tu pausa del día</span>
+        <img class="logo-concesionaria" src="img/concesionaria-ejemplo.svg" alt="Logo de la concesionaria" />
+        @* El engranaje es el único control de la cabecera, y sólo en reposo (D5). *@
+        @if (Maquina.Estado == EstadoAtencion.Reposo)
+        {
+            <button type="button" class="engranaje" aria-label="Configuración"><span aria-hidden="true">&#9881;</span></button>
+        }
+        else
+        {
+            <span class="lugar-engranaje"></span>
+        }
+    </header>
 
-<main class="atencion">
-    <h1>INComedor</h1>
-
-    @switch (Maquina.Estado)
-    {
-        case EstadoAtencion.ErrorAlmacenamiento:
-            <p id="error-almacenamiento" class="error" role="alert">@MensajesAtencion.ErrorAlmacenamiento</p>
-            break;
-
-        case EstadoAtencion.Reposo:
-            <h2>Identificate para comenzar</h2>
-            <p>Identificación simulada por código (demostración)</p>
-            <input id="codigo" type="text" inputmode="numeric" autocomplete="off" aria-label="Código"
-                   value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" />
-            <div>
-                <button id="ingresar" type="button" @onclick="Ingresar">Ingresar</button>
-                <button id="asistencia" type="button" @onclick="EntrarAsistencia">Asistencia</button>
-            </div>
-            @if (Maquina.Aviso is not null)
-            {
-                <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
-            }
-            break;
-
-        case EstadoAtencion.Seleccion:
-        case EstadoAtencion.Confirmando:
-            <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
-            <h2>Elegí tu servicio de hoy</h2>
-            @if (Maquina.Aviso is not null && Maquina.Estado == EstadoAtencion.Seleccion)
-            {
-                <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
-            }
-            <div class="lista">
-                @* Con dos columnas, cinco filas y el flujo por columna: la primera se completa antes que la segunda (D1). *@
-                <div class="opciones" data-columnas="@Maquina.ColumnasPagina" data-filas="@(Maquina.ColumnasPagina == 2 ? "5" : Maquina.PaginaActual.Count.ToString())">
-                    @foreach (var opcion in Maquina.PaginaActual)
-                    {
-                        var elegida = opcion.Id == Maquina.Elegida?.Id;
-                        <button type="button" class="opcion @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
-                                @onclick="() => Maquina.Elegir(opcion.Id)">
-                            <span class="nombre">@opcion.Nombre</span>
-                            @if (opcion.Cargo.Length > 0)
-                            {
-                                <span class="cargo">@opcion.Cargo</span>
-                            }
-                            @if (elegida)
-                            {
-                                <span class="marca-elegida">Elegida</span>
-                            }
-                        </button>
-                    }
-                </div>
-            </div>
-            @if (Maquina.TotalPaginas > 1)
-            {
-                <div class="paginas">
-                    <button id="anterior" type="button" aria-disabled="@(Maquina.PuedeRetroceder ? "false" : "true")" @onclick="Maquina.Anterior">Anterior</button>
-                    <span>Página @Maquina.Pagina de @Maquina.TotalPaginas</span>
-                    <button id="siguiente" type="button" aria-disabled="@(Maquina.PuedeAvanzar ? "false" : "true")" @onclick="Maquina.Siguiente">Siguiente</button>
-                </div>
-            }
-            @if (Maquina.Elegida is { } eleccion)
-            {
-                <p id="eleccion">Confirmar: <strong>@eleccion.Nombre</strong>@if (eleccion.Cargo.Length > 0)
-                    {<span> · Cargo informado: @eleccion.Cargo</span>}</p>
-            }
-            <div>
-                <button id="cancelar" type="button" disabled="@(Maquina.Estado == EstadoAtencion.Confirmando)" @onclick="Maquina.Cancelar">Cancelar</button>
-                @if (Maquina.Estado == EstadoAtencion.Confirmando)
-                {
-                    <button id="confirmar" type="button" disabled aria-busy="true">Confirmando…</button>
-                    <p id="ocupado" role="status">Confirmando: el puesto está ocupado</p>
-                }
-                else
-                {
-                    <button id="confirmar" type="button" @onclick="Confirmar">Confirmar</button>
-                }
-            </div>
-            break;
-
-        case EstadoAtencion.Reconfirmacion:
-            <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
-            <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
-            <p>Valor vigente: <strong>@Maquina.Vigente?.Nombre</strong> · <span id="cargo-vigente">@Maquina.Vigente?.Cargo</span></p>
-            <button id="volver" type="button" @onclick="Maquina.Volver">Volver</button>
-            <button id="reconfirmar" type="button" @onclick="Reconfirmar">Reconfirmar</button>
-            break;
-
-        case EstadoAtencion.Resultado:
-            <p id="mensaje" class="mensaje" role="status">@Maquina.Mensaje</p>
-            <button id="listo" type="button" @onclick="Maquina.Listo">Listo</button>
-            break;
-
-        case EstadoAtencion.Asistencia:
-            <h2>Asistencia</h2>
-            <p>Operador: <strong>@Maquina.NombreVisible</strong> · Identificación simulada por código (demostración)</p>
-            @if (Maquina.MensajeAsistencia is not null)
-            {
-                <p id="mensaje-asistencia" role="status">@Maquina.MensajeAsistencia</p>
-            }
-            @if (Maquina.ReimpresionPedida is { } pedida)
-            {
-                <section aria-label="Motivo de la reimpresión">
-                    @if (Maquina.AvisoIncertidumbre)
-                    {
-                        <p id="aviso-incertidumbre" class="aviso" role="alert">@MensajesAtencion.Incertidumbre</p>
-                    }
-                    <p>Reimprimir el comprobante de las @Hora(pedida.CreadoUtc) · @pedida.Opcion. Elegí el motivo:</p>
-                    @foreach (var motivo in Enum.GetValues<MotivoReimpresion>())
-                    {
-                        <button type="button" class="motivo" @onclick="() => Maquina.Reimprimir(motivo)">@MensajesAtencion.Motivo(motivo)</button>
-                    }
-                    <button id="cancelar-reimpresion" type="button" @onclick="Maquina.CancelarReimpresion">Cancelar</button>
+    <main class="atencion">
+        @switch (Maquina.Estado)
+        {
+            case EstadoAtencion.ErrorAlmacenamiento:
+                <section class="tarjeta superficie">
+                    <p id="error-almacenamiento" class="error" role="alert">@MensajesAtencion.ErrorAlmacenamiento</p>
                 </section>
-            }
-            else
-            {
-                <table>
-                    <thead><tr><th>Hora</th><th>Opción</th><th>Persona</th><th>Estado</th><th></th></tr></thead>
-                    <tbody>
-                        @foreach (var comprobante in Maquina.Comprobantes)
+                break;
+
+            case EstadoAtencion.Reposo:
+                <section class="tarjeta superficie">
+                    <h2>Identificate para comenzar</h2>
+                    <p>Identificación simulada por código (demostración)</p>
+                    <input id="codigo" type="text" inputmode="numeric" autocomplete="off" aria-label="Código"
+                           value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" />
+                    <div class="acciones">
+                        <button id="ingresar" type="button" class="principal" @onclick="Ingresar">Ingresar</button>
+                        <button id="asistencia" type="button" @onclick="EntrarAsistencia">Asistencia</button>
+                    </div>
+                    @if (Maquina.Aviso is not null)
+                    {
+                        <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
+                    }
+                </section>
+                break;
+
+            case EstadoAtencion.Seleccion:
+            case EstadoAtencion.Confirmando:
+                <div class="titulo superficie">
+                    <h2>Elegí tu servicio de hoy</h2>
+                    <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
+                </div>
+                @if (Maquina.Aviso is not null && Maquina.Estado == EstadoAtencion.Seleccion)
+                {
+                    <p id="aviso" class="aviso titulo superficie" role="status">@Maquina.Aviso</p>
+                }
+                <div class="lista">
+                    @* Con dos columnas, cinco filas y el flujo por columna: la primera se completa antes que la segunda (D1). *@
+                    <div class="opciones" data-columnas="@Maquina.ColumnasPagina" data-filas="@Filas">
+                        @foreach (var opcion in Maquina.PaginaActual)
                         {
-                            <tr>
-                                <td>@Hora(comprobante.CreadoUtc)</td>
-                                <td>@comprobante.Opcion</td>
-                                <td>@comprobante.NombreVisible</td>
-                                <td>@Estado(comprobante.EstadoUltimoTrabajo)</td>
-                                <td>
-                                    @if (comprobante.EstadoOriginal == EstadoTrabajoImpresion.Failed)
-                                    {
-                                        <button type="button" class="recuperar" @onclick="() => Maquina.Recuperar(comprobante.TrabajoOriginalId)">Recuperar</button>
-                                    }
-                                    <button type="button" class="reimprimir" @onclick="() => Maquina.PedirReimpresion(comprobante.TicketId)">Reimprimir</button>
-                                </td>
-                            </tr>
+                            var elegida = opcion.Id == Maquina.Elegida?.Id;
+                            <button type="button" class="opcion @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
+                                    @onclick="() => Maquina.Elegir(opcion.Id)">
+                                <span class="nombre">@opcion.Nombre</span>
+                                @if (elegida)
+                                {
+                                    <span class="marca-elegida">Elegida</span>
+                                }
+                                @if (opcion.Cargo.Length > 0)
+                                {
+                                    <span class="cargo">@opcion.Cargo</span>
+                                }
+                            </button>
                         }
-                    </tbody>
-                </table>
-            }
-            <button id="salir" type="button" @onclick="Maquina.SalirAsistencia">Salir</button>
-            break;
-    }
+                    </div>
+                </div>
+                @if (Maquina.TotalPaginas > 1)
+                {
+                    <div class="paginas">
+                        <button id="anterior" type="button" aria-disabled="@(Maquina.PuedeRetroceder ? "false" : "true")" @onclick="Maquina.Anterior">Anterior</button>
+                        <span class="numero-pagina superficie">Página @Maquina.Pagina de @Maquina.TotalPaginas</span>
+                        <button id="siguiente" type="button" aria-disabled="@(Maquina.PuedeAvanzar ? "false" : "true")" @onclick="Maquina.Siguiente">Siguiente</button>
+                    </div>
+                }
+                <div class="barra superficie">
+                    @if (Maquina.Elegida is { } eleccion)
+                    {
+                        <p id="eleccion">
+                            Confirmar: <strong>@eleccion.Nombre</strong>
+                            @if (eleccion.Cargo.Length > 0)
+                            {
+                                <span> · Cargo informado: @eleccion.Cargo</span>
+                            }
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="indicacion">Tocá tu opción y confirmá la elección</p>
+                    }
+                    <div class="acciones">
+                        <button id="cancelar" type="button" disabled="@(Maquina.Estado == EstadoAtencion.Confirmando)" @onclick="Maquina.Cancelar">Cancelar</button>
+                        @if (Maquina.Estado == EstadoAtencion.Confirmando)
+                        {
+                            <button id="confirmar" type="button" class="principal" disabled aria-busy="true">Confirmando…</button>
+                        }
+                        else
+                        {
+                            <button id="confirmar" type="button" class="principal" @onclick="Confirmar">Confirmar</button>
+                        }
+                    </div>
+                    @if (Maquina.Estado == EstadoAtencion.Confirmando)
+                    {
+                        <p id="ocupado" role="status">Confirmando: el puesto está ocupado</p>
+                    }
+                </div>
+                break;
 
-    <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
+            case EstadoAtencion.Reconfirmacion:
+                <section class="tarjeta superficie">
+                    <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
+                    <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
+                    <p>Valor vigente: <strong>@Maquina.Vigente?.Nombre</strong> · <span id="cargo-vigente">@Maquina.Vigente?.Cargo</span></p>
+                    <div class="acciones">
+                        <button id="volver" type="button" @onclick="Maquina.Volver">Volver</button>
+                        <button id="reconfirmar" type="button" class="principal" @onclick="Reconfirmar">Reconfirmar</button>
+                    </div>
+                </section>
+                break;
 
-    @if (Servicio.Impresora is ImpresoraSimulada simulada)
-    {
-        <FranjaImpresora Impresora="simulada" />
-    }
-</main>
+            case EstadoAtencion.Resultado:
+                <section class="tarjeta superficie">
+                    <p id="mensaje" class="mensaje" role="status">@Maquina.Mensaje</p>
+                    <div class="acciones">
+                        <button id="listo" type="button" class="principal" @onclick="Maquina.Listo">Listo</button>
+                    </div>
+                </section>
+                break;
+
+            case EstadoAtencion.Asistencia:
+                <section class="tarjeta ancha superficie">
+                    <h2>Asistencia</h2>
+                    <p>Operador: <strong>@Maquina.NombreVisible</strong> · Identificación simulada por código (demostración)</p>
+                    @if (Maquina.MensajeAsistencia is not null)
+                    {
+                        <p id="mensaje-asistencia" role="status">@Maquina.MensajeAsistencia</p>
+                    }
+                    @if (Maquina.ReimpresionPedida is { } pedida)
+                    {
+                        <section aria-label="Motivo de la reimpresión">
+                            @if (Maquina.AvisoIncertidumbre)
+                            {
+                                <p id="aviso-incertidumbre" class="aviso" role="alert">@MensajesAtencion.Incertidumbre</p>
+                            }
+                            <p>Reimprimir el comprobante de las @Hora(pedida.CreadoUtc) · @pedida.Opcion. Elegí el motivo:</p>
+                            <div class="acciones">
+                                @foreach (var motivo in Enum.GetValues<MotivoReimpresion>())
+                                {
+                                    <button type="button" class="motivo" @onclick="() => Maquina.Reimprimir(motivo)">@MensajesAtencion.Motivo(motivo)</button>
+                                }
+                                <button id="cancelar-reimpresion" type="button" @onclick="Maquina.CancelarReimpresion">Cancelar</button>
+                            </div>
+                        </section>
+                    }
+                    else
+                    {
+                        <table>
+                            <thead><tr><th>Hora</th><th>Opción</th><th>Persona</th><th>Estado</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var comprobante in Maquina.Comprobantes)
+                                {
+                                    <tr>
+                                        <td>@Hora(comprobante.CreadoUtc)</td>
+                                        <td>@comprobante.Opcion</td>
+                                        <td>@comprobante.NombreVisible</td>
+                                        <td>@Estado(comprobante.EstadoUltimoTrabajo)</td>
+                                        <td>
+                                            @if (comprobante.EstadoOriginal == EstadoTrabajoImpresion.Failed)
+                                            {
+                                                <button type="button" class="recuperar" @onclick="() => Maquina.Recuperar(comprobante.TrabajoOriginalId)">Recuperar</button>
+                                            }
+                                            <button type="button" class="reimprimir" @onclick="() => Maquina.PedirReimpresion(comprobante.TicketId)">Reimprimir</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    <div class="acciones">
+                        <button id="salir" type="button" @onclick="Maquina.SalirAsistencia">Salir</button>
+                    </div>
+                </section>
+                break;
+        }
+
+        @if (Servicio.Impresora is ImpresoraSimulada simulada)
+        {
+            <FranjaImpresora Impresora="simulada" />
+        }
+    </main>
+
+    <footer class="pie">
+        <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
+        <img class="marca-intelektron" src="img/intelektron.svg" alt="Intelektron" />
+    </footer>
+</div>
 
 @code {
     private string _codigo = string.Empty;
     private Timer? _temporizador;
+
+    /// <summary>Cinco filas con dos columnas; con una, tantas como opciones (D1).</summary>
+    private string Filas => Maquina.ColumnasPagina == 2 ? "5" : Maquina.PaginaActual.Count.ToString();
 
     protected override void OnInitialized()
     {

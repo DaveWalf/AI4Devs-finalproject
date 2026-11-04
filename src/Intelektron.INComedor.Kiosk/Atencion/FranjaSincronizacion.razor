@@ -1,10 +1,6 @@
 @using Intelektron.INComedor.Infrastructure.Sqlite
 
 <section class="franja-sincronizacion" role="status" aria-live="polite" aria-label="Sincronización con el receptor">
-    <style>
-        .franja-sincronizacion { margin-top: 1rem; padding: .5rem; border-top: 2px solid #888; font-size: 1rem; }
-        .franja-sincronizacion .mensaje-sincronizacion { margin-left: .5rem; margin-right: 1rem; }
-    </style>
     <strong>Sincronización:</strong>
     @foreach (var mensaje in Mensajes(Estado))
     {
