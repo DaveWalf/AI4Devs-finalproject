@@ -11,15 +11,6 @@
         <img class="logo-empresa" src="@_logos.Empresa" alt="Logo de la empresa" />
         <span class="servicio">Comedor · tu pausa del día</span>
         <img class="logo-concesionaria" src="@_logos.Concesionaria" alt="Logo de la concesionaria" />
-        @* El engranaje es el único control de la cabecera, y sólo en reposo (D5). *@
-        @if (Maquina.Estado == EstadoAtencion.Reposo)
-        {
-            <button type="button" class="engranaje" aria-label="Configuración" @onclick="AbrirConfiguracion"><span aria-hidden="true">&#9881;</span></button>
-        }
-        else
-        {
-            <span class="lugar-engranaje"></span>
-        }
     </header>
 
     <main class="atencion" inert="@ConfiguracionAbierta">
@@ -225,7 +216,18 @@
 
     <footer class="pie" inert="@ConfiguracionAbierta">
         <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
-        <img class="marca-intelektron" src="img/intelektron.svg" alt="Intelektron" />
+        <div class="pie-derecha">
+            <img class="marca-intelektron" src="img/intelektron.svg" alt="Intelektron" />
+            @* El engranaje va en el borde, al lado de la marca, y sólo en reposo; durante la atención su lugar queda reservado (D1, D2 y D5). *@
+            @if (Maquina.Estado == EstadoAtencion.Reposo)
+            {
+                <button type="button" class="engranaje" aria-label="Configuración" @onclick="AbrirConfiguracion"><span aria-hidden="true">&#9881;</span></button>
+            }
+            else
+            {
+                <span class="lugar-engranaje"></span>
+            }
+        </div>
     </footer>
 
     @* Configuración sólo se abre en reposo, y no cambia el estado de la máquina (D5). *@

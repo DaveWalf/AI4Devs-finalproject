@@ -4,7 +4,7 @@
  * son claras con la opacidad y el desenfoque de Estilo visual (--opacidad-superficie y --desenfoque-fondo, que fija el
  * componente raíz); el texto es oscuro y opaco. Las acciones y las filas no bajan de 56 px, ni el texto de las opciones
  * de 20 px. Para 1024 × 768: cabecera de 64, título de una línea, cinco filas de 64 con 8 de separación, barra de
- * elección de 88 y pie de 28, unos 620 px en total.
+ * elección de 88 y pie de 56 (el engranaje de 56 × 56 vive en el pie, D1 de mover-engranaje-al-pie), unos 648 px en total.
  */
 
 :root {
@@ -48,7 +48,7 @@ body:has(.puesto) {
     border-radius: 14px;
 }
 
-/* Cabecera: logo de la empresa, nombre del servicio, logo de la concesionaria y el engranaje. */
+/* Cabecera: logo de la empresa, nombre del servicio y logo de la concesionaria, sin controles. */
 .cabecera {
     height: 64px;
     flex: none;
@@ -63,7 +63,6 @@ body:has(.puesto) {
 
 .cabecera img { height: 44px; width: auto; max-width: 180px; object-fit: contain; }
 .cabecera .servicio { flex: 1; text-align: center; font-family: Georgia, "Times New Roman", serif; font-size: 22px; }
-.cabecera .lugar-engranaje { width: 56px; height: 56px; flex: none; }
 
 .engranaje {
     width: 56px;
@@ -210,15 +209,15 @@ body:has(.puesto) {
 .atencion td, .atencion th { border-bottom: 1px solid var(--borde); padding: 6px; text-align: left; }
 .atencion td button { min-width: 0; padding: 0 14px; font-size: 17px; margin: 2px; }
 
-/* Pie: la sincronización y la marca Intelektron, discreta. */
+/* Pie de 56 px en todos los estados: la sincronización a la izquierda y, a la derecha, la marca Intelektron, discreta,
+   y el engranaje en el borde (su lugar queda reservado durante la atención). El borde derecho del botón queda a 8 px. */
 .pie {
-    min-height: 28px;
+    min-height: 56px;
     flex: none;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 16px;
-    padding: 2px 16px;
+    padding: 0 8px 0 16px;
     font-size: 14px;
     background: rgb(var(--papel) / var(--opacidad-superficie));
     border-top: 1px solid var(--borde);
@@ -226,7 +225,9 @@ body:has(.puesto) {
 
 .pie .franja-sincronizacion { margin: 0; }
 .pie .mensaje-sincronizacion { margin-left: 6px; margin-right: 10px; }
+.pie .pie-derecha { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .pie .marca-intelektron { height: 16px; width: auto; opacity: .8; }
+.pie .lugar-engranaje { width: 56px; height: 56px; flex: none; }
 
 /* Configuración: un diálogo modal sobre la pantalla, con la vista previa del estilo detrás (D5). */
 .fondo-dialogo {

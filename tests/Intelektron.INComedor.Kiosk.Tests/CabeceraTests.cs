@@ -21,12 +21,13 @@ public class CabeceraTests : IDisposable
         _archivo.Dispose();
     }
 
-    [Fact(DisplayName = "presentacion-puesto · Un solo control en la cabecera: en reposo hay un botón, con el nombre «Configuración»")]
+    [Fact(DisplayName = "presentacion-puesto · El engranaje en el borde inferior derecho: la cabecera sin botones y el pie con uno, «Configuración»")]
     public void En_reposo_un_solo_boton_configuracion()
     {
         var pantalla = Dibujar();
 
-        var botones = pantalla.Find("header").QuerySelectorAll("button");
+        Assert.Empty(pantalla.Find("header").QuerySelectorAll("button"));
+        var botones = pantalla.Find("footer").QuerySelectorAll("button");
 
         var boton = Assert.Single(botones);
         Assert.Equal("Configuración", boton.GetAttribute("aria-label"));

@@ -83,6 +83,37 @@ public class PresentacionTactilTests : IAsyncLifetime
         Assert.True(angosta.AltoDocumento > 768, $"La página mide {angosta.AltoDocumento} px de alto: no se desplaza en vertical");
     }
 
+    [Fact(DisplayName = "presentacion-puesto · El engranaje en el borde inferior derecho a 1024 × 768, a la derecha de la marca, y el pie del mismo alto en reposo y en la selección de nueve")]
+    public async Task El_engranaje_en_el_borde_inferior_derecho_y_el_pie_estable()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        var pagina = await AbrirAsync(playwright);
+        var cdp = await pagina.Context.NewCDPSessionAsync(pagina);
+
+        await Area(cdp, 1024, 768);
+        await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
+        var reposo = await MedirPie(pagina);
+        _escenario.Registrar($"1024 × 768, reposo: {reposo}");
+        await _escenario.CapturarAsync(pagina, "reposo-1024x768");
+
+        var engranaje = reposo.Engranaje ?? throw new Xunit.Sdk.XunitException("En reposo no hay engranaje dentro del pie.");
+        Assert.Equal(0, reposo.BotonesEnCabecera);
+        Assert.InRange(reposo.Ancho - engranaje.Derecha, 0, 16);
+        Assert.InRange(reposo.AltoVentana - engranaje.Abajo, 0, 16);
+        Assert.True(engranaje.Ancho >= 56 && engranaje.Alto >= 56, $"El engranaje mide {engranaje.Ancho} × {engranaje.Alto} px");
+        Assert.True(reposo.MarcaDerecha <= engranaje.Izquierda, $"La marca termina en {reposo.MarcaDerecha} px y el engranaje empieza en {engranaje.Izquierda} px");
+
+        await Ingresar(pagina);
+        var seleccion = await MedirPie(pagina);
+        _escenario.Registrar($"1024 × 768, selección de nueve: {seleccion}");
+        await _escenario.CapturarAsync(pagina, "seleccion-nueve-pie-1024x768");
+
+        Assert.Null(seleccion.Engranaje);
+        Assert.True(seleccion.LugarReservado, "Durante la atención no queda el lugar reservado del engranaje en el pie.");
+        Assert.True(Math.Abs(reposo.AltoPie - seleccion.AltoPie) < 0.5, $"El pie mide {reposo.AltoPie} px en reposo y {seleccion.AltoPie} px en la selección");
+        Assert.True(seleccion.AltoDocumento <= 768, $"La página mide {seleccion.AltoDocumento} px de alto");
+    }
+
     [Fact(DisplayName = "comprobante-local · Movimiento reducido: el comprobante en pantalla aparece completo, sin animación")]
     public async Task Con_movimiento_reducido_el_comprobante_no_se_anima()
     {
@@ -181,6 +212,30 @@ public class PresentacionTactilTests : IAsyncLifetime
         return JsonSerializer.Deserialize<Medida>(json)!;
     }
 
+    /// <summary>El pie, la marca y el engranaje (si hay uno en el pie) respecto de la ventana, y los botones de la cabecera.</summary>
+    private static async Task<MedidaPie> MedirPie(IPage pagina)
+    {
+        var json = await pagina.EvaluateAsync<string>(
+            """
+            () => {
+              const pie = document.querySelector('footer');
+              const boton = pie.querySelector('button.engranaje');
+              const r = boton ? boton.getBoundingClientRect() : null;
+              return JSON.stringify({
+                Ancho: innerWidth,
+                AltoVentana: innerHeight,
+                AltoPie: pie.getBoundingClientRect().height,
+                MarcaDerecha: pie.querySelector('img.marca-intelektron').getBoundingClientRect().right,
+                BotonesEnCabecera: document.querySelectorAll('header button').length,
+                LugarReservado: pie.querySelector('.lugar-engranaje') !== null,
+                AltoDocumento: document.documentElement.scrollHeight,
+                Engranaje: r ? { Izquierda: r.left, Derecha: r.right, Abajo: r.bottom, Ancho: r.width, Alto: r.height } : null,
+              });
+            }
+            """);
+        return JsonSerializer.Deserialize<MedidaPie>(json)!;
+    }
+
     private static string ExeDelKiosk()
     {
         var configuracion = typeof(PresentacionTactilTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
@@ -200,6 +255,17 @@ public class PresentacionTactilTests : IAsyncLifetime
     private static extern bool IsZoomed(IntPtr ventana);
 
     private sealed record Caja(string Texto, double X, double Alto, double Abajo);
+
+    private sealed record CajaEngranaje(double Izquierda, double Derecha, double Abajo, double Ancho, double Alto);
+
+    private sealed record MedidaPie(double Ancho, double AltoVentana, double AltoPie, double MarcaDerecha, int BotonesEnCabecera, bool LugarReservado, double AltoDocumento, CajaEngranaje? Engranaje)
+    {
+        public override string ToString() =>
+            $"ventana {Ancho:F0} × {AltoVentana:F0}, pie {AltoPie:F1} px, marca hasta {MarcaDerecha:F1} px, botones en la cabecera {BotonesEnCabecera}, lugar reservado {LugarReservado}, documento {AltoDocumento:F0} px, " +
+            (Engranaje is null
+                ? "sin engranaje"
+                : $"engranaje {Engranaje.Ancho:F0} × {Engranaje.Alto:F0} px, de {Engranaje.Izquierda:F1} a {Engranaje.Derecha:F1} px, a {Ancho - Engranaje.Derecha:F1} px del borde derecho y a {AltoVentana - Engranaje.Abajo:F1} px del inferior");
+    }
 
     private sealed record Medida(Caja[] Opciones, Caja Cancelar, Caja Confirmar, double AltoDocumento, string LetraOpcion, string ColorTextoOpcion, double AlfaTextoOpcion)
     {
