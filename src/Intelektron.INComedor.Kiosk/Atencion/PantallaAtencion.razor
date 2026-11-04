@@ -134,9 +134,30 @@
             case EstadoAtencion.Resultado:
                 <section class="tarjeta superficie">
                     <p id="mensaje" class="mensaje" role="status">@Maquina.Mensaje</p>
-                    <div class="acciones">
-                        <button id="listo" type="button" class="principal" @onclick="Maquina.Listo">Listo</button>
-                    </div>
+                    @if (Maquina.ComprobanteEnPantalla is { } papel)
+                    {
+                        @* Con la impresora simulada, el comprobante sale de una impresora en pantalla; tocarlo es «Listo» (D7). *@
+                        <div class="impresora">
+                            <div class="boca" aria-hidden="true"></div>
+                            <button id="listo" type="button" class="comprobante" aria-label="Retirar el comprobante" @onclick="Maquina.Listo">
+                                <span class="encabezado-comprobante">INComedor · comprobante</span>
+                                <span class="leyenda">@papel.Leyenda · N.º @papel.Numero</span>
+                                <span class="opcion-comprobante">@papel.Opcion</span>
+                                <span>Fecha: @papel.FechaNegocio</span>
+                                @if (papel.Cargo.Length > 0)
+                                {
+                                    <span>Cargo informado: @papel.Cargo</span>
+                                }
+                                <span class="retirar">Tocá el comprobante para retirarlo</span>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="acciones">
+                            <button id="listo" type="button" class="principal" @onclick="Maquina.Listo">Listo</button>
+                        </div>
+                    }
                 </section>
                 break;
 

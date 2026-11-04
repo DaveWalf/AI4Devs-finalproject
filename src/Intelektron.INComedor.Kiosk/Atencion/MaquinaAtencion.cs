@@ -87,6 +87,12 @@ public sealed class MaquinaAtencion
 
     public bool ComprobantePendiente { get; private set; }
 
+    /// <summary>
+    /// El comprobante que sale de la impresora en pantalla: sólo con la impresora simulada y cuando el original quedó
+    /// enviado (D7 de presentar-atencion-tactil). Sin persona ni código.
+    /// </summary>
+    public ComprobanteEnPantalla? ComprobanteEnPantalla { get; private set; }
+
     /// <summary>Un aviso para la pantalla actual: el motivo de un rechazo, el puesto ocupado o la opción retirada.</summary>
     public string? Aviso { get; private set; }
 
@@ -419,6 +425,10 @@ public sealed class MaquinaAtencion
                 ConsumoRegistrado = true;
                 MotivoResultado = null;
                 Mensaje = ComprobantePendiente ? MensajesAtencion.ComprobantePendiente : MensajesAtencion.Exito;
+                ComprobanteEnPantalla = !ComprobantePendiente && _servicio.Impresora is ImpresoraSimulada { UltimoEnviado: { } enviado }
+                                        && enviado.TicketId == resultado.TicketId
+                    ? ComprobanteEnPantalla.Desde(enviado)
+                    : null;
                 Estado = EstadoAtencion.Resultado;
                 break;
 
@@ -488,6 +498,7 @@ public sealed class MaquinaAtencion
         MotivoResultado = null;
         ConsumoRegistrado = false;
         ComprobantePendiente = false;
+        ComprobanteEnPantalla = null;
         Aviso = null;
         Comprobantes = [];
         ReimpresionPedida = null;

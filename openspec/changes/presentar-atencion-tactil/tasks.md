@@ -124,8 +124,25 @@ Las pruebas existentes no se tocan, salvo las tres de D1 que aprobó David en el
 
 ## 6. Comprobante en pantalla
 
-- [ ] 6.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/ComprobanteEnPantallaTests.cs` (bUnit con `ImpresoraSimulada` sobre una carpeta temporal y `RelojManual`): autorizado en «Disponible» muestra la impresora y el comprobante con la opción y el cargo, sin el nombre; tocar el comprobante vuelve a reposo; «Sin papel» e «Incierta» no muestran comprobante; un rechazo `LOCAL_LIMIT_REACHED` no muestra la impresora; a los 10 s vuelve a reposo; con `ImpresoraDePrueba` queda el botón «Listo» de siempre. Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ComprobanteEnPantallaTests"` que fallan antes de implementar, y pegar la salida
-- [ ] 6.2 Implementar D7: el último comprobante en `ImpresoraSimulada`, `ComprobanteEnPantalla` en la máquina, la impresora y el comprobante con `id="listo"` en el resultado, y la animación anulada por `prefers-reduced-motion`. Verificar con `dotnet test INComedor.sln` en verde, incluido `PresentacionTactilTests`, y con `git diff --stat -- tests/` que sólo aparecen los archivos nuevos y los dos de 2.2
+- [x] 6.1 Crear `tests/Intelektron.INComedor.Kiosk.Tests/ComprobanteEnPantallaTests.cs` (bUnit con `ImpresoraSimulada` sobre una carpeta temporal y `RelojManual`): autorizado en «Disponible» muestra la impresora y el comprobante con la opción y el cargo, sin el nombre; tocar el comprobante vuelve a reposo; «Sin papel» e «Incierta» no muestran comprobante; un rechazo `LOCAL_LIMIT_REACHED` no muestra la impresora; a los 10 s vuelve a reposo; con `ImpresoraDePrueba` queda el botón «Listo» de siempre. Verificar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ComprobanteEnPantallaTests"` que fallan antes de implementar, y pegar la salida
+  ```
+  con errores comprobante-local · AT06 · Autorización con la impresora disponible: la impresora y el comprobante …
+  con errores (cancelada) comprobante-local · Tocar el comprobante equivale a «Listo» …
+  con errores (cancelada) comprobante-local · HU03-E · Diez segundos sin tocar el comprobante …
+  con errores (cancelada) comprobante-local · AT02 · Un rechazo LOCAL_LIMIT_REACHED no muestra la impresora
+    error: 4
+    correcto: 3
+  ```
+  Las tres que ya pasan («Sin papel», «Incierta» y otra impresora) fijan lo que no debe cambiar: sin comprobante y
+  con el botón «Listo» de siempre.
+- [x] 6.2 Implementar D7: el último comprobante en `ImpresoraSimulada`, `ComprobanteEnPantalla` en la máquina, la impresora y el comprobante con `id="listo"` en el resultado, y la animación anulada por `prefers-reduced-motion`. Verificar con `dotnet test INComedor.sln` en verde, incluido `PresentacionTactilTests`, y con `git diff --stat -- tests/` que sólo aparecen los archivos nuevos y los dos de 2.2
+  ```
+  Contracts.Tests [+23/x0/?0] · Domain.Tests [+68/x0/?0] · Sync.Api.Tests [+62/x0/?0]
+  Infrastructure.Sqlite.Tests [+117/x0/?0] · Kiosk.Tests [+144/x0/?0] · E2E.Tests [+9/x0/?0] (1m 52s)
+    total: 423 · error: 0 · correcto: 423
+  git diff --stat -- tests/ (desde el inicio del change, 875f612..HEAD):
+   sólo MaquinaAtencionTests.cs (2 +-) y PantallaAtencionTests.cs (4 ++--) entre los existentes; el resto, archivos nuevos
+  ```
 
 ## 7. La ventana real
 

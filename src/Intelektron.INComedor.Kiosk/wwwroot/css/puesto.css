@@ -277,6 +277,48 @@ body:has(.puesto) {
 .dialogo button[aria-pressed="true"] { border: 3px solid var(--acento); font-weight: 700; }
 .franja-impresora .acciones { justify-content: flex-start; }
 
+/* Comprobante en pantalla: la impresora y el papel que sale hacia abajo en 1,2 s (D7). */
+.impresora { display: flex; flex-direction: column; align-items: center; }
+
+.impresora .boca {
+    width: min(360px, 100%);
+    height: 28px;
+    background: linear-gradient(#4a3a2c, #2b2118);
+    border-radius: 10px 10px 4px 4px;
+    box-shadow: 0 4px 10px rgb(0 0 0 / .25);
+    position: relative;
+    z-index: 1;
+}
+
+.atencion .impresora .comprobante {
+    width: min(300px, calc(100% - 60px));
+    min-height: 56px;
+    margin-top: -6px;
+    padding: 18px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 16px;
+    color: var(--tinta);
+    background: #fffdf8;
+    backdrop-filter: none;
+    border: 1px solid var(--borde);
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 8px 18px rgb(0 0 0 / .18);
+    animation: salir-comprobante 1.2s ease-out both;
+}
+
+.comprobante .encabezado-comprobante { font-weight: 700; }
+.comprobante .opcion-comprobante { font-size: 18px; font-weight: 700; }
+.comprobante .retirar { margin-top: 8px; font-family: "Segoe UI", sans-serif; font-size: 15px; color: var(--tinta-suave); }
+
+@keyframes salir-comprobante {
+    from { transform: translateY(-100%); clip-path: inset(100% 0 0 0); }
+    to { transform: translateY(0); clip-path: inset(0 0 0 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
 }

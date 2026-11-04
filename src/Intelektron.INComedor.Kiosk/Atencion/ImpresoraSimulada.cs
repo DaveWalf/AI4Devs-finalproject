@@ -26,6 +26,9 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
 
     public ModoImpresoraSimulada Modo { get; set; } = ModoImpresoraSimulada.Disponible;
 
+    /// <summary>El último comprobante que aceptó como enviado, para mostrarlo en pantalla (D7 de presentar-atencion-tactil).</summary>
+    public ComprobanteAImprimir? UltimoEnviado { get; private set; }
+
     public RespuestaImpresora Enviar(ComprobanteAImprimir comprobante)
     {
         if (Modo == ModoImpresoraSimulada.SinPapel)
@@ -52,6 +55,12 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
         }
 
         // En «Incierta» el archivo se escribe pero la impresora no lo confirma: el papel pudo haber salido (RB08).
-        return Modo == ModoImpresoraSimulada.Incierta ? RespuestaImpresora.Incierto() : RespuestaImpresora.Enviado();
+        if (Modo == ModoImpresoraSimulada.Incierta)
+        {
+            return RespuestaImpresora.Incierto();
+        }
+
+        UltimoEnviado = comprobante;
+        return RespuestaImpresora.Enviado();
     }
 }
