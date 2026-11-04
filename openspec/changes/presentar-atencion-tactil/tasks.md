@@ -174,8 +174,30 @@ Las pruebas existentes no se tocan, salvo las tres de D1 que aprobó David en el
 
 ## 8. Tallas y evidencia
 
-- [ ] 8.1 Llevar a la tabla de tallas de `docs/plan-academico.md` la talla de David que quedó en el gate y la de la IA (M, 4 a 6 h, 5,7 a 8,6 h con el colchón), con las horas reales del apply medidas con el reloj de la sesión. Verificar con el chequeo del mapa (`defectuosas: 0`)
-- [ ] 8.2 Agregar la evidencia del change (D10): en `readme.md`, «Cómo ver la demostración» con los logos locales, el catálogo de nueve, Configuración sin clave en este corte y las capturas de 7.1; `INCOMEDOR_CATALOGO` en `.env.example`; en `docs/aplicacion-del-curso.md`, la fila del mapa que corresponda con este change; en `docs/cobertura-entrega.md`, la funcionalidad de atención con su aspecto táctil; y en el §5 de `prompts.md`, la maqueta en Codex como paso previo a la spec y la aprobación de las tres pruebas de D1. Verificar con el chequeo de enlaces relativos sobre esos documentos (`enlaces rotos: 0`) y con `git status --short`, donde sólo aparecen esos documentos, las capturas y este `tasks.md`
+- [x] 8.1 Llevar a la tabla de tallas de `docs/plan-academico.md` la talla de David que quedó en el gate y la de la IA (M, 4 a 6 h, 5,7 a 8,6 h con el colchón), con las horas reales del apply medidas con el reloj de la sesión. Verificar con el chequeo del mapa (`defectuosas: 0`)
+  David dio su talla en el gate: M (punto 8 de «Para el gate de David»). Horas reales: 0,5 h de reloj, de las 20:45 a
+  las 21:14 del 03/11/2026.
+  ```
+  control negativo (una Aplicada sin enlace y un estado «Quizás»): SIN EVIDENCIA, ESTADO INVÁLIDO · defectuosas: 2
+  filas del mapa: 82 · defectuosas: 0
+  ```
+- [x] 8.2 Agregar la evidencia del change (D10): en `readme.md`, «Cómo ver la demostración» con los logos locales, el catálogo de nueve, Configuración sin clave en este corte y las capturas de 7.1; `INCOMEDOR_CATALOGO` en `.env.example`; en `docs/aplicacion-del-curso.md`, la fila del mapa que corresponda con este change; en `docs/cobertura-entrega.md`, la funcionalidad de atención con su aspecto táctil; y en el §5 de `prompts.md`, la maqueta en Codex como paso previo a la spec y la aprobación de las tres pruebas de D1. Verificar con el chequeo de enlaces relativos sobre esos documentos (`enlaces rotos: 0`) y con `git status --short`, donde sólo aparecen esos documentos, las capturas y este `tasks.md`
+  ```
+  control negativo (un archivo inexistente, un ancla falsa y una válida): ROTO, ANCLA · enlaces rotos: 2
+  readme.md, prompts.md, docs/aplicacion-del-curso.md, docs/cobertura-entrega.md, docs/plan-academico.md y
+  wwwroot/img/PROCEDENCIA.md → enlaces rotos: 0
+  git status --short
+   M .env.example
+   M docs/aplicacion-del-curso.md
+   M docs/cobertura-entrega.md
+   M docs/plan-academico.md
+   M openspec/changes/presentar-atencion-tactil/tasks.md
+   M prompts.md
+   M readme.md
+  ```
+  Las capturas de 7.1 ya entraron en el commit del grupo 7. Además de lo pedido, el README y la fila del
+  `.env.example` en el mapa pasan de «cuatro» a «cinco» variables. `AGENTS.md` no nombra `INCOMEDOR_CATALOGO` en su
+  lista de variables: queda para el PR, porque esta tarea limita los documentos que cambian.
 
 ## Workflow follow-up
 
