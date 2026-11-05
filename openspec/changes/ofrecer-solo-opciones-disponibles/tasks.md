@@ -70,10 +70,45 @@ Las pruebas existentes no se tocan, salvo las tres que aprobó David en el gate 
 
 ## 3. E2E, evidencia y documentos
 
-- [ ] 3.1 Cambiar los pasos 4 y 5 de `E2E.Tests/FlujoPrincipalTests.cs` como dice el punto 1 del gate, y verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde. Si falla con «1 pendiente» a los 45 s en otro paso, repetir el proyecto y anotar las dos corridas sin tocar esa prueba
-- [ ] 3.2 Sacar `docs/capturas/11-uso-del-dia.jpg` (la línea de lo usado, con cinco refrigerios) y `docs/capturas/12-sin-opciones.jpg` con el procedimiento de la tarea 7.1 de `openspec/changes/archive/2026-11-03-presentar-atencion-tactil/tasks.md`, a 1024 × 768, y mirarlas: el texto se lee entero, nada queda cortado y no hay opciones ni «Confirmar» en la 12
-- [ ] 3.3 Actualizar `readme.md` (el paso 2 del recorrido, la fila de `0001` en la tabla de códigos y las dos capturas nuevas con su texto alternativo) y `docs/experiencia.md` (los dos estados nuevos en «Estados y mensajes propuestos», y el cupo utilizado como rechazo de la confirmación). Verificar con `git grep -n "otra vez .0001. con «Almuerzo común»: «Ya registraste" -- readme.md` sin resultados
-- [ ] 3.4 Sumar la fila del change a `docs/aplicacion-del-curso.md`. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo)
+- [x] 3.1 Cambiar los pasos 4 y 5 de `E2E.Tests/FlujoPrincipalTests.cs` como dice el punto 1 del gate, y verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde. Si falla con «1 pendiente» a los 45 s en otro paso, repetir el proyecto y anotar las dos corridas sin tocar esa prueba
+  `FlujoPrincipalTests` (tercera prueba de D6, con la aprobación del gate): el paso 4 ya no confirma un segundo almuerzo ni afirma el mensaje de cupo; identifica a `0001`, afirma «Hoy ya usaste: almuerzo 1 de 1» en `#uso-del-dia`, que todo lo ofrecido es de REFRIGERIO (los nombres salen de la base del puesto, en sólo lectura), que sigue habiendo un solo consumo y un solo comprobante, y vuelve a reposo con «Cancelar»; el paso 5 pasa de «2 pendientes» a «1 pendiente»; los pasos 6 y 7 no cambian. La constante `Cupo` pasó a `UsoDelDia`. Corrida del 04/11 21:11 a 21:13, primera corrida, sin repetir:
+  ```
+  dotnet test tests/Intelektron.INComedor.E2E.Tests
+  Intelektron.INComedor.E2E.Tests.dll (net11.0|x64) correcto [+10/x0/?0] (1m 52s 658ms)    total: 10 · error: 0 · correcto: 10
+  flujo-principal (registro.txt):
+    1. receptor preparado y apagado · 1,4 s
+    2. puesto en reposo, con los datos del WebView2 en la carpeta de la prueba · 4,5 s
+    3. consumo registrado y comprobante impreso · 6,6 s
+    4. cupo: sólo refrigerios ofrecidos, un solo consumo en el puesto, 6d7645e1-ddfd-4a66-850e-62c89396e954 · 7,4 s
+    5. franja: 1 pendiente · 38,7 s
+    6. receptor de vuelta, franja al día · 64,9 s
+    7. receptor: un consumo consolidado, 6d7645e1-ddfd-4a66-850e-62c89396e954 · 64,9 s
+  ```
+  No falló con «1 pendiente» a los 45 s en otro paso: no hizo falta repetir el proyecto. Las diez pruebas, incluida «Nueve opciones y las acciones entran en 1024 × 768», pasan con la línea de lo usado en el código.
+- [x] 3.2 Sacar `docs/capturas/11-uso-del-dia.jpg` (la línea de lo usado, con cinco refrigerios) y `docs/capturas/12-sin-opciones.jpg` con el procedimiento de la tarea 7.1 de `openspec/changes/archive/2026-11-03-presentar-atencion-tactil/tasks.md`, a 1024 × 768, y mirarlas: el texto se lee entero, nada queda cortado y no hay opciones ni «Confirmar» en la 12
+  Capturas por CDP a 1024 × 768 (JPEG a escala CSS, calidad 85) con el puesto compilado de esta rama, `INCOMEDOR_CATALOGO=nueve`, una carpeta nueva de `INCOMEDOR_DEMO_DIR` y sin receptor, con el mismo procedimiento que 06 a 10 (un script de PowerShell 7 con WebSocket crudo sobre el CDP, de la sesión, que no entra al repo). Las dos salen de consumos reales: `0001` confirma «Almuerzo con gaseosa» y vuelve a identificarse para la **11**; después confirma «Merienda» y «Yogurt» (REFRIGERIO 2 de 2) y vuelve a identificarse para la **12**. Cada corrida cierra el puesto con `taskkill /T` y borra su carpeta.
+  Miradas con `Read`: **11** `docs/capturas/11-uso-del-dia.jpg`: «Elegí tu servicio de hoy», «Hola, Persona sintética 01» y, debajo, «Hoy ya usaste: almuerzo 1 de 1» en el color de aviso, legible sobre la superficie; cinco opciones de REFRIGERIO (Gaseosa solamente, Merienda, Refrigerio, Refrigerio opcional, Yogurt) en una columna, «Cancelar» y «Confirmar» a la vista, nada cortado y ningún control de página. **12** `docs/capturas/12-sin-opciones.jpg`: «No tenés opciones disponibles ahora», «Hoy ya usaste: almuerzo 1 de 1 · refrigerio 2 de 2» y «Listo»; no hay opciones ni «Confirmar», ni el nombre de la persona. No hizo falta corregir nada.
+  ```
+  git diff --stat -- docs/capturas     (sin cambios en las capturas existentes)
+  ?? docs/capturas/11-uso-del-dia.jpg  (110.113 bytes)
+  ?? docs/capturas/12-sin-opciones.jpg (127.871 bytes)
+  ```
+- [x] 3.3 Actualizar `readme.md` (el paso 2 del recorrido, la fila de `0001` en la tabla de códigos y las dos capturas nuevas con su texto alternativo) y `docs/experiencia.md` (los dos estados nuevos en «Estados y mensajes propuestos», y el cupo utilizado como rechazo de la confirmación). Verificar con `git grep -n "otra vez .0001. con «Almuerzo común»: «Ya registraste" -- readme.md` sin resultados
+  `readme.md`: el paso 2 del recorrido (ahora «otra vez `0001`: la selección ya no ofrece ningún almuerzo, sólo los refrigerios, y dice «Hoy ya usaste: almuerzo 1 de 1»»), la fila de `0001` de la tabla de códigos, un párrafo corto en «Puesto: la atención» sobre lo que la selección ofrece y las dos capturas nuevas con su texto alternativo en una tabla propia, con la nota de fechas actualizada. `docs/experiencia.md`, «Estados y mensajes propuestos»: «Cupo utilizado al identificarse» y «Ninguna opción disponible», y el cupo utilizado como rechazo de la confirmación («Cupo utilizado al confirmar», con el mensaje de siempre y su condición).
+  ```
+  git grep -n "otra vez .0001. con «Almuerzo común»: «Ya registraste" -- readme.md
+  (sin salida)  exit=1
+  ```
+- [x] 3.4 Sumar la fila del change a `docs/aplicacion-del-curso.md`. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo)
+  La fila del change entra en la de «TDD: el humano fija el criterio…» de `docs/aplicacion-del-curso.md` (las 23 pruebas nuevas con su rojo pegado y la prueba existente que falló y se consultó a David antes de tocarla), con el nombre del change y sin enlace propio, para no repetir el defecto de D5 cuando se archive. Chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso`, sobre `prompts.md`, `readme.md`, `docs/aplicacion-del-curso.md`, `docs/cobertura-entrega.md`, `docs/plan-academico.md` y `docs/experiencia.md`:
+  ```
+  antes de las capturas 11 y 12:  ROTO readme.md:332 docs/capturas/11-uso-del-dia.jpg · ROTO readme.md:332 docs/capturas/12-sin-opciones.jpg
+                                  enlaces rotos: 2
+  control negativo (.md con un archivo inexistente, un ancla falsa y un ancla válida):
+                                  ROTO …\a.md:2 noexiste.md · ANCLA …\a.md:2 a.md#falsa
+                                  enlaces rotos: 2
+  después:                        enlaces rotos: 0
+  ```
 
 ## 4. Integración
 

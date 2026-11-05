@@ -201,8 +201,8 @@ receptor, en la ventana:
 
 1. `0001` e «Ingresar», «Almuerzo común» y «Confirmar»: «Consumo registrado. Retirá tu comprobante», y el
    comprobante queda como archivo de texto en `%LOCALAPPDATA%\INComedor\demo\comprobantes\`.
-2. «Listo», y otra vez `0001` con «Almuerzo común»: «Ya registraste este servicio. Consultá al responsable del
-   comedor». El cupo de ALMUERZO es 1 y no se registra otro consumo.
+2. «Listo», y otra vez `0001`: la selección ya no ofrece ningún almuerzo, sólo los refrigerios, y dice «Hoy ya
+   usaste: almuerzo 1 de 1». El cupo de ALMUERZO es 1 y no hay cómo registrar otro consumo.
 3. `0002` e «Ingresar»: «Esta credencial está vencida. Solicitá asistencia».
 4. En la franja de la impresora, «Sin papel»; `0001` con «Café con leche», un REFRIGERIO: «Tu consumo está
    registrado. El comprobante queda pendiente».
@@ -270,6 +270,8 @@ código solo abre la sesión, sin huella, porque la biometría es de la segunda 
 se elige una opción y se confirma con la transacción de RB06. Hasta diez opciones van juntas, sin páginas: hasta
 ocho en una columna y nueve o diez en dos columnas de hasta cinco; desde once, en páginas de diez. El catálogo
 sintético tiene 15 (dos páginas, de diez y de cinco). Una opción sin cargo no muestra importe.
+La selección ofrece sólo lo que esa persona puede consumir ahora: lo agotado no se muestra y una línea «Hoy ya
+usaste: …» dice por qué; sin ninguna opción, la pantalla lo avisa y vuelve a reposo con «Listo» o a los 10 s.
 «Cancelar», o 30 s sin tocar nada antes de confirmar, vuelven a reposo sin escribir nada. El resultado
 vuelve a reposo con «Listo» o a los 10 s. Si la opción cambió de precio antes de confirmar, la pantalla
 muestra el valor vigente y pide reconfirmar.
@@ -278,7 +280,7 @@ Códigos sintéticos:
 
 | Código | Para qué sirve |
 |---|---|
-| `0001` | «Persona sintética 01», vigente: límite 1 en ALMUERZO y 2 en REFRIGERIO. La segunda confirmación de ALMUERZO del día muestra el mensaje de cupo |
+| `0001` | «Persona sintética 01», vigente: límite 1 en ALMUERZO y 2 en REFRIGERIO. Con un almuerzo ya consumido en el día, la selección ofrece sólo los refrigerios y dice «Hoy ya usaste: almuerzo 1 de 1»; con el almuerzo y los dos refrigerios usados, «No tenés opciones disponibles ahora» |
 | `0002` | Credencial vencida: «Esta credencial está vencida» |
 | `0003` | Credencial revocada: «Esta credencial ya no está habilitada» |
 | `0004` | Credencial todavía no vigente: «No pudimos identificarte» |
@@ -325,8 +327,13 @@ reposo puede cambiar el estilo o simular una impresora sin papel.
 |---|---|
 | ![La impresora en pantalla con el comprobante de «Almuerzo con gaseosa»](docs/capturas/09-comprobante-en-pantalla.jpg) | ![Configuración con «Estilo visual» y los modos de la impresora simulada](docs/capturas/10-configuracion.jpg) |
 
-Las sacó el 03/11/2026, a 1024 × 768 por CDP, el apply de `presentar-atencion-tactil`. Las del flujo principal, más
-arriba, son del 30/10 y muestran la presentación anterior.
+| Lo ya usado del día | Sin ninguna opción |
+|---|---|
+| ![Con el almuerzo del día usado, cinco opciones de refrigerio y «Hoy ya usaste: almuerzo 1 de 1»](docs/capturas/11-uso-del-dia.jpg) | ![«No tenés opciones disponibles ahora», lo usado del día y «Listo», sin opciones ni «Confirmar»](docs/capturas/12-sin-opciones.jpg) |
+
+Las 06 a 10 las sacó el 03/11/2026 el apply de `presentar-atencion-tactil` y las rehízo el 04/11 el de
+`mover-engranaje-al-pie`; las 11 y 12, el de `ofrecer-solo-opciones-disponibles`. Todas, a 1024 × 768 por CDP. Las del
+flujo principal, más arriba, son del 30/10 y muestran la presentación anterior.
 
 **Pantalla de demostración anterior.**
 

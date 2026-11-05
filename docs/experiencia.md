@@ -49,7 +49,9 @@ commit SQLite, aunque INWeb no responda. Al terminar se limpia la sesión.
 | Caso | Respuesta |
 |---|---|
 | Éxito local | «Consumo registrado. Retirá tu comprobante». No espera al servidor. |
-| Cupo utilizado | «Ya registraste este servicio. Consultá al responsable del comedor». Sin otro original. |
+| Cupo utilizado al identificarse | La selección ofrece sólo las opciones que la persona puede consumir ahora, en el orden del catálogo, y una línea «Hoy ya usaste: almuerzo 1 de 1 · refrigerio 2 de 2» nombra las categorías agotadas, con su uso y su límite. Nada usado, sin línea. |
+| Ninguna opción disponible | «No tenés opciones disponibles ahora», con la línea de lo usado o, sin categoría agotada, el motivo: «Tu habilitación no está activa. Consultá al responsable» si la persona está inactiva y, si no, «No tenés servicios habilitados. Consultá al responsable del comedor». Sin opciones ni «Confirmar»; «Listo» o 10 s vuelven a reposo, sin intención. |
+| Cupo utilizado al confirmar | «Ya registraste este servicio. Consultá al responsable del comedor». Sólo si el cupo se agotó entre la oferta y la confirmación: la confirmación vuelve a decidir bajo el bloqueo (RB06). Sin otro original. |
 | Persona inactiva (PERSON_INACTIVE) | «Tu habilitación no está activa. Consultá al responsable». No se confunde con cupo agotado. |
 | Credencial revocada (CREDENTIAL_REVOKED) | «Esta credencial ya no está habilitada. Solicitá asistencia». Sin exponer su valor. |
 | Credencial vencida (CREDENTIAL_EXPIRED) | «Esta credencial está vencida. Solicitá asistencia». |
