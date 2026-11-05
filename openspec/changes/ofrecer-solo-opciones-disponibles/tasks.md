@@ -4,10 +4,39 @@ Las pruebas existentes no se tocan, salvo las tres que aprobó David en el gate 
 
 ## 1. Una sola evaluación
 
-- [ ] 1.1 Agregar `Domain.Tests/EvaluadorDisponibilidadTests.cs`: autoriza con cupo libre; cada motivo de RB02 en su orden (`PERSON_INACTIVE` antes que `RULE_DENIED`, regla cero antes que el cupo) y `LOCAL_LIMIT_REACHED` con el uso igual al límite. Crear `EvaluadorDisponibilidad` con `throw new NotImplementedException()` y ver fallar con `dotnet test tests/Intelektron.INComedor.Domain.Tests --filter "FullyQualifiedName~EvaluadorDisponibilidad"`; pegar la salida
-- [ ] 1.2 Implementar `EvaluadorDisponibilidad` con la composición de `UnidadConfirmacion.cs:80-88` (D1) y hacer que `UnidadConfirmacion` lo llame. Verificar con el filtro de 1.1 en verde y con `dotnet test tests/Intelektron.INComedor.Domain.Tests` y `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completos en verde, sin cambios en sus pruebas
-- [ ] 1.3 Agregar `Infrastructure.Sqlite.Tests/ConsultaDisponibilidadTests.cs` con los escenarios «La oferta y la confirmación coinciden» y «Calcular la oferta no registra hechos» de `habilitacion-local`, y los de «La oferta queda en la bitácora» de `atencion-puesto`. Ver fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~ConsultaDisponibilidad"` contra `ConsultaDisponibilidad.Ofrecer` sin implementar; pegar la salida
-- [ ] 1.4 Mover las cinco lecturas de `UnidadConfirmacion` a `LecturaDecision` sin cambiarlas, e implementar `ConsultaDisponibilidad.Ofrecer` y el registro `OPTIONS_OFFERED` (D2 y D7). Verificar con el filtro de 1.3 en verde y `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completo en verde
+- [x] 1.1 Agregar `Domain.Tests/EvaluadorDisponibilidadTests.cs`: autoriza con cupo libre; cada motivo de RB02 en su orden (`PERSON_INACTIVE` antes que `RULE_DENIED`, regla cero antes que el cupo) y `LOCAL_LIMIT_REACHED` con el uso igual al límite. Crear `EvaluadorDisponibilidad` con `throw new NotImplementedException()` y ver fallar con `dotnet test tests/Intelektron.INComedor.Domain.Tests --filter "FullyQualifiedName~EvaluadorDisponibilidad"`; pegar la salida
+  `EvaluadorDisponibilidadTests.cs` con siete casos (autoriza con cupo libre; uso igual al límite, con la regla aplicable a la vista; uso menor que el límite; persona inactiva antes que la regla cero; regla cero antes que el cupo; sin reglas; credencial revocada antes que reglas y cupo) y `EvaluadorDisponibilidad` con `throw new NotImplementedException()`. Rojo, 04/11 20:56:
+  ```
+  dotnet test tests/Intelektron.INComedor.Domain.Tests --filter "FullyQualifiedName~EvaluadorDisponibilidad"
+  con errores RB03 · Uso del día igual al límite: LOCAL_LIMIT_REACHED, y la regla aplicable queda a la vista …
+  Xunit.MicrosoftTestingPlatform.XunitException: System.NotImplementedException : The method or operation is not implemented.
+  (los siete con la misma excepción)    total: 7 · error: 7 · correcto: 0
+  ```
+- [x] 1.2 Implementar `EvaluadorDisponibilidad` con la composición de `UnidadConfirmacion.cs:80-88` (D1) y hacer que `UnidadConfirmacion` lo llame. Verificar con el filtro de 1.1 en verde y con `dotnet test tests/Intelektron.INComedor.Domain.Tests` y `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completos en verde, sin cambios en sus pruebas
+  `EvaluadorDisponibilidad.Evaluar` compone `EvaluadorHabilitacion` y, sin motivo, `EvaluadorCupo`, y devuelve `ResultadoDisponibilidad(DecisionCupo, Reglas)`; `UnidadConfirmacion.Confirmar` lo llama en lugar de la composición propia. Una diferencia de forma: los usos del día se leen siempre, no sólo cuando la habilitación no deniega; la decisión es la misma.
+  ```
+  Domain.Tests --filter EvaluadorDisponibilidad   correcto [+7/x0/?0]    total: 7 · error: 0
+  Domain.Tests completo                           correcto [+75/x0/?0]    total: 75 · error: 0
+  Infrastructure.Sqlite.Tests completo            correcto [+117/x0/?0]   total: 117 · error: 0   (sin cambios en sus pruebas)
+  ```
+- [x] 1.3 Agregar `Infrastructure.Sqlite.Tests/ConsultaDisponibilidadTests.cs` con los escenarios «La oferta y la confirmación coinciden» y «Calcular la oferta no registra hechos» de `habilitacion-local`, y los de «La oferta queda en la bitácora» de `atencion-puesto`. Ver fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~ConsultaDisponibilidad"` contra `ConsultaDisponibilidad.Ofrecer` sin implementar; pegar la salida
+  `ConsultaDisponibilidadTests.cs` con cuatro casos sobre SQLite real: la oferta y la confirmación coinciden (cinco personas, una por motivo y una con cupo libre, la oferta y `Unidad.Confirmar` con el mismo reloj fijo); calcular la oferta no registra hechos (sólo suma el registro de bitácora); oferta con una categoría agotada (`Habilitada` con un almuerzo consumido: seis ofrecidas, nueve retenidas con `LOCAL_LIMIT_REACHED`, ALMUERZO 1 de 1, y el registro `OPTIONS_OFFERED` sin el código `000123`); oferta vacía (`SinDerecho`: quince retenidas con `SERVICE_NOT_ENABLED`). `ConsultaDisponibilidad.Ofrecer` creado sin implementar. Rojo, 04/11 20:58:
+  ```
+  dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~ConsultaDisponibilidad"
+  con errores habilitacion-local · La oferta y la confirmación coinciden: …
+  con errores habilitacion-local · Calcular la oferta no registra hechos: …
+  con errores atencion-puesto · Oferta con una categoría agotada: …
+  con errores atencion-puesto · Oferta vacía: …
+  Xunit.MicrosoftTestingPlatform.XunitException: System.NotImplementedException : The method or operation is not implemented.   (los cuatro)
+  total: 4 · error: 4 · correcto: 0
+  ```
+- [x] 1.4 Mover las cinco lecturas de `UnidadConfirmacion` a `LecturaDecision` sin cambiarlas, e implementar `ConsultaDisponibilidad.Ofrecer` y el registro `OPTIONS_OFFERED` (D2 y D7). Verificar con el filtro de 1.3 en verde y `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completo en verde
+  Las cinco lecturas de `UnidadConfirmacion` (`LeerOpcion`, `LeerPersonaActiva`, `LeerCredencialDeSesion`, `LeerReglasCandidatas`, `LeerUsos`) pasaron con su texto a `LecturaDecision` (`internal static`, con `Texto`, `CodigoDeMotivo` y los registros de la opción); de las 127 líneas borradas de `UnidadConfirmacion.cs`, 120 están tal cual en `LecturaDecision.cs` y las 7 restantes son la composición que reemplazó 1.2. `ConsultaCatalogo` suma una sobrecarga interna con la conexión del llamador, para el mismo orden. `ConsultaDisponibilidad.Ofrecer` evalúa cada opción con `EvaluadorDisponibilidad`, saca las categorías agotadas de las reglas aplicables (límite mayor que cero y uso que lo alcanza) y escribe `OPTIONS_OFFERED` (`ConfigurationVersion`, `Offered`, `Withheld`, `Exhausted`; nunca el código) en su transacción corta.
+  ```
+  dotnet build src/Intelektron.INComedor.Infrastructure.Sqlite -warnaserror   Compilación correcta · 0 Advertencia(s) · 0 Errores
+  Infrastructure.Sqlite.Tests --filter ConsultaDisponibilidad   correcto [+4/x0/?0]     total: 4 · error: 0
+  Infrastructure.Sqlite.Tests completo                          correcto [+121/x0/?0]   total: 121 · error: 0   (117 de antes y 4 nuevas)
+  ```
 
 ## 2. La atención
 

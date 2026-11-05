@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Data.Sqlite;
 
 namespace Intelektron.INComedor.Infrastructure.Sqlite;
 
@@ -21,7 +22,13 @@ public sealed class ConsultaCatalogo
     {
         using var conexion = _baseComedor.AbrirConexion();
         var puesto = PuestoLocal.Leer(conexion, null);
-        using var comando = ComandosSqlite.Crear(conexion, null,
+        return Leer(conexion, null, puesto);
+    }
+
+    /// <summary>El mismo orden, dentro de la conexión y la transacción de quien lo pide: lo usa también la oferta por persona.</summary>
+    internal static IReadOnlyList<OpcionDeCatalogo> Leer(SqliteConnection conexion, SqliteTransaction? transaccion, PuestoLocal puesto)
+    {
+        using var comando = ComandosSqlite.Crear(conexion, transaccion,
             """
             SELECT commenCodigo, commenVersionMenu, commenNombre, commenMoneda, commenEscala, commenImporteEmpleadoUnidadesMenores
             FROM tbComedorOpcionesMenu WHERE comvcCodigo = $vc
