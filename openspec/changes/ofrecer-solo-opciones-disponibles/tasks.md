@@ -112,7 +112,26 @@ Las pruebas existentes no se tocan, salvo las tres que aprobó David en el gate 
 
 ## 4. Integración
 
-- [ ] 4.1 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además `git diff --diff-filter=M --stat <base> -- tests/` contra el párrafo de arriba
+- [x] 4.1 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además `git diff --diff-filter=M --stat <base> -- tests/` contra el párrafo de arriba
+  Corrida del 04/11 de 21:14 a 21:17, `INCOMEDOR_SQLSERVER=INMO-DW-AR`, sobre `4995183`, con `<base>` = `469934a` (la punta de `feature/presentar-atencion-tactil-dw`, la parte 1 de este `/seguir`):
+  ```
+  openspec validate --all --strict          Totals: 11 passed, 0 failed (11 items)   (incluye change/ofrecer-solo-opciones-disponibles)
+  dotnet build INComedor.sln -warnaserror   Compilación correcta · 0 Advertencia(s) · 0 Errores   (también con --no-incremental)
+  dotnet test INComedor.sln
+    Domain.Tests [+75/x0/?0] · Contracts.Tests [+23/x0/?0] · Sync.Api.Tests [+62/x0/?0]
+    Infrastructure.Sqlite.Tests [+121/x0/?0] · Kiosk.Tests [+163/x0/?0] · E2E.Tests [+10/x0/?0] (1m 52s)
+    total: 454 · error: 0 · correcto: 454 · exit 0
+  ```
+  El E2E del flujo principal pasó en la primera corrida de las dos veces que se corrió el proyecto (3.1 y esta): no hizo falta repetirlo.
+  ```
+  git diff --diff-filter=M --stat 469934a -- tests/
+   .../E2E.Tests/FlujoPrincipalTests.cs                    | 48 +++++++++---   (38 agregadas, 10 borradas: los pasos 4 y 5, tercera prueba de D6)
+   .../Kiosk.Tests/ComprobanteEnPantallaTests.cs           | 32 ++++++--      (27, 5: «Un rechazo LOCAL_LIMIT_REACHED no muestra la impresora», segunda de D6)
+   .../Kiosk.Tests/MaquinaAtencionTests.cs                 | 87 ++++++++-----  (51, 36: `Cada_rechazo_tiene_su_mensaje`, primera de D6, y `Treinta_segundos_sin_actividad_vuelven_a_reposo`, la cuarta que aprobó David)
+   3 files changed, 116 insertions(+), 51 deletions(-)
+  archivos nuevos: Domain.Tests/EvaluadorDisponibilidadTests.cs · Infrastructure.Sqlite.Tests/ConsultaDisponibilidadTests.cs · Kiosk.Tests/OfertaPorPersonaTests.cs
+  ```
+  Coincide con el párrafo de arriba y con la «Cuarta prueba» registrada: tres archivos, y ninguna otra prueba existente cambió.
 
 ## Workflow follow-up
 
