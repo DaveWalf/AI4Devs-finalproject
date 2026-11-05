@@ -80,6 +80,7 @@ public class MaquinaAtencionTests : IDisposable
 
         Assert.Equal(EstadoAtencion.Reposo, maquina.Estado);
         Assert.Equal((0L, 0L), IntencionesYConsumos());
+        DarleAlmuerzoA("9001");
         Identificar(maquina, "9001");
         Assert.NotEqual(anterior, maquina.NombreVisible);
         Assert.Null(maquina.Elegida);
@@ -190,14 +191,6 @@ public class MaquinaAtencionTests : IDisposable
             var maquina = new MaquinaAtencion(new ServicioAtencion(archivo.Ruta, _reloj, _impresora));
             maquina.Iniciar();
             var codigo = PrepararRechazo(archivo.Ruta, motivo);
-            if (motivo == "LOCAL_LIMIT_REACHED")
-            {
-                Identificar(maquina, codigo);
-                maquina.Elegir(AlmuerzoComun);
-                await maquina.ConfirmarAsync();
-                maquina.Listo();
-            }
-
             Identificar(maquina, codigo);
             maquina.Elegir(AlmuerzoComun);
             DespuesDeIdentificar(archivo.Ruta, motivo, codigo);
@@ -387,8 +380,10 @@ public class MaquinaAtencionTests : IDisposable
     private static Guid SemillaAtencionRefrigerio() => Guid.Parse("00000000-0000-4000-8000-000000000019");
 
     /// <summary>
-    /// Arma la persona del rechazo pedido con un código propio. Los de credencial se revocan o vencen después de
-    /// identificarse, en <see cref="DespuesDeIdentificar"/>, porque con la credencial caída el código ya no abre sesión.
+    /// Arma la persona del rechazo pedido con un código propio y una regla de ALMUERZO de límite 1: con ofrecer-solo-opciones-
+    /// disponibles, quien ya no tiene el almuerzo no lo ve al identificarse. La condición del rechazo se aplica después de
+    /// identificarse, en <see cref="DespuesDeIdentificar"/>: el uso del cupo, la regla borrada o con límite 0, la baja y la
+    /// credencial revocada o vencida (con la credencial caída el código ya no abre sesión).
     /// </summary>
     private static string PrepararRechazo(string ruta, string motivo)
     {
@@ -405,41 +400,61 @@ public class MaquinaAtencionTests : IDisposable
             ("$vc", snapshot), ("$per", persona));
         Ejecutar(conexion, "INSERT INTO tbComedorCredencialesPersonas VALUES ($vc, $cre, $per, 'SERIAL_CODE', $valor, NULL, NULL, NULL)",
             ("$vc", snapshot), ("$cre", Guid.NewGuid()), ("$per", persona), ("$valor", codigo));
-
-        // Todos menos SERVICE_NOT_ENABLED tienen una regla de ALMUERZO; la de RULE_DENIED tiene límite 0.
-        if (motivo != "SERVICE_NOT_ENABLED")
-        {
-            Ejecutar(conexion,
-                "INSERT INTO tbComedorReglasHabilitacion VALUES ($vc, $reg, $per, NULL, $srv, $amb, $cat, $limite, 1, NULL, NULL)",
-                ("$vc", snapshot), ("$reg", Guid.NewGuid()), ("$per", persona),
-                ("$srv", Guid.Parse("00000000-0000-4000-8000-000000000005")), ("$amb", Guid.Parse("00000000-0000-4000-8000-000000000006")),
-                ("$cat", Guid.Parse("00000000-0000-4000-8000-000000000007")), ("$limite", motivo == "RULE_DENIED" ? 0 : 1));
-        }
-
-        if (motivo == "PERSON_INACTIVE")
-        {
-            Ejecutar(conexion, "UPDATE tbComedorPersonas SET comperActivo = 0 WHERE comperCodigo = $per", ("$per", persona));
-        }
+        Ejecutar(conexion,
+            "INSERT INTO tbComedorReglasHabilitacion VALUES ($vc, $reg, $per, NULL, $srv, $amb, $cat, 1, 1, NULL, NULL)",
+            ("$vc", snapshot), ("$reg", Guid.NewGuid()), ("$per", persona),
+            ("$srv", Guid.Parse("00000000-0000-4000-8000-000000000005")), ("$amb", Guid.Parse("00000000-0000-4000-8000-000000000006")),
+            ("$cat", Guid.Parse("00000000-0000-4000-8000-000000000007")));
 
         return codigo;
     }
 
     private void DespuesDeIdentificar(string ruta, string motivo, string codigo)
     {
-        var columna = motivo switch
-        {
-            "CREDENTIAL_REVOKED" => "comcreFechaRevocacionUtc",
-            "CREDENTIAL_EXPIRED" => "comcreFechaVigenciaHastaUtc",
-            _ => null,
-        };
-        if (columna is null)
-        {
-            return;
-        }
-
         using var conexion = AbrirRuta(ruta);
-        Ejecutar(conexion, $"UPDATE tbComedorCredencialesPersonas SET {columna} = $ahora WHERE comcreValorNormalizado = $valor",
-            ("$ahora", _reloj.Ahora.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'")), ("$valor", codigo));
+        const string PersonaDelCodigo = "(SELECT comperCodigo FROM tbComedorCredencialesPersonas WHERE comcreValorNormalizado = $valor)";
+        switch (motivo)
+        {
+            case "LOCAL_LIMIT_REACHED":
+                // El cupo de ALMUERZO del día de negocio queda usado: la oferta ya se calculó y la confirmación lo vuelve a decidir.
+                Ejecutar(conexion,
+                    $"INSERT INTO tbComedorUsosCupo (comperCodigo, comacCodigo, comcatCodigo, comucFechaNegocio, comucUsado, comucVersion) VALUES ({PersonaDelCodigo}, $amb, $cat, '2026-10-30', 1, 1)",
+                    ("$valor", codigo), ("$amb", Guid.Parse("00000000-0000-4000-8000-000000000006")), ("$cat", Guid.Parse("00000000-0000-4000-8000-000000000007")));
+                break;
+            case "SERVICE_NOT_ENABLED":
+                Ejecutar(conexion, $"DELETE FROM tbComedorReglasHabilitacion WHERE comperCodigo = {PersonaDelCodigo}", ("$valor", codigo));
+                break;
+            case "RULE_DENIED":
+                Ejecutar(conexion, $"UPDATE tbComedorReglasHabilitacion SET comregLimite = 0 WHERE comperCodigo = {PersonaDelCodigo}", ("$valor", codigo));
+                break;
+            case "PERSON_INACTIVE":
+                Ejecutar(conexion, $"UPDATE tbComedorPersonas SET comperActivo = 0 WHERE comperCodigo = {PersonaDelCodigo}", ("$valor", codigo));
+                break;
+            case "CREDENTIAL_REVOKED":
+            case "CREDENTIAL_EXPIRED":
+                var columna = motivo == "CREDENTIAL_REVOKED" ? "comcreFechaRevocacionUtc" : "comcreFechaVigenciaHastaUtc";
+                Ejecutar(conexion, $"UPDATE tbComedorCredencialesPersonas SET {columna} = $ahora WHERE comcreValorNormalizado = $valor",
+                    ("$ahora", _reloj.Ahora.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'")), ("$valor", codigo));
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Una regla de ALMUERZO de límite 1 para la persona del código: con ofrecer-solo-opciones-disponibles, quien no tiene
+    /// ninguna regla (los operadores sintéticos) no ve la selección sino «No tenés opciones disponibles ahora».
+    /// </summary>
+    private void DarleAlmuerzoA(string codigo)
+    {
+        using var conexion = Abrir();
+        Ejecutar(conexion,
+            """
+            INSERT INTO tbComedorReglasHabilitacion
+            SELECT $vc, $reg, comperCodigo, NULL, $srv, $amb, $cat, 1, 1, NULL, NULL
+            FROM tbComedorCredencialesPersonas WHERE comcreValorNormalizado = $valor
+            """,
+            ("$vc", Guid.Parse("00000000-0000-4000-8000-000000000001")), ("$reg", Guid.NewGuid()),
+            ("$srv", Guid.Parse("00000000-0000-4000-8000-000000000005")), ("$amb", Guid.Parse("00000000-0000-4000-8000-000000000006")),
+            ("$cat", Guid.Parse("00000000-0000-4000-8000-000000000007")), ("$valor", codigo));
     }
 
     private void CambiarPrecio(Guid opcion, int version, long importe)

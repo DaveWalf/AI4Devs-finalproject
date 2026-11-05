@@ -13,6 +13,7 @@ public enum EstadoAtencion
     Resultado,
     Asistencia,
     ErrorAlmacenamiento,
+    SinOpciones,
 }
 
 /// <summary>Qué pasó con un toque de identificación.</summary>
@@ -39,7 +40,10 @@ public sealed class MaquinaAtencion
     public static readonly TimeSpan PlazoResultado = TimeSpan.FromSeconds(10);
 
     private readonly ServicioAtencion _servicio;
+    // La oferta de la persona (D2 de ofrecer-solo-opciones-disponibles): lo que se le muestra, lo que se le retuvo y lo agotado.
     private IReadOnlyList<OpcionCatalogo> _catalogo = [];
+    private IReadOnlyList<OpcionRetenida> _retenidas = [];
+    private IReadOnlyList<CategoriaAgotada> _agotadas = [];
     private Guid? _sesion;
     private Guid? _sesionAsistencia;
     private Task? _confirmacion;
@@ -74,6 +78,18 @@ public sealed class MaquinaAtencion
 
     /// <summary>La opción con su valor vigente, en la reconfirmación.</summary>
     public OpcionCatalogo? Vigente { get; private set; }
+
+    /// <summary>«Hoy ya usaste: almuerzo 1 de 1»: las categorías de cupo agotadas hoy; null si no hay ninguna (D3).</summary>
+    public string? UsoDelDia => MensajesAtencion.UsoDelDia(_agotadas);
+
+    /// <summary>
+    /// Por qué no hay opciones, cuando no hay una categoría agotada que lo explique: el motivo de la baja si todas las opciones
+    /// se retuvieron por eso y, si no, que no hay servicios habilitados (D4). Null con opciones o con lo usado a la vista.
+    /// </summary>
+    public string? MotivoSinOpciones =>
+        _catalogo.Count > 0 || _agotadas.Count > 0 ? null
+        : _retenidas.Count > 0 && _retenidas.All(r => r.Motivo == "PERSON_INACTIVE") ? MensajesAtencion.DeMotivo("PERSON_INACTIVE")
+        : MensajesAtencion.SinHabilitacion;
 
     /// <summary>El IntentId de la última confirmación empezada.</summary>
     public Guid? IntentId { get; private set; }
@@ -143,8 +159,13 @@ public sealed class MaquinaAtencion
         _sesion = resultado.IdentitySessionId;
         PersonaId = resultado.PersonId;
         NombreVisible = resultado.NombreVisible;
-        CargarCatalogo();
-        Estado = EstadoAtencion.Seleccion;
+        if (!CargarOferta())
+        {
+            return ResultadoToque.NoDisponible;
+        }
+
+        // Sin ninguna opción disponible no hay selección: la pantalla avisa y vuelve a reposo con «Listo» o a los 10 s (D4).
+        Estado = _catalogo.Count == 0 ? EstadoAtencion.SinOpciones : EstadoAtencion.Seleccion;
         Tocar();
         return ResultadoToque.Aceptado;
     }
@@ -247,7 +268,7 @@ public sealed class MaquinaAtencion
 
     public void Listo()
     {
-        if (Estado == EstadoAtencion.Resultado)
+        if (Estado is EstadoAtencion.Resultado or EstadoAtencion.SinOpciones)
         {
             Limpiar();
         }
@@ -260,7 +281,7 @@ public sealed class MaquinaAtencion
         var vencido = Estado switch
         {
             EstadoAtencion.Seleccion or EstadoAtencion.Reconfirmacion or EstadoAtencion.Asistencia => quieto >= PlazoInactividad,
-            EstadoAtencion.Resultado => quieto >= PlazoResultado,
+            EstadoAtencion.Resultado or EstadoAtencion.SinOpciones => quieto >= PlazoResultado,
             _ => false,
         };
 
@@ -440,8 +461,13 @@ public sealed class MaquinaAtencion
                 break;
 
             case TipoResultado.CatalogoCambiado:
+                // La oferta se vuelve a calcular, no se relee el catálogo entero: lo que se agotó entre tanto ya no está (D5).
                 var elegida = Elegida!.Id;
-                CargarCatalogo();
+                if (!CargarOferta())
+                {
+                    break;
+                }
+
                 Vigente = _catalogo.FirstOrDefault(o => o.Id == elegida);
                 if (Vigente is not null)
                 {
@@ -451,8 +477,15 @@ public sealed class MaquinaAtencion
                 else
                 {
                     Elegida = null;
-                    Aviso = MensajesAtencion.OpcionRetirada;
-                    Estado = EstadoAtencion.Seleccion;
+                    if (_catalogo.Count == 0)
+                    {
+                        Estado = EstadoAtencion.SinOpciones;
+                    }
+                    else
+                    {
+                        Aviso = MensajesAtencion.OpcionRetirada;
+                        Estado = EstadoAtencion.Seleccion;
+                    }
                 }
 
                 break;
@@ -475,10 +508,23 @@ public sealed class MaquinaAtencion
         _servicio.Asistencia.ComprobantesDelDia().FirstOrDefault(c => c.TicketId == ticketId)?.EstadoOriginal
         ?? EstadoTrabajoImpresion.Unknown;
 
-    private void CargarCatalogo()
+    /// <summary>
+    /// Evalúa cada opción del snapshot activo para la persona con la evaluación de la confirmación y se queda con las
+    /// ofrecidas, las retenidas y las categorías agotadas. Un error de SQLite deja el error de almacenamiento y devuelve false.
+    /// </summary>
+    private bool CargarOferta()
     {
-        _catalogo = _servicio.Catalogo.Leer().Select(MensajesAtencion.Opcion).ToList();
+        var oferta = Proteger(() => _servicio.Disponibilidad.Ofrecer(_sesion!.Value, PersonaId!.Value));
+        if (oferta is null)
+        {
+            return false;
+        }
+
+        _catalogo = oferta.Ofrecidas.Select(MensajesAtencion.Opcion).ToList();
+        _retenidas = oferta.Retenidas;
+        _agotadas = oferta.Agotadas;
         Pagina = Math.Min(Pagina, TotalPaginas);
+        return true;
     }
 
     /// <summary>Vuelve a reposo sin rastro de la persona anterior.</summary>
@@ -489,6 +535,8 @@ public sealed class MaquinaAtencion
         _sesionAsistencia = null;
         _confirmacion = null;
         _catalogo = [];
+        _retenidas = [];
+        _agotadas = [];
         PersonaId = null;
         NombreVisible = null;
         Pagina = 1;

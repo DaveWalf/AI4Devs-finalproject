@@ -24,6 +24,8 @@ public static class MensajesAtencion
     public const string ErrorAlmacenamiento = "Error de almacenamiento: la base no es de una versión conocida";
     public const string NoConfirmado = "No se pudo confirmar. Identificate de nuevo";
     public const string EstiloNoGuardado = "No se pudo guardar el estilo: queda el anterior";
+    public const string SinOpciones = "No tenés opciones disponibles ahora";
+    public const string SinHabilitacion = "No tenés servicios habilitados. Consultá al responsable del comedor";
 
     /// <summary>El mensaje de cada motivo, distinto del de los demás.</summary>
     public static string DeMotivo(string? motivo) => motivo switch
@@ -58,6 +60,16 @@ public static class MensajesAtencion
         var valor = importeUnidadesMenores / (decimal)Math.Pow(10, escala);
         return moneda + " " + valor.ToString("N" + escala.ToString(CultureInfo.InvariantCulture), Cultura);
     }
+
+    /// <summary>
+    /// «Hoy ya usaste: almuerzo 1 de 1 · refrigerio 2 de 2», con el nombre de la categoría en minúsculas; sólo lo agotado,
+    /// que es lo que explica una opción ausente (D3 de ofrecer-solo-opciones-disponibles). Null si no hay ninguna.
+    /// </summary>
+    public static string? UsoDelDia(IReadOnlyList<CategoriaAgotada> agotadas) =>
+        agotadas.Count == 0
+            ? null
+            : "Hoy ya usaste: " + string.Join(" · ", agotadas.Select(a =>
+                $"{a.Nombre.ToLower(Cultura)} {a.Usado.ToString(CultureInfo.InvariantCulture)} de {a.Limite.ToString(CultureInfo.InvariantCulture)}"));
 
     public static OpcionCatalogo Opcion(OpcionDeCatalogo opcion) =>
         new(opcion.Id, opcion.Version, opcion.Nombre, Cargo(opcion.Moneda, opcion.Escala, opcion.ImporteUnidadesMenores));

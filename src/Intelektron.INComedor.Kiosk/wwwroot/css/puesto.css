@@ -146,6 +146,9 @@ body:has(.puesto) {
 
 .titulo p { margin: 0; font-size: 18px; }
 
+/* «Hoy ya usaste: …» en su propia línea, debajo del saludo: color de aviso sobre la superficie opaca del título, sin tocar el alto de las opciones. */
+.titulo .uso-del-dia { flex: 0 0 100%; color: var(--aviso); font-weight: 600; }
+
 .lista { container-type: inline-size; }
 
 .opciones { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }

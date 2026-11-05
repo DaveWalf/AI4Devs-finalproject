@@ -2,6 +2,7 @@ using Bunit;
 using Intelektron.INComedor.Infrastructure.Sqlite;
 using Intelektron.INComedor.Kiosk.Atencion;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Intelektron.INComedor.Kiosk.Tests;
@@ -87,11 +88,10 @@ public class ComprobanteEnPantallaTests : IDisposable
     public async Task Un_rechazo_no_muestra_la_impresora()
     {
         var pantalla = Dibujar(new ImpresoraSimulada(_carpeta));
-        await Confirmar(pantalla);
-        pantalla.WaitForAssertion(() => pantalla.Find(".comprobante"));
-        await pantalla.Find(".comprobante").ClickAsync(new());
+        await Elegir(pantalla);
+        GastarElCupoDeAlmuerzoDeLaPersona();
 
-        await Confirmar(pantalla);
+        await pantalla.Find("#confirmar").ClickAsync(new());
 
         pantalla.WaitForAssertion(() => Assert.Equal(MensajesAtencion.DeMotivo("LOCAL_LIMIT_REACHED"), pantalla.Find("#mensaje").TextContent.Trim()));
         Assert.Empty(pantalla.FindAll(".impresora"));
@@ -134,9 +134,31 @@ public class ComprobanteEnPantallaTests : IDisposable
 
     private static async Task Confirmar(IRenderedComponent<PantallaAtencion> pantalla)
     {
+        await Elegir(pantalla);
+        await pantalla.Find("#confirmar").ClickAsync(new());
+    }
+
+    private static async Task Elegir(IRenderedComponent<PantallaAtencion> pantalla)
+    {
         await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
         await pantalla.Find("#ingresar").ClickAsync(new());
         await pantalla.FindAll(".opcion").Single(o => o.QuerySelector(".nombre")!.TextContent.Trim() == Opcion).ClickAsync(new());
-        await pantalla.Find("#confirmar").ClickAsync(new());
+    }
+
+    /// <summary>El cupo de ALMUERZO del día de negocio de la persona queda usado después de que se le ofreció el almuerzo.</summary>
+    private void GastarElCupoDeAlmuerzoDeLaPersona()
+    {
+        using var conexion = new SqliteConnection($"Data Source={_archivo.Ruta};Pooling=False");
+        conexion.Open();
+        using var comando = conexion.CreateCommand();
+        comando.CommandText =
+            """
+            INSERT INTO tbComedorUsosCupo (comperCodigo, comacCodigo, comcatCodigo, comucFechaNegocio, comucUsado, comucVersion)
+            VALUES ((SELECT comperCodigo FROM tbComedorCredencialesPersonas WHERE comcreValorNormalizado = '0001'),
+                    $amb, $cat, '2026-10-30', 1, 1)
+            """;
+        comando.Parameters.AddWithValue("$amb", Guid.Parse("00000000-0000-4000-8000-000000000006"));
+        comando.Parameters.AddWithValue("$cat", Guid.Parse("00000000-0000-4000-8000-000000000007"));
+        comando.ExecuteNonQuery();
     }
 }
