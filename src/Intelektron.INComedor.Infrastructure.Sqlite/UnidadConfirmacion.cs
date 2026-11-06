@@ -78,16 +78,17 @@ public sealed class UnidadConfirmacion
         // 5. Decide el dominio.
         var fecha = CalculadoraFechaNegocio.Calcular(ahora, puesto.ZonaHoraria.Id, puesto.InicioDiaNegocio);
         var candidatas = LeerReglasCandidatas(conexion, transaccion, puesto, solicitud.PersonId, opcion.ServicioId);
-        var decision = EvaluadorDisponibilidad.Evaluar(
+        var evaluacion = EvaluadorDisponibilidad.Evaluar(
             LeerPersonaActiva(conexion, transaccion, puesto, solicitud.PersonId),
             LeerCredencialDeSesion(conexion, transaccion, puesto, solicitud.IdentitySessionId),
             ahora, opcion.ServicioId, opcion.Cargas, candidatas, solicitud.PersonId, fecha,
-            LeerUsos(conexion, transaccion, solicitud.PersonId, fecha)).Decision;
+            LeerUsos(conexion, transaccion, solicitud.PersonId, fecha));
+        var decision = evaluacion.Decision;
 
         // 6. Persistencia de la decisión según RB06.
         var resultado = decision.Autorizada
-            ? PersistirAutorizacion(conexion, transaccion, solicitud, hash, puesto, opcion, fecha, decision, ahora)
-            : PersistirRechazo(conexion, transaccion, solicitud, hash, puesto, decision, fecha, ahora);
+            ? PersistirAutorizacion(conexion, transaccion, solicitud, hash, puesto, opcion, fecha, decision, evaluacion.Reglas, ahora)
+            : PersistirRechazo(conexion, transaccion, solicitud, hash, puesto, opcion, decision, fecha, ahora);
 
         // 7. Commit y devolución del resultado.
         _puntosDeFalla.AntesDelCommit();
@@ -105,6 +106,7 @@ public sealed class UnidadConfirmacion
         OpcionMenu opcion,
         FechaNegocio fecha,
         DecisionCupo decision,
+        IReadOnlyList<ReglaPersona> reglas,
         DateTimeOffset ahora)
     {
         var decisionId = Guid.NewGuid();
@@ -203,8 +205,30 @@ public sealed class UnidadConfirmacion
 
         InsertarEvento(conexion, transaccion, eventoId, solicitud.IntentId, comprobanteId, "CONSUMPTION_RECORDED", contenidoEvento, hashEvento);
 
-        _bitacora.Insertar(conexion, transaccion, puesto, ahora, "CONSUMPTION_AUTHORIZED",
-            new { solicitud.IntentId, DecisionId = decisionId, ConsumptionId = consumoId, TicketId = comprobanteId, solicitud.PersonId, BusinessDate = fechaTexto });
+        // Lo mostrado se suma a los campos de antes, que no cambian: la opción, su precio y los cargos con su límite (D10 de
+        // escribir-bitacoras-externas), para reconstruir la decisión sin consultar la base.
+        var nombres = decision.Cargas.Count == 0 ? [] : ConsultaDisponibilidad.NombresDeCategorias(conexion, transaccion, puesto);
+        _bitacora.Insertar(conexion, transaccion, puesto, ahora, "CONSUMPTION_AUTHORIZED", new
+        {
+            solicitud.IntentId,
+            DecisionId = decisionId,
+            ConsumptionId = consumoId,
+            TicketId = comprobanteId,
+            solicitud.PersonId,
+            BusinessDate = fechaTexto,
+            solicitud.MenuItemId,
+            solicitud.MenuVersion,
+            MenuLabel = opcion.Nombre,
+            Price = precio,
+            Charges = decision.Cargas.Select(c => new
+            {
+                ScopeId = c.Clave.AmbitoCupoId,
+                CategoryId = c.Clave.CategoriaCupoId,
+                CategoryName = nombres.GetValueOrDefault(c.Clave.CategoriaCupoId),
+                Units = c.Unidades,
+                Limit = reglas.FirstOrDefault(r => r.AmbitoCupoId == c.Clave.AmbitoCupoId && r.CategoriaCupoId == c.Clave.CategoriaCupoId)?.Limite,
+            }).ToList(),
+        });
 
         return resultado;
     }
@@ -215,6 +239,7 @@ public sealed class UnidadConfirmacion
         SolicitudConfirmacion solicitud,
         byte[] hash,
         PuestoLocal puesto,
+        OpcionMenu opcion,
         DecisionCupo decision,
         FechaNegocio fecha,
         DateTimeOffset ahora)
@@ -232,7 +257,17 @@ public sealed class UnidadConfirmacion
         InsertarIntencion(conexion, transaccion, solicitud, hash, "DENIED", decisionId, resultado, ahoraTexto);
         InsertarEvento(conexion, transaccion, eventoId, solicitud.IntentId, null, "CONSUMPTION_DENIED", contenidoEvento, HashIntencion.DeTexto(contenidoEvento));
         _bitacora.Insertar(conexion, transaccion, puesto, ahora, "CONSUMPTION_DENIED",
-            new { solicitud.IntentId, DecisionId = decisionId, solicitud.PersonId, ReasonCode = motivo, BusinessDate = Texto(fecha) });
+            new
+            {
+                solicitud.IntentId,
+                DecisionId = decisionId,
+                solicitud.PersonId,
+                ReasonCode = motivo,
+                BusinessDate = Texto(fecha),
+                solicitud.MenuItemId,
+                solicitud.MenuVersion,
+                MenuLabel = opcion.Nombre,
+            });
 
         return resultado;
     }

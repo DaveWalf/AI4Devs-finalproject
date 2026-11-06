@@ -50,7 +50,15 @@ public sealed class IdentificacionPorCodigo
         if (clasificacion.Vigente)
         {
             var sesion = AbrirSesion(conexion, transaccion, puesto, credencial!, proposito, ahora);
-            resultado = new(sesion, credencial!.PersonaId, credencial.NombreVisible, null);
+            // La identificación aceptada, en la transacción que abre la sesión y sin el código (D8 de escribir-bitacoras-externas).
+            _bitacora.Insertar(conexion, transaccion, puesto, ahora, "SESSION_OPENED", new
+            {
+                IdentitySessionId = sesion,
+                Purpose = CodigoDe(proposito),
+                PersonId = credencial!.PersonaId,
+                Method = "CODE",
+            });
+            resultado = new(sesion, credencial.PersonaId, credencial.NombreVisible, null);
         }
         else
         {

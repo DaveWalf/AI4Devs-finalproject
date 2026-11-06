@@ -65,8 +65,25 @@ Ninguna prueba existente cambia (D10): `git diff --diff-filter=M --stat 1000578 
 
 ## 2. Lo que falta para reconstruir
 
-- [ ] 2.1 Agregar `Infrastructure.Sqlite.Tests/ContextoReconstruibleTests.cs` con los escenarios de «Lo mostrado queda en el registro» (la autorización con sus cargos, el rechazo al confirmar y la oferta con la etiqueta y el importe de cada ofrecida) y uno de `SESSION_OPENED` al aceptar una identificación, con la sesión, el propósito, la persona y el método, sin el código. Ver fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~ContextoReconstruible"`; pegar la salida
-- [ ] 2.2 Ampliar los contextos de `OPTIONS_OFFERED`, `CONSUMPTION_AUTHORIZED` y `CONSUMPTION_DENIED` sin cambiar los campos que ya tienen (D10), registrar `SESSION_OPENED` en la transacción de la identificación y crear la clase pública con la que la atención registra en su propia transacción corta (D8). Verificar con el filtro de 2.1 en verde, `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completo en verde y `git diff --diff-filter=M --stat 1000578 -- tests/` vacío
+- [x] 2.1 Agregar `Infrastructure.Sqlite.Tests/ContextoReconstruibleTests.cs` con los escenarios de «Lo mostrado queda en el registro» (la autorización con sus cargos, el rechazo al confirmar y la oferta con la etiqueta y el importe de cada ofrecida) y uno de `SESSION_OPENED` al aceptar una identificación, con la sesión, el propósito, la persona y el método, sin el código. Ver fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~ContextoReconstruible"`; pegar la salida
+  Cinco casos: autorización con sus cargos (y el catálogo cambiado después, que no cambia lo registrado), rechazo al confirmar con `LOCAL_LIMIT_REACHED` sin cargos ni comprobante, oferta con la etiqueta y el precio de cada ofrecida, `SESSION_OPENED` sin el código, y uno más para la clase pública de 2.2 (`RegistroDelPuesto`, creada con `throw new NotImplementedException()`): tipo, severidad, componente y contexto con la secuencia siguiente. Rojo, 06/11 09:36:
+  ```
+  dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~ContextoReconstruible"
+  con errores … La atención registra en su propia transacción corta …   System.NotImplementedException : The method or operation is not implemented.
+  con errores … Autorización con sus cargos …        System.Collections.Generic.KeyNotFoundException : The given key 'MenuItemId' was not present in the dictionary.
+  con errores … Oferta con lo mostrado …             System.Collections.Generic.KeyNotFoundException : The given key 'MenuLabel' was not present in the dictionary.
+  con errores … Identificación aceptada …            System.ArgumentNullException : Value cannot be null. (Parameter 'json')   (no hay SESSION_OPENED)
+  con errores … Rechazo al confirmar …               System.Collections.Generic.KeyNotFoundException : The given key 'MenuItemId' was not present in the dictionary.
+  total: 5 · error: 5 · correcto: 0
+  ```
+- [x] 2.2 Ampliar los contextos de `OPTIONS_OFFERED`, `CONSUMPTION_AUTHORIZED` y `CONSUMPTION_DENIED` sin cambiar los campos que ya tienen (D10), registrar `SESSION_OPENED` en la transacción de la identificación y crear la clase pública con la que la atención registra en su propia transacción corta (D8). Verificar con el filtro de 2.1 en verde, `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completo en verde y `git diff --diff-filter=M --stat 1000578 -- tests/` vacío
+  `OPTIONS_OFFERED` suma `MenuLabel` y `Price` (`Currency`, `Scale`, `EmployeeChargeMinor`) a cada ofrecida. `CONSUMPTION_AUTHORIZED` suma `MenuItemId`, `MenuVersion`, `MenuLabel`, `Price` y `Charges` (ámbito, categoría con su nombre, unidades y el límite de la regla aplicable, que `UnidadConfirmacion` ahora conserva de la evaluación). `CONSUMPTION_DENIED` suma la opción, su versión y su etiqueta. Ningún campo anterior cambia de nombre ni de valor. `IdentificacionPorCodigo.Identificar` escribe `SESSION_OPENED` (`IdentitySessionId`, `Purpose`, `PersonId`, `Method` `CODE`) en su transacción. `RegistroDelPuesto` registra con `RegistroBitacora` en su propia `BEGIN IMMEDIATE` corta.
+  ```
+  dotnet build src/Intelektron.INComedor.Infrastructure.Sqlite -warnaserror   0 Advertencia(s) · 0 Errores
+  Infrastructure.Sqlite.Tests --filter ContextoReconstruible   total: 5 · error: 0 · correcto: 5
+  Infrastructure.Sqlite.Tests completo                         total: 143 · error: 0 · correcto: 143   (138 y 5 nuevas)
+  git diff --diff-filter=M --stat 1000578 -- tests/            (vacío)
+  ```
 
 ## 3. La atención, Configuración y el puesto
 

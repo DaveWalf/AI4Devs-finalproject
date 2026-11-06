@@ -81,7 +81,14 @@ public sealed class ConsultaDisponibilidad
             IdentitySessionId = sesionId,
             PersonId = personaId,
             ConfigurationVersion = puesto.VersionConfiguracion,
-            Offered = ofrecidas.Select(o => new { MenuItemId = o.Id, MenuVersion = o.Version }).ToList(),
+            // La etiqueta y el precio mostrados se suman a los campos de antes, que no cambian (D10 de escribir-bitacoras-externas).
+            Offered = ofrecidas.Select(o => new
+            {
+                MenuItemId = o.Id,
+                MenuVersion = o.Version,
+                MenuLabel = o.Nombre,
+                Price = new { Currency = o.Moneda, Scale = o.Escala, EmployeeChargeMinor = o.ImporteUnidadesMenores },
+            }).ToList(),
             Withheld = retenidas.Select(r => new { MenuItemId = r.Id, MenuVersion = r.Version, ReasonCode = r.Motivo }).ToList(),
             Exhausted = agotadas.Select(a => new { CategoryId = a.Id, Name = a.Nombre, Used = a.Usado, Limit = a.Limite }).ToList(),
         });
@@ -116,7 +123,7 @@ public sealed class ConsultaDisponibilidad
         return agotadas;
     }
 
-    private static Dictionary<Guid, string> NombresDeCategorias(SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto)
+    internal static Dictionary<Guid, string> NombresDeCategorias(SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto)
     {
         var nombres = new Dictionary<Guid, string>();
         using var comando = ComandosSqlite.Crear(conexion, transaccion,
