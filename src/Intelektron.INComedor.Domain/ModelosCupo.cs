@@ -9,6 +9,9 @@ public enum MotivoDenegacion
     CredentialRevoked,
     CredentialExpired,
     RuleDenied,
+
+    /// <summary>Fuera de toda franja de la opción: el contrato dice SERVICE_NOT_ENABLED con la causa OUTSIDE_SERVICE_HOURS (D5).</summary>
+    OutsideServiceHours,
 }
 
 /// <summary>Carga de cupo de una opción de menú: la categoría y las unidades que consume.</summary>

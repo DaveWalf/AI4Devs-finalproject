@@ -82,7 +82,8 @@ public sealed class UnidadConfirmacion
             LeerPersonaActiva(conexion, transaccion, puesto, solicitud.PersonId),
             LeerCredencialDeSesion(conexion, transaccion, puesto, solicitud.IdentitySessionId),
             ahora, opcion.ServicioId, opcion.Cargas, candidatas, solicitud.PersonId, fecha,
-            LeerUsos(conexion, transaccion, solicitud.PersonId, fecha));
+            LeerUsos(conexion, transaccion, solicitud.PersonId, fecha),
+            opcion.Franjas, HoraLocal(puesto, ahora));
         var decision = evaluacion.Decision;
 
         // 6. Persistencia de la decisión según RB06.
@@ -249,7 +250,8 @@ public sealed class UnidadConfirmacion
         var eventoId = Guid.NewGuid();
         var ahoraTexto = FormatoInstante.Texto(ahora);
         var motivo = CodigoDeMotivo(decision.Motivo!.Value);
-        var resultado = new ResultadoConfirmacion(TipoResultado.Denegada, decisionId, ReasonCode: motivo);
+        var causa = CausaDeMotivo(decision.Motivo!.Value);
+        var resultado = new ResultadoConfirmacion(TipoResultado.Denegada, decisionId, ReasonCode: motivo, ReasonCause: causa);
 
         var evento = new ConsumptionDeniedEvento(
             eventoId, "CONSUMPTION_DENIED", 1, solicitud.IntentId, decisionId, motivo, ahoraTexto, puesto.VersionConfiguracion);
@@ -264,6 +266,7 @@ public sealed class UnidadConfirmacion
                 DecisionId = decisionId,
                 solicitud.PersonId,
                 ReasonCode = motivo,
+                Cause = causa,
                 BusinessDate = Texto(fecha),
                 solicitud.IdentitySessionId,
                 solicitud.MenuItemId,

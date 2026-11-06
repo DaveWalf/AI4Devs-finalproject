@@ -4,8 +4,11 @@ using static Intelektron.INComedor.Infrastructure.Sqlite.LecturaDecision;
 
 namespace Intelektron.INComedor.Infrastructure.Sqlite;
 
-/// <summary>Una opción del snapshot activo que la evaluación no autoriza a la persona, con el código de contrato de su motivo.</summary>
-public sealed record OpcionRetenida(Guid Id, int Version, string Motivo);
+/// <summary>
+/// Una opción del snapshot activo que la evaluación no autoriza a la persona, con el código de contrato de su motivo y, si la
+/// tiene, su causa interna (OUTSIDE_SERVICE_HOURS: D5 de administrar-personas-y-opciones).
+/// </summary>
+public sealed record OpcionRetenida(Guid Id, int Version, string Motivo, string? Causa = null);
 
 /// <summary>Una categoría de cupo que la persona ya agotó en la fecha de negocio: su nombre, lo usado y su límite.</summary>
 public sealed record CategoriaAgotada(Guid Id, string Nombre, int Usado, int Limite);
@@ -43,6 +46,7 @@ public sealed class ConsultaDisponibilidad
         var ahora = _reloj.GetUtcNow();
         var puesto = PuestoLocal.Leer(conexion, transaccion);
         var fecha = CalculadoraFechaNegocio.Calcular(ahora, puesto.ZonaHoraria.Id, puesto.InicioDiaNegocio);
+        var horaLocal = HoraLocal(puesto, ahora);
 
         var personaActiva = LeerPersonaActiva(conexion, transaccion, puesto, personaId);
         var credencial = LeerCredencialDeSesion(conexion, transaccion, puesto, sesionId);
@@ -62,14 +66,16 @@ public sealed class ConsultaDisponibilidad
             }
 
             var resultado = EvaluadorDisponibilidad.Evaluar(
-                personaActiva, credencial, ahora, leida.ServicioId, leida.Cargas, candidatas, personaId, fecha, usos);
+                personaActiva, credencial, ahora, leida.ServicioId, leida.Cargas, candidatas, personaId, fecha, usos,
+                leida.Franjas, horaLocal);
             if (resultado.Decision.Autorizada)
             {
                 ofrecidas.Add(opcion);
             }
             else
             {
-                retenidas.Add(new OpcionRetenida(opcion.Id, opcion.Version, CodigoDeMotivo(resultado.Decision.Motivo!.Value)));
+                var motivo = resultado.Decision.Motivo!.Value;
+                retenidas.Add(new OpcionRetenida(opcion.Id, opcion.Version, CodigoDeMotivo(motivo), CausaDeMotivo(motivo)));
             }
 
             reglasAgotables.AddRange(resultado.Reglas);
@@ -89,7 +95,8 @@ public sealed class ConsultaDisponibilidad
                 MenuLabel = o.Nombre,
                 Price = new { Currency = o.Moneda, Scale = o.Escala, EmployeeChargeMinor = o.ImporteUnidadesMenores },
             }).ToList(),
-            Withheld = retenidas.Select(r => new { MenuItemId = r.Id, MenuVersion = r.Version, ReasonCode = r.Motivo }).ToList(),
+            // Cause es la causa interna de un código de contrato que la agrupa (D5 de administrar-personas-y-opciones).
+            Withheld = retenidas.Select(r => new { MenuItemId = r.Id, MenuVersion = r.Version, ReasonCode = r.Motivo, Cause = r.Causa }).ToList(),
             Exhausted = agotadas.Select(a => new { CategoryId = a.Id, Name = a.Nombre, Used = a.Usado, Limit = a.Limite }).ToList(),
         });
         transaccion.Commit();

@@ -36,10 +36,44 @@ Cambian sólo las ocho pruebas existentes del punto 4 del gate, y sólo en la ve
 
 ## 2. La franja en la evaluación única
 
-- [ ] 2.1 Agregar `Domain.Tests/FranjasHorariasTests.cs`: a las 10:59, 11:00 y 14:00 con la franja de 11:00 a 14:00; a la 01:30 y a las 02:00 con la de 22:00 a 02:00; una opción con dos franjas; sin franjas, a las 03:00; y el orden de la evaluación (regla cero antes que la franja, la franja antes que el cupo, y las reglas elegidas que siguen llegando con la franja fuera). Ver fallar con `dotnet test tests/Intelektron.INComedor.Domain.Tests --filter "FullyQualifiedName~FranjasHorarias"`; pegar la salida
-- [ ] 2.2 Implementar la franja, `MotivoDenegacion.OutsideServiceHours` y la sobrecarga de `EvaluadorDisponibilidad.Evaluar` (D4, D6), sin cambiar la firma actual. Verificar con el filtro de 2.1 en verde, `dotnet test tests/Intelektron.INComedor.Domain.Tests` completo en verde y `git diff --stat 18cce75 -- tests/Intelektron.INComedor.Domain.Tests/EvaluadorDisponibilidadTests.cs` vacío; pegar las salidas
-- [ ] 2.3 Agregar `Infrastructure.Sqlite.Tests/FranjaEnLaEvaluacionTests.cs` con los escenarios de «La franja horaria de la opción entra a la misma evaluación» (antes, dentro y en el fin; la franja que cierra entre la oferta y la confirmación; la regla cero antes que la franja; el cupo agotado a la vista fuera de horario) y «Fuera de horario, la oferta y la confirmación también coinciden», afirmando además la `Cause` en `OPTIONS_OFFERED` y en `CONSUMPTION_DENIED`, `ReasonCause` en el resultado y `SERVICE_NOT_ENABLED` en el evento de salida. Las franjas se insertan por SQL en la versión del fixture. Ver fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~FranjaEnLaEvaluacion"`; pegar la salida
-- [ ] 2.4 Leer las franjas en `LecturaDecision.LeerOpcion`, calcular la hora local con la zona del puesto en la oferta y en la confirmación, y traducir el motivo a `SERVICE_NOT_ENABLED` con la causa `OUTSIDE_SERVICE_HOURS` (D5). Verificar con el filtro de 2.3 en verde, `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completo en verde y el `git diff` del párrafo inicial; pegar las salidas
+- [x] 2.1 Agregar `Domain.Tests/FranjasHorariasTests.cs`: a las 10:59, 11:00 y 14:00 con la franja de 11:00 a 14:00; a la 01:30 y a las 02:00 con la de 22:00 a 02:00; una opción con dos franjas; sin franjas, a las 03:00; y el orden de la evaluación (regla cero antes que la franja, la franja antes que el cupo, y las reglas elegidas que siguen llegando con la franja fuera). Ver fallar con `dotnet test tests/Intelektron.INComedor.Domain.Tests --filter "FullyQualifiedName~FranjasHorarias"`; pegar la salida
+  Dieciséis casos (cuatro teorías y cuatro hechos): 10:59, 11:00, 13:59 y 14:00 con la de 11:00 a 14:00; 01:30, 22:00, 02:00 y 21:59 con la de 22:00 a 02:00; 12:00, 23:00 y 16:00 con las dos; sin franjas a las 03:00; regla cero antes que la franja; franja antes que el cupo agotado; las reglas elegidas que siguen llegando; y la franja de inicio igual al fin que no se construye. `FranjaHoraria` y la sobrecarga creadas con `throw new NotImplementedException()`, y `MotivoDenegacion.OutsideServiceHours` para compilar. Rojo, 06/11 20:16:
+  ```
+  dotnet test tests/Intelektron.INComedor.Domain.Tests --filter "FullyQualifiedName~FranjasHorarias"
+  con errores D6 · Franja de 11:00 a 14:00: … (hora: "11:00", autorizada: True) (0ms)
+    System.TypeInitializationException : The type initializer for '…FranjasHorariasTests' threw an exception.
+    ---- System.NotImplementedException : The method or operation is not implemented.
+  con errores D6 · Una franja con inicio igual al fin no se puede construir (2ms)
+    ---- System.NotImplementedException : The method or operation is not implemented.
+  (los dieciséis con la misma excepción)    total: 16 · error: 16 · correcto: 0
+  ```
+- [x] 2.2 Implementar la franja, `MotivoDenegacion.OutsideServiceHours` y la sobrecarga de `EvaluadorDisponibilidad.Evaluar` (D4, D6), sin cambiar la firma actual. Verificar con el filtro de 2.1 en verde, `dotnet test tests/Intelektron.INComedor.Domain.Tests` completo en verde y `git diff --stat 18cce75 -- tests/Intelektron.INComedor.Domain.Tests/EvaluadorDisponibilidadTests.cs` vacío; pegar las salidas
+  `FranjaHoraria` (record con `Inicio` y `Fin` en `TimeOnly`; rechaza inicio igual al fin con `ArgumentException`; `Contiene` con inicio incluido y fin excluido, y el cruce de medianoche cuando el inicio es mayor). La sobrecarga de `Evaluar` recibe las franjas y la hora local: habilitación; si no hay motivo y la opción tiene franjas sin ninguna que contenga la hora, `OutsideServiceHours` sin cargas y con las reglas elegidas; si no, el cupo. La firma actual delega en la sobrecarga sin franjas («todo el día»).
+  ```
+  Domain.Tests --filter FranjasHorarias   total: 16 · error: 0 · correcto: 16
+  Domain.Tests completo                   total: 91 · error: 0 · correcto: 91   (75 y 16 nuevas)
+  git diff --stat 18cce75 -- tests/Intelektron.INComedor.Domain.Tests/EvaluadorDisponibilidadTests.cs   (vacío, exit 0)
+  ```
+- [x] 2.3 Agregar `Infrastructure.Sqlite.Tests/FranjaEnLaEvaluacionTests.cs` con los escenarios de «La franja horaria de la opción entra a la misma evaluación» (antes, dentro y en el fin; la franja que cierra entre la oferta y la confirmación; la regla cero antes que la franja; el cupo agotado a la vista fuera de horario) y «Fuera de horario, la oferta y la confirmación también coinciden», afirmando además la `Cause` en `OPTIONS_OFFERED` y en `CONSUMPTION_DENIED`, `ReasonCause` en el resultado y `SERVICE_NOT_ENABLED` en el evento de salida. Las franjas se insertan por SQL en la versión del fixture. Ver fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~FranjaEnLaEvaluacion"`; pegar la salida
+  Siete casos sobre `ConfirmacionTestBase`, con el reloj llevado a la hora local del 19/10 (UTC-3): 10:59, 11:00 y 14:00; ofrecida a las 13:59 y confirmada a las 14:00; regla cero a las 16:00 (sin causa en el resultado, en la retenida ni en `CONSUMPTION_DENIED`); almuerzo consumido a las 12:00 y oferta a las 16:00 con las nueve de ALMUERZO fuera de horario y ALMUERZO 1 de 1; y la oferta y la confirmación en el mismo instante. Los fuera de horario afirman `Cause` en `Withheld` y en `CONSUMPTION_DENIED`, `ReasonCause` y `SERVICE_NOT_ENABLED` en el evento de salida, sin la causa. `OpcionRetenida.Causa` y `ResultadoConfirmacion.ReasonCause` se suman, todavía siempre nulas, para compilar. Rojo, 06/11 20:18:
+  ```
+  dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~FranjaEnLaEvaluacion"
+  con errores … (hora: "10:59", autorizada: False)    Assert.Single() Failure: The collection did not contain any matching items
+  con errores … (hora: "14:00", autorizada: False)    Assert.Single() Failure: The collection did not contain any matching items
+  con errores … La franja cierra entre la oferta y la confirmación …   Assert.Equal() Failure   Expected: Denegada   Actual: Autorizada
+  con errores … Fuera de horario, la oferta y la confirmación coinciden …   Assert.Single() Failure: … did not contain any matching items
+  con errores … El cupo agotado sigue a la vista fuera de horario …   Assert.All() Failure: 9 out of 9 items … Expected: "OUTSIDE_SERVICE_HOURS"   Actual: null
+  con errores … Una regla cero decide antes que la franja …   System.Collections.Generic.KeyNotFoundException : The given key 'Cause' was not present in the dictionary.
+  total: 7 · error: 6 · correcto: 1   (el de las 11:00 ya autorizaba sin franjas)
+  ```
+- [x] 2.4 Leer las franjas en `LecturaDecision.LeerOpcion`, calcular la hora local con la zona del puesto en la oferta y en la confirmación, y traducir el motivo a `SERVICE_NOT_ENABLED` con la causa `OUTSIDE_SERVICE_HOURS` (D5). Verificar con el filtro de 2.3 en verde, `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completo en verde y el `git diff` del párrafo inicial; pegar las salidas
+  `OpcionMenu` suma `Franjas`, que `LeerOpcion` lee de `tbComedorFranjasOpcionesMenu` en la versión activa (`LecturaDecision.LeerFranjas`); `HoraLocal` convierte el instante a la zona del puesto, la de la fecha de negocio. La oferta y la confirmación llaman a la sobrecarga con las franjas y esa hora. `CodigoDeMotivo` traduce `OutsideServiceHours` a `SERVICE_NOT_ENABLED` y `CausaDeMotivo` da `OUTSIDE_SERVICE_HOURS`, que van a `OpcionRetenida.Causa`, a `Cause` de cada retenida en `OPTIONS_OFFERED`, a `ResultadoConfirmacion.ReasonCause` (y así a su `ResultPayload` y a su replay) y a `Cause` de `CONSUMPTION_DENIED`; nula en los demás motivos. El evento de salida no cambia.
+  ```
+  Infrastructure.Sqlite.Tests --filter FranjaEnLaEvaluacion   total: 7 · error: 0 · correcto: 7
+  Infrastructure.Sqlite.Tests completo                         total: 154 · error: 0 · correcto: 154   (147 y 7 nuevas)
+  dotnet build INComedor.sln -warnaserror                      0 Advertencia(s) · 0 Errores
+  git diff --diff-filter=M --stat 18cce75 -- tests/            los seis archivos de 1.2, sin cambios desde entonces
+  ```
 
 ## 3. El servicio de administración
 
