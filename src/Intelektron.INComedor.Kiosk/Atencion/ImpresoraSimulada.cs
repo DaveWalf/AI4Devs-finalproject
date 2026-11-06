@@ -11,6 +11,9 @@ public enum ModoImpresoraSimulada
     Incierta,
 }
 
+/// <summary>Un cambio de modo elegido en Configuración, para su registro (D9 de escribir-bitacoras-externas).</summary>
+public sealed record CambioModoImpresora(ModoImpresoraSimulada Antes, ModoImpresoraSimulada Despues);
+
 /// <summary>
 /// La impresora de la demostración (D11 de atender-seleccion-y-confirmacion): escribe cada comprobante como texto en
 /// la carpeta comprobantes, con el nombre «TicketId-copia.txt». El modo se elige en la franja de la pantalla.

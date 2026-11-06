@@ -33,7 +33,13 @@ public partial class MainWindow : Window
             // El receptor de demostración (D12) deja sus certificados en certificados\; sin ellos, el puesto atiende sin receptor.
             var receptor = ClienteReceptorHttp.DesdeCarpetaDemostracion(entorno.CarpetaCertificados, entorno.DireccionReceptor);
             var atencion = new ServicioAtencion(entorno.RutaBase, TimeProvider.System, new ImpresoraSimulada(entorno.CarpetaComprobantes), receptor,
-                entorno.CatalogoNueve);
+                entorno.CatalogoNueve)
+            {
+                BitacorasAutomaticas = true,
+            };
+            // El contenedor no libera una instancia que recibió armada: el cierre de la ventana es el cierre ordenado del
+            // puesto, con KIOSK_STOPPED y la última pasada de las bitácoras (escribir-bitacoras-externas, D4 y D9).
+            Closed += (_, _) => atencion.Dispose();
             servicios.AddSingleton(atencion);
             servicios.AddSingleton(new MaquinaAtencion(atencion));
             servicios.AddSingleton(new LogosLocales(entorno.Carpeta));

@@ -71,6 +71,19 @@ public static class MensajesAtencion
             : "Hoy ya usaste: " + string.Join(" · ", agotadas.Select(a =>
                 $"{a.Nombre.ToLower(Cultura)} {a.Usado.ToString(CultureInfo.InvariantCulture)} de {a.Limite.ToString(CultureInfo.InvariantCulture)}"));
 
+    /// <summary>
+    /// «Bitácora general: al día», «… : 3 pendientes por escribir» mientras espera la pasada siguiente, o «… : degradada,
+    /// 4 pendientes desde las 12:01» con una incidencia abierta (escribir-bitacoras-externas). Nunca datos de personas.
+    /// </summary>
+    public static string EstadoBitacora(EstadoBitacora estado, TimeZoneInfo zona)
+    {
+        var nombre = estado.Destino == DestinoBitacora.General ? "Bitácora general" : "Bitácora de interacciones";
+        var pendientes = estado.Pendientes == 1 ? "1 pendiente" : $"{estado.Pendientes.ToString(CultureInfo.InvariantCulture)} pendientes";
+        return estado.DegradadaDesde is { } desde
+            ? $"{nombre}: degradada, {pendientes} desde las {TimeZoneInfo.ConvertTime(desde, zona).ToString("HH:mm", CultureInfo.InvariantCulture)}"
+            : estado.AlDia ? $"{nombre}: al día" : $"{nombre}: {pendientes} por escribir";
+    }
+
     public static OpcionCatalogo Opcion(OpcionDeCatalogo opcion) =>
         new(opcion.Id, opcion.Version, opcion.Nombre, Cargo(opcion.Moneda, opcion.Escala, opcion.ImporteUnidadesMenores));
 

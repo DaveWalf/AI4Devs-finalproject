@@ -24,4 +24,25 @@ public sealed class RegistroDelPuesto
         _bitacora.Insertar(conexion, transaccion, PuestoLocal.Leer(conexion, transaccion), _reloj.GetUtcNow(), tipoEvento, contexto, severidad);
         transaccion.Commit();
     }
+
+    /// <summary>
+    /// KIOSK_STARTED o KIOSK_STOPPED con las versiones de la aplicación, del runtime, del sistema operativo, del esquema y
+    /// de la configuración (D9). La que no se pueda leer va nula: nunca una versión inventada.
+    /// </summary>
+    public void RegistrarPuesto(string tipoEvento, string? versionAplicacion, string? versionRuntime, string? sistemaOperativo)
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        using var transaccion = BaseComedor.IniciarTransaccionEscritura(conexion);
+        var puesto = PuestoLocal.Leer(conexion, transaccion);
+        var esquema = (int)ComandosSqlite.EscalarLong(conexion, transaccion, "PRAGMA user_version");
+        _bitacora.Insertar(conexion, transaccion, puesto, _reloj.GetUtcNow(), tipoEvento, new
+        {
+            AppVersion = versionAplicacion,
+            RuntimeVersion = versionRuntime,
+            OsDescription = sistemaOperativo,
+            SchemaVersion = esquema,
+            ConfigurationVersion = puesto.VersionConfiguracion,
+        });
+        transaccion.Commit();
+    }
 }

@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.Components.Web
+@using Intelektron.INComedor.Infrastructure.Sqlite
 
 @*
     Configuración en este corte (D5 de presentar-atencion-tactil): un diálogo modal que no cambia el estado de la
@@ -28,7 +29,21 @@
 
         @if (Impresora is not null)
         {
-            <FranjaImpresora Impresora="Impresora" />
+            <FranjaImpresora Impresora="Impresora" ModoCambiado="ModoImpresoraCambiado" />
+        }
+
+        @if (Bitacoras is not null)
+        {
+            @* El estado de cada bitácora, sin datos de personas (escribir-bitacoras-externas). *@
+            <section id="estado-bitacoras" aria-labelledby="titulo-bitacoras">
+                <h3 id="titulo-bitacoras">Bitácoras</h3>
+                <ul>
+                    @foreach (var bitacora in Bitacoras)
+                    {
+                        <li id="bitacora-@(bitacora.Destino == DestinoBitacora.General ? "general" : "interacciones")">@MensajesAtencion.EstadoBitacora(bitacora, Zona)</li>
+                    }
+                </ul>
+            </section>
         }
 
         @if (Aviso is not null)
@@ -53,6 +68,17 @@
     /// <summary>La impresora simulada, o null con cualquier otra: entonces no hay sección de impresora.</summary>
     [Parameter]
     public ImpresoraSimulada? Impresora { get; set; }
+
+    /// <summary>El estado de las bitácoras al abrir; null no muestra la sección.</summary>
+    [Parameter]
+    public IReadOnlyList<EstadoBitacora>? Bitacoras { get; set; }
+
+    /// <summary>La zona en que se muestra desde qué hora una bitácora está degradada.</summary>
+    [Parameter]
+    public TimeZoneInfo Zona { get; set; } = TimeZoneInfo.Utc;
+
+    [Parameter]
+    public EventCallback<CambioModoImpresora> ModoImpresoraCambiado { get; set; }
 
     /// <summary>Lo que el diálogo avisa, por ejemplo que no se pudo guardar; null sin aviso.</summary>
     [Parameter]
