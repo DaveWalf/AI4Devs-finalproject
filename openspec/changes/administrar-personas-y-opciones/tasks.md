@@ -4,8 +4,35 @@ Cambian sólo las ocho pruebas existentes del punto 4 del gate, y sólo en la ve
 
 ## 1. Versión de esquema 4
 
-- [ ] 1.1 Agregar `Infrastructure.Sqlite.Tests/MigracionFranjasTests.cs`: una base vacía queda en la versión 4 con las 25 tablas; una base de la versión 3 con un consumo autorizado pasa a la 4 y conserva el consumo y su evento; el `CHECK` rechaza una franja con inicio igual al fin y un origen que no es `LOCAL` ni `INWEB`. Ver fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~MigracionFranjas"`; pegar la salida
-- [ ] 1.2 Agregar `0004_franjas_y_origen.sql` y su entrada en `BaseComedor` (D2), y cambiar las ocho pruebas existentes del punto 4 sólo en el número de versión, la lista de tablas de `AperturaBaseTests` y las tablas que quita `SemillaAtencionTests`, con la aprobación del gate. Verificar con el filtro de 1.1 en verde, `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` y `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completos en verde y `git diff --diff-filter=M --stat 18cce75 -- tests/` con sólo los seis archivos; pegar las tres salidas
+- [x] 1.1 Agregar `Infrastructure.Sqlite.Tests/MigracionFranjasTests.cs`: una base vacía queda en la versión 4 con las 25 tablas; una base de la versión 3 con un consumo autorizado pasa a la 4 y conserva el consumo y su evento; el `CHECK` rechaza una franja con inicio igual al fin y un origen que no es `LOCAL` ni `INWEB`. Ver fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~MigracionFranjas"`; pegar la salida
+  Cuatro casos: base vacía con las 25 tablas, base armada con los recursos 0001 a 0003 y `user_version` 3 con un consumo autorizado y su evento `PENDING` (la foto de las dos filas, igual antes y después), franja de 12:00 a 12:00 y origen `CENTRAL` sobre el fixture sintético. Rojo, 06/11 20:13:
+  ```
+  dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~MigracionFranjas"
+  con errores D2 · Base vacía: queda en la versión de esquema 4 con las 25 tablas, las dos nuevas incluidas (80ms)
+    Assert.Equal() Failure: Values differ   Expected: 4   Actual: 3
+  con errores D2 · D6 · Una franja con inicio igual al fin falla por CHECK (39ms)
+    Assert.Equal() Failure: Values differ   Expected: 275   Actual: 1      (no such table)
+  con errores D2 · D3 · El origen de una versión sólo admite LOCAL o INWEB (28ms)
+    Assert.Equal() Failure: Values differ   Expected: 275   Actual: 1
+  con errores D2 · AT51 · Base en la versión 3 con un consumo autorizado: pasa a la 4, … (94ms)
+    Assert.Equal() Failure: Values differ   Expected: 4   Actual: 3
+  total: 4 · error: 4 · correcto: 0
+  ```
+- [x] 1.2 Agregar `0004_franjas_y_origen.sql` y su entrada en `BaseComedor` (D2), y cambiar las ocho pruebas existentes del punto 4 sólo en el número de versión, la lista de tablas de `AperturaBaseTests` y las tablas que quita `SemillaAtencionTests`, con la aprobación del gate. Verificar con el filtro de 1.1 en verde, `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` y `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completos en verde y `git diff --diff-filter=M --stat 18cce75 -- tests/` con sólo los seis archivos; pegar las tres salidas
+  `0004_franjas_y_origen.sql`: `tbComedorFranjasOpcionesMenu` (clave `comvcCodigo` y `comfraCodigo`, FK a la opción de su versión, horas `HH:mm` de 00:00 a 23:59 por `GLOB` y `CHECK` de inicio distinto del fin, índice por opción) y `tbComedorOrigenesVersiones` (FK a la versión, `CHECK IN ('LOCAL', 'INWEB')`), embebida y cuarta en `BaseComedor.Migraciones`. Las ocho pruebas del punto 4 cambian sólo el número que afirman (y el de su `DisplayName`): `AperturaBaseTests` suma las dos tablas a su lista (25) y `SemillaAtencionTests` las quita al simular la versión 1. Los nombres de los métodos no cambian, para que sigan siendo los que lista el gate. 06/11 20:15 a 20:17:
+  ```
+  Infrastructure.Sqlite.Tests --filter MigracionFranjas   total: 4 · error: 0 · correcto: 4
+  Infrastructure.Sqlite.Tests completo                    total: 147 · error: 0 · correcto: 147   (143 y 4 nuevas)
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)   total: 174 · error: 0 · correcto: 174
+  git diff --diff-filter=M --stat 18cce75 -- tests/
+   .../AperturaBaseTests.cs                                          | 6 ++++--
+   .../MigracionLotesTests.cs                                        | 8 ++++----
+   .../MigracionesTests.cs                                           | 4 ++--
+   .../Intelektron.INComedor.Kiosk.Tests/BitacorasDelPuestoTests.cs  | 4 ++--
+   tests/Intelektron.INComedor.Kiosk.Tests/SemillaAtencionTests.cs   | 6 +++---
+   .../ServicioDemostracionTests.cs                                  | 4 ++--
+   6 files changed, 17 insertions(+), 15 deletions(-)
+  ```
 
 ## 2. La franja en la evaluación única
 

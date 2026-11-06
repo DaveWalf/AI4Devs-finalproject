@@ -9,5 +9,6 @@
     <EmbeddedResource Include="Migraciones\0001_transaccion_consumo.sql" LogicalName="Migraciones.0001_transaccion_consumo.sql" />
     <EmbeddedResource Include="Migraciones\0002_permisos_operadores.sql" LogicalName="Migraciones.0002_permisos_operadores.sql" />
     <EmbeddedResource Include="Migraciones\0003_lotes_sincronizacion.sql" LogicalName="Migraciones.0003_lotes_sincronizacion.sql" />
+    <EmbeddedResource Include="Migraciones\0004_franjas_y_origen.sql" LogicalName="Migraciones.0004_franjas_y_origen.sql" />
   </ItemGroup>
 </Project>

@@ -19,11 +19,13 @@ public class AperturaBaseTests
         "tbComedorConsumosConocidos",
         "tbComedorCredencialesPersonas",
         "tbComedorEventosSalida",
+        "tbComedorFranjasOpcionesMenu",
         "tbComedorIntencionesConsumo",
         "tbComedorLotesSincronizacion",
         "tbComedorLotesSincronizacion_Eventos",
         "tbComedorOpcionesMenu",
         "tbComedorOpcionesMenu_CategoriasCupo",
+        "tbComedorOrigenesVersiones",
         "tbComedorPermisosOperadores",
         "tbComedorPersonas",
         "tbComedorReglasHabilitacion",
@@ -34,7 +36,7 @@ public class AperturaBaseTests
         "tbComedorVersionesConfiguracion",
     ];
 
-    [Fact(DisplayName = "TK03.1 · Base vacía: queda en la versión de esquema 3, con claves foráneas activas y las 23 tablas del mapa")]
+    [Fact(DisplayName = "TK03.1 · Base vacía: queda en la versión de esquema 4, con claves foráneas activas y las 25 tablas del mapa")]
     public void Base_vacia_queda_en_version_3_con_las_23_tablas()
     {
         using var archivo = new ArchivoTemporal();
@@ -42,7 +44,7 @@ public class AperturaBaseTests
         var base_ = BaseComedor.Abrir(archivo.Ruta);
 
         using var conexion = base_.AbrirConexion();
-        Assert.Equal(3L, Escalar(conexion, "PRAGMA user_version"));
+        Assert.Equal(4L, Escalar(conexion, "PRAGMA user_version"));
         Assert.Equal(1L, Escalar(conexion, "PRAGMA foreign_keys"));
         var tablas = Lista(conexion, "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
         Assert.Equal(TablasEsperadas, tablas);
