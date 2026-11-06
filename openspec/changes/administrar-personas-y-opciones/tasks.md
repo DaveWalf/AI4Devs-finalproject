@@ -176,7 +176,27 @@ Cambian sólo las ocho pruebas existentes del punto 4 del gate, y sólo en la ve
 
 ## 6. Integración
 
-- [ ] 6.1 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además el `git diff` del párrafo inicial
+- [x] 6.1 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además el `git diff` del párrafo inicial
+  06/11 de 20:52 a 20:54, sobre `f8f65d9`, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`; salida entera en `%TEMP%\test-administracion-0611.txt`:
+  ```
+  openspec validate --all --strict              Totals: 11 passed, 0 failed (11 items)
+  dotnet build INComedor.sln -warnaserror       0 Advertencia(s) · 0 Errores
+  dotnet test INComedor.sln                     total: 565 · error: 0 · correcto: 565 · omitido: 0 · 2m 03s 805ms · exit 0
+    Domain.Tests                   correcto [+91/x0/?0]    (75 y 16 nuevas)
+    Contracts.Tests                correcto [+23/x0/?0]
+    Sync.Api.Tests                 correcto [+62/x0/?0]
+    Infrastructure.Sqlite.Tests    correcto [+184/x0/?0]   (143 y 41 nuevas)
+    Kiosk.Tests                    correcto [+193/x0/?0]   (174 y 19 nuevas)
+    E2E.Tests                      correcto [+12/x0/?0]    (11 y 1 nueva; en la primera corrida)
+  git diff --diff-filter=M --stat 18cce75 -- tests/
+   .../AperturaBaseTests.cs                                          | 6 ++++--
+   .../MigracionLotesTests.cs                                        | 8 ++++----
+   .../MigracionesTests.cs                                           | 4 ++--
+   .../Intelektron.INComedor.Kiosk.Tests/BitacorasDelPuestoTests.cs  | 4 ++--
+   tests/Intelektron.INComedor.Kiosk.Tests/SemillaAtencionTests.cs   | 6 +++---
+   .../ServicioDemostracionTests.cs                                  | 4 ++--
+   6 files changed, 17 insertions(+), 15 deletions(-)
+  ```
 
 ## Workflow follow-up
 
