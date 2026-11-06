@@ -66,9 +66,9 @@ Cada oferta SHALL quedar en la bitácora como un registro `OPTIONS_OFFERED` con 
 
 #### Scenario: Oferta con una categoría agotada
 Origen: RF43 a RF46 y AT41 (reconstruir la interacción), y pedido de David del 04/11/2026 («una completa reconstrucción de qué se hizo o qué ocurrió en cada interacción»).
-- **GIVEN** una persona con un código sintético reconocible, límite 1 en ALMUERZO y 2 en REFRIGERIO, el catálogo de nueve y un almuerzo ya consumido en el día
+- **GIVEN** una persona con un código sintético reconocible, límite 1 en ALMUERZO y 2 en REFRIGERIO, el catálogo de quince y un almuerzo ya consumido en el día
 - **WHEN** se identifica
-- **THEN** existe un registro `OPTIONS_OFFERED` con cinco opciones ofrecidas, cuatro retenidas con `LOCAL_LIMIT_REACHED` y la categoría de ALMUERZO con uso 1 y límite 1
+- **THEN** existe un registro `OPTIONS_OFFERED` con seis opciones ofrecidas, nueve retenidas con `LOCAL_LIMIT_REACHED` y la categoría de ALMUERZO con uso 1 y límite 1
 - **AND** el registro no contiene el código
 
 #### Scenario: Oferta vacía

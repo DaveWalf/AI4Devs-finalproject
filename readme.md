@@ -172,8 +172,8 @@ Recorre el flujo principal del [plan de pruebas](docs/pruebas.md#pruebas-previst
 receptor compilados, como procesos, y la pantalla manejada por Playwright por CDP (el protocolo de depuración
 del WebView2):
 - `0001` confirma «Almuerzo común» con el receptor apagado y sale el comprobante;
-- el segundo almuerzo choca con el cupo;
-- la franja cuenta 2 pendientes;
+- con el almuerzo del día usado, `0001` ve sólo los refrigerios y «Hoy ya usaste: almuerzo 1 de 1»;
+- la franja cuenta 1 pendiente;
 - al volver el receptor, queda al día, con el consumo consolidado una sola vez.
 
 Suma cinco pruebas de las costuras del puesto. Tarda cerca de 1 min 45 s, porque espera el ciclo real de envío,
@@ -219,7 +219,7 @@ Release cuando se publique.
 #### Capturas del flujo principal
 
 Las tomó el E2E del camino 3 en este equipo el 30/10/2026, sobre los EXE compilados del puesto y del receptor, con
-la base y los códigos sintéticos de la demostración. Siguen el escenario E2E del
+la base y los códigos sintéticos de la demostración. Son del flujo anterior a ofrecer-solo-opciones-disponibles. Siguen el escenario E2E del
 [plan de pruebas](docs/pruebas.md#pruebas-previstas): el receptor arranca apagado y vuelve al final.
 
 | 1. Selección de `0001` | 2. Consumo registrado | 3. Segundo almuerzo: cupo |
@@ -231,8 +231,8 @@ la base y los códigos sintéticos de la demostración. Siguen el escenario E2E 
 | ![Reposo con la franja «Sincronización: 2 pendientes»](docs/capturas/04-sincronizacion-pendiente.png) | ![Reposo con la franja «Sincronización: al día»](docs/capturas/05-sincronizacion-al-dia.png) |
 
 En las dos primeras la franja todavía dice «al día»: se actualiza en cada ciclo de envío, de 30 s, y la cuarta
-captura es la del primer ciclo con el receptor apagado. Cuenta 2 pendientes con un solo consumo: el puesto envía
-también el rechazo por cupo de la tercera.
+captura es la del primer ciclo con el receptor apagado. Cuenta 2 pendientes con un solo consumo: en el flujo del 30/10 el puesto enviaba
+también el rechazo por cupo de la tercera. Desde ofrecer-solo-opciones-disponibles el segundo almuerzo ya no se ofrece (captura 11, más abajo) y la franja cuenta 1 pendiente.
 
 #### Consultar el diseño
 

@@ -55,11 +55,12 @@ La oferta se calcula fuera del bloqueo de la confirmación y puede quedar vieja.
 
 Descartada: confiar en la oferta y no reevaluar. Rompería RB06: dos atenciones sobre la misma persona podrían gastar el mismo cupo.
 
-### D6. Tres pruebas existentes cambian con el gate
+### D6. Cuatro pruebas existentes cambian (tres con el gate y una aprobada durante el apply)
 
 - `MaquinaAtencionTests.Cada_rechazo_tiene_su_mensaje`: para `LOCAL_LIMIT_REACHED`, `SERVICE_NOT_ENABLED`, `RULE_DENIED` y `PERSON_INACTIVE` la persona se arma con una regla de ALMUERZO de límite 1 y la condición del rechazo se aplica en `DespuesDeIdentificar`. Esa condición es el uso de cupo (`tbComedorUsosCupo`), borrar la regla, dejar su límite en 0 y dar de baja a la persona. Las afirmaciones no cambian.
 - `ComprobanteEnPantallaTests`, «Un rechazo LOCAL_LIMIT_REACHED no muestra la impresora»: el uso de cupo se inserta después de identificarse. Las afirmaciones no cambian.
 - `FlujoPrincipalTests`: los pasos 4 y 5, como dice el punto 1 del gate.
+- `MaquinaAtencionTests.Treinta_segundos_sin_actividad_vuelven_a_reposo`, aprobada por David el 04/11 a las 21:08 durante el apply: el operador `9001` recibe dentro de la prueba una regla de ALMUERZO de límite 1 (`DarleAlmuerzoA`), sin cambiar sus afirmaciones.
 
 Las pruebas nuevas van en archivos nuevos: `Domain.Tests/EvaluadorDisponibilidadTests.cs`, `Infrastructure.Sqlite.Tests/ConsultaDisponibilidadTests.cs` y `Kiosk.Tests/OfertaPorPersonaTests.cs`. La de equivalencia (escenario «La oferta y la confirmación coinciden») arma las cinco personas en una base real y compara, para cada una, el motivo de la oferta con el de `UnidadConfirmacion.Confirmar` en el mismo instante del reloj falso.
 
