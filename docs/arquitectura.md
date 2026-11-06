@@ -166,7 +166,7 @@ de texto independientes por mes. AuditRecord se persiste junto al hecho SQLite.
 La marca de entrega es el propio archivo: el escritor sigue desde la última línea
 completa de cada destino, sin tabla de entregas, y la incidencia queda como registros
 LOG_DELIVERY_FAILED y LOG_DELIVERY_RECOVERED de la bitácora durable (D2 de
-[escribir-bitacoras-externas](../openspec/changes/escribir-bitacoras-externas/design.md),
+[escribir-bitacoras-externas](../openspec/changes/archive/2026-11-06-escribir-bitacoras-externas/design.md),
 que descartó AuditFileDelivery como tabla). Si falla un archivo se continúa
 con cola durable, incidencia y reconstrucción posterior (D-C14); no hay transacción
 atómica SQLite/archivo. Si tampoco persiste SQLite, no se confirma una operación nueva.

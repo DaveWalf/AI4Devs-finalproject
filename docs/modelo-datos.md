@@ -117,7 +117,7 @@ En el puesto implementado, AuditRecord es `tbComedorBitacora`, y AuditFileDelive
 LogDeliveryIncident no son tablas: la marca de entrega es el propio archivo, que el
 escritor lee desde su última línea completa, y la incidencia son los registros
 LOG_DELIVERY_FAILED y LOG_DELIVERY_RECOVERED de esa misma bitácora, sin migración (D2 de
-[escribir-bitacoras-externas](../openspec/changes/escribir-bitacoras-externas/design.md)).
+[escribir-bitacoras-externas](../openspec/changes/archive/2026-11-06-escribir-bitacoras-externas/design.md)).
 Las dos filas de arriba quedan como el diseño de la entrega 1.
 
 DiagnosticRunId correlaciona inicio/fin/resultado en AuditRecord; no necesita una
