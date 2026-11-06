@@ -68,7 +68,7 @@ must y una should; su secuencia y aceptación figuran en el
 | F01 | Identificación y selección | Identificación simulada por código; catálogo, cancelación y reconfirmación (HU01.1). Should: rechazos de credencial (HU01.2-J). | Biometría 1:N y 1:1. |
 | F02 | Autorización y registro local | Cupo y fecha de negocio en SQLite (HU01.3); un único consumo ante doble toque, retry o reinicio (HU01.1, HU02.1). | Auditoría de saltos del reloj. |
 | F03 | Comprobante y recuperación | Ticket tras el commit local y reimpresión con permiso, sin registrar otra comida (HU03.1). | — |
-| F04 | Sincronización y supervisión | Outbox y receptor idempotente de lotes (HU02.2). Bitácoras mensuales general e interacciones, fuera de SQLite (HU03.5, recortada). | Multipuesto, configuración por snapshot, administración, diagnóstico, cuenta de mantenimiento y lo que el recorte de las bitácoras deja fuera. |
+| F04 | Sincronización y supervisión | Outbox y receptor idempotente de lotes (HU02.2). Bitácoras mensuales general e interacciones, fuera de SQLite (HU03.5, recortada). Personas, cupos, opciones y franjas editables en Configuración mientras no haya INWeb, con una versión local por guardado (HU03.3, recortada). | Multipuesto, configuración por snapshot, permisos de operador, importación de INWeb, diagnóstico, cuenta de mantenimiento y lo que los recortes de las bitácoras y de la administración dejan fuera. |
 
 La segunda ola no se recorta del producto: los párrafos siguientes describen el
 producto completo, y su diseño se conserva en `docs/`.
@@ -209,10 +209,15 @@ receptor, en la ventana:
 5. La impresora en «Disponible», `9001` y «Asistencia»: los comprobantes del día. «Recuperar» saca el pendiente
    del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con la leyenda DUPLICADO.
 6. `9002` y «Asistencia»: «Tu permiso de operador está vencido».
-7. Cerrar la ventana y abrir `%LOCALAPPDATA%\INComedor\demo\bitacoras\<KioskId>\INComedor-interacciones-AAAAMM.log`
-   con cualquier editor de texto: cada atención de los pasos 1 a 6 se lee, en orden y con la misma sesión, de
+7. En reposo, el engranaje y «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
+   `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión 2
+   de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
+   no se reconoce.
+8. Cerrar la ventana y abrir `%LOCALAPPDATA%\INComedor\demo\bitacoras\<KioskId>\INComedor-interacciones-AAAAMM.log`
+   con cualquier editor de texto: cada atención de los pasos 1 a 7 se lee, en orden y con la misma sesión, de
    `SESSION_OPENED` a `SESSION_CLOSED`, con la opción elegida, su importe y el mensaje que se mostró, y sin el código.
-   En `INComedor-general-AAAAMM.log` están el arranque y el cierre del puesto, lo hecho en Configuración y la impresión.
+   En `INComedor-general-AAAAMM.log` están el arranque y el cierre del puesto, lo hecho en Configuración (el alta del
+   paso 7 como `CONFIGURATION_CHANGED`, con el antes y el después y sin el código) y la impresión.
 
 La sincronización con el receptor se ve en «Receptor de lotes y puesto conectados», más abajo, y el E2E la recorre
 sola.
@@ -331,6 +336,28 @@ desenfoque del fondo (0 a 12 px, 4 px por defecto) con vista previa, «Guardar»
 carpeta de datos y «Cancelar» o Escape; y, con la impresora simulada, sus modos. Cualquiera que toque el puesto en
 reposo puede cambiar el estilo o simular una impresora sin papel.
 
+**Personas y opciones en Configuración.** Mientras no haya INWeb, el puesto es el dueño de sus datos: el diálogo
+suma «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y su «Cancelar» (o Escape). El
+primero lista cada persona con su estado, sus cupos por servicio y categoría (límite diario de 0 a 99) y las opciones
+que esos cupos habilitan; permite agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus
+cupos y quitarla, que la da de baja y revoca su código sin borrar sus consumos. El código se tipea en un campo
+enmascarado de sólo dígitos, conserva sus ceros iniciales, no se puede repetir aunque esté revocado, y nunca se
+muestra ni se registra. El segundo muestra cada opción con su servicio, su importe, sus cargas de cupo y sus
+**franjas horarias**, en la hora local del puesto, de inicio incluido a fin excluido (de 22:00 a 02:00 cruza la
+medianoche); una opción sin franjas está disponible todo el día. Fuera de toda franja, la opción no se ofrece y, si
+la franja cierra antes de confirmar, la confirmación la rechaza con «Esta opción no está disponible en este horario»;
+si no queda ninguna, la atención dice «No hay opciones disponibles en este horario». Cambiar el nombre, el servicio,
+el importe o las cargas de una opción pide reconfirmar a quien ya la tenía elegida; cambiar sus franjas, no.
+
+Cada guardado es una **versión de configuración nueva** y completa, que se activa en la misma transacción y conserva
+las anteriores; los consumos siguen apuntando a la versión en que se registraron. Un dato inválido no cambia nada y
+queda señalado en el panel. Cada persona u opción cambiada queda en la bitácora general como `CONFIGURATION_CHANGED`,
+con el antes, el después y las dos versiones, y un guardado rechazado también. Si la versión activa viniera de INWeb,
+los dos paneles sólo muestran «Estos datos los administra INWeb» y el guardado se deniega; en este corte nada crea
+esas versiones. Igual que el estilo, **sin clave**: la clave del día llega con el próximo change. Lo que el recorte
+deja fuera está en [`AGENTS.md`](AGENTS.md). La base pasa a la versión de esquema 4 al abrirse, y un puesto anterior
+ya no la abre.
+
 | Reposo | Nueve opciones: 5 + 4 | Quince: primera página de diez |
 |---|---|---|
 | ![Reposo con el fondo de cocina, los logos de ejemplo y el engranaje en el borde inferior derecho](docs/capturas/06-reposo-tactil.jpg) | ![Nueve opciones en dos columnas con «Almuerzo con gaseosa» elegida](docs/capturas/07-seleccion-nueve.jpg) | ![Diez opciones en dos columnas, «Página 1 de 2»](docs/capturas/08-quince-primera-pagina.jpg) |
@@ -343,8 +370,13 @@ reposo puede cambiar el estilo o simular una impresora sin papel.
 |---|---|
 | ![Con el almuerzo del día usado, cinco opciones de refrigerio y «Hoy ya usaste: almuerzo 1 de 1»](docs/capturas/11-uso-del-dia.jpg) | ![«No tenés opciones disponibles ahora», lo usado del día y «Listo», sin opciones ni «Confirmar»](docs/capturas/12-sin-opciones.jpg) |
 
+| Personas habilitadas | Opciones del comedor con una franja |
+|---|---|
+| ![«Personas habilitadas» con «Persona sintética 01», ALMUERZO 1 y REFRIGERIO 2 y las opciones que habilita, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |
+
 Las 06 a 10 las sacó el 03/11/2026 el apply de `presentar-atencion-tactil` y las rehízo el 04/11 el de
-`mover-engranaje-al-pie`; las 11 y 12, el de `ofrecer-solo-opciones-disponibles`. Todas, a 1024 × 768 por CDP. Las del
+`mover-engranaje-al-pie`; las 11 y 12, el de `ofrecer-solo-opciones-disponibles`; las 13 y 14, el 06/11 el E2E de
+`administrar-personas-y-opciones`. Todas, a 1024 × 768 por CDP. Las del
 flujo principal, más arriba, son del 30/10 y muestran la presentación anterior.
 
 **Pantalla de demostración anterior.**

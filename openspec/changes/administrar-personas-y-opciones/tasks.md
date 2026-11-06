@@ -142,9 +142,37 @@ Cambian sólo las ocho pruebas existentes del punto 4 del gate, y sólo en la ve
 
 ## 5. Documentos
 
-- [ ] 5.1 Cambiar en `AGENTS.md` la línea de la segunda ola: la administración de personas, cupos y opciones sale de ahí por este change mientras no haya INWeb, y siguen ahí los permisos de operador, la importación de INWeb y lo que deja el recorte. Corregir en el contexto de `openspec/config.yaml` la línea «Fuera del corte», que todavía nombra las bitácoras (B) y la administración. Verificar con `git grep -n "administrar-personas-y-opciones" -- AGENTS.md` y `git grep -n "bitácoras" -- openspec/config.yaml`; pegar las salidas
-- [ ] 5.2 Actualizar `readme.md` (cómo se editan personas y opciones, las franjas y el bloqueo con INWeb, y un paso del recorrido de verificación), `docs/administracion-y-bitacoras.md` (después de las líneas 34 a 38, la precisión de la decisión de David del 04/11 para el período sin INWeb) y `docs/modelo-datos.md` (las dos tablas, con el enlace a este change que el archivado tiene que actualizar). Verificar con `git grep -n "Puesto hasta que haya INWeb" -- docs/administracion-y-bitacoras.md` y `git grep -n "tbComedorFranjasOpcionesMenu" -- docs/modelo-datos.md`; pegar las salidas
-- [ ] 5.3 Sumar la evidencia del change a `docs/aplicacion-del-curso.md`, con el nombre del change y sin enlace propio a su carpeta (D5 de `mostrar-aplicacion-del-curso`), y su entrada en `prompts.md` si el apply deja un ajuste humano nuevo. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo); pegar la salida
+- [x] 5.1 Cambiar en `AGENTS.md` la línea de la segunda ola: la administración de personas, cupos y opciones sale de ahí por este change mientras no haya INWeb, y siguen ahí los permisos de operador, la importación de INWeb y lo que deja el recorte. Corregir en el contexto de `openspec/config.yaml` la línea «Fuera del corte», que todavía nombra las bitácoras (B) y la administración. Verificar con `git grep -n "administrar-personas-y-opciones" -- AGENTS.md` y `git grep -n "bitácoras" -- openspec/config.yaml`; pegar las salidas
+  `AGENTS.md`: la lista de la segunda ola dice «diagnóstico» en lugar de «administración y diagnóstico», y una viñeta nueva nombra el change, el período sin INWeb, el bloqueo con una versión de INWeb y lo que sigue en la segunda ola (permisos de operador, importación de INWeb, cambiar un código, crear servicios, categorías o ámbitos, vigencias y prioridades, días de la semana y volver a una versión anterior). `openspec/config.yaml`: una línea nueva dice qué entra recortado (las bitácoras y la administración local), y «Fuera del corte» ya no nombra ni las bitácoras ni la administración. `openspec validate --all --strict` sigue en 11 de 11.
+  ```
+  git grep -n "administrar-personas-y-opciones" -- AGENTS.md
+  AGENTS.md:18:  change `administrar-personas-y-opciones`, sólo mientras no haya INWeb (cada guardado es una versión
+  git grep -n "bitácoras" -- openspec/config.yaml
+  openspec/config.yaml:10:  Entran recortados: las bitácoras mensuales (escribir-bitacoras-externas) y la administración local de personas,
+  ```
+- [x] 5.2 Actualizar `readme.md` (cómo se editan personas y opciones, las franjas y el bloqueo con INWeb, y un paso del recorrido de verificación), `docs/administracion-y-bitacoras.md` (después de las líneas 34 a 38, la precisión de la decisión de David del 04/11 para el período sin INWeb) y `docs/modelo-datos.md` (las dos tablas, con el enlace a este change que el archivado tiene que actualizar). Verificar con `git grep -n "Puesto hasta que haya INWeb" -- docs/administracion-y-bitacoras.md` y `git grep -n "tbComedorFranjasOpcionesMenu" -- docs/modelo-datos.md`; pegar las salidas
+  `readme.md`: la fila F04 suma la administración local (HU03.3, recortada) y saca «administración» de lo que queda afuera; el recorrido de verificación suma el paso 7 (alta de `0105` desde «Personas habilitadas», su atención y `105` sin reconocer) y el 8 nombra su `CONFIGURATION_CHANGED`; un párrafo nuevo, «Personas y opciones en Configuración», cuenta los dos paneles, el código, las franjas y sus mensajes, la versión por guardado, la bitácora, el bloqueo con INWeb, que no hay clave todavía y que la base pasa al esquema 4; y una tabla con las capturas 13 y 14. `docs/administracion-y-bitacoras.md`: la precisión del 04/11 después del párrafo de INWeb maestro. `docs/modelo-datos.md`: las filas MenuServiceWindow y ConfigurationSnapshotOrigin en el diccionario y un párrafo con sus nombres físicos, la copia de la versión y el enlace al design de este change.
+  ```
+  git grep -n "Puesto hasta que haya INWeb" -- docs/administracion-y-bitacoras.md
+  docs/administracion-y-bitacoras.md:40:**Precisión del 04/11/2026 para el período sin INWeb** (decisión de David: «Puesto hasta que haya INWeb»). Mientras
+  git grep -n "tbComedorFranjasOpcionesMenu" -- docs/modelo-datos.md
+  docs/modelo-datos.md:57:En el puesto implementado, MenuServiceWindow es `tbComedorFranjasOpcionesMenu` y ConfigurationSnapshotOrigin es
+  ```
+- [x] 5.3 Sumar la evidencia del change a `docs/aplicacion-del-curso.md`, con el nombre del change y sin enlace propio a su carpeta (D5 de `mostrar-aplicacion-del-curso`), y su entrada en `prompts.md` si el apply deja un ajuste humano nuevo. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo); pegar la salida
+  La fila de TDD del mapa suma `administrar-personas-y-opciones`, sin enlace: sus 77 pruebas nuevas con el rojo pegado, las ocho existentes que aprobó el gate y los dos hallazgos del E2E. Sin entrada en `prompts.md`: David no escribió nada después de `/seguir`, así que el apply no dejó un ajuste humano nuevo. El chequeo de D8, copiado al scratchpad tal cual, con el control negativo junto a `readme.md` y borrado después:
+  ```
+  control negativo (un archivo inexistente, un ancla falsa y una válida, #índice de readme.md)
+  ROTO control-negativo-enlaces.md:1 no-existe.md
+  ANCLA control-negativo-enlaces.md:1 readme.md#ancla-falsa
+  enlaces rotos: 2
+  readme.md, AGENTS.md, docs/aplicacion-del-curso.md, docs/administracion-y-bitacoras.md, docs/modelo-datos.md
+  enlaces rotos: 0
+  ```
+  Antes de cerrar el grupo, el nombre del cliente (06/11 20:53):
+  ```
+  git grep -i --untracked -E "temis|lostal"
+  (sin resultados, exit 1)
+  ```
 
 ## 6. Integración
 

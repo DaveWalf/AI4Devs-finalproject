@@ -12,8 +12,14 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
   receptor idempotente de lotes.
 - Historias must: HU01.1, HU01.3, HU02.1, HU02.2 (sin el escenario F) y HU03.1; should: HU01.2-J.
 - No se construye (segunda ola, diseñada y no demostrada): multipuesto y feed, configuración por
-  snapshot, administración y diagnóstico, cuenta de mantenimiento, biometría 1:N y 1:1 y auditoría
-  de saltos del reloj. Si una tarea la necesita, parar y preguntar.
+  snapshot, diagnóstico, cuenta de mantenimiento, biometría 1:N y 1:1 y auditoría de saltos del
+  reloj. Si una tarea la necesita, parar y preguntar.
+- La administración de personas, códigos, cupos, opciones y franjas sale de la segunda ola por el
+  change `administrar-personas-y-opciones`, sólo mientras no haya INWeb (cada guardado es una versión
+  local; con una versión de INWeb activa, se bloquea). Siguen en la segunda ola los permisos de
+  operador, la importación de INWeb y lo que deja su recorte: cambiar el código de una persona, crear
+  servicios, categorías o ámbitos, vigencias y prioridades editables, días de la semana en las franjas
+  y ver o volver a una versión anterior.
 - Las bitácoras mensuales salen de la segunda ola por el change `escribir-bitacoras-externas`, con su
   recorte: siguen ahí la generación nueva al restaurar una base, los saltos del reloj, el evento de
   emergencia sin SQLite, el diagnóstico de bitácoras, su conservación y acceso, la raíz configurable

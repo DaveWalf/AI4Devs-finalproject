@@ -7,7 +7,9 @@ context: |
   INComedor: puesto autónomo de autoservicio de comedor; proyecto final del máster AI4Devs (LIDR).
   Primer corte (D-C24): un puesto, identificación simulada por código, selección, cupo y fecha de negocio,
   confirmación atómica (RB06) con replay por IntentId, comprobante con reimpresión, outbox y receptor idempotente.
-  Fuera del corte, diseñado y no demostrado: multipuesto, administración y diagnóstico, bitácoras,
+  Entran recortados: las bitácoras mensuales (escribir-bitacoras-externas) y la administración local de personas,
+  cupos, opciones y franjas mientras no haya INWeb (administrar-personas-y-opciones).
+  Fuera del corte, diseñado y no demostrado: multipuesto, diagnóstico, permisos de operador, importación de INWeb,
   cuenta de mantenimiento, biometría 1:N y 1:1 y auditoría de saltos del reloj.
   Stack: C# y .NET 11; pantallas Razor en Blazor Hybrid con host WPF; Microsoft.Data.Sqlite; receptor ASP.NET Core; xUnit.
   El puesto autoriza y registra sin red; ningún acuse central autoriza ni revierte un consumo.
