@@ -12,8 +12,12 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
   receptor idempotente de lotes.
 - Historias must: HU01.1, HU01.3, HU02.1, HU02.2 (sin el escenario F) y HU03.1; should: HU01.2-J.
 - No se construye (segunda ola, diseñada y no demostrada): multipuesto y feed, configuración por
-  snapshot, administración y diagnóstico, bitácoras mensuales, cuenta de mantenimiento, biometría
-  1:N y 1:1 y auditoría de saltos del reloj. Si una tarea la necesita, parar y preguntar.
+  snapshot, administración y diagnóstico, cuenta de mantenimiento, biometría 1:N y 1:1 y auditoría
+  de saltos del reloj. Si una tarea la necesita, parar y preguntar.
+- Las bitácoras mensuales salen de la segunda ola por el change `escribir-bitacoras-externas`, con su
+  recorte: siguen ahí la generación nueva al restaurar una base, los saltos del reloj, el evento de
+  emergencia sin SQLite, el diagnóstico de bitácoras, su conservación y acceso, la raíz configurable
+  y la bitácora del receptor.
 - `docs/` describe el producto completo: es antecedente, no requisito. El requisito es la spec viva
   de `openspec/specs/` más el change activo.
 

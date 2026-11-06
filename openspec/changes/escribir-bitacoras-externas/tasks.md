@@ -141,9 +141,28 @@ Ninguna prueba existente cambia (D10): `git diff --diff-filter=M --stat 1000578 
 
 ## 5. Documentos
 
-- [ ] 5.1 Cambiar en `AGENTS.md` la línea del primer corte: las bitácoras mensuales salen de la segunda ola por este change, y se nombra lo que sigue ahí (generación al restaurar, saltos del reloj, evento de emergencia, diagnóstico y conservación). Verificar con `git grep -n "bitácoras mensuales" -- AGENTS.md`, que muestre la línea nueva
-- [ ] 5.2 Actualizar `readme.md` (dónde están las bitácoras y un paso del recorrido de verificación que abre el archivo de interacciones), `docs/modelo-datos.md` y `docs/arquitectura.md` (la marca de entrega es el archivo, D2, con el enlace a este change) y las dos filas de `docs/aplicacion-del-curso.md` que dicen que las bitácoras son de la segunda ola. Verificar con `git grep -nE "bitácoras y diagnóstico, que (son|quedan para la) segunda ola" -- docs/aplicacion-del-curso.md` sin resultados (hoy da dos, las líneas 117 y 164)
-- [ ] 5.3 Sumar la evidencia del change a `docs/aplicacion-del-curso.md`, con el nombre del change y sin enlace propio a su carpeta (D5 de `mostrar-aplicacion-del-curso`), y su entrada en `prompts.md` si el apply deja un ajuste humano nuevo. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo)
+- [x] 5.1 Cambiar en `AGENTS.md` la línea del primer corte: las bitácoras mensuales salen de la segunda ola por este change, y se nombra lo que sigue ahí (generación al restaurar, saltos del reloj, evento de emergencia, diagnóstico y conservación). Verificar con `git grep -n "bitácoras mensuales" -- AGENTS.md`, que muestre la línea nueva
+  «Bitácoras mensuales» sale de la lista de la segunda ola, y una viñeta nueva nombra el change y lo que su recorte deja ahí: generación nueva al restaurar, saltos del reloj, evento de emergencia sin SQLite, diagnóstico de bitácoras, conservación y acceso, raíz configurable y bitácora del receptor.
+  ```
+  git grep -n "bitácoras mensuales" -- AGENTS.md
+  AGENTS.md:17:- Las bitácoras mensuales salen de la segunda ola por el change `escribir-bitacoras-externas`, con su
+  ```
+- [x] 5.2 Actualizar `readme.md` (dónde están las bitácoras y un paso del recorrido de verificación que abre el archivo de interacciones), `docs/modelo-datos.md` y `docs/arquitectura.md` (la marca de entrega es el archivo, D2, con el enlace a este change) y las dos filas de `docs/aplicacion-del-curso.md` que dicen que las bitácoras son de la segunda ola. Verificar con `git grep -nE "bitácoras y diagnóstico, que (son|quedan para la) segunda ola" -- docs/aplicacion-del-curso.md` sin resultados (hoy da dos, las líneas 117 y 164)
+  `readme.md`: un párrafo con la carpeta `bitacoras\<KioskId>\`, los dos archivos, su formato y la falla, junto al de los comprobantes; el paso 7 del recorrido de verificación, que abre el archivo de interacciones al cerrar la ventana; la fila F04 y el árbol de `Infrastructure.Sqlite` ya no dicen «sin bitácoras». `docs/arquitectura.md` y `docs/modelo-datos.md`: la marca de entrega es el archivo y la incidencia, dos tipos de registro, con el enlace al design de este change, que el archivado tiene que actualizar como los anteriores. Las dos filas de `docs/aplicacion-del-curso.md` dicen ahora que las bitácoras entran recortadas y el diagnóstico sigue en la segunda ola.
+  ```
+  git grep -nE "bitácoras y diagnóstico, que (son|quedan para la) segunda ola" -- docs/aplicacion-del-curso.md
+  (sin resultados, exit 1)
+  ```
+- [x] 5.3 Sumar la evidencia del change a `docs/aplicacion-del-curso.md`, con el nombre del change y sin enlace propio a su carpeta (D5 de `mostrar-aplicacion-del-curso`), y su entrada en `prompts.md` si el apply deja un ajuste humano nuevo. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo)
+  La fila de TDD del mapa suma `escribir-bitacoras-externas`, sin enlace: sus 34 pruebas nuevas con el rojo pegado, la de caída vista fallar con un mutante y el E2E que encontró la espera mutua al cerrar. Sin entrada en `prompts.md`: David no escribió nada después de `/seguir`, así que el apply no dejó un ajuste humano nuevo. El chequeo de D8, copiado al scratchpad tal cual:
+  ```
+  control negativo (un archivo inexistente, un ancla falsa y una válida, #índice de readme.md)
+  ROTO control-negativo-enlaces.md:1 no-existe.md
+  ANCLA control-negativo-enlaces.md:1 readme.md#ancla-falsa
+  enlaces rotos: 2
+  readme.md, AGENTS.md, docs/aplicacion-del-curso.md, docs/arquitectura.md, docs/modelo-datos.md, prompts.md
+  enlaces rotos: 0
+  ```
 
 ## 6. Integración
 

@@ -113,6 +113,13 @@ R = requerido, O = opcional. [Formato externo y recuperación](administracion-y-
 | AuditFileDelivery | PK/FK AuditId + PK Stream (GENERAL o INTERACTIONS); State PENDING/WRITTEN/UNCERTAIN R; ExportedAtUtc O; ContentHash bytes(32) O; DestinationRelativePath R | Una entrega por destino; ruta validada dentro de raíz autorizada, por generación/puesto/mes original. Marcar tras flush; verificar archivo tras caída; no tratar ACK INWeb como entrega a archivo |
 | LogDeliveryIncident | PK IncidentId UUID; Stream R; OpenedAtUtc R; RecoveredAtUtc O; Cause R; FirstPendingAuditId O; RecoveryCutoffSequence O; GenerationId R | Conserva intervalo degradado y cierre tras comprobar entregas hasta corte; no reutiliza ConnectivityIncident de red |
 
+En el puesto implementado, AuditRecord es `tbComedorBitacora`, y AuditFileDelivery y
+LogDeliveryIncident no son tablas: la marca de entrega es el propio archivo, que el
+escritor lee desde su última línea completa, y la incidencia son los registros
+LOG_DELIVERY_FAILED y LOG_DELIVERY_RECOVERED de esa misma bitácora, sin migración (D2 de
+[escribir-bitacoras-externas](../openspec/changes/escribir-bitacoras-externas/design.md)).
+Las dos filas de arriba quedan como el diseño de la entrega 1.
+
 DiagnosticRunId correlaciona inicio/fin/resultado en AuditRecord; no necesita una
 tabla de diagnósticos para cumplir el alcance. Referencias de intención, consumo,
 ticket y evento en Context son lógicas e incluyen origen; la retención no exige
