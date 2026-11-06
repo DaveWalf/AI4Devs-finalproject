@@ -117,8 +117,27 @@ Ninguna prueba existente cambia (D10): `git diff --diff-filter=M --stat 1000578 
 
 ## 4. De punta a punta
 
-- [ ] 4.1 Agregar `E2E.Tests/BitacorasExternasE2ETests.cs` sin tocar los ayudantes existentes: el puesto compilado, una atención autorizada por CDP, el cierre ordenado del puesto y la lectura de los dos archivos de su carpeta (en interacciones, de `SESSION_OPENED` a `SESSION_CLOSED` con la misma sesión; en la general, `KIOSK_STARTED` y `KIOSK_STOPPED`; en ninguno, el código). Como el puesto ya escribe cuando esta prueba nace, verla fallar con una afirmación imposible (un `EventType` que no existe) y revertirla, y verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde; pegar las dos salidas
-- [ ] 4.2 Medir «Ingresar» y elegir una opción con el cronómetro de la verificación de A (dos corridas de 60 vueltas, quince y nueve opciones, SQLite real en disco) y comparar con sus medianas de 8,4 a 10,0 ms. Pegar mediana y p95; si una mediana sube más de 3 ms, anotarlo como riesgo abierto para el gate de la verificación
+- [x] 4.1 Agregar `E2E.Tests/BitacorasExternasE2ETests.cs` sin tocar los ayudantes existentes: el puesto compilado, una atención autorizada por CDP, el cierre ordenado del puesto y la lectura de los dos archivos de su carpeta (en interacciones, de `SESSION_OPENED` a `SESSION_CLOSED` con la misma sesión; en la general, `KIOSK_STARTED` y `KIOSK_STOPPED`; en ninguno, el código). Como el puesto ya escribe cuando esta prueba nace, verla fallar con una afirmación imposible (un `EventType` que no existe) y revertirla, y verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde; pegar las dos salidas
+  La prueba usa `EscenarioE2E` tal cual: `0001`, «Almuerzo común», «Confirmar» y «Listo» por CDP; cierre ordenado con `Process.CloseMainWindow()` (como la X) y espera de la salida; las seis líneas de la sesión en orden; `KIOSK_STARTED` antes y `KIOSK_STOPPED` último en la general; el código buscado como valor de texto de cada línea, porque «0001» aparece dentro de los identificadores sintéticos de la semilla. **Hallazgo:** la primera corrida, con la afirmación imposible, falló antes de llegar a ella: el puesto no terminó en 30 s. El ciclo de bitácoras arrancaba en el hilo de la pantalla y `Dispose` lo esperaba en ese mismo hilo; los dos quedaban esperándose. Se corrigió en `ServicioAtencion`: el ciclo corre con `Task.Run` y `ConfigureAwait(false)`. Las pruebas del Kiosk no lo veían porque no tienen el contexto de la pantalla. Rojo (06/11 09:49, ya con la corrección) y verde:
+  ```
+  dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~BitacorasExternasE2E"   (con Assert.Contains(general, EventType == "EVENTO_QUE_NO_EXISTE"))
+  con errores bitacoras-externas · De punta a punta: … (5s 284ms)
+    Assert.Contains() Failure: Filter not matched in collection
+  total: 1 · error: 1 · correcto: 0
+
+  dotnet test tests/Intelektron.INComedor.E2E.Tests   (afirmación revertida)
+  total: 11 · error: 0 · correcto: 11 · omitido: 0 · duración: 1m 56s 392ms   (10 de antes y 1 nueva)
+  ```
+- [x] 4.2 Medir «Ingresar» y elegir una opción con el cronómetro de la verificación de A (dos corridas de 60 vueltas, quince y nueve opciones, SQLite real en disco) y comparar con sus medianas de 8,4 a 10,0 ms. Pegar mediana y p95; si una mediana sube más de 3 ms, anotarlo como riesgo abierto para el gate de la verificación
+  El script de A no quedó guardado; se reescribió fuera del repo, en el scratchpad de la sesión, con su método: `MaquinaAtencion` sobre una base SQLite real en disco, el reloj del sistema, dentro del proceso y sin WebView2; dos corridas de 60 vueltas por caso, quince y nueve opciones, sin consumos y con el almuerzo consumido; por vuelta, «Ingresar» con `0001`, elegir una opción y «Cancelar» (sin medir); el primer toque de cada corrida va aparte (JIT: 7,6 a 52,5 ms en B). B corre con las bitácoras automáticas, como la ventana. Para separar causas, el mismo cronómetro corrió en la misma sesión contra el código de A (`1000578`, extraído con `git archive` al scratchpad) y contra B sin el escritor en segundo plano, en seis tandas alternadas (06/11 de 09:54 a 09:55, Release):
+  ```
+  «Ingresar», mediana por corrida (16 por variante)   rango          mediana de las 16   p95 por corrida
+  A (1000578), hoy                                    8,6 a 13,3 ms  10,5 ms             9,9 a 17,4 ms
+  B                                                   8,6 a 14,3 ms  11,8 ms             10,2 a 20,3 ms
+  B sin escritor en segundo plano                     9,2 a 14,3 ms  12,5 ms             11,0 a 25,9 ms
+  Elegir una opción (B; en A no escribía nada)        mediana 3,8 a 6,4 ms · p95 4,5 a 12,0 ms
+  ```
+  **Riesgo abierto, para el gate de la verificación.** Contra las medianas de A del 04/11 (8,4 a 10,0 ms), hay medianas de B que suben más de 3 ms (hasta 14,3 ms). La medición de la misma sesión le atribuye al change unos +1,3 ms en «Ingresar» (`SESSION_OPENED` en la transacción y el contexto más grande de `OPTIONS_OFFERED`) y de 4 a 6 ms en cada elección (`OPTION_SELECTED`, una transacción corta con su `fsync`). El escritor en segundo plano no lo encarece. El resto de la diferencia es del equipo de hoy: A medido ahora llega a 13,3 ms. Falta repetirlo en la All-in-One.
 
 ## 5. Documentos
 

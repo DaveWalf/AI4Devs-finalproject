@@ -166,7 +166,11 @@ public sealed class ServicioAtencion : IDisposable
         {
             PasadaDeBitacoras(Bitacoras);
             _cicloBitacoras = new CancellationTokenSource();
-            _tareaBitacoras = CicloDeBitacorasAsync(Bitacoras, _cicloBitacoras.Token);
+            var escritor = Bitacoras;
+            var cancelacion = _cicloBitacoras.Token;
+            // Fuera del contexto de la pantalla: Dispose espera esta tarea desde el hilo de la ventana, y si sus
+            // continuaciones volvieran a ese hilo se esperarían mutuamente al cerrar.
+            _tareaBitacoras = Task.Run(() => CicloDeBitacorasAsync(escritor, cancelacion));
         }
     }
 
@@ -176,13 +180,12 @@ public sealed class ServicioAtencion : IDisposable
     /// <summary>Una pasada cada 2 s, de a una por vez y fuera de la atención; termina si la base ya no está.</summary>
     private async Task CicloDeBitacorasAsync(EscritorBitacoras escritor, CancellationToken cancelacion)
     {
-        await Task.Yield();
         using var temporizador = new PeriodicTimer(IntervaloBitacoras);
         try
         {
-            while (await temporizador.WaitForNextTickAsync(cancelacion))
+            while (await temporizador.WaitForNextTickAsync(cancelacion).ConfigureAwait(false))
             {
-                if (!await Task.Run(() => PasadaDeBitacoras(escritor), cancelacion))
+                if (!PasadaDeBitacoras(escritor))
                 {
                     return;
                 }
