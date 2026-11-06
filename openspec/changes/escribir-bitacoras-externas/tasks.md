@@ -181,6 +181,31 @@ Ninguna prueba existente cambia (D10): `git diff --diff-filter=M --stat 1000578 
   git diff --diff-filter=M --stat 1000578 -- tests/   (vacío)
   ```
 
+## Correcciones de la verificación
+
+Las cuatro advertencias de la verificación de B (06/11, sobre `8253e09`); las siete sugerencias siguen abiertas y no se tocaron.
+
+- [x] Advertencia 1: `CONSUMPTION_DENIED` no llevaba el precio que pide «Lo mostrado queda en el registro». `Rechazo_al_confirmar` (`ContextoReconstruibleTests.cs`, prueba nueva de este change) afirma ahora que el `Price` del rechazo tiene la misma forma y los mismos valores que el de `CONSUMPTION_AUTHORIZED` (moneda, escala e importe en unidades menores). Rojo y verde:
+  ```
+  dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~ContextoReconstruible"
+  con errores bitacoras-externas · Rechazo al confirmar: …
+    System.Collections.Generic.KeyNotFoundException : The given key 'Price' was not present in the dictionary.
+  total: 5 · error: 1 · correcto: 4
+
+  (con Price = new PriceSnapshotEvento(opcion.Moneda, opcion.Escala, opcion.ImporteEmpleadoUnidadesMenores) en PersistirRechazo)
+  total: 5 · error: 0 · correcto: 5
+  ```
+- [x] Advertencias 2 a 4 y alineación de la 1, en `design.md`: D4 describe `ServicioAtencion.BitacorasAutomaticas` y el ciclo con `Task.Run` fuera del hilo de la pantalla (`0c67056`); el riesgo de las pruebas del Kiosk dice lo mismo en lugar del temporizador siempre encendido; la tabla de D8 suma `ClosedBy` en `SESSION_CLOSED` y `DisplayedCharge` en `OPTION_SELECTED`; D10 suma `IdentitySessionId` en las dos decisiones y el precio en `CONSUMPTION_DENIED`; el riesgo de la medida cita «la tarea 4.2» con los números medidos (+1,3 ms en «Ingresar», de 4 a 6 ms por elección) y la medida pendiente en la All-in-One.
+- [x] Verificación, 06/11 de 11:21 a 11:24, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`:
+  ```
+  git grep -n "tarea 5.2" -- openspec/changes/escribir-bitacoras-externas/design.md   (sin resultados, exit 1)
+  openspec validate --all --strict              Totals: 10 passed, 0 failed (10 items)
+  dotnet build INComedor.sln -warnaserror       0 Advertencia(s) · 0 Errores
+  dotnet test INComedor.sln                     total: 488 · error: 0 · correcto: 488 · 2m 06s · exit 0
+    Domain 75 · Contracts 23 · Sync.Api 62 · Infrastructure.Sqlite 143 · Kiosk 174 · E2E 11 (verde en la primera corrida)
+  git diff --diff-filter=M --stat 1000578 -- tests/   (vacío)
+  ```
+
 ## Workflow follow-up
 
 - Verificar con `/openspec-verify-change` y archivar en la misma rama antes del PR.

@@ -56,6 +56,8 @@ Una línea es el objeto del contrato de la spec, serializado con `System.Text.Js
 
 Un único escritor por puesto, con un semáforo para que nunca corran dos pasadas a la vez, procesa los dos destinos en cada pasada: al terminar `Preparar`, cada 2 s y una última vez al cerrar el puesto. Por destino abre el archivo del mes de cada línea en modo agregar (`FileShare.Read`), escribe hasta 500 líneas y llama a `Flush(flushToDisk: true)`. Las pruebas llaman a la pasada directamente, sin temporizador.
 
+Las pasadas automáticas se activan con `ServicioAtencion.BitacorasAutomaticas`, que la ventana pone siempre en verdadero. Sin esa propiedad el escritor existe y las pasadas las pide quien usa el servicio, porque las pruebas existentes del Kiosk arman el servicio sobre `%TEMP%\incomedor-tests\<guid>.db`, no lo liberan y borran la base al terminar: un temporizador siempre encendido podía tener la base abierta en ese instante (`File.Delete` falla en Windows) y mezclaba en una carpeta las bitácoras de muchas bases. El ciclo corre con `Task.Run` y `ConfigureAwait(false)`, fuera del hilo de la pantalla, porque `Dispose` lo espera desde ese hilo y, si el ciclo arrancara ahí, los dos quedarían esperándose (lo que corrigió `0c67056` y vio el E2E).
+
 - **Descartada:** escribir después de cada commit en el hilo de la atención. Suma la escritura y el flush a cada toque, y una falla del archivo llegaría a la pantalla.
 - **Descartada:** un escritor con su propio ciclo por destino. Duplica el temporizador y el cierre sin ganar nada: la independencia entre destinos la da que la falla de uno no corta la pasada del otro.
 
@@ -87,11 +89,11 @@ La atención registra lo que cambia su estado, no cada toque:
 | Registro | Quién lo escribe | Contexto |
 |---|---|---|
 | `SESSION_OPENED` | la identificación, en la transacción que abre la sesión | sesión, propósito, persona, método `CODE` |
-| `OPTION_SELECTED` | la máquina de atención, antes de marcar la opción | sesión, opción, versión, etiqueta, importe mostrado |
+| `OPTION_SELECTED` | la máquina de atención, antes de marcar la opción | sesión, opción, versión, etiqueta, `DisplayedCharge` (el importe como se mostró, en texto) |
 | `CONFIRMATION_REQUESTED` | la máquina, antes de llamar a la confirmación | sesión, `IntentId`, opción, versión |
 | `SESSION_CANCELLED` | la máquina, al tocar «Cancelar» | sesión, opción elegida o nula |
 | `SESSION_TIMED_OUT` | la máquina, al vencer los 30 s | sesión, estado desde el que venció |
-| `SESSION_CLOSED` | la máquina, al volver a reposo desde un resultado | sesión, código del mensaje mostrado, `DecisionId` si hubo |
+| `SESSION_CLOSED` | la máquina, al volver a reposo desde un resultado | sesión, código del mensaje mostrado, `DecisionId` si hubo, `ClosedBy` (`DONE`, `TIMEOUT` o `RESULT`) |
 
 La máquina escribe con una clase nueva de `Infrastructure.Sqlite` que abre su propia transacción corta y usa `RegistroBitacora`. El código del mensaje es el nombre de la constante de `MensajesAtencion` o, para un rechazo, su `ReasonCode`.
 
@@ -106,7 +108,7 @@ La máquina escribe con una clase nueva de `Infrastructure.Sqlite` que abre su p
 
 ### D10. El contexto crece, no cambia
 
-`OPTIONS_OFFERED` suma la etiqueta y el importe de cada ofrecida; `CONSUMPTION_AUTHORIZED` suma la opción, su versión, su etiqueta, el precio (moneda, escala, importe en unidades menores) y los cargos (categoría, nombre, unidades, límite); `CONSUMPTION_DENIED` suma la opción, su versión y su etiqueta. Ningún campo existente cambia de nombre ni de valor.
+`OPTIONS_OFFERED` suma la etiqueta y el importe de cada ofrecida; `CONSUMPTION_AUTHORIZED` suma `IdentitySessionId`, la opción, su versión, su etiqueta, el precio (moneda, escala, importe en unidades menores) y los cargos (categoría, nombre, unidades, límite); `CONSUMPTION_DENIED` suma `IdentitySessionId`, la opción, su versión, su etiqueta y el mismo precio, porque la spec pide lo mostrado para toda decisión. El `IdentitySessionId` permite leer la atención entera «con la misma sesión». Ningún campo existente cambia de nombre ni de valor.
 
 Pruebas existentes, medido al proponer: las que leen el contexto (`ConsultaDisponibilidadTests`, `IdentificacionPorCodigoTests`, `AsistenciaTests`, `TrabajosImpresionTests`, `ColaSincronizacionTests`) toman propiedades sueltas y ninguna compara el JSON entero; las que cuentan filas de `tbComedorBitacora` después de confirmar crean la sesión por SQL directo (`FixtureSintetico.NuevaSesion`), así que `SESSION_OPENED` no les suma una fila. Ninguna existente cambia.
 
@@ -126,12 +128,12 @@ En `<carpeta de datos>\bitacoras\<KioskId>\`, al lado de la base y de `comproban
 
 ## Risks / Trade-offs
 
-- [Cada elección de opción suma una escritura corta] → A midió una escritura de este tamaño en 1 a 1,5 ms por toque en este equipo; la tarea 5.2 vuelve a medir «Ingresar» y elegir con el cronómetro de A.
+- [Cada elección de opción suma una escritura corta] → A midió una escritura de este tamaño en 1 a 1,5 ms por toque en este equipo; la tarea 4.2 volvió a medir «Ingresar» y elegir con el cronómetro de A, en la misma sesión: unos +1,3 ms en «Ingresar» y de 4 a 6 ms por elección (`OPTION_SELECTED`, una transacción corta con su `fsync`). Falta la medida en la All-in-One.
 - [La marca depende de leer el final de cada archivo] → se lee al arrancar y después de un error; entre pasadas la marca queda en memoria. Con una línea por registro, son unos pocos kilobytes por archivo.
 - [Un antivirus o un indexador toma el archivo un momento] → es una `IOException` como cualquier otra: incidencia, reintento cada 2 s y recuperación sin duplicar.
 - [Una base restaurada detiene un archivo] → se ve en Configuración y en la general; resolverlo con una generación nueva es parte del recorte (punto 1.1 del gate).
 - [El primer arranque con el change escribe todo lo que la base ya tenía] → es correcto: son registros reales, salen con `Recovered` verdadero porque son de otro arranque, y la prueba de David en `C:\INComedor\prueba-monitor` los va a mostrar así.
-- [Las pruebas del Kiosk que arman `ServicioAtencion` sobre una carpeta temporal la borran mientras el escritor corre] → el escritor abre y cierra cada archivo dentro de la pasada, sin dejar nada abierto entre pasadas, y `Dispose` espera la pasada en curso. Si igual falla una prueba existente por esto, se para y se pregunta (punto 5 del gate).
+- [Las pruebas del Kiosk que arman `ServicioAtencion` sobre una carpeta temporal la borran mientras el escritor corre] → las pasadas automáticas van detrás de `ServicioAtencion.BitacorasAutomaticas`, que sólo la ventana enciende, así que esas pruebas no tienen un temporizador que mantenga la base abierta; el ciclo corre con `Task.Run`, fuera del hilo de la pantalla, porque `Dispose` lo espera desde ese hilo. El escritor igual abre y cierra cada archivo dentro de la pasada. Si falla una prueba existente por esto, se para y se pregunta (punto 5 del gate).
 - [El reloj hacia atrás deja líneas de un mes anterior al final del archivo de ese mes] → es la exportación tardía que pide AT42; la `Sequence` sigue ordenando.
 
 ## Migration Plan

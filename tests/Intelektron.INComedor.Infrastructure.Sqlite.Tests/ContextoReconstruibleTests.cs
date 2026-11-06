@@ -56,6 +56,10 @@ public class ContextoReconstruibleTests : ConfirmacionTestBase
         Assert.Equal(Fixture.AlmuerzoOpcional.Id, contexto.GetProperty("MenuItemId").GetGuid());
         Assert.Equal(1, contexto.GetProperty("MenuVersion").GetInt32());
         Assert.Equal("Almuerzo opcional 1", contexto.GetProperty("MenuLabel").GetString());
+        // Lo mostrado (spec «Lo mostrado queda en el registro»): el precio con la misma forma y los mismos valores que en la autorización.
+        var precio = contexto.GetProperty("Price");
+        Assert.Equal(("ARS", 2, 150000L), (precio.GetProperty("Currency").GetString(), precio.GetProperty("Scale").GetInt32(), precio.GetProperty("EmployeeChargeMinor").GetInt64()));
+        Assert.Equal(Contexto("CONSUMPTION_AUTHORIZED").GetProperty("Price").GetRawText(), precio.GetRawText());
         Assert.False(contexto.TryGetProperty("Charges", out _));
         Assert.False(contexto.TryGetProperty("TicketId", out _));
     }

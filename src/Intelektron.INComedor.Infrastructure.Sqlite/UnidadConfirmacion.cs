@@ -269,6 +269,7 @@ public sealed class UnidadConfirmacion
                 solicitud.MenuItemId,
                 solicitud.MenuVersion,
                 MenuLabel = opcion.Nombre,
+                Price = new PriceSnapshotEvento(opcion.Moneda, opcion.Escala, opcion.ImporteEmpleadoUnidadesMenores),
             });
 
         return resultado;
