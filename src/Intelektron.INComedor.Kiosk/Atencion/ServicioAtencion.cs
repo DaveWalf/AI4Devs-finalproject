@@ -62,6 +62,9 @@ public sealed class ServicioAtencion : IDisposable
 
     public Asistencia Asistencia { get; private set; } = null!;
 
+    /// <summary>La edición de personas y opciones de Configuración (administrar-personas-y-opciones); null hasta que Preparar devuelva Lista.</summary>
+    public AdministracionLocal? Administracion { get; private set; }
+
     /// <summary>El escritor de las bitácoras mensuales (escribir-bitacoras-externas); null hasta que Preparar devuelva Lista.</summary>
     public EscritorBitacoras? Bitacoras { get; private set; }
 
@@ -105,6 +108,7 @@ public sealed class ServicioAtencion : IDisposable
             Unidad = new UnidadConfirmacion(baseComedor, Reloj);
             Trabajos = new TrabajosImpresion(baseComedor, Reloj, Impresora);
             Asistencia = new Asistencia(baseComedor, Reloj, Trabajos);
+            Administracion = new AdministracionLocal(baseComedor, Reloj);
             Trabajos.EnviarPendientes();
             PrepararSincronizacion(baseComedor);
             PrepararBitacoras(baseComedor);

@@ -27,6 +27,18 @@ public static class MensajesAtencion
     public const string SinOpciones = "No tenés opciones disponibles ahora";
     public const string SinHabilitacion = "No tenés servicios habilitados. Consultá al responsable del comedor";
 
+    /// <summary>Sin opciones porque alguna quedó fuera de su franja horaria (atencion-puesto de administrar-personas-y-opciones).</summary>
+    public const string FueraDeHorario = "No hay opciones disponibles en este horario";
+
+    // Los paneles «Personas habilitadas» y «Opciones del comedor» (administrar-personas-y-opciones).
+    public const string PanelInvalido = "Revisá los campos marcados";
+    public const string CodigoYaExiste = "Ese código ya existe. Usá otro";
+    public const string INWebAdministra = "Estos datos los administra INWeb";
+    public const string PanelNoGuardado = "No se pudo guardar: la base no respondió. No cambió nada";
+
+    public static string VersionGuardada(int version) =>
+        $"Se guardó la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración";
+
     /// <summary>El mensaje de cada motivo, distinto del de los demás.</summary>
     public static string DeMotivo(string? motivo) => motivo switch
     {
@@ -36,6 +48,8 @@ public static class MensajesAtencion
         "CREDENTIAL_EXPIRED" => "Esta credencial está vencida. Solicitá asistencia",
         "RULE_DENIED" => "Este servicio no está permitido por la regla vigente",
         "SERVICE_NOT_ENABLED" => "No hay una habilitación aplicable para este servicio",
+        // La causa interna de un SERVICE_NOT_ENABLED por la franja de la opción (D5 de administrar-personas-y-opciones).
+        "OUTSIDE_SERVICE_HOURS" => "Esta opción no está disponible en este horario",
         "IDENTITY_NOT_RESOLVED" => "No pudimos identificarte. Revisá el código o solicitá asistencia",
         "PERMISSION_MISSING" => "No tenés permiso de operador",
         "PERMISSION_EXPIRED" => "Tu permiso de operador está vencido",

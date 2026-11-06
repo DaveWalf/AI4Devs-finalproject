@@ -1,0 +1,336 @@
+@using System.Globalization
+@using Intelektron.INComedor.Infrastructure.Sqlite
+
+@*
+    «Opciones del comedor» (administrar-personas-y-opciones): cada opción con todos sus parámetros (nombre, servicio, importe,
+    cargas de cupo y franjas horarias) y su edición mientras no haya INWeb (D3). Las franjas son de la hora local del puesto,
+    de inicio incluido a fin excluido (D6); una opción sin franjas está disponible todo el día. El servicio valida (D11).
+*@
+<section id="panel-opciones" class="panel-administracion" aria-labelledby="titulo-opciones">
+    <h3 id="titulo-opciones">Opciones del comedor</h3>
+
+    @if (_vista.SoloLectura)
+    {
+        <p id="aviso-inweb" class="aviso" role="status">@MensajesAtencion.INWebAdministra</p>
+    }
+
+    @if (_aviso is not null)
+    {
+        <p id="aviso-panel" class="aviso" role="alert">@_aviso</p>
+    }
+
+    <div class="lista-administracion">
+        @for (var i = 0; i < _filas.Count; i++)
+        {
+            var indice = i;
+            var fila = _filas[indice];
+            <article class="opcion-admin @(fila.Quitar ? "de-baja" : "")" data-indice="@indice" aria-invalid="@Marca(indice, "OpcionId")">
+                <div class="encabezado-fila">
+                    @if (Editable)
+                    {
+                        <input class="nombre-opcion" type="text" maxlength="@AdministracionLocal.LargoNombreOpcion" aria-label="Nombre de la opción"
+                               value="@fila.Nombre" aria-invalid="@Marca(indice, "Nombre")" @onchange="e => fila.Nombre = Texto(e)" />
+                    }
+                    else
+                    {
+                        <h4 class="nombre-opcion">@fila.Nombre</h4>
+                    }
+                    <span class="estado-opcion">@Estado(fila)</span>
+                </div>
+
+                <div class="parametros-opcion">
+                    @if (Editable)
+                    {
+                        <label>
+                            Servicio
+                            <select class="servicio-opcion" aria-invalid="@Marca(indice, "Servicio")" @onchange="e => fila.Servicio = Texto(e)">
+                                @for (var s = 0; s < _vista.Servicios.Count; s++)
+                                {
+                                    var valor = s.ToString(CultureInfo.InvariantCulture);
+                                    <option value="@valor" selected="@(fila.Servicio == valor)">@_vista.Servicios[s].Nombre</option>
+                                }
+                            </select>
+                        </label>
+                        <label>
+                            Importe al empleado ($)
+                            <input class="importe-opcion" type="text" inputmode="decimal" value="@fila.Importe"
+                                   aria-invalid="@Marca(indice, "Importe")" @onchange="e => fila.Importe = Texto(e)" />
+                        </label>
+                    }
+                    else
+                    {
+                        <span class="servicio-opcion">Servicio: @NombreServicio(fila.Servicio)</span>
+                        <span class="importe-opcion">@(fila.Importe == ImporteCero ? "Sin cargo" : "Importe: $ " + fila.Importe)</span>
+                    }
+                </div>
+
+                <ul class="cargas" aria-invalid="@Marca(indice, "Cargas")">
+                    @for (var j = 0; j < fila.Cargas.Count; j++)
+                    {
+                        var posicion = j;
+                        var carga = fila.Cargas[posicion];
+                        <li class="carga">
+                            @if (Editable)
+                            {
+                                <select class="categoria-carga" aria-label="Categoría de cupo" aria-invalid="@Marca(indice, $"Cargas[{posicion}].Categoria")"
+                                        @onchange="e => carga.Categoria = Texto(e)">
+                                    @for (var c = 0; c < _vista.Categorias.Count; c++)
+                                    {
+                                        var valor = c.ToString(CultureInfo.InvariantCulture);
+                                        <option value="@valor" selected="@(carga.Categoria == valor)">@_vista.Categorias[c].Nombre</option>
+                                    }
+                                </select>
+                                <input class="unidades-carga" type="number" inputmode="numeric" min="1" max="@AdministracionLocal.UnidadesMaximas"
+                                       aria-label="Unidades" value="@carga.Unidades" aria-invalid="@Marca(indice, $"Cargas[{posicion}].Unidades")"
+                                       @onchange="e => carga.Unidades = Texto(e)" />
+                                <button type="button" class="quitar-carga" @onclick="() => fila.Cargas.Remove(carga)">Quitar carga</button>
+                            }
+                            else
+                            {
+                                <span>Carga: @NombreCategoria(carga.Categoria) × @carga.Unidades</span>
+                            }
+                        </li>
+                    }
+                </ul>
+
+                @if (fila.Franjas.Count == 0)
+                {
+                    <p class="sin-franjas">Todo el día</p>
+                }
+                else
+                {
+                    <ul class="franjas">
+                        @for (var j = 0; j < fila.Franjas.Count; j++)
+                        {
+                            var posicion = j;
+                            var franja = fila.Franjas[posicion];
+                            <li class="franja-horaria" aria-invalid="@Marca(indice, $"Franjas[{posicion}]")">
+                                @if (Editable)
+                                {
+                                    <input class="inicio-franja" type="time" step="60" aria-label="Desde" value="@franja.Inicio" @onchange="e => franja.Inicio = HoraEditada(e)" />
+                                    <input class="fin-franja" type="time" step="60" aria-label="Hasta" value="@franja.Fin" @onchange="e => franja.Fin = HoraEditada(e)" />
+                                }
+                                <span class="franja-texto">@franja.Inicio a @franja.Fin</span>
+                                @if (Editable)
+                                {
+                                    <button type="button" class="quitar-franja" @onclick="() => fila.Franjas.Remove(franja)">Quitar franja</button>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+
+                @if (Editable)
+                {
+                    <div class="acciones-fila">
+                        <button type="button" class="agregar-carga" @onclick="() => AgregarCarga(fila)">Agregar carga</button>
+                        <button type="button" class="agregar-franja" @onclick="() => fila.Franjas.Add(new FilaFranja())">Agregar franja</button>
+                        @if (fila.Nueva)
+                        {
+                            <button type="button" class="quitar-opcion" @onclick="() => _filas.Remove(fila)">Descartar</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="@(fila.Quitar ? "deshacer-quitar" : "quitar-opcion")" @onclick="() => fila.Quitar = !fila.Quitar">
+                                @(fila.Quitar ? "Deshacer" : "Quitar")
+                            </button>
+                        }
+                    </div>
+                }
+            </article>
+        }
+    </div>
+
+    <div class="acciones">
+        @if (Editable)
+        {
+            <button id="agregar-opcion" type="button" @onclick="AgregarOpcion">Agregar opción</button>
+        }
+        <button id="cancelar-panel" type="button" @onclick="() => Cerrar.InvokeAsync(null)">Cancelar</button>
+        @if (Editable)
+        {
+            <button id="guardar-panel" type="button" class="principal" @onclick="Guardar">Guardar</button>
+        }
+    </div>
+</section>
+
+@code {
+    private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
+
+    private VistaAdministracion _vista = null!;
+    private List<FilaOpcion> _filas = [];
+    private IReadOnlyList<CampoRechazado> _campos = [];
+    private string? _aviso;
+    private int _escala = 2;
+
+    [Parameter, EditorRequired]
+    public AdministracionLocal Administracion { get; set; } = null!;
+
+    /// <summary>Se cierra el panel: con el aviso de la versión guardada, o null si se canceló.</summary>
+    [Parameter]
+    public EventCallback<string?> Cerrar { get; set; }
+
+    private bool Editable => !_vista.SoloLectura;
+
+    private string ImporteCero => 0m.ToString("F" + _escala.ToString(CultureInfo.InvariantCulture), Cultura);
+
+    protected override void OnInitialized() => Cargar(Administracion.Leer());
+
+    private void Cargar(VistaAdministracion vista)
+    {
+        _vista = vista;
+        _escala = vista.Opciones.FirstOrDefault()?.Escala ?? 2;
+        var servicios = vista.Servicios.Select(s => s.Id).ToList();
+        var categorias = vista.Categorias.Select(c => c.Id).ToList();
+        _filas = vista.Opciones.Select(o => new FilaOpcion
+        {
+            Id = o.Id,
+            Nombre = o.Nombre,
+            Version = o.Version,
+            Servicio = servicios.IndexOf(o.ServicioId).ToString(CultureInfo.InvariantCulture),
+            Importe = (o.ImporteUnidadesMenores / (decimal)Math.Pow(10, o.Escala)).ToString("F" + o.Escala.ToString(CultureInfo.InvariantCulture), Cultura),
+            Cargas = o.Cargas.Select(c => new FilaCarga
+            {
+                Categoria = categorias.IndexOf(c.CategoriaId).ToString(CultureInfo.InvariantCulture),
+                Unidades = c.Unidades.ToString(CultureInfo.InvariantCulture),
+            }).ToList(),
+            Franjas = o.Franjas.Select(f => new FilaFranja { Inicio = Hora(f.Inicio), Fin = Hora(f.Fin) }).ToList(),
+        }).ToList();
+        _campos = [];
+    }
+
+    private void AgregarOpcion()
+    {
+        _filas.Add(new FilaOpcion
+        {
+            Nueva = true,
+            Servicio = "0",
+            Importe = ImporteCero,
+            Cargas = [new FilaCarga { Categoria = "0", Unidades = "1" }],
+        });
+    }
+
+    private static void AgregarCarga(FilaOpcion fila) => fila.Cargas.Add(new FilaCarga { Categoria = "0", Unidades = "1" });
+
+    /// <summary>
+    /// Arma la edición entera y la manda al servicio, que valida y decide. Un importe o unas unidades que no son un número van
+    /// como -1, y un servicio o una categoría sin elegir como un identificador vacío: el servicio los rechaza y los registra.
+    /// </summary>
+    private async Task Guardar()
+    {
+        var ediciones = _filas.Select(f => new EdicionOpcion(
+            f.Nueva ? null : f.Id,
+            f.Nombre,
+            Elegido(_vista.Servicios.Select(s => s.Id).ToList(), f.Servicio),
+            ImporteEnUnidadesMenores(f.Importe),
+            f.Cargas.Select(c => new CargaEditada(Elegido(_vista.Categorias.Select(x => x.Id).ToList(), c.Categoria),
+                int.TryParse(c.Unidades, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var unidades) ? unidades : -1)).ToList(),
+            f.Franjas.Select(x => new FranjaEditada(x.Inicio, x.Fin)).ToList(),
+            f.Quitar)).ToList();
+
+        ResultadoGuardado resultado;
+        try
+        {
+            resultado = Administracion.GuardarOpciones(ediciones);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _aviso = MensajesAtencion.PanelNoGuardado;
+            return;
+        }
+
+        switch (resultado.Tipo)
+        {
+            case TipoGuardado.Aplicado:
+                await Cerrar.InvokeAsync(MensajesAtencion.VersionGuardada(resultado.VersionActiva));
+                break;
+            case TipoGuardado.Denegado:
+                Cargar(Administracion.Leer());
+                _aviso = MensajesAtencion.INWebAdministra;
+                break;
+            default:
+                _campos = resultado.Campos;
+                _aviso = MensajesAtencion.PanelInvalido;
+                break;
+        }
+    }
+
+    /// <summary>«1.800,00» o «1800» en pesos, a unidades menores con la escala del catálogo; -1 si no es un importe.</summary>
+    private long ImporteEnUnidadesMenores(string texto)
+    {
+        if (!decimal.TryParse(texto, NumberStyles.Number, Cultura, out var valor))
+        {
+            return -1;
+        }
+
+        var menores = valor * (decimal)Math.Pow(10, _escala);
+        return menores == decimal.Truncate(menores) && Math.Abs(menores) < 1_000_000_000_000m ? (long)menores : -1;
+    }
+
+    private static Guid Elegido(IReadOnlyList<Guid> lista, string posicion) =>
+        int.TryParse(posicion, NumberStyles.None, CultureInfo.InvariantCulture, out var i) && i < lista.Count ? lista[i] : Guid.Empty;
+
+    private string? Marca(int indice, string campo) =>
+        _campos.Any(c => c.Indice == indice && c.Campo == campo) ? "true" : null;
+
+    private string NombreServicio(string posicion) =>
+        int.TryParse(posicion, out var i) && i >= 0 && i < _vista.Servicios.Count ? _vista.Servicios[i].Nombre : "?";
+
+    private string NombreCategoria(string posicion) =>
+        int.TryParse(posicion, out var i) && i >= 0 && i < _vista.Categorias.Count ? _vista.Categorias[i].Nombre : "?";
+
+    private static string Estado(FilaOpcion fila) =>
+        fila.Nueva ? "Nueva" : fila.Quitar ? "Sale del catálogo al guardar" : $"Versión {fila.Version.ToString(CultureInfo.InvariantCulture)}";
+
+    private static string Hora(TimeOnly hora) => hora.ToString("HH:mm", CultureInfo.InvariantCulture);
+
+    private static string Texto(ChangeEventArgs e) => e.Value?.ToString() ?? string.Empty;
+
+    /// <summary>
+    /// El campo de hora del WebView2 puede entregar «11:00:00»: una hora con segundos en cero se lleva a HH:mm, que es lo que
+    /// guarda la franja (D6). Cualquier otra cosa va tal cual, para que el servicio la rechace y la registre.
+    /// </summary>
+    private static string HoraEditada(ChangeEventArgs e)
+    {
+        var texto = Texto(e);
+        return TimeOnly.TryParseExact(texto, ["HH:mm", "HH:mm:ss", "HH:mm:ss.fff"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var hora)
+               && hora.Second == 0 && hora.Millisecond == 0
+            ? Hora(hora)
+            : texto;
+    }
+
+    private sealed class FilaOpcion
+    {
+        public Guid Id { get; init; }
+
+        public bool Nueva { get; init; }
+
+        public int Version { get; init; }
+
+        public string Nombre { get; set; } = string.Empty;
+
+        public string Servicio { get; set; } = string.Empty;
+
+        public string Importe { get; set; } = string.Empty;
+
+        public bool Quitar { get; set; }
+
+        public List<FilaCarga> Cargas { get; init; } = [];
+
+        public List<FilaFranja> Franjas { get; init; } = [];
+    }
+
+    private sealed class FilaCarga
+    {
+        public string Categoria { get; set; } = string.Empty;
+
+        public string Unidades { get; set; } = string.Empty;
+    }
+
+    private sealed class FilaFranja
+    {
+        public string Inicio { get; set; } = string.Empty;
+
+        public string Fin { get; set; } = string.Empty;
+    }
+}

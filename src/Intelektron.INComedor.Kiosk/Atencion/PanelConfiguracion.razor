@@ -7,9 +7,35 @@
     segundo change. Mover un rango sólo avisa la vista previa; «Guardar» y «Cancelar» (o Escape) los decide la pantalla.
 *@
 <div class="fondo-dialogo">
-    <div class="dialogo superficie" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
+    <div class="dialogo superficie @(_panel is null ? "" : "ancho")" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
          @ref="_dialogo" @onkeydown="Tecla">
         <h2 id="titulo-configuracion">Configuración</h2>
+
+        @* Cada panel se abre en lugar del contenido del diálogo, con su «Guardar» y su «Cancelar» (D12 de administrar-personas-y-opciones). *@
+        @if (_panel == Panel.Personas && Administracion is not null)
+        {
+            <PanelPersonas Administracion="Administracion" Cerrar="CerrarPanel" />
+        }
+        else if (_panel == Panel.Opciones && Administracion is not null)
+        {
+            <PanelOpciones Administracion="Administracion" Cerrar="CerrarPanel" />
+        }
+        else
+        {
+        <text>
+        @if (Administracion is not null)
+        {
+            <section id="administracion" aria-label="Personas y opciones">
+                <div class="acciones abrir-paneles">
+                    <button id="abrir-personas" type="button" @onclick="() => AbrirPanel(Panel.Personas)">Personas habilitadas</button>
+                    <button id="abrir-opciones" type="button" @onclick="() => AbrirPanel(Panel.Opciones)">Opciones del comedor</button>
+                </div>
+                @if (_avisoPanel is not null)
+                {
+                    <p id="aviso-guardado" class="aviso" role="status">@_avisoPanel</p>
+                }
+            </section>
+        }
 
         <section aria-labelledby="titulo-estilo">
             <h3 id="titulo-estilo">Estilo visual</h3>
@@ -55,11 +81,25 @@
             <button id="cancelar-configuracion" type="button" @onclick="Cancelar">Cancelar</button>
             <button id="guardar-configuracion" type="button" class="principal" @onclick="Guardar">Guardar</button>
         </div>
+        </text>
+        }
     </div>
 </div>
 
 @code {
+    private enum Panel
+    {
+        Personas,
+        Opciones,
+    }
+
     private ElementReference _dialogo;
+    private Panel? _panel;
+    private string? _avisoPanel;
+
+    /// <summary>La edición de personas y opciones; null no muestra sus botones (administrar-personas-y-opciones).</summary>
+    [Parameter]
+    public AdministracionLocal? Administracion { get; set; }
 
     /// <summary>El estilo de la vista previa.</summary>
     [Parameter, EditorRequired]
@@ -113,5 +153,33 @@
         return estilo.EnRango ? VistaPrevia.InvokeAsync(estilo) : Task.CompletedTask;
     }
 
-    private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar.InvokeAsync() : Task.CompletedTask;
+    /// <summary>Escape cierra el panel abierto, como su «Cancelar»; sin panel, cancela el diálogo.</summary>
+    private Task Tecla(KeyboardEventArgs e)
+    {
+        if (e.Key != "Escape")
+        {
+            return Task.CompletedTask;
+        }
+
+        if (_panel is not null)
+        {
+            CerrarPanel(null);
+            return Task.CompletedTask;
+        }
+
+        return Cancelar.InvokeAsync();
+    }
+
+    private void AbrirPanel(Panel panel)
+    {
+        _avisoPanel = null;
+        _panel = panel;
+    }
+
+    /// <summary>Vuelve al contenido del diálogo; si el panel guardó, con el aviso de la versión nueva.</summary>
+    private void CerrarPanel(string? aviso)
+    {
+        _panel = null;
+        _avisoPanel = aviso;
+    }
 }

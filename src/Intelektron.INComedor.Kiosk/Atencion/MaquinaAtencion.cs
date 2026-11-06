@@ -87,11 +87,13 @@ public sealed class MaquinaAtencion
 
     /// <summary>
     /// Por qué no hay opciones, cuando no hay una categoría agotada que lo explique: el motivo de la baja si todas las opciones
-    /// se retuvieron por eso y, si no, que no hay servicios habilitados (D4). Null con opciones o con lo usado a la vista.
+    /// se retuvieron por eso; el horario si alguna quedó fuera de su franja (administrar-personas-y-opciones); y, si no, que
+    /// no hay servicios habilitados (D4). Null con opciones o con lo usado a la vista.
     /// </summary>
     public string? MotivoSinOpciones =>
         _catalogo.Count > 0 || _agotadas.Count > 0 ? null
         : _retenidas.Count > 0 && _retenidas.All(r => r.Motivo == "PERSON_INACTIVE") ? MensajesAtencion.DeMotivo("PERSON_INACTIVE")
+        : _retenidas.Any(r => r.Causa == "OUTSIDE_SERVICE_HOURS") ? MensajesAtencion.FueraDeHorario
         : MensajesAtencion.SinHabilitacion;
 
     /// <summary>El IntentId de la última confirmación empezada.</summary>
@@ -503,8 +505,9 @@ public sealed class MaquinaAtencion
             case TipoResultado.Denegada:
                 ConsumoRegistrado = false;
                 MotivoResultado = resultado.ReasonCode;
-                Mensaje = MensajesAtencion.DeMotivo(resultado.ReasonCode);
-                _codigoMensaje = resultado.ReasonCode;
+                // La causa interna, si la hay, elige el mensaje: fuera de horario no es lo mismo que sin habilitación (D5).
+                Mensaje = MensajesAtencion.DeMotivo(resultado.ReasonCause ?? resultado.ReasonCode);
+                _codigoMensaje = resultado.ReasonCause ?? resultado.ReasonCode;
                 _decisionId = resultado.DecisionId;
                 Estado = EstadoAtencion.Resultado;
                 break;
