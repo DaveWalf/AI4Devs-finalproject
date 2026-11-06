@@ -166,7 +166,20 @@ Ninguna prueba existente cambia (D10): `git diff --diff-filter=M --stat 1000578 
 
 ## 6. Integración
 
-- [ ] 6.1 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además `git diff --diff-filter=M --stat 1000578 -- tests/` vacío
+- [x] 6.1 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además `git diff --diff-filter=M --stat 1000578 -- tests/` vacío
+  06/11 de 09:58 a 10:00, sobre `9b7e0f3`, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`; salida entera en `%TEMP%\test-bitacoras-0611.txt`:
+  ```
+  openspec validate --all --strict              Totals: 10 passed, 0 failed (10 items)
+  dotnet build INComedor.sln -warnaserror       0 Advertencia(s) · 0 Errores
+  dotnet test INComedor.sln                     total: 488 · error: 0 · correcto: 488 · omitido: 0 · 2m 02s 653ms · exit 0
+    Domain.Tests                   correcto [+75/x0/?0]
+    Contracts.Tests                correcto [+23/x0/?0]
+    Sync.Api.Tests                 correcto [+62/x0/?0]
+    Infrastructure.Sqlite.Tests    correcto [+143/x0/?0]   (121 y 22 nuevas)
+    Kiosk.Tests                    correcto [+174/x0/?0]   (163 y 11 nuevas)
+    E2E.Tests                      correcto [+11/x0/?0]    (10 y 1 nueva; en la primera corrida)
+  git diff --diff-filter=M --stat 1000578 -- tests/   (vacío)
+  ```
 
 ## Workflow follow-up
 
