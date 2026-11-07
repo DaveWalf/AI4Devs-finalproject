@@ -45,6 +45,7 @@ public sealed class PuestoDePrueba : IDisposable
         Contexto.Services.AddSingleton(new MaquinaAtencion(Servicio));
         Contexto.Services.AddSingleton(new AlmacenEstiloVisual(Carpeta));
         Contexto.Services.AddSingleton(new AlmacenModoPuesto(Carpeta));
+        Contexto.Services.AddSingleton(new AlmacenImpresora(Carpeta));
         Contexto.Services.AddSingleton(Cierre);
         return Contexto.Render<PantallaAtencion>();
     }

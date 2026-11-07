@@ -47,6 +47,14 @@ public static class MensajesAtencion
     /// <summary>El modo no se pudo escribir en la carpeta de datos: sigue el de antes.</summary>
     public const string ModoNoGuardado = "No se pudo guardar el modo: sigue el de antes";
 
+    // La pestaña Impresora (comprobante-local de configurar-puesto-por-pestanas, D13).
+    public const string PruebaSalio = "La prueba salió";
+    public const string PruebaSinPapel = "La impresora no tiene papel";
+    public const string PruebaFallo = "La prueba no salió: revisá la impresora";
+    public const string PruebaIncierta = "No se sabe si la prueba salió: revisá la impresora";
+    public const string TextosGuardados = "Se guardaron los textos del comprobante";
+    public const string TextosNoGuardados = "No se pudieron guardar los textos: siguen los de antes";
+
     // La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas).
     public const string SinConsumos = "No hay consumos con estos filtros";
     public const string RangoInvertido = "El inicio no puede ser posterior al fin";

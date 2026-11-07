@@ -390,6 +390,14 @@ ya no la abre.
 |---|---|
 | ![Con el almuerzo del día usado, cinco opciones de refrigerio y «Hoy ya usaste: almuerzo 1 de 1»](docs/capturas/11-uso-del-dia.jpg) | ![«No tenés opciones disponibles ahora», lo usado del día y «Listo», sin opciones ni «Confirmar»](docs/capturas/12-sin-opciones.jpg) |
 
+**Impresora en Configuración.** La pestaña Impresora tiene, con la impresora simulada, sus modos; «Imprimir una
+prueba», que manda a la impresora del puesto un comprobante con la leyenda PRUEBA, sin persona ni importe, dice si
+salió, si no tiene papel o si quedó incierto, y no crea ninguna fila en la base ni se confunde con el comprobante de
+una atención; y los **textos del comprobante**: el encabezado (de 1 a 40 caracteres, «INComedor · comprobante» por
+defecto) y el pie (hasta 60), en `impresora.json` de la carpeta de datos, que se aplican desde el próximo comprobante,
+en la impresora y en pantalla, también a una copia. Cada prueba (`PRINTER_TESTED`) y cada guardado (`TICKET_TEXTS`)
+quedan en la general.
+
 **Consumos en Configuración.** La pestaña Consumos muestra los consumos registrados en el puesto en la fecha de
 negocio actual, del más reciente al más antiguo, con la hora, la persona y la opción como eran al consumir, el servicio,
 el cargo y el estado del comprobante. Filtra por un rango de hasta 366 días, por persona (también las dadas de baja),

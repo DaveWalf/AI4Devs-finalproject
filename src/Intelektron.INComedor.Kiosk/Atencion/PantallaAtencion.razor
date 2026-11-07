@@ -159,13 +159,17 @@
                         <div class="impresora">
                             <div class="boca" aria-hidden="true"></div>
                             <button id="listo" type="button" class="comprobante" aria-label="Retirar el comprobante" @onclick="Maquina.Listo">
-                                <span class="encabezado-comprobante">INComedor · comprobante</span>
+                                <span class="encabezado-comprobante">@_textos.Encabezado</span>
                                 <span class="leyenda">@papel.Leyenda · N.º @papel.Numero</span>
                                 <span class="opcion-comprobante">@papel.Opcion</span>
                                 <span>Fecha: @papel.FechaNegocio</span>
                                 @if (papel.Cargo.Length > 0)
                                 {
                                     <span>Cargo informado: @papel.Cargo</span>
+                                }
+                                @if (_textos.Pie.Length > 0)
+                                {
+                                    <span class="pie-comprobante">@_textos.Pie</span>
                                 }
                                 <span class="retirar">Tocá el comprobante para retirarlo</span>
                             </button>
@@ -209,7 +213,8 @@
                             Modo="_modo" AvisoModo="@_avisoModo" PasarAOperativo="PasarAOperativo" PasarAMantenimiento="PasarAMantenimiento"
                             PuedeCerrar="@(_cierre is not null)" CerrarPuesto="@(() => SolicitarCierre("CLOSE_BUTTON"))"
                             Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador"
-                            Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos" />
+                            Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
+                            Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos" />
     }
 
     @* La clave del día, cuando el modo la pide para abrir Configuración, cerrar el puesto o pasar a operativo (D6). *@
@@ -236,6 +241,8 @@
     private string? _avisoModo;
     private CierrePuesto? _cierre;
     private SesionOperador? _sesionOperador;
+    private AlmacenImpresora? _almacenImpresora;
+    private TextosComprobante _textos = TextosComprobante.PorDefecto;
     private IValidadorClaveDelDia _validador = new ClaveDelDiaDeDesarrollo();
     private AccionClave? _pedidoClave;
     private string _fuenteCierre = "ESCAPE";
@@ -283,6 +290,14 @@
         if (Proveedor.GetService(typeof(IValidadorClaveDelDia)) is IValidadorClaveDelDia validador)
         {
             _validador = validador;
+        }
+
+        // Sin almacén de la impresora registrado, los textos por defecto; la simulada los usa desde el próximo comprobante (D13).
+        _almacenImpresora = Proveedor.GetService(typeof(AlmacenImpresora)) as AlmacenImpresora;
+        _textos = _almacenImpresora?.Leer() ?? TextosComprobante.PorDefecto;
+        if (Servicio.Impresora is ImpresoraSimulada simulada)
+        {
+            simulada.Textos = _textos;
         }
 
         _cierre = Proveedor.GetService(typeof(CierrePuesto)) as CierrePuesto;
@@ -519,6 +534,87 @@
             Ascending = consulta.Filtro.Ascendente,
             Rows = consulta.Filas,
             HasMore = consulta.HayMas,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    /// <summary>
+    /// «Imprimir una prueba»: directo a la impresora, con la leyenda PRUEBA y sin persona ni importe; no pasa por la base, así
+    /// que no crea intención, consumo, comprobante, trabajo ni evento de salida, y su TicketId nuevo nunca es el de una
+    /// atención (D13). Queda en la general con su resultado.
+    /// </summary>
+    private string ImprimirPrueba()
+    {
+        var ahora = TimeZoneInfo.ConvertTime(Servicio.Reloj.GetUtcNow(), ZonaDelPuesto);
+        var prueba = new ComprobanteAImprimir(Guid.NewGuid(), Guid.NewGuid(), 0,
+            $"Prueba de impresión · {ahora.ToString("dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)}", "PRUEBA");
+        RespuestaImpresora respuesta;
+        try
+        {
+            respuesta = Servicio.Impresora.Enviar(prueba);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            respuesta = RespuestaImpresora.Incierto();
+        }
+
+        var (resultado, mensaje) = respuesta.Envio switch
+        {
+            RespuestaEnvio.Enviado => ("PRINTED", MensajesAtencion.PruebaSalio),
+            RespuestaEnvio.Fallido => ("FAILED", respuesta.CodigoError == "PAPER_OUT" ? MensajesAtencion.PruebaSinPapel : MensajesAtencion.PruebaFallo),
+            _ => ("UNCERTAIN", MensajesAtencion.PruebaIncierta),
+        };
+        RegistrarConfiguracion("PRINTER_TESTED", new
+        {
+            Result = resultado, ErrorCode = respuesta.CodigoError, Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion,
+        });
+        return mensaje;
+    }
+
+    /// <summary>
+    /// Los textos del comprobante: validados antes de escribir, en impresora.json y, con la simulada, desde el próximo que sale.
+    /// Cada guardado queda en la general con el antes, el después y el resultado (D13 y D17).
+    /// </summary>
+    private ResultadoTextos GuardarTextos(string encabezado, string pie)
+    {
+        var antes = _textos;
+        var campos = TextosComprobante.Validar(encabezado, pie);
+        if (campos.Count > 0)
+        {
+            RegistrarCambioDeTextos(antes, null, "REJECTED", campos);
+            return new ResultadoTextos(false, campos, MensajesAtencion.PanelInvalido);
+        }
+
+        var nuevos = new TextosComprobante(encabezado, pie);
+        try
+        {
+            _almacenImpresora?.Guardar(nuevos);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            RegistrarCambioDeTextos(antes, nuevos, "FAILED", []);
+            return new ResultadoTextos(false, [], MensajesAtencion.TextosNoGuardados);
+        }
+
+        _textos = nuevos;
+        if (Servicio.Impresora is ImpresoraSimulada simulada)
+        {
+            simulada.Textos = nuevos;
+        }
+
+        RegistrarCambioDeTextos(antes, nuevos, "APPLIED", []);
+        return new ResultadoTextos(true, [], null);
+    }
+
+    private void RegistrarCambioDeTextos(TextosComprobante antes, TextosComprobante? despues, string resultado, IReadOnlyList<string> campos) =>
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "TICKET_TEXTS",
+            Before = new { Header = antes.Encabezado, Footer = antes.Pie },
+            After = despues is null ? null : new { Header = despues.Encabezado, Footer = despues.Pie },
+            Result = resultado,
+            Fields = campos,
             Access = _acceso,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,

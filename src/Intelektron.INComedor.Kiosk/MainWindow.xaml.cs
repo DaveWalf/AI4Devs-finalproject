@@ -42,6 +42,7 @@ public partial class MainWindow : Window
             Closed += (_, _) => atencion.Dispose();
             servicios.AddSingleton(atencion);
             servicios.AddSingleton(new AlmacenModoPuesto(entorno.Carpeta));
+            servicios.AddSingleton(new AlmacenImpresora(entorno.Carpeta));
             servicios.AddSingleton(PrepararCierre());
             servicios.AddSingleton(new MaquinaAtencion(atencion));
             servicios.AddSingleton(new LogosLocales(entorno.Carpeta));

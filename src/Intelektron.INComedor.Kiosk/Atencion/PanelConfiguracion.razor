@@ -150,6 +150,43 @@
             {
                 <FranjaImpresora Impresora="Impresora" ModoCambiado="ModoImpresoraCambiado" />
             }
+
+            @* La prueba va directo a la impresora del puesto, sin consumo (D13). *@
+            @if (ImprimirPrueba is not null)
+            {
+                <section aria-labelledby="titulo-prueba">
+                    <h3 id="titulo-prueba">Prueba de impresión</h3>
+                    <p>Envía un comprobante con la leyenda PRUEBA, sin persona ni importe; no registra ningún consumo.</p>
+                    <div class="acciones abrir-paneles">
+                        <button id="imprimir-prueba" type="button" @onclick="Probar">Imprimir una prueba</button>
+                    </div>
+                    @if (_resultadoPrueba is not null)
+                    {
+                        <p id="resultado-prueba" class="aviso" role="status">@_resultadoPrueba</p>
+                    }
+                </section>
+            }
+
+            @* El encabezado y el pie del comprobante, desde el próximo que sale (D13). *@
+            @if (GuardarTextos is not null)
+            {
+                <section aria-labelledby="titulo-textos" class="textos-comprobante">
+                    <h3 id="titulo-textos">Textos del comprobante</h3>
+                    <label for="encabezado-comprobante">Encabezado</label>
+                    <input id="encabezado-comprobante" type="text" maxlength="@TextosComprobante.LargoEncabezado" value="@_encabezado"
+                           aria-invalid="@(_camposTextos.Contains("Encabezado") ? "true" : null)" @oninput="e => _encabezado = e.Value?.ToString() ?? string.Empty" />
+                    <label for="pie-comprobante">Pie</label>
+                    <input id="pie-comprobante" type="text" maxlength="@TextosComprobante.LargoPie" value="@_pie"
+                           aria-invalid="@(_camposTextos.Contains("Pie") ? "true" : null)" @oninput="e => _pie = e.Value?.ToString() ?? string.Empty" />
+                    @if (_avisoTextos is not null)
+                    {
+                        <p id="aviso-textos" class="aviso" role="status">@_avisoTextos</p>
+                    }
+                    <div class="acciones">
+                        <button id="guardar-textos" type="button" class="principal" @onclick="GuardarLosTextos">Guardar</button>
+                    </div>
+                </section>
+            }
         </section>
 
         <section role="tabpanel" id="seccion-pantalla" class="seccion" aria-labelledby="pestana-pantalla" hidden="@Oculta(Pestana.Pantalla)">
@@ -195,6 +232,11 @@
     private string? _avisoGuardado;
     private string? _avisoEstilo;
     private VistaAdministracion? _resumen;
+    private string? _resultadoPrueba;
+    private string _encabezado = string.Empty;
+    private string _pie = string.Empty;
+    private IReadOnlyList<string> _camposTextos = [];
+    private string? _avisoTextos;
 
     /// <summary>La edición de personas y opciones; null deja esas pestañas vacías (administrar-personas-y-opciones).</summary>
     [Parameter]
@@ -251,6 +293,17 @@
     [Parameter]
     public string? AvisoModo { get; set; }
 
+    /// <summary>Los textos vigentes del comprobante, que la pestaña Impresora edita (D13).</summary>
+    [Parameter]
+    public TextosComprobante Textos { get; set; } = TextosComprobante.PorDefecto;
+
+    /// <summary>«Imprimir una prueba»: devuelve lo que dice la pestaña.</summary>
+    [Parameter]
+    public Func<string>? ImprimirPrueba { get; set; }
+
+    [Parameter]
+    public Func<string, string, ResultadoTextos>? GuardarTextos { get; set; }
+
     /// <summary>La consulta de consumos; la ve quien entró a Configuración, sin el código de un operador (D9).</summary>
     [Parameter]
     public ConsultaConsumos? Consumos { get; set; }
@@ -273,7 +326,27 @@
         ? $"{vista.Opciones.Count} opciones en la versión {vista.VersionConfiguracion} de la configuración"
         : MensajesAtencion.ConfiguracionNoLeida;
 
-    protected override void OnInitialized() => LeerResumen();
+    protected override void OnInitialized()
+    {
+        LeerResumen();
+        _encabezado = Textos.Encabezado;
+        _pie = Textos.Pie;
+    }
+
+    private void Probar() => _resultadoPrueba = ImprimirPrueba?.Invoke();
+
+    /// <summary>Guarda sólo los textos y deja Configuración abierta: con el aviso de lo guardado o los campos señalados (D3).</summary>
+    private void GuardarLosTextos()
+    {
+        if (GuardarTextos?.Invoke(_encabezado, _pie) is not { } resultado)
+        {
+            return;
+        }
+
+        _camposTextos = resultado.Campos;
+        _avisoTextos = resultado.Aviso;
+        _avisoGuardado = resultado.Guardado ? MensajesAtencion.TextosGuardados : null;
+    }
 
     protected override async Task OnAfterRenderAsync(bool primera)
     {

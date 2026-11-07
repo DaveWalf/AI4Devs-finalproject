@@ -28,6 +28,9 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
   dígitos, detrás de `IValidadorClaveDelDia`), salen de la segunda ola por el change
   `configurar-puesto-por-pestanas`. Siguen ahí la cuenta individual de mantenimiento y la clave del día real
   de INWeb, que entra por esa misma interfaz sin copiar su biblioteca a este repo.
+- La prueba de impresión de Configuración (sin consumo ni fila en la base) y los textos del comprobante salen
+  de la segunda ola por el mismo change; sigue ahí el resto del diagnóstico y la impresora física, que espera
+  el dispositivo elegido.
 - `docs/` describe el producto completo: es antecedente, no requisito. El requisito es la spec viva
   de `openspec/specs/` más el change activo.
 
