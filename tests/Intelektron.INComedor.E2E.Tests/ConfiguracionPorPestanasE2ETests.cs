@@ -124,6 +124,28 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         Assert.True(Math.Abs(encabezado.GetProperty("Antes").GetDouble() - encabezado.GetProperty("Despues").GetDouble()) < 1, "El encabezado se movió al desplazar.");
     }
 
+    [Fact(DisplayName = "consulta-consumos · Los consumos de hoy a 1024 × 768: después de una atención, la pestaña Consumos los muestra sin pedir ningún código")]
+    public async Task Los_consumos_de_hoy_a_1024_x_768()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        var (_, pagina) = await _escenario.AbrirPuestoAsync(playwright);
+        await FijarArea(pagina, 1024, 768);
+        await pagina.Locator("#codigo").FillAsync("0001");
+        await pagina.Locator("#ingresar").ClickAsync();
+        await pagina.Locator(".opcion").First.ClickAsync();
+        await pagina.Locator("#confirmar").ClickAsync();
+        await pagina.Locator("#listo").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
+
+        await pagina.Locator(".engranaje").ClickAsync();
+        await pagina.Locator("#pestana-consumos").ClickAsync();
+
+        await Assertions.Expect(pagina.Locator("#seccion-consumos tr.consumo")).ToHaveCountAsync(1);
+        await Assertions.Expect(pagina.Locator("#seccion-consumos tr.consumo")).ToContainTextAsync("Persona sintética 01");
+        await Assertions.Expect(pagina.Locator("#seccion-consumos input[type=password]")).ToHaveCountAsync(0);
+        await Capturar(pagina, "15-consumos-del-dia");
+    }
+
     /// <summary>Personas sintéticas sin cupo en la versión activa, por SQL, con el puesto abierto: la pestaña las lee al abrirse.</summary>
     private void SumarPersonas(int cantidad)
     {

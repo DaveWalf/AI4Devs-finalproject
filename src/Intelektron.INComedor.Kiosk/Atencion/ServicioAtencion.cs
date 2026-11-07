@@ -62,6 +62,9 @@ public sealed class ServicioAtencion : IDisposable
 
     public Asistencia Asistencia { get; private set; } = null!;
 
+    /// <summary>La consulta de consumos de Configuración (configurar-puesto-por-pestanas, D9); null hasta que Preparar devuelva Lista.</summary>
+    public ConsultaConsumos? Consumos { get; private set; }
+
     /// <summary>La edición de personas y opciones de Configuración (administrar-personas-y-opciones); null hasta que Preparar devuelva Lista.</summary>
     public AdministracionLocal? Administracion { get; private set; }
 
@@ -109,6 +112,7 @@ public sealed class ServicioAtencion : IDisposable
             Trabajos = new TrabajosImpresion(baseComedor, Reloj, Impresora);
             Asistencia = new Asistencia(baseComedor, Reloj, Trabajos);
             Administracion = new AdministracionLocal(baseComedor, Reloj);
+            Consumos = new ConsultaConsumos(baseComedor, Reloj);
             Trabajos.EnviarPendientes();
             PrepararSincronizacion(baseComedor);
             PrepararBitacoras(baseComedor);

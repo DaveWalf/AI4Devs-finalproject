@@ -44,6 +44,12 @@ queda en la bitácora general con el antes y el después. Al conectarse INWeb, l
 esa edición se bloquea; el estilo visual y la impresora siguen siendo del equipo. Lo implementa el change
 `administrar-personas-y-opciones`, con su recorte (sin permisos de operador ni importación del paquete de INWeb).
 
+**Precisión del 06/11/2026 sobre la consulta de consumos** (decisión de David en el gate de `configurar-puesto-por-pestanas`).
+La pestaña Consumos de Configuración la ve quien entra a Configuración, en mantenimiento o con la clave del día, sin el
+código de un operador; «Comprobantes» sigue pidiendo `OPERATOR`, porque reimprime y recupera. Cada consulta queda en la
+bitácora general como `CONSUMPTIONS_QUERIED`, con los filtros, el orden y la cantidad de filas, el actor nulo,
+`NO_AUTHENTICATION` y cómo se entró (`Access`), sin nombres ni códigos.
+
 ## Mantenimiento alternativo y pendientes de M0
 
 D-C22 confirma una cuenta individual local para administrar cuando el lector no funciona o no está disponible, también sin INWeb. Usa la misma identidad de actor y los grants del snapshot; autenticar no concede permisos. OPERATOR y SYSTEM_ADMINISTRATOR no se heredan. La sesión privilegiada no puede convertirse en sesión de consumo, y administrador sin OPERATOR no reimprime. Acceder al mantenimiento no requiere diagnosticar previamente el lector ni tener una sesión biométrica abierta.

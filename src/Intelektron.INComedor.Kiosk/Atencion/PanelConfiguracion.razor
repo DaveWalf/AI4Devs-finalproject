@@ -107,6 +107,10 @@
         </section>
 
         <section role="tabpanel" id="seccion-consumos" class="seccion" aria-labelledby="pestana-consumos" hidden="@Oculta(Pestana.Consumos)">
+            @if (Consumos is not null)
+            {
+                <PestanaConsumos Consulta="Consumos" Visible="@(_elegida == Pestana.Consumos)" Zona="Zona" Registrar="RegistrarConsulta" />
+            }
         </section>
 
         <section role="tabpanel" id="seccion-comprobantes" class="seccion" aria-labelledby="pestana-comprobantes" hidden="@Oculta(Pestana.Comprobantes)">
@@ -246,6 +250,14 @@
     /// <summary>El aviso de que no se pudo guardar el modo; null sin aviso.</summary>
     [Parameter]
     public string? AvisoModo { get; set; }
+
+    /// <summary>La consulta de consumos; la ve quien entró a Configuración, sin el código de un operador (D9).</summary>
+    [Parameter]
+    public ConsultaConsumos? Consumos { get; set; }
+
+    /// <summary>La pantalla registra cada consulta de consumos con cómo se entró a Configuración (D17).</summary>
+    [Parameter]
+    public Action<PestanaConsumos.ConsultaRealizada>? RegistrarConsulta { get; set; }
 
     /// <summary>La sesión del operador de Comprobantes, que la pantalla abre con Configuración y cierra con ella (D8).</summary>
     [Parameter]

@@ -332,6 +332,20 @@ body:has(.puesto) {
 .tabla-personas input.limite { width: 64px; }
 .tabla-personas input.codigo-persona { width: 110px; }
 .tabla-personas [aria-invalid="true"] { outline: 3px solid #b3261e; outline-offset: 1px; }
+
+/* Consumos (D9): los filtros en una fila que se parte, y la tabla con su encabezado fijo, como la de personas. */
+.consumos { display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; }
+.filtros-consumos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; font-size: 16px; }
+.filtros-consumos label { display: flex; flex-direction: column; gap: 4px; }
+.filtros-consumos input, .filtros-consumos select { min-height: 44px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
+.tabla-consumos { width: 100%; border-collapse: collapse; font-size: 16px; }
+.tabla-consumos th { position: sticky; top: 0; z-index: 1; background: rgb(var(--papel)); text-align: left; border-bottom: 2px solid var(--tinta-suave); }
+.tabla-consumos th, .tabla-consumos td { height: 44px; padding: 0 8px; }
+.tabla-consumos tbody tr { border-bottom: 1px solid rgb(0 0 0 / .08); }
+.tabla-consumos td.cargo { text-align: right; font-variant-numeric: tabular-nums; }
+.dialogo .tabla-consumos th button.ordenar { width: 100%; min-height: 44px; min-width: 0; padding: 0 4px; border: none; background: transparent; text-align: left; font-size: 16px; font-weight: 700; }
+.tabla-consumos th[aria-sort="ascending"] button.ordenar::after { content: " ▲"; }
+.tabla-consumos th[aria-sort="descending"] button.ordenar::after { content: " ▼"; }
 .modo-puesto { font-size: 18px; font-weight: 600; }
 
 /* La raíz recibe el foco en reposo para que Escape llegue (D7); el foco no se dibuja ahí. */

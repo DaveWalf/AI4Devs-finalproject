@@ -47,6 +47,12 @@ public static class MensajesAtencion
     /// <summary>El modo no se pudo escribir en la carpeta de datos: sigue el de antes.</summary>
     public const string ModoNoGuardado = "No se pudo guardar el modo: sigue el de antes";
 
+    // La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas).
+    public const string SinConsumos = "No hay consumos con estos filtros";
+    public const string RangoInvertido = "El inicio no puede ser posterior al fin";
+    public const string RangoDemasiadoLargo = "El rango no puede pasar de 366 días";
+    public const string HayMasConsumos = "Se muestran 500 consumos y hay más: acotá los filtros";
+
     /// <summary>El resumen de Personas u Opciones cuando la base no respondió al abrir Configuración.</summary>
     public const string ConfiguracionNoLeida = "No se pudo leer la configuración de la base";
 

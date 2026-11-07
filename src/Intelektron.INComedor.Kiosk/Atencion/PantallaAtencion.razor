@@ -208,7 +208,8 @@
                             VistaPrevia="estilo => _vista = estilo" GuardarEstilo="GuardarConfiguracion" Cancelar="CancelarConfiguracion"
                             Modo="_modo" AvisoModo="@_avisoModo" PasarAOperativo="PasarAOperativo" PasarAMantenimiento="PasarAMantenimiento"
                             PuedeCerrar="@(_cierre is not null)" CerrarPuesto="@(() => SolicitarCierre("CLOSE_BUTTON"))"
-                            Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador" />
+                            Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador"
+                            Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos" />
     }
 
     @* La clave del día, cuando el modo la pide para abrir Configuración, cerrar el puesto o pasar a operativo (D6). *@
@@ -493,6 +494,35 @@
             ActorReason = SinAutenticacion,
         });
     }
+
+    /// <summary>
+    /// Cada consulta de consumos queda en la general con los filtros, el orden y las filas, sin nombres ni códigos, con el actor
+    /// nulo y cómo se entró (D9 y D17, decisión de David del 06/11).
+    /// </summary>
+    private void RegistrarConsultaDeConsumos(PestanaConsumos.ConsultaRealizada consulta) =>
+        RegistrarConfiguracion("CONSUMPTIONS_QUERIED", new
+        {
+            From = consulta.Filtro.Desde.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            To = consulta.Filtro.Hasta.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            PersonId = consulta.Filtro.PersonaId,
+            ServiceId = consulta.Filtro.ServicioId,
+            MenuItemId = consulta.Filtro.OpcionId,
+            OrderBy = consulta.Filtro.Orden switch
+            {
+                OrdenConsumos.Persona => "PERSON",
+                OrdenConsumos.Opcion => "MENU_ITEM",
+                OrdenConsumos.Servicio => "SERVICE",
+                OrdenConsumos.Cargo => "CHARGE",
+                OrdenConsumos.Estado => "TICKET_STATUS",
+                _ => "TIME",
+            },
+            Ascending = consulta.Filtro.Ascendente,
+            Rows = consulta.Filas,
+            HasMore = consulta.HayMas,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
 
     private static string CodigoDe(ModoPuesto modo) => modo == ModoPuesto.Operativo ? "OPERATIVE" : "MAINTENANCE";
 

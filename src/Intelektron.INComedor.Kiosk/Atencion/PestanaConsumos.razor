@@ -1,0 +1,226 @@
+@using System.Globalization
+@using Intelektron.INComedor.Infrastructure.Sqlite
+
+@*
+    La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas, D9 y la decisión de David del 06/11): la ve
+    quien entra a Configuración, sin el código de un operador. Muestra los consumos de hoy por defecto, filtra por fechas,
+    persona, servicio y opción, y ordena por columna en la consulta, antes del tope de 500. Los filtros usan posiciones, no
+    identificadores, y la tabla nunca muestra un código. La tabla se dibuja sólo con la pestaña elegida, para que los nombres
+    no queden en la página mientras se usa otra; los filtros se conservan hasta cerrar Configuración.
+*@
+<div class="consumos">
+    @if (Visible && _cargado)
+    {
+        <div class="filtros-consumos">
+            <label>Desde <input id="consumos-desde" type="date" value="@Fecha(_desde)" @onchange="e => _desde = LeerFecha(e, _desde)" /></label>
+            <label>Hasta <input id="consumos-hasta" type="date" value="@Fecha(_hasta)" @onchange="e => _hasta = LeerFecha(e, _hasta)" /></label>
+            <label>
+                Persona
+                <select id="consumos-persona" @onchange="e => _persona = Texto(e)">
+                    <option value="" selected="@(_persona.Length == 0)">Todas</option>
+                    @for (var i = 0; i < _personas.Count; i++)
+                    {
+                        var valor = i.ToString(CultureInfo.InvariantCulture);
+                        <option value="@valor" selected="@(_persona == valor)">@_personas[i].Nombre@(_personas[i].DeBaja ? " (de baja)" : "")</option>
+                    }
+                </select>
+            </label>
+            <label>
+                Servicio
+                <select id="consumos-servicio" @onchange="e => _servicio = Texto(e)">
+                    <option value="" selected="@(_servicio.Length == 0)">Todos</option>
+                    @for (var i = 0; i < _servicios.Count; i++)
+                    {
+                        var valor = i.ToString(CultureInfo.InvariantCulture);
+                        <option value="@valor" selected="@(_servicio == valor)">@_servicios[i].Nombre</option>
+                    }
+                </select>
+            </label>
+            <label>
+                Opción
+                <select id="consumos-opcion" @onchange="e => _opcion = Texto(e)">
+                    <option value="" selected="@(_opcion.Length == 0)">Todas</option>
+                    @for (var i = 0; i < _opciones.Count; i++)
+                    {
+                        var valor = i.ToString(CultureInfo.InvariantCulture);
+                        <option value="@valor" selected="@(_opcion == valor)">@_opciones[i].Nombre</option>
+                    }
+                </select>
+            </label>
+            <button id="consultar-consumos" type="button" class="principal" @onclick="Consultar">Consultar</button>
+        </div>
+
+        @if (_aviso is not null)
+        {
+            <p id="aviso-consumos" class="aviso" role="status">@_aviso</p>
+        }
+
+        <div class="caja-tabla">
+            <table class="tabla-consumos">
+                <thead>
+                    <tr>
+                        @foreach (var (columna, titulo) in Columnas)
+                        {
+                            <th scope="col" data-columna="@columna" aria-sort="@Orden(columna)">
+                                <button type="button" class="ordenar" @onclick="() => Ordenar(columna)">@titulo</button>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var fila in _filas)
+                    {
+                        <tr class="consumo">
+                            <td>@Hora(fila)</td>
+                            <td>@fila.Persona</td>
+                            <td>@fila.Opcion</td>
+                            <td>@fila.Servicio</td>
+                            <td class="cargo">@CargoDe(fila)</td>
+                            <td>@Estado(fila.EstadoComprobante)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (_filas.Count == 0)
+        {
+            <p id="sin-consumos">@MensajesAtencion.SinConsumos</p>
+        }
+
+        @if (_hayMas)
+        {
+            <p id="hay-mas" class="aviso" role="status">@MensajesAtencion.HayMasConsumos</p>
+        }
+    }
+</div>
+
+@code {
+    private static readonly (OrdenConsumos Columna, string Titulo)[] Columnas =
+    [
+        (OrdenConsumos.Hora, "Hora"),
+        (OrdenConsumos.Persona, "Persona"),
+        (OrdenConsumos.Opcion, "Opción"),
+        (OrdenConsumos.Servicio, "Servicio"),
+        (OrdenConsumos.Cargo, "Cargo"),
+        (OrdenConsumos.Estado, "Estado"),
+    ];
+
+    private bool _cargado;
+    private DateOnly _desde;
+    private DateOnly _hasta;
+    private string _persona = string.Empty;
+    private string _servicio = string.Empty;
+    private string _opcion = string.Empty;
+    private IReadOnlyList<PersonaParaFiltro> _personas = [];
+    private IReadOnlyList<ElementoParaFiltro> _servicios = [];
+    private IReadOnlyList<ElementoParaFiltro> _opciones = [];
+    private FiltroConsumos _aplicado = FiltroConsumos.DelDia(default);
+    private IReadOnlyList<ConsumoConsultado> _filas = [];
+    private bool _hayMas;
+    private string? _aviso;
+
+    /// <summary>Lo que queda en la bitácora de una consulta hecha: los filtros, el orden y la cantidad de filas (D9).</summary>
+    public sealed record ConsultaRealizada(FiltroConsumos Filtro, int Filas, bool HayMas);
+
+    [Parameter, EditorRequired]
+    public ConsultaConsumos Consulta { get; set; } = null!;
+
+    /// <summary>Si la pestaña es la elegida: recién entonces se consulta y se dibuja la tabla.</summary>
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public TimeZoneInfo Zona { get; set; } = TimeZoneInfo.Utc;
+
+    /// <summary>La pantalla registra cada consulta en la general, con cómo se entró a Configuración.</summary>
+    [Parameter]
+    public Action<ConsultaRealizada>? Registrar { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Visible && !_cargado)
+        {
+            _cargado = true;
+            _desde = _hasta = Consulta.Hoy();
+            _personas = Consulta.Personas();
+            _servicios = Consulta.Servicios();
+            _opciones = Consulta.Opciones();
+            Ejecutar(FiltroConsumos.DelDia(_desde));
+        }
+    }
+
+    /// <summary>Los filtros elegidos, con el orden vigente; un rango inválido se avisa y la tabla no cambia.</summary>
+    private void Consultar()
+    {
+        Ejecutar(new FiltroConsumos(_desde, _hasta,
+            Elegido(_personas.Select(p => p.Id), _persona),
+            Elegido(_servicios.Select(s => s.Id), _servicio),
+            Elegido(_opciones.Select(o => o.Id), _opcion),
+            _aplicado.Orden, _aplicado.Ascendente));
+    }
+
+    /// <summary>Un toque ordena ascendente por la columna; otro, descendente. Ordena la consulta aplicada, antes del tope.</summary>
+    private void Ordenar(OrdenConsumos columna) =>
+        Ejecutar(_aplicado with { Orden = columna, Ascendente = _aplicado.Orden != columna || !_aplicado.Ascendente });
+
+    private void Ejecutar(FiltroConsumos filtro)
+    {
+        ResultadoConsumos resultado;
+        try
+        {
+            resultado = Consulta.Leer(filtro);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _aviso = MensajesAtencion.ConfiguracionNoLeida;
+            return;
+        }
+
+        if (resultado.Rechazo is { } rechazo)
+        {
+            _aviso = rechazo == ConsultaConsumos.RangoInvertido ? MensajesAtencion.RangoInvertido : MensajesAtencion.RangoDemasiadoLargo;
+            return;
+        }
+
+        _aviso = null;
+        _aplicado = filtro;
+        _filas = resultado.Filas;
+        _hayMas = resultado.HayMas;
+        Registrar?.Invoke(new ConsultaRealizada(filtro, resultado.Filas.Count, resultado.HayMas));
+    }
+
+    private string Orden(OrdenConsumos columna) =>
+        _aplicado.Orden != columna ? "none" : _aplicado.Ascendente ? "ascending" : "descending";
+
+    private static Guid? Elegido(IEnumerable<Guid> lista, string posicion) =>
+        int.TryParse(posicion, NumberStyles.None, CultureInfo.InvariantCulture, out var i) ? lista.ElementAtOrDefault(i) is var id && id != Guid.Empty ? id : null : null;
+
+    /// <summary>La hora local; con más de un día en el rango, también la fecha.</summary>
+    private string Hora(ConsumoConsultado fila)
+    {
+        var local = TimeZoneInfo.ConvertTime(fila.ConfirmadoUtc, Zona);
+        return _aplicado.Desde == _aplicado.Hasta
+            ? local.ToString("HH:mm", CultureInfo.InvariantCulture)
+            : local.ToString("dd/MM HH:mm", CultureInfo.InvariantCulture);
+    }
+
+    private static string CargoDe(ConsumoConsultado fila) =>
+        MensajesAtencion.Cargo(fila.Moneda, fila.Escala, fila.CargoUnidadesMenores) is { Length: > 0 } cargo ? cargo : "Sin cargo";
+
+    private static string Estado(EstadoTrabajoImpresion? estado) => estado switch
+    {
+        EstadoTrabajoImpresion.Submitted => "Enviado",
+        EstadoTrabajoImpresion.Failed => "Falló",
+        EstadoTrabajoImpresion.Unknown => "Incierto",
+        null => "—",
+        _ => "En cola",
+    };
+
+    private static string Fecha(DateOnly fecha) => fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static DateOnly LeerFecha(ChangeEventArgs e, DateOnly anterior) =>
+        DateOnly.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha) ? fecha : anterior;
+
+    private static string Texto(ChangeEventArgs e) => e.Value?.ToString() ?? string.Empty;
+}

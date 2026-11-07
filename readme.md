@@ -390,13 +390,26 @@ ya no la abre.
 |---|---|
 | ![Con el almuerzo del día usado, cinco opciones de refrigerio y «Hoy ya usaste: almuerzo 1 de 1»](docs/capturas/11-uso-del-dia.jpg) | ![«No tenés opciones disponibles ahora», lo usado del día y «Listo», sin opciones ni «Confirmar»](docs/capturas/12-sin-opciones.jpg) |
 
+**Consumos en Configuración.** La pestaña Consumos muestra los consumos registrados en el puesto en la fecha de
+negocio actual, del más reciente al más antiguo, con la hora, la persona y la opción como eran al consumir, el servicio,
+el cargo y el estado del comprobante. Filtra por un rango de hasta 366 días, por persona (también las dadas de baja),
+por servicio y por opción, y cada encabezado ordena la consulta antes del tope de 500 filas, que avisa si hay más. La ve
+quien entra a Configuración, sin el código de un operador (decisión de David del 06/11); los rechazos no son consumos y
+no aparecen, y ningún código se muestra. Cada consulta queda en la general como `CONSUMPTIONS_QUERIED`.
+
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|
 | ![La pestaña Personas en edición: la tabla con una fila por persona, ALMUERZO y REFRIGERIO en columnas y las opciones habilitadas, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |
 
+| Consumos del día |
+|---|
+| ![La pestaña Consumos con los filtros del día y un consumo de «Persona sintética 01», sin ningún código](docs/capturas/15-consumos-del-dia.jpg) |
+
 Las 06 a 10 las sacó el 03/11/2026 el apply de `presentar-atencion-tactil` y las rehízo el 04/11 el de
 `mover-engranaje-al-pie`; las 11 y 12, el de `ofrecer-solo-opciones-disponibles`; las 13 y 14, el 06/11 el E2E de
-`administrar-personas-y-opciones`. Todas, a 1024 × 768 por CDP. Las del
+`administrar-personas-y-opciones`. El 07/11, el E2E de `configurar-puesto-por-pestanas` rehízo la 06 (reposo sin
+«Asistencia»), la 10 (Configuración en General) y la 13 (la tabla de personas) y sacó la 15 (consumos del día). Todas, a
+1024 × 768 por CDP. Las del
 flujo principal, más arriba, son del 30/10 y muestran la presentación anterior.
 
 **Pantalla de demostración anterior.**
