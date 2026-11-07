@@ -71,6 +71,26 @@ public class AccesoPuestoE2ETests : IAsyncLifetime
             "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", "")));
     }
 
+    [Fact(DisplayName = "presentacion-puesto · El monitor guardado no está: con un pantalla.json de un monitor inexistente, el puesto abre a pantalla completa en el principal y la pestaña Pantalla lo avisa")]
+    public async Task El_monitor_guardado_no_esta()
+    {
+        Directory.CreateDirectory(_escenario.Carpeta);
+        File.WriteAllText(Path.Combine(_escenario.Carpeta, "pantalla.json"),
+            "{\"id\":\"MONITOR-QUE-NO-EXISTE\",\"dispositivo\":\"DISPLAY99\"}");
+        using var playwright = await Playwright.CreateAsync();
+        var (puesto, pagina) = await _escenario.AbrirPuestoAsync(playwright);
+        await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
+
+        ComprobarPantallaCompleta(puesto.MainWindowHandle, "mantenimiento, con el monitor guardado ausente");
+        var monitor = new InformacionMonitor { Tamano = Marshal.SizeOf<InformacionMonitor>() };
+        Assert.True(GetMonitorInfo(MonitorFromWindow(puesto.MainWindowHandle, 2), ref monitor));
+        Assert.True((monitor.Marcas & 1) != 0, "El puesto no abrió en el monitor principal.");
+
+        await pagina.Locator(".engranaje").ClickAsync();
+        await pagina.Locator("#pestana-pantalla").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#aviso-monitor")).ToHaveTextAsync("El monitor guardado no está conectado: el puesto abrió en el principal");
+    }
+
     /// <summary>Maximizada para Windows, sin barra de título ni marco, y con el rectángulo del monitor entero (D7).</summary>
     private void ComprobarPantallaCompleta(IntPtr ventana, string modo)
     {

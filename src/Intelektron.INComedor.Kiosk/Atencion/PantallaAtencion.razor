@@ -214,7 +214,8 @@
                             PuedeCerrar="@(_cierre is not null)" CerrarPuesto="@(() => SolicitarCierre("CLOSE_BUTTON"))"
                             Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador"
                             Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
-                            Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos" />
+                            Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
+                            AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id" />
     }
 
     @* La clave del día, cuando el modo la pide para abrir Configuración, cerrar el puesto o pasar a operativo (D6). *@
@@ -243,6 +244,8 @@
     private SesionOperador? _sesionOperador;
     private AlmacenImpresora? _almacenImpresora;
     private TextosComprobante _textos = TextosComprobante.PorDefecto;
+    private AlmacenPantalla? _almacenPantalla;
+    private PantallaDelPuesto? _pantallaDelPuesto;
     private IValidadorClaveDelDia _validador = new ClaveDelDiaDeDesarrollo();
     private AccionClave? _pedidoClave;
     private string _fuenteCierre = "ESCAPE";
@@ -300,6 +303,8 @@
             simulada.Textos = _textos;
         }
 
+        _almacenPantalla = Proveedor.GetService(typeof(AlmacenPantalla)) as AlmacenPantalla;
+        _pantallaDelPuesto = Proveedor.GetService(typeof(PantallaDelPuesto)) as PantallaDelPuesto;
         _cierre = Proveedor.GetService(typeof(CierrePuesto)) as CierrePuesto;
         if (_cierre is not null)
         {
@@ -619,6 +624,45 @@
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,
         });
+
+    /// <summary>
+    /// El monitor del puesto: en pantalla.json y, con la ventana, a pantalla completa en él (D10). Queda en la general con el de
+    /// antes y el de después, el resultado y cómo se entró.
+    /// </summary>
+    private bool GuardarMonitor(MonitorDelPuesto monitor)
+    {
+        var antes = _almacenPantalla?.Leer().Guardada;
+        var resultado = "APPLIED";
+        try
+        {
+            _almacenPantalla?.Guardar(monitor);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            resultado = "FAILED";
+        }
+
+        if (resultado == "APPLIED")
+        {
+            _pantallaDelPuesto?.Mover(monitor);
+            if (_pantallaDelPuesto is not null)
+            {
+                _pantallaDelPuesto.Aviso = null;
+            }
+        }
+
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "DISPLAY_MONITOR",
+            Before = antes is null ? null : new { Device = antes.Dispositivo },
+            After = new { Device = monitor.Dispositivo, Width = monitor.Area.Ancho, Height = monitor.Area.Alto, Primary = monitor.Principal },
+            Result = resultado,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+        return resultado == "APPLIED";
+    }
 
     private static string CodigoDe(ModoPuesto modo) => modo == ModoPuesto.Operativo ? "OPERATIVE" : "MAINTENANCE";
 

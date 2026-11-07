@@ -190,6 +190,35 @@
         </section>
 
         <section role="tabpanel" id="seccion-pantalla" class="seccion" aria-labelledby="pestana-pantalla" hidden="@Oculta(Pestana.Pantalla)">
+            @* El monitor del puesto, recordado al volver a abrir; si el guardado no está, el principal y el aviso (D10). *@
+            @if (AvisoMonitor is not null)
+            {
+                <p id="aviso-monitor" class="aviso" role="status">@AvisoMonitor</p>
+            }
+            <p>Elegí el monitor del puesto: la ventana pasa a pantalla completa en él y vuelve a él cada vez que el puesto abre.</p>
+            <ul class="lista-monitores">
+                @for (var i = 0; i < _monitores.Count; i++)
+                {
+                    var indice = i;
+                    var monitor = _monitores[indice];
+                    <li>
+                        <label class="monitor">
+                            <input type="radio" name="monitor-puesto" checked="@(indice == _monitorElegido)" @onchange="() => _monitorElegido = indice" />
+                            <span>@(monitor.Nombre ?? monitor.Dispositivo) · @monitor.Area.Ancho × @monitor.Area.Alto@(monitor.Principal ? " · Principal" : "")</span>
+                        </label>
+                    </li>
+                }
+            </ul>
+            @if (_avisoMonitorError is not null)
+            {
+                <p id="aviso-monitor-error" class="aviso" role="status">@_avisoMonitorError</p>
+            }
+            @if (GuardarMonitor is not null && _monitores.Count > 0)
+            {
+                <div class="acciones">
+                    <button id="guardar-monitor" type="button" class="principal" @onclick="GuardarElMonitor">Guardar</button>
+                </div>
+            }
         </section>
 
         <section role="tabpanel" id="seccion-red" class="seccion" aria-labelledby="pestana-red" hidden="@Oculta(Pestana.Red)">
@@ -237,6 +266,9 @@
     private string _pie = string.Empty;
     private IReadOnlyList<string> _camposTextos = [];
     private string? _avisoTextos;
+    private IReadOnlyList<MonitorDelPuesto> _monitores = [];
+    private int _monitorElegido;
+    private string? _avisoMonitorError;
 
     /// <summary>La edición de personas y opciones; null deja esas pestañas vacías (administrar-personas-y-opciones).</summary>
     [Parameter]
@@ -293,6 +325,18 @@
     [Parameter]
     public string? AvisoModo { get; set; }
 
+    /// <summary>Por qué el puesto no abrió en el monitor guardado; null si abrió en él (D10).</summary>
+    [Parameter]
+    public string? AvisoMonitor { get; set; }
+
+    /// <summary>Guarda el monitor elegido y pide mover la ventana; false si no se pudo escribir.</summary>
+    [Parameter]
+    public Func<MonitorDelPuesto, bool>? GuardarMonitor { get; set; }
+
+    /// <summary>El monitor guardado, para marcarlo al abrir la pestaña; sin él, el principal.</summary>
+    [Parameter]
+    public string? MonitorGuardadoId { get; set; }
+
     /// <summary>Los textos vigentes del comprobante, que la pestaña Impresora edita (D13).</summary>
     [Parameter]
     public TextosComprobante Textos { get; set; } = TextosComprobante.PorDefecto;
@@ -331,6 +375,22 @@
         LeerResumen();
         _encabezado = Textos.Encabezado;
         _pie = Textos.Pie;
+        _monitores = Monitores.Leer();
+        var guardado = _monitores.ToList().FindIndex(m => m.Id == MonitorGuardadoId);
+        _monitorElegido = guardado >= 0 ? guardado : Math.Max(0, _monitores.ToList().FindIndex(m => m.Principal));
+    }
+
+    /// <summary>Guarda el monitor y deja Configuración abierta, con el aviso de lo guardado (D3, D10).</summary>
+    private void GuardarElMonitor()
+    {
+        if (GuardarMonitor is null || _monitorElegido >= _monitores.Count)
+        {
+            return;
+        }
+
+        var guardado = GuardarMonitor(_monitores[_monitorElegido]);
+        _avisoMonitorError = guardado ? null : MensajesAtencion.MonitorNoGuardado;
+        _avisoGuardado = guardado ? MensajesAtencion.MonitorGuardado : null;
     }
 
     private void Probar() => _resultadoPrueba = ImprimirPrueba?.Invoke();

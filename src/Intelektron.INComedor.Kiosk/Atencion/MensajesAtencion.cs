@@ -55,6 +55,12 @@ public static class MensajesAtencion
     public const string TextosGuardados = "Se guardaron los textos del comprobante";
     public const string TextosNoGuardados = "No se pudieron guardar los textos: siguen los de antes";
 
+    // La pestaña Pantalla (presentacion-puesto de configurar-puesto-por-pestanas, D10).
+    public const string MonitorAusente = "El monitor guardado no está conectado: el puesto abrió en el principal";
+    public const string MonitorIlegible = "No se pudo leer el monitor guardado: el puesto abrió en el principal";
+    public const string MonitorGuardado = "Se guardó el monitor del puesto";
+    public const string MonitorNoGuardado = "No se pudo guardar el monitor: sigue el de antes";
+
     // La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas).
     public const string SinConsumos = "No hay consumos con estos filtros";
     public const string RangoInvertido = "El inicio no puede ser posterior al fin";

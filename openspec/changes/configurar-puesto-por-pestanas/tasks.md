@@ -209,8 +209,23 @@ Cambian sólo las 13 pruebas existentes del punto 4 del gate (D18): al cerrar ca
 
 ## 8. Pantalla (recorte de respaldo)
 
-- [ ] 8.1 Agregar `Kiosk.Tests/MonitorPuestoTests.cs` (`ElegirMonitor`: el guardado presente; el guardado ausente da el principal y el aviso; un solo monitor; lo guardado ilegible da el principal; la pestaña con un `Monitores` de prueba lista resolución y principal, guarda y registra `CONFIGURATION_CHANGED` con `DISPLAY_MONITOR` y `MAINTENANCE_MODE`). Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~MonitorPuesto"`; pegar la salida
-- [ ] 8.2 Implementar `Monitores` con `user32`, `AlmacenPantalla`, la pestaña y la ubicación de la ventana al abrir y al guardar (D10); agregar a `AccesoPuestoE2ETests.cs` «El monitor guardado no está» (con un `pantalla.json` de un monitor inexistente, abre maximizada en el principal). Verificar con el filtro de 8.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el E2E en verde; sumar a `readme.md` el monitor y que con varios monitores lo prueba David; pegar las salidas
+- [x] 8.1 Agregar `Kiosk.Tests/MonitorPuestoTests.cs` (`ElegirMonitor`: el guardado presente; el guardado ausente da el principal y el aviso; un solo monitor; lo guardado ilegible da el principal; la pestaña con un `Monitores` de prueba lista resolución y principal, guarda y registra `CONFIGURATION_CHANGED` con `DISPLAY_MONITOR` y `MAINTENANCE_MODE`). Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~MonitorPuesto"`; pegar la salida
+  `Kiosk.Tests/MonitorPuestoTests.cs` (7): `ElegirMonitor` con datos armados (el guardado presente; el guardado ausente da el principal y el aviso; un solo monitor; lo guardado ilegible da el principal y el aviso), `AlmacenPantalla` (sin archivo, ida y vuelta, ilegible), la pestaña con los monitores **reales** del equipo (resolución, «Principal», «Guardar» que escribe `pantalla.json`, pide mover la ventana y deja `DISPLAY_MONITOR` con `MAINTENANCE_MODE` y el actor nulo) y el aviso del monitor ausente. **Decisión de implementación, a la vista:** la tarea pedía la pestaña «con un `Monitores` de prueba»; va con los monitores reales, sin dobles (`AGENTS.md` los permite sólo para impresora y lector), y mover la ventana pasa por `PantallaDelPuesto`, un mediador como `CierrePuesto` que en bUnit sólo anota los pedidos. Esqueletos con `NotImplementedException` y los mensajes. Rojo, 07/11 00:53:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~MonitorPuesto"
+        6 System.NotImplementedException · 1 Bunit.ElementNotFoundException
+  total: 7 · error: 7 · correcto: 0
+  ```
+- [x] 8.2 Implementar `Monitores` con `user32`, `AlmacenPantalla`, la pestaña y la ubicación de la ventana al abrir y al guardar (D10); agregar a `AccesoPuestoE2ETests.cs` «El monitor guardado no está» (con un `pantalla.json` de un monitor inexistente, abre maximizada en el principal). Verificar con el filtro de 8.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el E2E en verde; sumar a `readme.md` el monitor y que con varios monitores lo prueba David; pegar las salidas
+  `Monitores` con `EnumDisplayMonitors`, `GetMonitorInfo` y `EnumDisplayDevices` (el nombre de interfaz del monitor como identificador), `ElegirMonitor`, `AlmacenPantalla` (`pantalla.json`, atómico), `PantallaDelPuesto`, la pestaña Pantalla con su aviso y «Guardar», y `MainWindow`, que al abrir pone la ventana en el área del monitor elegido (`SetWindowPos`) y la maximiza, y al guardar la pasa al nuevo (D10). `AccesoPuestoE2ETests.El_monitor_guardado_no_esta`, vista fallar con una afirmación imposible y revertida. 07/11 00:54 a 00:56:
+  ```
+  Kiosk.Tests --filter MonitorPuesto                       total: 7 · error: 0 · correcto: 7
+  E2E --filter El_monitor_guardado_no_esta   (con «IMPOSIBLE»)   total: 1 · error: 1 · correcto: 0
+  ventana en mantenimiento, con el monitor guardado ausente: estilo 0x17080000, zoom True, rectángulo {0, 0, 1280, 800}, monitor {0, 0, 1280, 800}
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)   total: 284 · error: 0 · correcto: 284   (275, 2 de 7.1 y 7 nuevas)
+  E2E --filter "AccesoPuestoE2E|PresentacionTactil"        total: 7 · error: 0 · correcto: 7
+  ```
+  `readme.md` suma «Pantalla en Configuración», con que el cambio real entre dos monitores lo prueba David.
 
 ## 9. Red y conectividad (recorte de respaldo)
 

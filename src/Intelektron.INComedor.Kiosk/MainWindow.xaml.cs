@@ -1,5 +1,7 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using Intelektron.INComedor.Kiosk.Atencion;
 using Intelektron.INComedor.Kiosk.Demostracion;
 using Intelektron.INComedor.Kiosk.Sincronizacion;
@@ -44,6 +46,9 @@ public partial class MainWindow : Window
             servicios.AddSingleton(new AlmacenModoPuesto(entorno.Carpeta));
             servicios.AddSingleton(new AlmacenImpresora(entorno.Carpeta));
             servicios.AddSingleton(PrepararCierre());
+            var almacenPantalla = new AlmacenPantalla(entorno.Carpeta);
+            servicios.AddSingleton(almacenPantalla);
+            servicios.AddSingleton(PrepararPantalla(almacenPantalla));
             servicios.AddSingleton(new MaquinaAtencion(atencion));
             servicios.AddSingleton(new LogosLocales(entorno.Carpeta));
             servicios.AddSingleton(new AlmacenEstiloVisual(entorno.Carpeta));
@@ -56,6 +61,47 @@ public partial class MainWindow : Window
             ComponentType = demostracion ? typeof(PantallaDemostracion) : typeof(PantallaAtencion),
         });
     }
+
+    /// <summary>
+    /// El monitor del puesto (D10 de configurar-puesto-por-pestanas): al abrir, el guardado o, si no está, el principal con el
+    /// aviso para la pestaña Pantalla; al guardar otro, la ventana pasa a él. Siempre a pantalla completa.
+    /// </summary>
+    private PantallaDelPuesto PrepararPantalla(AlmacenPantalla almacen)
+    {
+        var pantalla = new PantallaDelPuesto(monitor => Dispatcher.BeginInvoke(new Action(() => UbicarEn(monitor))));
+        var monitores = Monitores.Leer();
+        if (monitores.Count == 0)
+        {
+            return pantalla;
+        }
+
+        var eleccion = Monitores.ElegirMonitor(monitores, almacen.Leer());
+        pantalla.Aviso = eleccion.Aviso;
+        SourceInitialized += (_, _) => UbicarEn(eleccion.Monitor);
+        return pantalla;
+    }
+
+    /// <summary>La ventana, en el área del monitor y maximizada: sin bordes, eso es la pantalla completa de ese monitor (D7, D10).</summary>
+    private void UbicarEn(MonitorDelPuesto monitor)
+    {
+        var ventana = new WindowInteropHelper(this).Handle;
+        if (ventana == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var area = monitor.Trabajo ?? monitor.Area;
+        WindowState = WindowState.Normal;
+        SetWindowPos(ventana, IntPtr.Zero, area.Izquierda, area.Arriba, area.Ancho, area.Alto, SinCambiarOrden | SinActivar);
+        WindowState = WindowState.Maximized;
+    }
+
+    private const uint SinCambiarOrden = 0x0004;
+    private const uint SinActivar = 0x0010;
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(IntPtr ventana, IntPtr despues, int x, int y, int ancho, int alto, uint marcas);
 
     /// <summary>
     /// El cierre según el modo (D7 de configurar-puesto-por-pestanas): en operativo, un pedido de cierre que no viene de la

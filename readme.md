@@ -390,6 +390,13 @@ ya no la abre.
 |---|---|
 | ![Con el almuerzo del día usado, cinco opciones de refrigerio y «Hoy ya usaste: almuerzo 1 de 1»](docs/capturas/11-uso-del-dia.jpg) | ![«No tenés opciones disponibles ahora», lo usado del día y «Listo», sin opciones ni «Confirmar»](docs/capturas/12-sin-opciones.jpg) |
 
+**Pantalla en Configuración.** La pestaña Pantalla lista los monitores conectados con su resolución y cuál es el
+principal, y guarda el del puesto en `pantalla.json` por su identificador de interfaz, que sobrevive a un reinicio y a
+un cambio de orden: la ventana pasa a pantalla completa en él y vuelve a él cada vez que el puesto abre. Si el monitor
+guardado no está conectado, o lo guardado no se puede leer, el puesto abre en el principal y la pestaña lo avisa. Cada
+guardado queda en la general como `DISPLAY_MONITOR`. Con un solo monitor lo cubren las pruebas; el cambio real entre
+dos monitores lo prueba David en su equipo.
+
 **Impresora en Configuración.** La pestaña Impresora tiene, con la impresora simulada, sus modos; «Imprimir una
 prueba», que manda a la impresora del puesto un comprobante con la leyenda PRUEBA, sin persona ni importe, dice si
 salió, si no tiene papel o si quedó incierto, y no crea ninguna fila en la base ni se confunde con el comprobante de

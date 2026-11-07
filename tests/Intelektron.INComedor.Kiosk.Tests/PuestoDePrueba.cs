@@ -22,6 +22,7 @@ public sealed class PuestoDePrueba : IDisposable
         }
 
         Cierre = new CierrePuesto(() => Cierres++);
+        Pantalla = new PantallaDelPuesto(Movimientos.Add);
     }
 
     public string Carpeta { get; } = Path.Combine(Path.GetTempPath(), "incomedor-tests", "puesto-" + Guid.NewGuid().ToString("N"));
@@ -38,6 +39,11 @@ public sealed class PuestoDePrueba : IDisposable
 
     public int Cierres { get; private set; }
 
+    /// <summary>El mediador del monitor: en bUnit no hay ventana, así que sólo anota a qué monitor se pidió moverla (D10).</summary>
+    public PantallaDelPuesto Pantalla { get; }
+
+    public List<MonitorDelPuesto> Movimientos { get; } = [];
+
     public IRenderedComponent<PantallaAtencion> Dibujar(IImpresoraComprobantes? impresora = null)
     {
         Servicio = new ServicioAtencion(RutaBase, Reloj, impresora ?? new ImpresoraDePrueba());
@@ -47,6 +53,8 @@ public sealed class PuestoDePrueba : IDisposable
         Contexto.Services.AddSingleton(new AlmacenModoPuesto(Carpeta));
         Contexto.Services.AddSingleton(new AlmacenImpresora(Carpeta));
         Contexto.Services.AddSingleton(Cierre);
+        Contexto.Services.AddSingleton(Pantalla);
+        Contexto.Services.AddSingleton(new AlmacenPantalla(Carpeta));
         return Contexto.Render<PantallaAtencion>();
     }
 
