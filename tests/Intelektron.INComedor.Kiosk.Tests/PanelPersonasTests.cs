@@ -34,8 +34,9 @@ public class PanelPersonasTests : IDisposable
         var persona = Persona(pantalla, "Persona sintética 01");
 
         Assert.Equal("Activa", persona.QuerySelector(".estado-persona")!.TextContent.Trim());
-        var cupos = persona.QuerySelectorAll(".cupo")
-            .Select(c => (c.QuerySelector(".nombre-cupo")!.TextContent.Trim(), c.QuerySelector("input.limite")!.GetAttribute("value")))
+        var cupos = persona.QuerySelectorAll("td.cupo")
+            .Select(c => (c.GetAttribute("data-cupo")!, c.QuerySelector("input.limite")!.GetAttribute("value")))
+            .Where(c => !string.IsNullOrEmpty(c.Item2))
             .ToList();
         Assert.Equal([("ALMUERZO", "1"), ("REFRIGERIO", "2")], cupos);
         Assert.Equal("9", persona.QuerySelector(".habilitadas")!.GetAttribute("data-cantidad"));
@@ -65,8 +66,8 @@ public class PanelPersonasTests : IDisposable
 
         var persona = Persona(pantalla, "Persona sintética 02");
 
-        Assert.Equal("Sin cupos", persona.QuerySelector(".sin-cupos")!.TextContent.Trim());
-        Assert.Empty(persona.QuerySelectorAll(".cupo"));
+        Assert.NotEmpty(persona.QuerySelectorAll("td.cupo"));
+        Assert.All(persona.QuerySelectorAll("td.cupo input.limite"), c => Assert.True(string.IsNullOrEmpty(c.GetAttribute("value"))));
         Assert.Equal("0", persona.QuerySelector(".habilitadas")!.GetAttribute("data-cantidad"));
     }
 
@@ -83,7 +84,7 @@ public class PanelPersonasTests : IDisposable
         Assert.Contains("Persona sintética 01", panel.TextContent);
         Assert.Empty(panel.QuerySelectorAll("#guardar-panel"));
         Assert.Empty(panel.QuerySelectorAll("input, select, textarea"));
-        Assert.Equal(["cancelar-panel"], panel.QuerySelectorAll("button").Select(b => b.Id));
+        Assert.Equal(["cancelar-panel"], panel.QuerySelectorAll("button:not(.ordenar)").Select(b => b.Id));
     }
 
     [Theory(DisplayName = "administracion-local · Cancelar o Escape con un cupo cambiado: el panel se cierra y no hay versión nueva")]
@@ -112,12 +113,12 @@ public class PanelPersonasTests : IDisposable
     {
         var pantalla = await AbrirPersonas();
         await pantalla.Find("#agregar-persona").ClickAsync(new());
-        var nueva = pantalla.FindAll("article.persona").Last();
+        var nueva = pantalla.FindAll("tr.persona").Last();
         await nueva.QuerySelector("input.codigo-persona")!.InputAsync(new ChangeEventArgs { Value = "0105" });
 
         await pantalla.Find("#guardar-panel").ClickAsync(new());
 
-        var nombre = pantalla.FindAll("article.persona").Last().QuerySelector("input.nombre-persona")!;
+        var nombre = pantalla.FindAll("tr.persona").Last().QuerySelector("input.nombre-persona")!;
         Assert.Equal("true", nombre.GetAttribute("aria-invalid"));
         Assert.Equal("Revisá los campos marcados", pantalla.Find("#aviso-panel").TextContent.Trim());
         Assert.Equal(1L, Versiones());
@@ -128,11 +129,11 @@ public class PanelPersonasTests : IDisposable
     {
         var pantalla = await AbrirPersonas();
         await pantalla.Find("#agregar-persona").ClickAsync(new());
-        var campo = pantalla.FindAll("article.persona").Last().QuerySelector("input.codigo-persona")!;
+        var campo = pantalla.FindAll("tr.persona").Last().QuerySelector("input.codigo-persona")!;
 
         await campo.InputAsync(new ChangeEventArgs { Value = "0105" });
 
-        campo = pantalla.FindAll("article.persona").Last().QuerySelector("input.codigo-persona")!;
+        campo = pantalla.FindAll("tr.persona").Last().QuerySelector("input.codigo-persona")!;
         Assert.Equal(("password", "numeric", "off", "[0-9]*"), (campo.GetAttribute("type"), campo.GetAttribute("inputmode"), campo.GetAttribute("autocomplete"), campo.GetAttribute("pattern")));
         Assert.DoesNotContain("0105", pantalla.Find("#panel-personas").OuterHtml);
     }
@@ -142,13 +143,10 @@ public class PanelPersonasTests : IDisposable
     {
         var pantalla = await AbrirPersonas();
         await pantalla.Find("#agregar-persona").ClickAsync(new());
-        var nueva = pantalla.FindAll("article.persona").Last();
+        var nueva = pantalla.FindAll("tr.persona").Last();
         await nueva.QuerySelector("input.nombre-persona")!.InputAsync(new ChangeEventArgs { Value = "Persona sintética 05" });
-        await pantalla.FindAll("article.persona").Last().QuerySelector("input.codigo-persona")!.InputAsync(new ChangeEventArgs { Value = "0105" });
-        var selector = pantalla.FindAll("article.persona").Last().QuerySelector("select.nuevo-cupo")!;
-        var almuerzo = selector.QuerySelectorAll("option").Single(o => o.TextContent.Trim() == "ALMUERZO").GetAttribute("value");
-        await selector.ChangeAsync(new ChangeEventArgs { Value = almuerzo });
-        await pantalla.FindAll("article.persona").Last().QuerySelector("button.agregar-cupo")!.ClickAsync(new());
+        await pantalla.FindAll("tr.persona").Last().QuerySelector("input.codigo-persona")!.InputAsync(new ChangeEventArgs { Value = "0105" });
+        await pantalla.FindAll("tr.persona").Last().QuerySelector("td.cupo[data-cupo=\"ALMUERZO\"] input.limite")!.InputAsync(new ChangeEventArgs { Value = "1" });
 
         await pantalla.Find("#guardar-panel").ClickAsync(new());
 
@@ -170,7 +168,7 @@ public class PanelPersonasTests : IDisposable
     }
 
     private static IElement Persona(IRenderedComponent<PantallaAtencion> pantalla, string nombre) =>
-        pantalla.FindAll("article.persona").Single(a => a.QuerySelector("input.nombre-persona")?.GetAttribute("value") == nombre
+        pantalla.FindAll("tr.persona").Single(a => a.QuerySelector("input.nombre-persona")?.GetAttribute("value") == nombre
             || a.QuerySelector(".nombre-persona")?.TextContent.Trim() == nombre);
 
     private IRenderedComponent<PantallaAtencion> Dibujar()

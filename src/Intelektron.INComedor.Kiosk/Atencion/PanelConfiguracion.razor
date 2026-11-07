@@ -69,20 +69,18 @@
         <section role="tabpanel" id="seccion-personas" class="seccion" aria-labelledby="pestana-personas" hidden="@Oculta(Pestana.Personas)">
             @if (Administracion is not null)
             {
-                @if (_panel == Panel.Personas)
+                @* La tabla para leer y, con «Editar» en su encabezado, la misma tabla para editar en el mismo lugar (D4). *@
+                @* La tabla de lectura se dibuja sólo con su pestaña elegida: no tiene nada editado que conservar, y así los nombres
+                   de todas las personas no quedan en la página mientras se usa otra pestaña. La edición sigue montada (D2). *@
+                @if (_panel == Panel.Personas || _elegida == Pestana.Personas)
                 {
-                    <PanelPersonas Administracion="Administracion" Cerrar="CerrarPanel" />
+                    <PanelPersonas Administracion="Administracion" Editando="@(_panel == Panel.Personas)" Cerrar="CerrarPanel"
+                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" />
                 }
                 else
                 {
-                    <p id="resumen-personas">@ResumenPersonas</p>
-                    <div class="acciones abrir-paneles">
-                        <button id="abrir-personas" type="button" disabled="@(_panel is not null)" @onclick="() => AbrirPanel(Panel.Personas)">@Editar</button>
-                    </div>
-                    @if (_panel is not null)
-                    {
-                        <p class="indicacion">Terminá o cancelá la edición de Opciones para editar Personas</p>
-                    }
+                    @* Con la pestaña oculta queda sólo «Editar», sin nombres en la página. *@
+                    <button id="abrir-personas" type="button" disabled="@(_panel is not null)" @onclick="() => AbrirPanel(Panel.Personas)">@Editar</button>
                 }
             }
         </section>
@@ -259,10 +257,6 @@
 
     private string Editar => _resumen?.SoloLectura == true ? "Ver" : "Editar";
 
-    private string ResumenPersonas => _resumen is { } vista
-        ? $"{vista.Personas.Count} personas en la versión {vista.VersionConfiguracion} de la configuración"
-        : MensajesAtencion.ConfiguracionNoLeida;
-
     private string ResumenOpciones => _resumen is { } vista
         ? $"{vista.Opciones.Count} opciones en la versión {vista.VersionConfiguracion} de la configuración"
         : MensajesAtencion.ConfiguracionNoLeida;
@@ -355,10 +349,12 @@
     /// <summary>Escape cierra Configuración como «Cancelar», también con un panel de edición abierto (D3).</summary>
     private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar.InvokeAsync() : Task.CompletedTask;
 
+    /// <summary>Abrir una edición elige su pestaña, que queda a la vista con la tabla o el panel.</summary>
     private void AbrirPanel(Panel panel)
     {
         _avisoGuardado = null;
         _panel = panel;
+        _elegida = panel == Panel.Personas ? Pestana.Personas : Pestana.Opciones;
     }
 
     /// <summary>Vuelve al resumen de la pestaña; si el panel guardó, con el aviso de la versión nueva.</summary>

@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.Data.Sqlite;
 using Microsoft.Playwright;
 
 namespace Intelektron.INComedor.E2E.Tests;
@@ -75,6 +77,78 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         await Assertions.Expect(pagina.Locator("main button", new() { HasText = "Asistencia" })).ToHaveCountAsync(0);
 
         await Capturar(pagina, "06-reposo-tactil");
+    }
+
+    [Fact(DisplayName = "administracion-local · Muchas personas en 1024 × 768: con 200 personas sintéticas más, al menos diez filas de 44 px a la vista y el encabezado fijo al desplazar la tabla")]
+    public async Task Muchas_personas_en_1024_x_768()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        var (_, pagina) = await _escenario.AbrirPuestoAsync(playwright);
+        await FijarArea(pagina, 1024, 768);
+        await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
+        SumarPersonas(200);
+        await pagina.Locator(".engranaje").ClickAsync();
+
+        var reloj = Stopwatch.StartNew();
+        await pagina.Locator("#pestana-personas").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#tabla-personas tbody tr.persona")).ToHaveCountAsync(209);
+        reloj.Stop();
+        _escenario.Registrar($"tabla de personas con 209 filas dibujada en {reloj.ElapsedMilliseconds} ms desde el toque en la pestaña");
+
+        var medida = await pagina.EvaluateAsync<JsonElement>(
+            """
+            () => {
+                const caja = document.querySelector('#tabla-personas .caja-tabla').getBoundingClientRect();
+                const filas = [...document.querySelectorAll('#tabla-personas tbody tr.persona')].map(f => f.getBoundingClientRect());
+                const visibles = filas.filter(f => f.top >= caja.top && f.bottom <= caja.bottom);
+                return { Visibles: visibles.length, Alto: Math.min(...filas.map(f => f.height)), CajaAbajo: caja.bottom, AltoVentana: window.innerHeight };
+            }
+            """);
+        _escenario.Registrar($"tabla a 1024 × 768: {medida}");
+        Assert.True(medida.GetProperty("Visibles").GetInt32() >= 10, $"Se ven {medida.GetProperty("Visibles").GetInt32()} filas enteras.");
+        Assert.True(medida.GetProperty("Alto").GetDouble() >= 44, $"La fila más baja mide {medida.GetProperty("Alto").GetDouble()} px.");
+        Assert.True(medida.GetProperty("CajaAbajo").GetDouble() <= medida.GetProperty("AltoVentana").GetDouble(), "La tabla sale del área.");
+
+        var encabezado = await pagina.EvaluateAsync<JsonElement>(
+            """
+            () => {
+                const caja = document.querySelector('#tabla-personas .caja-tabla');
+                const antes = document.querySelector('#tabla-personas thead th').getBoundingClientRect().top;
+                caja.scrollTop = caja.scrollHeight;
+                const despues = document.querySelector('#tabla-personas thead th').getBoundingClientRect().top;
+                return { Antes: antes, Despues: despues, Desplazado: caja.scrollTop };
+            }
+            """);
+        _escenario.Registrar($"encabezado al desplazar: {encabezado}");
+        Assert.True(encabezado.GetProperty("Desplazado").GetDouble() > 0, "La tabla no se desplazó.");
+        Assert.True(Math.Abs(encabezado.GetProperty("Antes").GetDouble() - encabezado.GetProperty("Despues").GetDouble()) < 1, "El encabezado se movió al desplazar.");
+    }
+
+    /// <summary>Personas sintéticas sin cupo en la versión activa, por SQL, con el puesto abierto: la pestaña las lee al abrirse.</summary>
+    private void SumarPersonas(int cantidad)
+    {
+        using var conexion = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = Path.Combine(_escenario.Carpeta, "incomedor.db"),
+            Pooling = false,
+        }.ConnectionString);
+        conexion.Open();
+        using var transaccion = conexion.BeginTransaction();
+        for (var i = 1; i <= cantidad; i++)
+        {
+            using var comando = conexion.CreateCommand();
+            comando.Transaction = transaccion;
+            comando.CommandText =
+                """
+                INSERT INTO tbComedorPersonas (comvcCodigo, comperCodigo, comperNombreVisible, comperActivo, comperVersionMaterialIdentidad)
+                SELECT comvcCodigoActiva, $id, $nombre, 1, 1 FROM tbComedorConfiguracionPuestos
+                """;
+            comando.Parameters.AddWithValue("$id", Guid.NewGuid().ToString());
+            comando.Parameters.AddWithValue("$nombre", $"Persona de carga {i:000}");
+            comando.ExecuteNonQuery();
+        }
+
+        transaccion.Commit();
     }
 
     private static async Task FijarArea(IPage pagina, int ancho, int alto)

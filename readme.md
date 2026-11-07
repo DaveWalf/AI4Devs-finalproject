@@ -355,9 +355,12 @@ clave pedida, cada entrada, cada cambio de modo y cada cierre quedan en la gener
 
 **Personas y opciones en Configuración.** Mientras no haya INWeb, el puesto es el dueño de sus datos: las pestañas
 Personas y Opciones abren, con «Editar», «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y
-su «Cancelar», que vuelven al resumen de la pestaña. El primero lista cada persona con su estado, sus cupos por servicio y categoría (límite diario de 0 a 99) y las opciones
-que esos cupos habilitan; permite agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus
-cupos y quitarla, que la da de baja y revoca su código sin borrar sus consumos. El código se tipea en un campo
+su «Cancelar», que vuelven a la pestaña. Personas es una **tabla**: una fila por persona y una columna por cada cupo
+que usa el catálogo (en la semilla, ALMUERZO y REFRIGERIO), con su límite diario de 0 a 99 o «—» sin cupo, el estado
+y la cantidad de opciones que esos cupos habilitan. En 1024 × 768 entran diez filas de 44 px, el encabezado queda fijo
+y cada encabezado ordena la vista sin cambiar lo que se guarda. «Editar», en el encabezado, la pasa a edición en el
+mismo lugar: agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus cupos (vaciar una celda
+quita el cupo) y quitarla, que la da de baja y revoca su código sin borrar sus consumos. El código se tipea en un campo
 enmascarado de sólo dígitos, conserva sus ceros iniciales, no se puede repetir aunque esté revocado, y nunca se
 muestra ni se registra. El segundo muestra cada opción con su servicio, su importe, sus cargas de cupo y sus
 **franjas horarias**, en la hora local del puesto, de inicio incluido a fin excluido (de 22:00 a 02:00 cruza la
@@ -389,7 +392,7 @@ ya no la abre.
 
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|
-| ![«Personas habilitadas» con «Persona sintética 01», ALMUERZO 1 y REFRIGERIO 2 y las opciones que habilita, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |
+| ![La pestaña Personas en edición: la tabla con una fila por persona, ALMUERZO y REFRIGERIO en columnas y las opciones habilitadas, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |
 
 Las 06 a 10 las sacó el 03/11/2026 el apply de `presentar-atencion-tactil` y las rehízo el 04/11 el de
 `mover-engranaje-al-pie`; las 11 y 12, el de `ofrecer-solo-opciones-disponibles`; las 13 y 14, el 06/11 el E2E de

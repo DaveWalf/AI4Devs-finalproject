@@ -304,11 +304,34 @@ body:has(.puesto) {
     border-bottom: 3px solid var(--acento);
     font-weight: 700;
 }
-.dialogo [role="tabpanel"] { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.dialogo [role="tabpanel"] { display: flex; flex-direction: column; gap: 12px; min-height: 0; flex: 1 1 auto; overflow: auto; }
 .dialogo [role="tabpanel"][hidden] { display: none; }
-/* Un alto fijo, para que la fila de pestañas no salte al cambiar de una con poco contenido a otra con mucho; el pie abajo. */
-.dialogo.ancho { min-height: min(660px, calc(100vh - 32px)); }
+/* Un alto fijo, para que la fila de pestañas no salte al cambiar de una con poco contenido a otra con mucho; el pie abajo.
+   Cada pestaña se desplaza dentro de sí, y la tabla de personas toma el resto del alto: diez filas en 1024 × 768 (D4). */
+.dialogo.ancho { height: min(760px, calc(100vh - 32px)); padding: 16px; gap: 12px; overflow: hidden; }
 .dialogo .pie-dialogo { margin-top: auto; }
+
+/* Personas en una tabla (D4): filas de 44 px con campos de 44 px, el encabezado fijo y la tabla con su propio
+   desplazamiento; en 1024 × 768 entran unas diez filas. Los encabezados ordenan. */
+.oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tabla-administracion { flex: 1 1 auto; }
+.caja-tabla { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--tinta-suave); border-radius: 10px; }
+.tabla-personas td.accion-tabla { position: sticky; top: 0; z-index: 1; background: rgb(var(--papel)); border-bottom: 2px solid var(--tinta-suave); text-align: right; }
+.tabla-personas { width: 100%; border-collapse: collapse; font-size: 16px; }
+.tabla-personas th { position: sticky; top: 0; z-index: 1; background: rgb(var(--papel)); text-align: left; border-bottom: 2px solid var(--tinta-suave); }
+.tabla-personas th, .tabla-personas td { height: 44px; padding: 0 8px; }
+.tabla-personas tbody tr { border-bottom: 1px solid rgb(0 0 0 / .08); }
+.tabla-personas tr.de-baja { opacity: .7; }
+.tabla-personas td.cupo, .tabla-personas td.habilitadas { text-align: center; font-variant-numeric: tabular-nums; }
+.dialogo .tabla-personas button { min-height: 44px; min-width: 0; padding: 0 10px; font-size: 16px; }
+.dialogo .tabla-personas th button.ordenar { width: 100%; border: none; background: transparent; text-align: left; font-weight: 700; }
+.tabla-personas th[aria-sort="ascending"] button.ordenar::after { content: " ▲"; }
+.tabla-personas th[aria-sort="descending"] button.ordenar::after { content: " ▼"; }
+.tabla-personas input { min-height: 44px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
+.tabla-personas input.nombre-persona { width: 100%; min-width: 180px; }
+.tabla-personas input.limite { width: 64px; }
+.tabla-personas input.codigo-persona { width: 110px; }
+.tabla-personas [aria-invalid="true"] { outline: 3px solid #b3261e; outline-offset: 1px; }
 .modo-puesto { font-size: 18px; font-weight: 600; }
 
 /* La raíz recibe el foco en reposo para que Escape llegue (D7); el foco no se dibuja ahí. */

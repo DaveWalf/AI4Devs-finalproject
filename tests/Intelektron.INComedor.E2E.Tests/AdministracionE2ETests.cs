@@ -45,22 +45,21 @@ public class AdministracionE2ETests : IAsyncLifetime
         await pagina.Locator("#pestana-personas").ClickAsync();
         await pagina.Locator("#abrir-personas").ClickAsync();
         await pagina.Locator("#agregar-persona").ClickAsync();
-        var nueva = pagina.Locator("article.persona").Last;
+        var nueva = pagina.Locator("tr.persona").Last;
         await nueva.Locator("input.nombre-persona").FillAsync(Nombre);
         await nueva.Locator("input.codigo-persona").FillAsync(Codigo);
-        await nueva.Locator("select.nuevo-cupo").SelectOptionAsync(new SelectOptionValue { Label = "ALMUERZO" });
-        await nueva.Locator("button.agregar-cupo").ClickAsync();
+        await nueva.Locator("td.cupo[data-cupo=\"ALMUERZO\"] input.limite").FillAsync("1");
         await pagina.Locator("#guardar-panel").ClickAsync();
         await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToHaveTextAsync("Se guardó la versión 2 de la configuración");
 
         await pagina.Locator("#abrir-personas").ClickAsync();
-        await Assertions.Expect(pagina.Locator("article.persona")).ToHaveCountAsync(10);
+        await Assertions.Expect(pagina.Locator("tr.persona")).ToHaveCountAsync(10);
         // La captura muestra una persona con cupos: la lista se desplaza hasta «Persona sintética 01». Blazor pone el valor del
         // campo como propiedad, no como atributo: se busca por la propiedad.
         Assert.True(await pagina.EvaluateAsync<bool>(
             """
             () => {
-                const fila = [...document.querySelectorAll('article.persona')]
+                const fila = [...document.querySelectorAll('tr.persona')]
                     .find(a => a.querySelector('input.nombre-persona')?.value === 'Persona sintética 01');
                 fila?.scrollIntoView({ block: 'start' });
                 return fila !== undefined;
