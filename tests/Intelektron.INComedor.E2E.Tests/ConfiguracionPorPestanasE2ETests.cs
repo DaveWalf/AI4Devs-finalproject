@@ -146,6 +146,95 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         await Capturar(pagina, "15-consumos-del-dia");
     }
 
+    [Fact(DisplayName = "presentacion-puesto · La página no rebota: en reposo, en la selección y con Configuración abierta, html y body con overscroll-behavior none, y el diálogo, la selección y las tablas con contain")]
+    public async Task La_pagina_no_rebota()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        var (_, pagina) = await _escenario.AbrirPuestoAsync(playwright);
+        await FijarArea(pagina, 1024, 768);
+        await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
+
+        var reposo = await Desborde(pagina, "html", "body");
+        await pagina.Locator("#codigo").FillAsync("0001");
+        await pagina.Locator("#ingresar").ClickAsync();
+        await Assertions.Expect(pagina.Locator(".opcion").First).ToBeVisibleAsync();
+        var seleccion = await Desborde(pagina, "html", "body", ".lista");
+        await pagina.Locator("#cancelar").ClickAsync();
+        await pagina.Locator(".engranaje").ClickAsync();
+        await pagina.Locator("#pestana-personas").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#tabla-personas .caja-tabla")).ToBeVisibleAsync();
+        var personas = await Desborde(pagina, "html", "body", ".dialogo", "#tabla-personas .caja-tabla");
+        await pagina.Locator("#pestana-consumos").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#seccion-consumos .caja-tabla")).ToBeVisibleAsync();
+        var consumos = await Desborde(pagina, "#seccion-consumos .caja-tabla");
+        _escenario.Registrar($"overscroll-behavior-y: reposo {string.Join(", ", reposo)} · selección {string.Join(", ", seleccion)} · personas {string.Join(", ", personas)} · consumos {string.Join(", ", consumos)}");
+
+        Assert.Equal(["none", "none"], reposo);
+        Assert.Equal(["none", "none", "contain"], seleccion);
+        Assert.Equal(["none", "none", "contain", "contain"], personas);
+        Assert.Equal(["contain"], consumos);
+    }
+
+    [Fact(DisplayName = "presentacion-puesto · El navegador arranca sin rebote elástico: la línea de comandos del navegador del árbol del puesto lleva ElasticOverscroll en --disable-features")]
+    public async Task El_navegador_arranca_sin_rebote_elastico()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        var (puesto, pagina) = await _escenario.AbrirPuestoAsync(playwright);
+        await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
+
+        var webView2 = ProcesosYPuertos.Arbol(puesto.Id).Where(p => p.Value.Equals("msedgewebview2.exe", StringComparison.OrdinalIgnoreCase)).Select(p => p.Key).ToList();
+        var lineas = LineasDeComando(webView2);
+        var navegadores = lineas.Where(l => !l.Contains("--type=", StringComparison.Ordinal)).ToList();
+        _escenario.Registrar($"navegador del puesto: {string.Join(" | ", navegadores.Select(l => System.Text.RegularExpressions.Regex.Match(l, "--disable-features=[^ \"]*").Value))}");
+
+        Assert.NotEmpty(navegadores);
+        Assert.Contains(navegadores, l => System.Text.RegularExpressions.Regex.IsMatch(l, "--disable-features=[^ \"]*ElasticOverscroll"));
+    }
+
+    [Fact(DisplayName = "presentacion-puesto · La ventana angosta sigue desplazándose: a 600 px de ancho, la página se desplaza en vertical hasta «Confirmar»")]
+    public async Task La_ventana_angosta_sigue_desplazandose()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        var (_, pagina) = await _escenario.AbrirPuestoAsync(playwright);
+        await FijarArea(pagina, 600, 768);
+        await pagina.Locator("#codigo").FillAsync("0001");
+        await pagina.Locator("#ingresar").ClickAsync();
+        await Assertions.Expect(pagina.Locator(".opcion").First).ToBeVisibleAsync();
+
+        await pagina.Locator("#confirmar").ScrollIntoViewIfNeededAsync();
+
+        await Assertions.Expect(pagina.Locator("#confirmar")).ToBeInViewportAsync();
+        var desplazada = await pagina.EvaluateAsync<double>("() => document.scrollingElement.scrollTop");
+        _escenario.Registrar($"ventana angosta: la página se desplazó {desplazada} px hasta «Confirmar»");
+        Assert.True(desplazada > 0, "La página no se desplazó para llegar a «Confirmar».");
+    }
+
+    /// <summary>El overscroll-behavior-y calculado de cada selector, en orden.</summary>
+    private static async Task<List<string>> Desborde(IPage pagina, params string[] selectores) =>
+        (await pagina.EvaluateAsync<string[]>(
+            "selectores => selectores.map(s => getComputedStyle(document.querySelector(s)).overscrollBehaviorY)", selectores)).ToList();
+
+    /// <summary>La línea de comandos de cada proceso, leída con Get-CimInstance (el E2E no suma paquetes para esto).</summary>
+    private static List<string> LineasDeComando(IReadOnlyList<int> pids)
+    {
+        if (pids.Count == 0)
+        {
+            return [];
+        }
+
+        var filtro = string.Join(" OR ", pids.Select(p => $"ProcessId={p}"));
+        var inicio = new ProcessStartInfo("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", $"Get-CimInstance Win32_Process -Filter '{filtro}' | ForEach-Object {{ $_.CommandLine }}"])
+        {
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        using var proceso = Process.Start(inicio)!;
+        var salida = proceso.StandardOutput.ReadToEnd();
+        proceso.WaitForExit(30_000);
+        return salida.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+    }
+
     /// <summary>Personas sintéticas sin cupo en la versión activa, por SQL, con el puesto abierto: la pestaña las lee al abrirse.</summary>
     private void SumarPersonas(int cantidad)
     {

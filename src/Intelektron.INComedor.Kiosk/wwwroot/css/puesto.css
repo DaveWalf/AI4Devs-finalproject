@@ -285,6 +285,12 @@ body:has(.puesto) {
    desplaza en vertical y cada control táctil mide al menos 56 px. */
 .dialogo.ancho { width: min(960px, 100%); }
 
+/* Sin rebote al arrastrar (D15 de configurar-puesto-por-pestanas): la página no se desplaza más allá de sus bordes ni
+   encadena el desplazamiento; el diálogo, la selección y las tablas se desplazan dentro de sus límites. El navegador
+   arranca además con el rebote elástico apagado. */
+html, body { overscroll-behavior: none; }
+.dialogo, .lista, .caja-tabla { overscroll-behavior: contain; }
+
 /* Configuración por pestañas (D1 y D2 de configurar-puesto-por-pestanas): las nueve en una fila de botones de 56 px con
    texto de 16 px, que en 1024 entra en el diálogo de 960 px; todas montadas y sólo la elegida visible. */
 .pestanas { display: flex; flex-wrap: nowrap; gap: 4px; border-bottom: 2px solid var(--tinta-suave); }

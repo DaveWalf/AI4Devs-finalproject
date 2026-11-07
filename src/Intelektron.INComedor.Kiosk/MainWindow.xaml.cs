@@ -85,15 +85,11 @@ public partial class MainWindow : Window
     /// <summary>
     /// Con una carpeta elegida, el WebView2 guarda ahí sus datos: dos entornos con argumentos distintos no comparten carpeta
     /// (D4). Con un puerto válido, abre la depuración remota, que Chromium escucha sólo en loopback; entra por código porque
-    /// una app elevada ignora WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (D2). Sin las variables no se toca nada.
+    /// una app elevada ignora WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (D2). Siempre, con o sin las variables, el navegador
+    /// arranca sin el rebote elástico (D15 de configurar-puesto-por-pestanas).
     /// </summary>
     private void ConfigurarWebView2(EntornoDemostracion entorno)
     {
-        if (!entorno.AjustaWebView2)
-        {
-            return;
-        }
-
         blazorWebView.BlazorWebViewInitializing = (_, e) =>
         {
             if (entorno.CarpetaDatosWebView2 is { } datos)
@@ -101,10 +97,10 @@ public partial class MainWindow : Window
                 e.UserDataFolder = datos;
             }
 
-            if (entorno.ArgumentosNavegador is { } argumentos)
+            e.EnvironmentOptions = new CoreWebView2EnvironmentOptions
             {
-                e.EnvironmentOptions = new CoreWebView2EnvironmentOptions { AdditionalBrowserArguments = argumentos };
-            }
+                AdditionalBrowserArguments = ArgumentosWebView2.Componer(entorno.ArgumentosNavegador),
+            };
         };
     }
 }

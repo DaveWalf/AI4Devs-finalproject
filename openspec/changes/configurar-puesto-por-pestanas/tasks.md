@@ -187,8 +187,25 @@ Cambian sólo las 13 pruebas existentes del punto 4 del gate (D18): al cerrar ca
 
 ## 7. Sin rebote
 
-- [ ] 7.1 Agregar `Kiosk.Tests/ArgumentosWebView2Tests.cs` (sin puerto, `--disable-features=ElasticOverscroll`; con el puerto 9333, ese argumento y `--remote-debugging-port=9333`; `EntornoDemostracion.ArgumentosNavegador` sigue siendo sólo el puerto) y, a `ConfiguracionPorPestanasE2ETests.cs`, «La página no rebota» (en reposo, en la selección y con Configuración abierta, `overscroll-behavior-y` calculado es `none` en `html` y `body` y `contain` en el diálogo, la selección y las tablas), «El navegador arranca sin rebote elástico» (la línea de comandos del navegador del árbol del puesto lleva `ElasticOverscroll` en `--disable-features`) y «La ventana angosta sigue desplazándose» (a 600 px se llega a «Confirmar»). Ver fallar las nuevas con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ArgumentosWebView2"` y `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~ConfiguracionPorPestanas"`; pegar las salidas
-- [ ] 7.2 Sumar `overscroll-behavior` a `puesto.css` y `ArgumentosWebView2.Componer`, que `MainWindow` usa siempre para las opciones del entorno del WebView2 (D15). Verificar con los filtros de 7.1 en verde y `EntornoDemostracionTests` y `PresentacionTactilTests` sin cambios en verde; pegar las salidas
+- [x] 7.1 Agregar `Kiosk.Tests/ArgumentosWebView2Tests.cs` (sin puerto, `--disable-features=ElasticOverscroll`; con el puerto 9333, ese argumento y `--remote-debugging-port=9333`; `EntornoDemostracion.ArgumentosNavegador` sigue siendo sólo el puerto) y, a `ConfiguracionPorPestanasE2ETests.cs`, «La página no rebota» (en reposo, en la selección y con Configuración abierta, `overscroll-behavior-y` calculado es `none` en `html` y `body` y `contain` en el diálogo, la selección y las tablas), «El navegador arranca sin rebote elástico» (la línea de comandos del navegador del árbol del puesto lleva `ElasticOverscroll` en `--disable-features`) y «La ventana angosta sigue desplazándose» (a 600 px se llega a «Confirmar»). Ver fallar las nuevas con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ArgumentosWebView2"` y `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~ConfiguracionPorPestanas"`; pegar las salidas
+  `Kiosk.Tests/ArgumentosWebView2Tests.cs` (2): sin puerto, `--disable-features=ElasticOverscroll`; con el puerto 9333, ese argumento y `--remote-debugging-port=9333`, con `EntornoDemostracion.ArgumentosNavegador` igual a sólo el puerto. En `ConfiguracionPorPestanasE2ETests`: «La página no rebota» (el `overscroll-behavior-y` calculado en reposo, en la selección, con Configuración en Personas y en Consumos), «El navegador arranca sin rebote elástico» (la línea de comandos de los `msedgewebview2.exe` del árbol del puesto, leída con `Get-CimInstance`, sin paquetes nuevos) y «La ventana angosta sigue desplazándose» (a 600 px se llega a «Confirmar»; ya valía, porque su conducta existía). Esqueleto de `ArgumentosWebView2` con `NotImplementedException`. Rojo, 07/11 00:49 y 00:50:
+  ```
+  Kiosk.Tests --filter ArgumentosWebView2    2 System.NotImplementedException    total: 2 · error: 2 · correcto: 0
+  E2E --filter ConfiguracionPorPestanas      total: 7 · error: 2 · correcto: 5
+    La página no rebota      Expected: "none"   Actual: "auto"
+    overscroll-behavior-y: reposo auto, auto · selección auto, auto, auto · personas auto, auto, auto, contain · consumos contain
+    El navegador arranca sin rebote elástico   Assert.Contains() Failure   (navegador del puesto: sin --disable-features)
+  ```
+- [x] 7.2 Sumar `overscroll-behavior` a `puesto.css` y `ArgumentosWebView2.Componer`, que `MainWindow` usa siempre para las opciones del entorno del WebView2 (D15). Verificar con los filtros de 7.1 en verde y `EntornoDemostracionTests` y `PresentacionTactilTests` sin cambios en verde; pegar las salidas
+  `puesto.css`: `overscroll-behavior: none` en `html` y `body`, y `contain` en el diálogo, la selección (`.lista`) y las cajas de las tablas (D15). `ArgumentosWebView2.Componer` (con la fuente del nombre en su comentario), que `MainWindow` usa siempre para las opciones del entorno del WebView2, también sin carpeta ni puerto. 07/11 00:50 a 00:51:
+  ```
+  Kiosk.Tests --filter "ArgumentosWebView2|EntornoDemostracion"   total: 32 · error: 0 · correcto: 32   (EntornoDemostracionTests sin cambios)
+  E2E --filter "ConfiguracionPorPestanas|PresentacionTactil"     total: 11 · error: 0 · correcto: 11   (PresentacionTactilTests sin cambios)
+  overscroll-behavior-y: reposo none, none · selección none, none, contain · personas none, none, contain, contain · consumos contain
+  navegador del puesto: --disable-features=ElasticOverscroll
+  ventana angosta: la página se desplazó 376,5 px hasta «Confirmar»
+  ```
+  Si el CSS y el argumento alcanzan en el WebView2 de la All-in-One lo dice la prueba de David en su monitor.
 
 ## 8. Pantalla (recorte de respaldo)
 
