@@ -271,8 +271,26 @@ Cambian sólo las 13 pruebas existentes del punto 4 del gate (D18): al cerrar ca
 
 ## 11. Ícono (recorte de respaldo)
 
-- [ ] 11.1 Agregar a `AccesoPuestoE2ETests.cs` «La ventana con su ícono» (`WM_GETICON` de la ventana distinto de cero y `ExtractIconEx` del ejecutable con al menos un ícono). Ver fallar con `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~AccesoPuesto"`; pegar la salida
-- [ ] 11.2 Generar `Recursos\incomedor-puesto.ico` con la paleta de `puesto.css` (16, 32, 48 y 256 px), sumarlo como `ApplicationIcon` y como `Icon` de la ventana, y escribir su procedencia en `wwwroot\img\PROCEDENCIA.md`, sin marcas de clientes (D16). Verificar con el filtro de 11.1 en verde y `git grep -n "incomedor-puesto.ico" -- src`; pegar las salidas
+- [x] 11.1 Agregar a `AccesoPuestoE2ETests.cs` «La ventana con su ícono» (`WM_GETICON` de la ventana distinto de cero y `ExtractIconEx` del ejecutable con al menos un ícono). Ver fallar con `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~AccesoPuesto"`; pegar la salida
+  `AccesoPuestoE2ETests.cs` (de este change) suma «La ventana con su ícono»: con el puesto compilado, `WM_GETICON` grande y chico de la ventana distintos de cero y `ExtractIconEx` del ejecutable (`MainModule.FileName`) con al menos un ícono, con la medida en `registro.txt`. Rojo, 07/11 01:23:
+  ```
+  dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~AccesoPuesto"
+  01:23:02.407 ícono: WM_GETICON grande 0x0, chico 0x0; Intelektron.INComedor.Kiosk.exe con 0 íconos
+  con errores presentacion-puesto · La ventana con su ícono … · Assert.NotEqual() Failure: Values are equal · Expected: Not 0 · Actual: 0
+  total: 4 · error: 1 · correcto: 3
+  ```
+- [x] 11.2 Generar `Recursos\incomedor-puesto.ico` con la paleta de `puesto.css` (16, 32, 48 y 256 px), sumarlo como `ApplicationIcon` y como `Icon` de la ventana, y escribir su procedencia en `wwwroot\img\PROCEDENCIA.md`, sin marcas de clientes (D16). Verificar con el filtro de 11.1 en verde y `git grep -n "incomedor-puesto.ico" -- src`; pegar las salidas
+  `Recursos\incomedor-puesto.ico`, generado por una copia de `C:\INComedor\herramientas\icono\generar-icono.ps1` en el scratchpad (sin tocar la carpeta de herramientas): sale igual, byte a byte, al del acceso directo del 04/11 (SHA-256 `4180432911cc1a752be8f9faf7cf6724079ec5b9610ddd462b238c647803f1dd`, 24.423 bytes), con la paleta de `puesto.css` y nueve tamaños en PNG, que incluyen 16, 32, 48 y 256 px; la vista previa, mirada: un plato que sonríe entre tenedor y cuchara, sin marcas ni texto. `ApplicationIcon` y `Resource` en el `.csproj`, `Icon` en `MainWindow.xaml`, y su procedencia en `wwwroot\img\PROCEDENCIA.md`, que dice que no contiene marcas de clientes (D16). 07/11 01:23:
+  ```
+  dotnet build INComedor.sln -warnaserror                  Compilación correcta (0 advertencias, 0 errores)
+  E2E --filter AccesoPuesto                                total: 4 · error: 0 · correcto: 4
+  01:23:43.749 ícono: WM_GETICON grande 0x18300D89, chico 0x54760FD1; Intelektron.INComedor.Kiosk.exe con 1 íconos
+  git grep -n --untracked "incomedor-puesto.ico" -- src
+  src/Intelektron.INComedor.Kiosk/Intelektron.INComedor.Kiosk.csproj:7:    <ApplicationIcon>Recursos\incomedor-puesto.ico</ApplicationIcon>
+  src/Intelektron.INComedor.Kiosk/Intelektron.INComedor.Kiosk.csproj:14:    <Resource Include="Recursos\incomedor-puesto.ico" />
+  src/Intelektron.INComedor.Kiosk/MainWindow.xaml:6:        … WindowState="Maximized" Icon="Recursos/incomedor-puesto.ico">
+  src/Intelektron.INComedor.Kiosk/wwwroot/img/PROCEDENCIA.md:26:## `Recursos\incomedor-puesto.ico`
+  ```
 
 ## 12. Integración
 

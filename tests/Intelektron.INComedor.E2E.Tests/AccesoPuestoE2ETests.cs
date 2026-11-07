@@ -8,13 +8,16 @@ namespace Intelektron.INComedor.E2E.Tests;
 /// La ventana y el cierre según el modo con el puesto compilado (acceso-puesto y presentacion-puesto de
 /// configurar-puesto-por-pestanas, D7): pantalla completa sin bordes en los dos modos, Escape que cierra en orden en
 /// mantenimiento, y en operativo un pedido de cierre de la ventana que se convierte en la clave del día. Lo que bUnit no ve:
-/// el estilo de la ventana de Windows, su rectángulo y el cierre del proceso.
+/// el estilo de la ventana de Windows, su rectángulo, su ícono y el cierre del proceso.
 /// </summary>
 public class AccesoPuestoE2ETests : IAsyncLifetime
 {
     private const long WsCaption = 0x00C00000;
     private const long WsThickFrame = 0x00040000;
     private const int EstiloDeVentana = -16;
+    private const uint WmGetIcon = 0x007F;
+    private static readonly IntPtr IconoChico = 0;
+    private static readonly IntPtr IconoGrande = 1;
 
     private EscenarioE2E _escenario = null!;
 
@@ -91,6 +94,24 @@ public class AccesoPuestoE2ETests : IAsyncLifetime
         await Assertions.Expect(pagina.Locator("#aviso-monitor")).ToHaveTextAsync("El monitor guardado no está conectado: el puesto abrió en el principal");
     }
 
+    [Fact(DisplayName = "presentacion-puesto · La ventana con su ícono: la ventana del puesto compilado tiene un ícono propio, grande y chico (WM_GETICON), y el ejecutable lleva al menos un ícono (ExtractIconEx)")]
+    public async Task La_ventana_con_su_icono()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        var (puesto, pagina) = await _escenario.AbrirPuestoAsync(playwright);
+        await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
+
+        var grande = SendMessage(puesto.MainWindowHandle, WmGetIcon, IconoGrande, IntPtr.Zero);
+        var chico = SendMessage(puesto.MainWindowHandle, WmGetIcon, IconoChico, IntPtr.Zero);
+        var ejecutable = puesto.MainModule!.FileName;
+        var iconos = ExtractIconEx(ejecutable, -1, null, null, 0);
+        _escenario.Registrar($"ícono: WM_GETICON grande 0x{grande:X}, chico 0x{chico:X}; {Path.GetFileName(ejecutable)} con {iconos} íconos");
+
+        Assert.NotEqual(IntPtr.Zero, grande);
+        Assert.NotEqual(IntPtr.Zero, chico);
+        Assert.True(iconos >= 1, $"{Path.GetFileName(ejecutable)} no lleva ningún ícono.");
+    }
+
     /// <summary>Maximizada para Windows, sin barra de título ni marco, y con el rectángulo del monitor entero (D7).</summary>
     private void ComprobarPantallaCompleta(IntPtr ventana, string modo)
     {
@@ -147,6 +168,12 @@ public class AccesoPuestoE2ETests : IAsyncLifetime
 
     [DllImport("user32.dll")]
     private static extern IntPtr MonitorFromWindow(IntPtr ventana, uint marcas);
+
+    [DllImport("user32.dll", EntryPoint = "SendMessageW")]
+    private static extern IntPtr SendMessage(IntPtr ventana, uint mensaje, IntPtr parametro, IntPtr dato);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "ExtractIconExW")]
+    private static extern uint ExtractIconEx(string archivo, int indice, IntPtr[]? grandes, IntPtr[]? chicos, uint cantidad);
 
     [DllImport("user32.dll", EntryPoint = "GetMonitorInfoW")]
     [return: MarshalAs(UnmanagedType.Bool)]
