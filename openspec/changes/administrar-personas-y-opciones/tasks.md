@@ -198,6 +198,18 @@ Cambian sólo las ocho pruebas existentes del punto 4 del gate, y sólo en la ve
    6 files changed, 17 insertions(+), 15 deletions(-)
   ```
 
+## 7. Correcciones de la verificación
+
+- [x] 7.1 Cubrir la advertencia de `/openspec-verify-change` del 06/11 sobre `9202347`: el escenario «Código ya usado, aunque esté revocado» pide que el panel diga que el código ya existe sin decir de quién es, y sólo el servicio tenía prueba (`AdministracionLocalTests.cs:157`); el aviso de `PanelPersonas.razor:228` no lo miraba ninguna. Agregar `Kiosk.Tests/CodigoDuplicadoEnElPanelTests.cs`, con sólo los id y las clases que el panel conserva al pasar a tabla (D4 de `configurar-puesto-por-pestanas`), verla fallar con un mutante del aviso y revertirlo; ninguna prueba existente cambia. Escribir la talla de David en «Tallas» del proposal
+  La conducta ya existía, así que el rojo sale de un mutante en `PanelPersonas.razor:228` (el aviso de código duplicado sólo con el motivo `"MUTANTE"`), revertido después; `git status --short` da sólo el archivo de prueba nuevo. Talla de David: L, 8 a 12 h (decisión 13 del plan del goal del 06/11). 06/11 23:40:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~CodigoDuplicadoEnElPanel"   (con el mutante)
+  con errores administracion-local · Código ya usado, aunque esté revocado: con 0003, de una baja, el panel dice «Ese código ya existe. Usá otro», …
+    Assert.Equal() Failure: Strings differ   Expected: "Ese código ya existe. Usá otro"   Actual: "Revisá los campos marcados"
+  total: 1 · error: 1 · correcto: 0
+  (mutante revertido)                                                                          total: 1 · error: 0 · correcto: 1
+  ```
+
 ## Workflow follow-up
 
 - Probar en el monitor táctil de David con el acceso directo «Probar puesto INComedor»: su base de `C:\INComedor\prueba-monitor` pasa a la versión de esquema 4 al abrir, y no vuelve a abrir con un puesto anterior.

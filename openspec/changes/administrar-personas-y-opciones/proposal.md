@@ -48,7 +48,7 @@ Lo que el punto 1 del gate deja para después del Typeform: cambiar el código d
 
 | Quién | Talla | Horas | Con el colchón del 30 % |
 |---|---|---|---|
-| David | La das en el gate | | |
+| David, 06/11/2026 | **L** | 8 a 12 h | 10,4 a 15,6 h de capacidad |
 | La IA (Claude Code, Opus 5.5), 06/11/2026 | **L** | 8 a 12 h | 10,4 a 15,6 h de capacidad |
 
 **Por qué la IA da L y no M.** B (M, 4 a 6 h) proyectaba lo que la base ya guardaba. C agrega datos editables con validación, una versión completa por guardado, una migración que mueve ocho pruebas, una condición nueva en la evaluación que decide consumos y dos paneles con formularios táctiles. Como referencia de reloj, A (S) se aplicó en 0,35 h y B (M) en 0,7 h.
