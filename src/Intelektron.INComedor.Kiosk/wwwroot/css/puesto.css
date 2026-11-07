@@ -284,6 +284,33 @@ body:has(.puesto) {
 /* «Personas habilitadas» y «Opciones del comedor» (administrar-personas-y-opciones): el diálogo se ensancha, la lista se
    desplaza en vertical y cada control táctil mide al menos 56 px. */
 .dialogo.ancho { width: min(960px, 100%); }
+
+/* Configuración por pestañas (D1 y D2 de configurar-puesto-por-pestanas): las nueve en una fila de botones de 56 px con
+   texto de 16 px, que en 1024 entra en el diálogo de 960 px; todas montadas y sólo la elegida visible. */
+.pestanas { display: flex; flex-wrap: nowrap; gap: 4px; border-bottom: 2px solid var(--tinta-suave); }
+.dialogo .pestanas button {
+    min-width: 0;
+    min-height: 56px;
+    padding: 0 10px;
+    font-size: 16px;
+    white-space: nowrap;
+    border-radius: 10px 10px 0 0;
+    border: 1px solid transparent;
+    background: transparent;
+}
+.dialogo .pestanas button[aria-selected="true"] {
+    background: rgb(var(--papel));
+    border-color: var(--tinta-suave);
+    border-bottom: 3px solid var(--acento);
+    font-weight: 700;
+}
+.dialogo [role="tabpanel"] { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.dialogo [role="tabpanel"][hidden] { display: none; }
+/* Un alto fijo, para que la fila de pestañas no salte al cambiar de una con poco contenido a otra con mucho; el pie abajo. */
+.dialogo.ancho { min-height: min(660px, calc(100vh - 32px)); }
+.dialogo .pie-dialogo { margin-top: auto; }
+.modo-puesto { font-size: 18px; font-weight: 600; }
+.dialogo .indicacion { font-size: 15px; color: var(--tinta-suave); }
 .abrir-paneles { justify-content: flex-start; }
 .panel-administracion { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .lista-administracion {

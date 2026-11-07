@@ -330,15 +330,20 @@ dejarlos en la carpeta de datos como `marcas\empresa.png` y `marcas\concesionari
 de hasta 2 MB; con dos formatos gana el `.png`). Un archivo que no corresponde a su extensión, que pasa de 2 MB o
 un SVG con DTD se ignora y queda el de ejemplo. Se leen al abrir la atención.
 
-El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre Configuración **sin clave en este corte** (la clave llega con el
-segundo change): «Estilo visual», con la opacidad de las superficies (72 a 88 %, 76 % por defecto) y el
-desenfoque del fondo (0 a 12 px, 4 px por defecto) con vista previa, «Guardar» en `estilo-visual.json` de la
-carpeta de datos y «Cancelar» o Escape; y, con la impresora simulada, sus modos. Cualquiera que toque el puesto en
-reposo puede cambiar el estilo o simular una impresora sin papel.
+El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre
+**Configuración por pestañas**: General (el modo y el estado de las bitácoras), Personas, Opciones, Consumos,
+Comprobantes, Identidad visual, Impresora, Pantalla y Red, en una fila de botones de 56 px que entra en 1024 × 768.
+Todas quedan montadas, así que lo editado en una pestaña sobrevive al pasar a otra hasta cerrar. Cada «Guardar»
+guarda sólo lo de su pestaña y deja Configuración abierta con el aviso de lo guardado; «Cancelar» o Escape la cierran
+y descartan lo no guardado, también con un panel de edición abierto. Identidad visual tiene el «Estilo visual», con la
+opacidad de las superficies (72 a 88 %, 76 % por defecto) y el desenfoque del fondo (0 a 12 px, 4 px por defecto) con
+vista previa y su «Guardar» en `estilo-visual.json` de la carpeta de datos; Impresora, con la impresora simulada, sus
+modos. En mantenimiento, cualquiera que toque el puesto en reposo puede cambiar el estilo o simular una impresora sin
+papel.
 
-**Personas y opciones en Configuración.** Mientras no haya INWeb, el puesto es el dueño de sus datos: el diálogo
-suma «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y su «Cancelar» (o Escape). El
-primero lista cada persona con su estado, sus cupos por servicio y categoría (límite diario de 0 a 99) y las opciones
+**Personas y opciones en Configuración.** Mientras no haya INWeb, el puesto es el dueño de sus datos: las pestañas
+Personas y Opciones abren, con «Editar», «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y
+su «Cancelar», que vuelven al resumen de la pestaña. El primero lista cada persona con su estado, sus cupos por servicio y categoría (límite diario de 0 a 99) y las opciones
 que esos cupos habilitan; permite agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus
 cupos y quitarla, que la da de baja y revoca su código sin borrar sus consumos. El código se tipea en un campo
 enmascarado de sólo dígitos, conserva sus ceros iniciales, no se puede repetir aunque esté revocado, y nunca se
@@ -364,7 +369,7 @@ ya no la abre.
 
 | Comprobante en pantalla | Configuración |
 |---|---|
-| ![La impresora en pantalla con el comprobante de «Almuerzo con gaseosa»](docs/capturas/09-comprobante-en-pantalla.jpg) | ![Configuración con «Estilo visual» y los modos de la impresora simulada](docs/capturas/10-configuracion.jpg) |
+| ![La impresora en pantalla con el comprobante de «Almuerzo con gaseosa»](docs/capturas/09-comprobante-en-pantalla.jpg) | ![Configuración en la pestaña General: las nueve pestañas, el modo y el estado de las bitácoras](docs/capturas/10-configuracion.jpg) |
 
 | Lo ya usado del día | Sin ninguna opción |
 |---|---|

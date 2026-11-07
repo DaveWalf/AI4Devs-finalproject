@@ -36,6 +36,12 @@ public static class MensajesAtencion
     public const string INWebAdministra = "Estos datos los administra INWeb";
     public const string PanelNoGuardado = "No se pudo guardar: la base no respondió. No cambió nada";
 
+    /// <summary>«Guardar» de Identidad visual deja Configuración abierta con este aviso (D3 de configurar-puesto-por-pestanas).</summary>
+    public const string EstiloGuardado = "Se guardó el estilo visual";
+
+    /// <summary>El resumen de Personas u Opciones cuando la base no respondió al abrir Configuración.</summary>
+    public const string ConfiguracionNoLeida = "No se pudo leer la configuración de la base";
+
     public static string VersionGuardada(int version) =>
         $"Se guardó la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración";
 

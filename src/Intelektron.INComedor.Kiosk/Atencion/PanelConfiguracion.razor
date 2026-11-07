@@ -2,102 +2,176 @@
 @using Intelektron.INComedor.Infrastructure.Sqlite
 
 @*
-    Configuración en este corte (D5 de presentar-atencion-tactil): un diálogo modal que no cambia el estado de la
-    máquina, con «Estilo visual» y, sólo con la impresora simulada, sus modos. Se abre sin clave; la clave llega con el
-    segundo change. Mover un rango sólo avisa la vista previa; «Guardar» y «Cancelar» (o Escape) los decide la pantalla.
+    Configuración por pestañas (D1 a D3 de configurar-puesto-por-pestanas): un diálogo modal que no cambia el estado de la
+    máquina, con nueve pestañas según el patrón de WAI-ARIA. Todas quedan montadas y sólo la elegida se ve, así que lo
+    editado en una sobrevive al pasar a otra y los id de siempre siguen en el diálogo (D2). Cada «Guardar» guarda lo suyo y
+    deja Configuración abierta, con el aviso de lo guardado debajo de las pestañas (D3); «Cancelar» o Escape la cierran y
+    descartan lo no guardado, también con un panel de edición abierto. Sólo un panel de edición se abre a la vez: Personas y
+    Opciones comparten los id de sus botones desde administrar-personas-y-opciones.
 *@
 <div class="fondo-dialogo">
-    <div class="dialogo superficie @(_panel is null ? "" : "ancho")" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
+    <div class="dialogo superficie ancho" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
          @ref="_dialogo" @onkeydown="Tecla">
         <h2 id="titulo-configuracion">Configuración</h2>
 
-        @* Cada panel se abre en lugar del contenido del diálogo, con su «Guardar» y su «Cancelar» (D12 de administrar-personas-y-opciones). *@
-        @if (_panel == Panel.Personas && Administracion is not null)
+        <div class="pestanas" role="tablist" aria-label="Secciones de Configuración">
+            @foreach (var pestana in Todas)
+            {
+                var elegida = pestana == _elegida;
+                var indice = (int)pestana;
+                <button type="button" role="tab" id="pestana-@Clave(pestana)" class="pestana" aria-selected="@(elegida ? "true" : "false")"
+                        aria-controls="seccion-@Clave(pestana)" tabindex="@(elegida ? "0" : "-1")" @ref="_botones[indice]"
+                        @onclick="() => Elegir(pestana)" @onkeydown="e => TeclaPestana(e, pestana)">@Nombre(pestana)</button>
+            }
+        </div>
+
+        @if (_avisoGuardado is not null)
         {
-            <PanelPersonas Administracion="Administracion" Cerrar="CerrarPanel" />
-        }
-        else if (_panel == Panel.Opciones && Administracion is not null)
-        {
-            <PanelOpciones Administracion="Administracion" Cerrar="CerrarPanel" />
-        }
-        else
-        {
-        <text>
-        @if (Administracion is not null)
-        {
-            <section id="administracion" aria-label="Personas y opciones">
-                <div class="acciones abrir-paneles">
-                    <button id="abrir-personas" type="button" @onclick="() => AbrirPanel(Panel.Personas)">Personas habilitadas</button>
-                    <button id="abrir-opciones" type="button" @onclick="() => AbrirPanel(Panel.Opciones)">Opciones del comedor</button>
-                </div>
-                @if (_avisoPanel is not null)
-                {
-                    <p id="aviso-guardado" class="aviso" role="status">@_avisoPanel</p>
-                }
-            </section>
+            <p id="aviso-guardado" class="aviso" role="status">@_avisoGuardado</p>
         }
 
-        <section aria-labelledby="titulo-estilo">
-            <h3 id="titulo-estilo">Estilo visual</h3>
-            <div class="parametro">
-                <label for="opacidad">Opacidad de las superficies</label>
-                <output id="valor-opacidad" for="opacidad">@Estilo.Opacidad %</output>
-                <input id="opacidad" type="range" min="@EstiloVisual.OpacidadMinima" max="@EstiloVisual.OpacidadMaxima" step="1"
-                       value="@Estilo.Opacidad" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Opacidad = valor })" />
-            </div>
-            <div class="parametro">
-                <label for="desenfoque">Desenfoque del fondo</label>
-                <output id="valor-desenfoque" for="desenfoque">@Estilo.Desenfoque px</output>
-                <input id="desenfoque" type="range" min="@EstiloVisual.DesenfoqueMinimo" max="@EstiloVisual.DesenfoqueMaximo" step="1"
-                       value="@Estilo.Desenfoque" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Desenfoque = valor })" />
-            </div>
+        <section role="tabpanel" id="seccion-general" class="seccion" aria-labelledby="pestana-general" hidden="@Oculta(Pestana.General)">
+            <p id="modo-puesto" class="modo-puesto">Modo: mantenimiento</p>
+            @if (Bitacoras is not null)
+            {
+                @* El estado de cada bitácora, sin datos de personas (escribir-bitacoras-externas). *@
+                <section id="estado-bitacoras" aria-labelledby="titulo-bitacoras">
+                    <h3 id="titulo-bitacoras">Bitácoras</h3>
+                    <ul>
+                        @foreach (var bitacora in Bitacoras)
+                        {
+                            <li id="bitacora-@(bitacora.Destino == DestinoBitacora.General ? "general" : "interacciones")">@MensajesAtencion.EstadoBitacora(bitacora, Zona)</li>
+                        }
+                    </ul>
+                </section>
+            }
         </section>
 
-        @if (Impresora is not null)
-        {
-            <FranjaImpresora Impresora="Impresora" ModoCambiado="ModoImpresoraCambiado" />
-        }
-
-        @if (Bitacoras is not null)
-        {
-            @* El estado de cada bitácora, sin datos de personas (escribir-bitacoras-externas). *@
-            <section id="estado-bitacoras" aria-labelledby="titulo-bitacoras">
-                <h3 id="titulo-bitacoras">Bitácoras</h3>
-                <ul>
-                    @foreach (var bitacora in Bitacoras)
+        <section role="tabpanel" id="seccion-personas" class="seccion" aria-labelledby="pestana-personas" hidden="@Oculta(Pestana.Personas)">
+            @if (Administracion is not null)
+            {
+                @if (_panel == Panel.Personas)
+                {
+                    <PanelPersonas Administracion="Administracion" Cerrar="CerrarPanel" />
+                }
+                else
+                {
+                    <p id="resumen-personas">@ResumenPersonas</p>
+                    <div class="acciones abrir-paneles">
+                        <button id="abrir-personas" type="button" disabled="@(_panel is not null)" @onclick="() => AbrirPanel(Panel.Personas)">@Editar</button>
+                    </div>
+                    @if (_panel is not null)
                     {
-                        <li id="bitacora-@(bitacora.Destino == DestinoBitacora.General ? "general" : "interacciones")">@MensajesAtencion.EstadoBitacora(bitacora, Zona)</li>
+                        <p class="indicacion">Terminá o cancelá la edición de Opciones para editar Personas</p>
                     }
-                </ul>
+                }
+            }
+        </section>
+
+        <section role="tabpanel" id="seccion-opciones" class="seccion" aria-labelledby="pestana-opciones" hidden="@Oculta(Pestana.Opciones)">
+            @if (Administracion is not null)
+            {
+                @if (_panel == Panel.Opciones)
+                {
+                    <PanelOpciones Administracion="Administracion" Cerrar="CerrarPanel" />
+                }
+                else
+                {
+                    <p id="resumen-opciones">@ResumenOpciones</p>
+                    <div class="acciones abrir-paneles">
+                        <button id="abrir-opciones" type="button" disabled="@(_panel is not null)" @onclick="() => AbrirPanel(Panel.Opciones)">@Editar</button>
+                    </div>
+                    @if (_panel is not null)
+                    {
+                        <p class="indicacion">Terminá o cancelá la edición de Personas para editar Opciones</p>
+                    }
+                }
+            }
+        </section>
+
+        <section role="tabpanel" id="seccion-consumos" class="seccion" aria-labelledby="pestana-consumos" hidden="@Oculta(Pestana.Consumos)">
+        </section>
+
+        <section role="tabpanel" id="seccion-comprobantes" class="seccion" aria-labelledby="pestana-comprobantes" hidden="@Oculta(Pestana.Comprobantes)">
+        </section>
+
+        <section role="tabpanel" id="seccion-identidad" class="seccion" aria-labelledby="pestana-identidad" hidden="@Oculta(Pestana.Identidad)">
+            <section aria-labelledby="titulo-estilo">
+                <h3 id="titulo-estilo">Estilo visual</h3>
+                <div class="parametro">
+                    <label for="opacidad">Opacidad de las superficies</label>
+                    <output id="valor-opacidad" for="opacidad">@Estilo.Opacidad %</output>
+                    <input id="opacidad" type="range" min="@EstiloVisual.OpacidadMinima" max="@EstiloVisual.OpacidadMaxima" step="1"
+                           value="@Estilo.Opacidad" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Opacidad = valor })" />
+                </div>
+                <div class="parametro">
+                    <label for="desenfoque">Desenfoque del fondo</label>
+                    <output id="valor-desenfoque" for="desenfoque">@Estilo.Desenfoque px</output>
+                    <input id="desenfoque" type="range" min="@EstiloVisual.DesenfoqueMinimo" max="@EstiloVisual.DesenfoqueMaximo" step="1"
+                           value="@Estilo.Desenfoque" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Desenfoque = valor })" />
+                </div>
+                @if (_avisoEstilo is not null)
+                {
+                    <p id="aviso-configuracion" class="aviso" role="alert">@_avisoEstilo</p>
+                }
+                <div class="acciones">
+                    <button id="guardar-configuracion" type="button" class="principal" @onclick="GuardarElEstilo">Guardar</button>
+                </div>
             </section>
-        }
+        </section>
 
-        @if (Aviso is not null)
-        {
-            <p id="aviso-configuracion" class="aviso" role="alert">@Aviso</p>
-        }
+        <section role="tabpanel" id="seccion-impresora" class="seccion" aria-labelledby="pestana-impresora" hidden="@Oculta(Pestana.Impresora)">
+            @if (Impresora is not null)
+            {
+                <FranjaImpresora Impresora="Impresora" ModoCambiado="ModoImpresoraCambiado" />
+            }
+        </section>
 
-        <div class="acciones">
+        <section role="tabpanel" id="seccion-pantalla" class="seccion" aria-labelledby="pestana-pantalla" hidden="@Oculta(Pestana.Pantalla)">
+        </section>
+
+        <section role="tabpanel" id="seccion-red" class="seccion" aria-labelledby="pestana-red" hidden="@Oculta(Pestana.Red)">
+        </section>
+
+        <div class="acciones pie-dialogo">
             <button id="cancelar-configuracion" type="button" @onclick="Cancelar">Cancelar</button>
-            <button id="guardar-configuracion" type="button" class="principal" @onclick="Guardar">Guardar</button>
         </div>
-        </text>
-        }
     </div>
 </div>
 
 @code {
+    /// <summary>Las nueve pestañas, en el orden de D1.</summary>
+    private enum Pestana
+    {
+        General,
+        Personas,
+        Opciones,
+        Consumos,
+        Comprobantes,
+        Identidad,
+        Impresora,
+        Pantalla,
+        Red,
+    }
+
     private enum Panel
     {
         Personas,
         Opciones,
     }
 
-    private ElementReference _dialogo;
-    private Panel? _panel;
-    private string? _avisoPanel;
+    private static readonly Pestana[] Todas = Enum.GetValues<Pestana>();
 
-    /// <summary>La edición de personas y opciones; null no muestra sus botones (administrar-personas-y-opciones).</summary>
+    private readonly ElementReference[] _botones = new ElementReference[Todas.Length];
+    private ElementReference _dialogo;
+    private Pestana _elegida = Pestana.General;
+    private bool _enfocarPestana;
+    private Panel? _panel;
+    private string? _avisoGuardado;
+    private string? _avisoEstilo;
+    private VistaAdministracion? _resumen;
+
+    /// <summary>La edición de personas y opciones; null deja esas pestañas vacías (administrar-personas-y-opciones).</summary>
     [Parameter]
     public AdministracionLocal? Administracion { get; set; }
 
@@ -105,7 +179,7 @@
     [Parameter, EditorRequired]
     public EstiloVisual Estilo { get; set; } = EstiloVisual.PorDefecto;
 
-    /// <summary>La impresora simulada, o null con cualquier otra: entonces no hay sección de impresora.</summary>
+    /// <summary>La impresora simulada, o null con cualquier otra: entonces la pestaña Impresora no tiene sus modos.</summary>
     [Parameter]
     public ImpresoraSimulada? Impresora { get; set; }
 
@@ -120,25 +194,82 @@
     [Parameter]
     public EventCallback<CambioModoImpresora> ModoImpresoraCambiado { get; set; }
 
-    /// <summary>Lo que el diálogo avisa, por ejemplo que no se pudo guardar; null sin aviso.</summary>
-    [Parameter]
-    public string? Aviso { get; set; }
-
     [Parameter]
     public EventCallback<EstiloVisual> VistaPrevia { get; set; }
 
-    [Parameter]
-    public EventCallback Guardar { get; set; }
+    /// <summary>Guarda el estilo de la vista previa; false si no se pudo escribir y quedó vigente el de antes (D3).</summary>
+    [Parameter, EditorRequired]
+    public Func<bool> GuardarEstilo { get; set; } = () => true;
 
     [Parameter]
     public EventCallback Cancelar { get; set; }
 
+    private string Editar => _resumen?.SoloLectura == true ? "Ver" : "Editar";
+
+    private string ResumenPersonas => _resumen is { } vista
+        ? $"{vista.Personas.Count} personas en la versión {vista.VersionConfiguracion} de la configuración"
+        : MensajesAtencion.ConfiguracionNoLeida;
+
+    private string ResumenOpciones => _resumen is { } vista
+        ? $"{vista.Opciones.Count} opciones en la versión {vista.VersionConfiguracion} de la configuración"
+        : MensajesAtencion.ConfiguracionNoLeida;
+
+    protected override void OnInitialized() => LeerResumen();
+
     protected override async Task OnAfterRenderAsync(bool primera)
     {
-        // El foco entra al diálogo para que Escape funcione sin tocarlo antes.
+        // El foco entra al diálogo para que Escape funcione sin tocarlo antes; con el teclado, sigue a la pestaña elegida.
         if (primera)
         {
             await _dialogo.FocusAsync();
+        }
+        else if (_enfocarPestana)
+        {
+            _enfocarPestana = false;
+            await _botones[(int)_elegida].FocusAsync();
+        }
+    }
+
+    private static string Clave(Pestana pestana) => pestana switch
+    {
+        Pestana.Identidad => "identidad",
+        _ => pestana.ToString().ToLowerInvariant(),
+    };
+
+    private static string Nombre(Pestana pestana) => pestana switch
+    {
+        Pestana.Identidad => "Identidad visual",
+        _ => pestana.ToString(),
+    };
+
+    private bool Oculta(Pestana pestana) => pestana != _elegida;
+
+    private void Elegir(Pestana pestana)
+    {
+        if (pestana != _elegida)
+        {
+            _avisoGuardado = null;
+        }
+
+        _elegida = pestana;
+    }
+
+    /// <summary>Flechas, Inicio y Fin mueven la pestaña elegida y el foco con ella (patrón de pestañas de WAI-ARIA, D1).</summary>
+    private void TeclaPestana(KeyboardEventArgs e, Pestana actual)
+    {
+        var indice = (int)actual;
+        int? destino = e.Key switch
+        {
+            "ArrowRight" => (indice + 1) % Todas.Length,
+            "ArrowLeft" => (indice + Todas.Length - 1) % Todas.Length,
+            "Home" => 0,
+            "End" => Todas.Length - 1,
+            _ => null,
+        };
+        if (destino is { } nueva)
+        {
+            Elegir(Todas[nueva]);
+            _enfocarPestana = true;
         }
     }
 
@@ -153,33 +284,50 @@
         return estilo.EnRango ? VistaPrevia.InvokeAsync(estilo) : Task.CompletedTask;
     }
 
-    /// <summary>Escape cierra el panel abierto, como su «Cancelar»; sin panel, cancela el diálogo.</summary>
-    private Task Tecla(KeyboardEventArgs e)
+    /// <summary>Guarda sólo el estilo y deja Configuración abierta: con el aviso de lo guardado o el de que no se pudo (D3).</summary>
+    private void GuardarElEstilo()
     {
-        if (e.Key != "Escape")
+        if (GuardarEstilo())
         {
-            return Task.CompletedTask;
+            _avisoEstilo = null;
+            _avisoGuardado = MensajesAtencion.EstiloGuardado;
         }
-
-        if (_panel is not null)
+        else
         {
-            CerrarPanel(null);
-            return Task.CompletedTask;
+            _avisoEstilo = MensajesAtencion.EstiloNoGuardado;
+            _avisoGuardado = null;
         }
-
-        return Cancelar.InvokeAsync();
     }
+
+    /// <summary>Escape cierra Configuración como «Cancelar», también con un panel de edición abierto (D3).</summary>
+    private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar.InvokeAsync() : Task.CompletedTask;
 
     private void AbrirPanel(Panel panel)
     {
-        _avisoPanel = null;
+        _avisoGuardado = null;
         _panel = panel;
     }
 
-    /// <summary>Vuelve al contenido del diálogo; si el panel guardó, con el aviso de la versión nueva.</summary>
+    /// <summary>Vuelve al resumen de la pestaña; si el panel guardó, con el aviso de la versión nueva.</summary>
     private void CerrarPanel(string? aviso)
     {
         _panel = null;
-        _avisoPanel = aviso;
+        if (aviso is not null)
+        {
+            _avisoGuardado = aviso;
+            LeerResumen();
+        }
+    }
+
+    private void LeerResumen()
+    {
+        try
+        {
+            _resumen = Administracion?.Leer();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _resumen = null;
+        }
     }
 }

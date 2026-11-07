@@ -256,10 +256,10 @@
     @* Configuración sólo se abre en reposo, y no cambia el estado de la máquina (D5). *@
     @if (ConfiguracionAbierta)
     {
-        <PanelConfiguracion Estilo="_vista" Impresora="@(Servicio.Impresora as ImpresoraSimulada)" Aviso="@_avisoEstilo"
+        <PanelConfiguracion Estilo="_vista" Impresora="@(Servicio.Impresora as ImpresoraSimulada)"
                             Bitacoras="_estadoBitacoras" Zona="ZonaDelPuesto" ModoImpresoraCambiado="RegistrarModoImpresora"
                             Administracion="Servicio.Administracion"
-                            VistaPrevia="estilo => _vista = estilo" Guardar="GuardarConfiguracion" Cancelar="CancelarConfiguracion" />
+                            VistaPrevia="estilo => _vista = estilo" GuardarEstilo="GuardarConfiguracion" Cancelar="CancelarConfiguracion" />
     }
 </div>
 
@@ -271,7 +271,6 @@
     private EstiloVisual _guardado = EstiloVisual.PorDefecto;
     private EstiloVisual _vista = EstiloVisual.PorDefecto;
     private bool _configuracion;
-    private string? _avisoEstilo;
     private IReadOnlyList<EstadoBitacora>? _estadoBitacoras;
 
     private static readonly TimeZoneInfo ZonaDelPuesto = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
@@ -343,7 +342,6 @@
         if (Maquina.Estado == EstadoAtencion.Reposo)
         {
             _vista = _guardado;
-            _avisoEstilo = null;
             // El estado se lee antes de registrar la apertura: muestra lo que había al tocar el engranaje.
             _estadoBitacoras = LeerEstadoBitacoras();
             RegistrarConfiguracion("CONFIGURATION_OPENED", new { ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
@@ -353,9 +351,10 @@
 
     /// <summary>
     /// Sin escritura en la carpeta de datos, el estilo guardado queda como estaba y el diálogo lo avisa: la atención sigue
-    /// («Estilo por defecto y validado»). Cada guardado queda en la bitácora con el antes, el después y lo vigente (D9).
+    /// («Estilo por defecto y validado»). Configuración queda abierta (D3 de configurar-puesto-por-pestanas). Cada guardado
+    /// queda en la bitácora con el antes, el después y lo vigente (D9 de escribir-bitacoras-externas).
     /// </summary>
-    private void GuardarConfiguracion()
+    private bool GuardarConfiguracion()
     {
         var antes = _guardado;
         try
@@ -364,21 +363,18 @@
         }
         catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
         {
-            _avisoEstilo = MensajesAtencion.EstiloNoGuardado;
             RegistrarCambioDeEstilo(antes, _vista, "FAILED", vigente: antes);
-            return;
+            return false;
         }
 
         _guardado = _vista;
-        _avisoEstilo = null;
-        _configuracion = false;
         RegistrarCambioDeEstilo(antes, _guardado, "APPLIED", vigente: _guardado);
+        return true;
     }
 
     private void CancelarConfiguracion()
     {
         _vista = _guardado;
-        _avisoEstilo = null;
         _configuracion = false;
         RegistrarConfiguracion("CONFIGURATION_CANCELLED", new { ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
     }
