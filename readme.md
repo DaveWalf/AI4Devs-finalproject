@@ -204,11 +204,12 @@ receptor, en la ventana:
 2. «Listo», y otra vez `0001`: la selección ya no ofrece ningún almuerzo, sólo los refrigerios, y dice «Hoy ya
    usaste: almuerzo 1 de 1». El cupo de ALMUERZO es 1 y no hay cómo registrar otro consumo.
 3. `0002` e «Ingresar»: «Esta credencial está vencida. Solicitá asistencia».
-4. En la franja de la impresora, «Sin papel»; `0001` con «Café con leche», un REFRIGERIO: «Tu consumo está
-   registrado. El comprobante queda pendiente».
-5. La impresora en «Disponible», `9001` y «Asistencia»: los comprobantes del día. «Recuperar» saca el pendiente
-   del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con la leyenda DUPLICADO.
-6. `9002` y «Asistencia»: «Tu permiso de operador está vencido».
+4. En la pestaña Impresora de Configuración, «Sin papel»; `0001` con «Café con leche», un REFRIGERIO: «Tu consumo
+   está registrado. El comprobante queda pendiente».
+5. La impresora en «Disponible» y, en la pestaña Comprobantes, `9001` e «Ingresar»: los comprobantes del día.
+   «Recuperar» saca el pendiente del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con
+   la leyenda DUPLICADO. «Salir», cerrar Configuración o 30 s sin tocar la pestaña terminan la sesión del operador.
+6. En la pestaña Comprobantes, `9002` e «Ingresar»: «Tu permiso de operador está vencido».
 7. En reposo, el engranaje y «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
    `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión 2
    de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
@@ -293,18 +294,18 @@ Códigos sintéticos:
 | `0002` | Credencial vencida: «Esta credencial está vencida» |
 | `0003` | Credencial revocada: «Esta credencial ya no está habilitada» |
 | `0004` | Credencial todavía no vigente: «No pudimos identificarte» |
-| `9001` | Operador con permiso `OPERATOR` vigente, por «Asistencia» |
-| `9002` | Operador con el permiso vencido: «Asistencia» se deniega |
-| `9003` | Operador con el permiso revocado: «Asistencia» se deniega |
-| `9004` | Administrador sin `OPERATOR`: «Asistencia» se deniega |
+| `9001` | Operador con permiso `OPERATOR` vigente, en la pestaña Comprobantes |
+| `9002` | Operador con el permiso vencido: Comprobantes lo deniega |
+| `9003` | Operador con el permiso revocado: Comprobantes lo deniega |
+| `9004` | Administrador sin `OPERATOR`: Comprobantes lo deniega |
 
 El comprobante sale después del commit hacia una impresora simulada, que escribe un archivo de texto por
 copia en `%LOCALAPPDATA%\INComedor\demo\comprobantes\` (`<TicketId>-<copia>.txt`). Cuando sale, la pantalla
 muestra además una impresora de la que sale el comprobante, con la opción, la fecha y el cargo y sin el nombre;
 tocarlo equivale a «Listo», y con movimiento reducido aparece sin animación. Los modos de la impresora
 (Disponible, Sin papel o Incierta) están en Configuración. Con «Sin papel», el consumo queda registrado y el
-comprobante, pendiente, sin comprobante en pantalla. Por «Asistencia», un operador con `9001` ve los comprobantes del
-día. Puede recuperar el original que falló, que es el mismo trabajo y no una copia nueva. También puede
+comprobante, pendiente, sin comprobante en pantalla. La pantalla de reposo ya no tiene «Asistencia»: en la pestaña
+Comprobantes de Configuración, un operador con `9001` ve los comprobantes del día. Puede recuperar el original que falló, que es el mismo trabajo y no una copia nueva. También puede
 reimprimir con un motivo de una lista fija, y la copia sale con la leyenda DUPLICADO y su número.
 
 Todo lo que pasa en el puesto queda primero en la base y después, fuera de la atención, en dos bitácoras de texto

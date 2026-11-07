@@ -172,10 +172,12 @@ public class PantallaAtencionTests : IDisposable
     {
         var pantalla = Dibujar();
 
-        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
-        await pantalla.Find("#asistencia").ClickAsync(new());
+        await pantalla.Find(".engranaje").ClickAsync(new());
+        await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
+        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#entrar-operador").ClickAsync(new());
 
-        Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_MISSING"), pantalla.Find("#aviso").TextContent.Trim());
+        Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_MISSING"), pantalla.Find("#aviso-comprobantes").TextContent.Trim());
         Assert.NotNull(pantalla.Find("#codigo"));
         Assert.Empty(pantalla.FindAll(".reimprimir"));
     }
@@ -217,7 +219,7 @@ public class PantallaAtencionTests : IDisposable
         await pantalla.Find(".reimprimir").ClickAsync(new());
         await pantalla.FindAll(".motivo")[0].ClickAsync(new());
 
-        Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_EXPIRED"), pantalla.Find("#aviso").TextContent.Trim());
+        Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_EXPIRED"), pantalla.Find("#aviso-comprobantes").TextContent.Trim());
         Assert.NotNull(pantalla.Find("#codigo"));
         Assert.DoesNotContain("Operador sintético 01", pantalla.Markup);
     }
@@ -261,8 +263,10 @@ public class PantallaAtencionTests : IDisposable
 
     private static async Task EntrarAsistencia(IRenderedComponent<PantallaAtencion> pantalla, string codigo)
     {
-        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = codigo });
-        await pantalla.Find("#asistencia").ClickAsync(new());
+        await pantalla.Find(".engranaje").ClickAsync(new());
+        await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
+        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = codigo });
+        await pantalla.Find("#entrar-operador").ClickAsync(new());
         Assert.NotNull(pantalla.Find("#salir"));
     }
 }

@@ -112,6 +112,10 @@
         </section>
 
         <section role="tabpanel" id="seccion-comprobantes" class="seccion" aria-labelledby="pestana-comprobantes" hidden="@Oculta(Pestana.Comprobantes)">
+            @if (SesionOperador is not null)
+            {
+                <PestanaComprobantes Sesion="SesionOperador" Zona="Zona" />
+            }
         </section>
 
         <section role="tabpanel" id="seccion-identidad" class="seccion" aria-labelledby="pestana-identidad" hidden="@Oculta(Pestana.Identidad)">
@@ -244,6 +248,10 @@
     /// <summary>El aviso de que no se pudo guardar el modo; null sin aviso.</summary>
     [Parameter]
     public string? AvisoModo { get; set; }
+
+    /// <summary>La sesión del operador de Comprobantes, que la pantalla abre con Configuración y cierra con ella (D8).</summary>
+    [Parameter]
+    public SesionOperador? SesionOperador { get; set; }
 
     /// <summary>Con la clave del día pedida encima, el diálogo queda inerte.</summary>
     [Parameter]

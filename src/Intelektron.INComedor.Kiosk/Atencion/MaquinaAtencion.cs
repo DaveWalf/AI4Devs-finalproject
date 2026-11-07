@@ -11,7 +11,6 @@ public enum EstadoAtencion
     Confirmando,
     Reconfirmacion,
     Resultado,
-    Asistencia,
     ErrorAlmacenamiento,
     SinOpciones,
 }
@@ -45,7 +44,6 @@ public sealed class MaquinaAtencion
     private IReadOnlyList<OpcionRetenida> _retenidas = [];
     private IReadOnlyList<CategoriaAgotada> _agotadas = [];
     private Guid? _sesion;
-    private Guid? _sesionAsistencia;
     private Task? _confirmacion;
     private DateTimeOffset _ultimoToque;
     // El mensaje que se está mostrando y la decisión que lo produjo, para el cierre de la atención (D8 de escribir-bitacoras-externas).
@@ -116,17 +114,6 @@ public sealed class MaquinaAtencion
 
     /// <summary>Un aviso para la pantalla actual: el motivo de un rechazo, el puesto ocupado o la opción retirada.</summary>
     public string? Aviso { get; private set; }
-
-    public IReadOnlyList<ComprobanteDelDia> Comprobantes { get; private set; } = [];
-
-    /// <summary>El comprobante cuyo motivo de reimpresión se está pidiendo.</summary>
-    public ComprobanteDelDia? ReimpresionPedida { get; private set; }
-
-    /// <summary>Si el último trabajo del comprobante pedido está en UNKNOWN: el papel pudo haber salido (HU03-B).</summary>
-    public bool AvisoIncertidumbre => ReimpresionPedida?.EstadoUltimoTrabajo == EstadoTrabajoImpresion.Unknown;
-
-    /// <summary>El resultado de la última acción del operador.</summary>
-    public string? MensajeAsistencia { get; private set; }
 
     public void Iniciar()
     {
@@ -306,7 +293,7 @@ public sealed class MaquinaAtencion
         var quieto = _servicio.Reloj.GetUtcNow() - _ultimoToque;
         var vencido = Estado switch
         {
-            EstadoAtencion.Seleccion or EstadoAtencion.Reconfirmacion or EstadoAtencion.Asistencia => quieto >= PlazoInactividad,
+            EstadoAtencion.Seleccion or EstadoAtencion.Reconfirmacion => quieto >= PlazoInactividad,
             EstadoAtencion.Resultado or EstadoAtencion.SinOpciones => quieto >= PlazoResultado,
             _ => false,
         };
@@ -316,11 +303,7 @@ public sealed class MaquinaAtencion
             return false;
         }
 
-        if (Estado == EstadoAtencion.Asistencia)
-        {
-            SalirAsistencia();
-        }
-        else if (Estado is EstadoAtencion.Resultado or EstadoAtencion.SinOpciones)
+        if (Estado is EstadoAtencion.Resultado or EstadoAtencion.SinOpciones)
         {
             CerrarConMensaje("TIMEOUT");
         }
@@ -335,111 +318,6 @@ public sealed class MaquinaAtencion
         }
 
         return true;
-    }
-
-    public ResultadoToque EntrarAsistencia(string codigo)
-    {
-        if (Estado == EstadoAtencion.ErrorAlmacenamiento)
-        {
-            return ResultadoToque.NoDisponible;
-        }
-
-        if (Estado != EstadoAtencion.Reposo)
-        {
-            Aviso = MensajesAtencion.Ocupado;
-            return ResultadoToque.Ocupado;
-        }
-
-        var resultado = Proteger(() => _servicio.Asistencia.Entrar(codigo));
-        if (resultado is null)
-        {
-            return ResultadoToque.NoDisponible;
-        }
-
-        if (!resultado.Concedida)
-        {
-            Aviso = MensajesAtencion.DeMotivo(resultado.ReasonCode);
-            return ResultadoToque.Rechazado;
-        }
-
-        Limpiar();
-        _sesionAsistencia = resultado.SesionId;
-        NombreVisible = resultado.NombreVisible;
-        Comprobantes = _servicio.Asistencia.ComprobantesDelDia();
-        Estado = EstadoAtencion.Asistencia;
-        Tocar();
-        return ResultadoToque.Aceptado;
-    }
-
-    public void PedirReimpresion(Guid ticketId)
-    {
-        if (Estado != EstadoAtencion.Asistencia)
-        {
-            return;
-        }
-
-        ReimpresionPedida = Comprobantes.FirstOrDefault(c => c.TicketId == ticketId);
-        MensajeAsistencia = null;
-        Tocar();
-    }
-
-    public void CancelarReimpresion()
-    {
-        ReimpresionPedida = null;
-        Tocar();
-    }
-
-    public void Reimprimir(MotivoReimpresion motivo)
-    {
-        if (Estado != EstadoAtencion.Asistencia || ReimpresionPedida is null || _sesionAsistencia is null)
-        {
-            return;
-        }
-
-        var resultado = _servicio.Asistencia.Reimprimir(_sesionAsistencia.Value, ReimpresionPedida.TicketId, motivo);
-        DespuesDeAccion(resultado, resultado.Envio is { } envio ? $"Copia {envio.NumeroCopia} enviada con la leyenda DUPLICADO" : null);
-    }
-
-    public void Recuperar(Guid trabajoId)
-    {
-        if (Estado != EstadoAtencion.Asistencia || _sesionAsistencia is null)
-        {
-            return;
-        }
-
-        var resultado = _servicio.Asistencia.Recuperar(_sesionAsistencia.Value, trabajoId);
-        DespuesDeAccion(resultado, "Comprobante original enviado otra vez");
-    }
-
-    public void SalirAsistencia()
-    {
-        if (_sesionAsistencia is { } sesion)
-        {
-            _servicio.Asistencia.Salir(sesion);
-        }
-
-        Limpiar();
-    }
-
-    private void DespuesDeAccion(ResultadoAccion resultado, string? exito)
-    {
-        var sinPrivilegio = resultado.ReasonCode is { } codigo
-            && (codigo == "SESSION_NOT_USABLE" || codigo.StartsWith("PERMISSION_", StringComparison.Ordinal));
-        if (!resultado.Realizada && sinPrivilegio)
-        {
-            // El permiso o la sesión cayeron: la asistencia termina y el puesto vuelve a reposo (RB26).
-            var aviso = MensajesAtencion.DeMotivo(resultado.ReasonCode);
-            SalirAsistencia();
-            Aviso = aviso;
-            return;
-        }
-
-        MensajeAsistencia = !resultado.Realizada
-            ? MensajesAtencion.DeMotivo(resultado.ReasonCode)
-            : resultado.Envio?.Estado == EstadoTrabajoImpresion.Submitted ? exito : "El comprobante quedó pendiente: revisá la impresora";
-        ReimpresionPedida = null;
-        Comprobantes = _servicio.Asistencia.ComprobantesDelDia();
-        Tocar();
     }
 
     private Task Confirmar(OpcionCatalogo opcion)
@@ -627,7 +505,6 @@ public sealed class MaquinaAtencion
         _codigoMensaje = null;
         _decisionId = null;
         _sesion = null;
-        _sesionAsistencia = null;
         _confirmacion = null;
         _catalogo = [];
         _retenidas = [];
@@ -643,9 +520,6 @@ public sealed class MaquinaAtencion
         ComprobantePendiente = false;
         ComprobanteEnPantalla = null;
         Aviso = null;
-        Comprobantes = [];
-        ReimpresionPedida = null;
-        MensajeAsistencia = null;
         Tocar();
     }
 

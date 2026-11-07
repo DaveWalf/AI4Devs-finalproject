@@ -31,7 +31,6 @@
                            value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" />
                     <div class="acciones">
                         <button id="ingresar" type="button" class="principal" @onclick="Ingresar">Ingresar</button>
-                        <button id="asistencia" type="button" @onclick="EntrarAsistencia">Asistencia</button>
                     </div>
                     @if (Maquina.Aviso is not null)
                     {
@@ -181,60 +180,6 @@
                 </section>
                 break;
 
-            case EstadoAtencion.Asistencia:
-                <section class="tarjeta ancha superficie">
-                    <h2>Asistencia</h2>
-                    <p>Operador: <strong>@Maquina.NombreVisible</strong> · Identificación simulada por código (demostración)</p>
-                    @if (Maquina.MensajeAsistencia is not null)
-                    {
-                        <p id="mensaje-asistencia" role="status">@Maquina.MensajeAsistencia</p>
-                    }
-                    @if (Maquina.ReimpresionPedida is { } pedida)
-                    {
-                        <section aria-label="Motivo de la reimpresión">
-                            @if (Maquina.AvisoIncertidumbre)
-                            {
-                                <p id="aviso-incertidumbre" class="aviso" role="alert">@MensajesAtencion.Incertidumbre</p>
-                            }
-                            <p>Reimprimir el comprobante de las @Hora(pedida.CreadoUtc) · @pedida.Opcion. Elegí el motivo:</p>
-                            <div class="acciones">
-                                @foreach (var motivo in Enum.GetValues<MotivoReimpresion>())
-                                {
-                                    <button type="button" class="motivo" @onclick="() => Maquina.Reimprimir(motivo)">@MensajesAtencion.Motivo(motivo)</button>
-                                }
-                                <button id="cancelar-reimpresion" type="button" @onclick="Maquina.CancelarReimpresion">Cancelar</button>
-                            </div>
-                        </section>
-                    }
-                    else
-                    {
-                        <table>
-                            <thead><tr><th>Hora</th><th>Opción</th><th>Persona</th><th>Estado</th><th></th></tr></thead>
-                            <tbody>
-                                @foreach (var comprobante in Maquina.Comprobantes)
-                                {
-                                    <tr>
-                                        <td>@Hora(comprobante.CreadoUtc)</td>
-                                        <td>@comprobante.Opcion</td>
-                                        <td>@comprobante.NombreVisible</td>
-                                        <td>@Estado(comprobante.EstadoUltimoTrabajo)</td>
-                                        <td>
-                                            @if (comprobante.EstadoOriginal == EstadoTrabajoImpresion.Failed)
-                                            {
-                                                <button type="button" class="recuperar" @onclick="() => Maquina.Recuperar(comprobante.TrabajoOriginalId)">Recuperar</button>
-                                            }
-                                            <button type="button" class="reimprimir" @onclick="() => Maquina.PedirReimpresion(comprobante.TicketId)">Reimprimir</button>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    }
-                    <div class="acciones">
-                        <button id="salir" type="button" @onclick="Maquina.SalirAsistencia">Salir</button>
-                    </div>
-                </section>
-                break;
         }
     </main>
 
@@ -263,7 +208,7 @@
                             VistaPrevia="estilo => _vista = estilo" GuardarEstilo="GuardarConfiguracion" Cancelar="CancelarConfiguracion"
                             Modo="_modo" AvisoModo="@_avisoModo" PasarAOperativo="PasarAOperativo" PasarAMantenimiento="PasarAMantenimiento"
                             PuedeCerrar="@(_cierre is not null)" CerrarPuesto="@(() => SolicitarCierre("CLOSE_BUTTON"))"
-                            Inerte="@(_pedidoClave is not null)" />
+                            Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador" />
     }
 
     @* La clave del día, cuando el modo la pide para abrir Configuración, cerrar el puesto o pasar a operativo (D6). *@
@@ -289,6 +234,7 @@
     private ModoPuesto _modo = ModoPuesto.Mantenimiento;
     private string? _avisoModo;
     private CierrePuesto? _cierre;
+    private SesionOperador? _sesionOperador;
     private IValidadorClaveDelDia _validador = new ClaveDelDiaDeDesarrollo();
     private AccionClave? _pedidoClave;
     private string _fuenteCierre = "ESCAPE";
@@ -356,6 +302,11 @@
             CancelarConfiguracionFueraDeReposo();
             StateHasChanged();
         }
+        else if (ConfiguracionAbierta && _sesionOperador?.RevisarInactividad() == true)
+        {
+            // Treinta segundos sin un toque en Comprobantes cierran la sesión del operador (D8).
+            StateHasChanged();
+        }
     }
 
     /// <summary>El campo queda vacío apenas se envía: el código no se vuelve a mostrar.</summary>
@@ -364,14 +315,6 @@
         var codigo = _codigo;
         _codigo = string.Empty;
         Maquina.Identificar(codigo);
-        CancelarConfiguracionFueraDeReposo();
-    }
-
-    private void EntrarAsistencia()
-    {
-        var codigo = _codigo;
-        _codigo = string.Empty;
-        Maquina.EntrarAsistencia(codigo);
         CancelarConfiguracionFueraDeReposo();
     }
 
@@ -414,6 +357,7 @@
         // El estado se lee antes de registrar la apertura: muestra lo que había al tocar el engranaje.
         _estadoBitacoras = LeerEstadoBitacoras();
         RegistrarConfiguracion("CONFIGURATION_OPENED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
+        _sesionOperador = Servicio.Asistencia is { } asistencia ? new SesionOperador(asistencia, Servicio.Reloj) : null;
         _configuracion = true;
     }
 
@@ -577,6 +521,9 @@
 
     private void CancelarConfiguracion()
     {
+        // Cerrar Configuración termina la sesión del operador de Comprobantes (D8).
+        _sesionOperador?.Salir("CONFIGURATION_CLOSED");
+        _sesionOperador = null;
         _vista = _guardado;
         _configuracion = false;
         RegistrarConfiguracion("CONFIGURATION_CANCELLED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
@@ -646,17 +593,6 @@
     }
 
     private Task Reconfirmar() => Maquina.ReconfirmarAsync();
-
-    private string Hora(DateTimeOffset instante) =>
-        TimeZoneInfo.ConvertTime(instante, TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires")).ToString("HH:mm");
-
-    private static string Estado(EstadoTrabajoImpresion estado) => estado switch
-    {
-        EstadoTrabajoImpresion.Submitted => "Enviado",
-        EstadoTrabajoImpresion.Failed => "Falló",
-        EstadoTrabajoImpresion.Unknown => "Incierto",
-        _ => "En cola",
-    };
 
     /// <summary>El ciclo de envío avisa desde su hilo; la franja se redibuja en el del componente.</summary>
     private void RefrescarSincronizacion() => _ = InvokeAsync(StateHasChanged);

@@ -62,6 +62,21 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         await Capturar(pagina, "10-configuracion");
     }
 
+    [Fact(DisplayName = "comprobante-local · Reposo sin «Asistencia» a 1024 × 768: el campo del código e «Ingresar» a la vista, y ningún botón «Asistencia»")]
+    public async Task Reposo_sin_asistencia()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        var (_, pagina) = await _escenario.AbrirPuestoAsync(playwright);
+        await FijarArea(pagina, 1024, 768);
+
+        await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
+        await Assertions.Expect(pagina.Locator("#ingresar")).ToBeVisibleAsync();
+        await Assertions.Expect(pagina.Locator("#asistencia")).ToHaveCountAsync(0);
+        await Assertions.Expect(pagina.Locator("main button", new() { HasText = "Asistencia" })).ToHaveCountAsync(0);
+
+        await Capturar(pagina, "06-reposo-tactil");
+    }
+
     private static async Task FijarArea(IPage pagina, int ancho, int alto)
     {
         var cdp = await pagina.Context.NewCDPSessionAsync(pagina);
