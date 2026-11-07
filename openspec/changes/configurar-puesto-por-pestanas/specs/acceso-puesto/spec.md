@@ -93,13 +93,13 @@ Origen: la transición de operativo a mantenimiento que la nota de modos dejó p
 
 ### Requirement: Cierre sin botón de cierre
 
-La barra de título de la ventana SHALL quedar sin botones. Escape en reposo sin diálogos abiertos, o «Cerrar el puesto» en la pestaña General, MUST cerrar el puesto en orden: directo en mantenimiento y, en operativo, después de la clave del día. En operativo, cualquier otro pedido de cierre de la ventana MUST convertirse en el pedido de la clave; el apagado de Windows MUST NOT frenarse.
+La ventana SHALL ocupar la pantalla completa, sin bordes ni barra de título, en los dos modos, y no ofrecer botones de cerrar, minimizar ni restaurar. Escape en reposo sin diálogos abiertos, o «Cerrar el puesto» en la pestaña General, MUST cerrar el puesto en orden: directo en mantenimiento y, en operativo, después de la clave del día. En operativo, cualquier otro pedido de cierre de la ventana MUST convertirse en el pedido de la clave; el apagado de Windows MUST NOT frenarse.
 
 #### Scenario: Ningún botón de cierre
-Origen: decisión de David del 03/11/2026 («la pantalla principal no debe mostrar un botón de cierre»).
+Origen: decisión de David del 03/11/2026 («la pantalla principal no debe mostrar un botón de cierre») y la del 06/11/2026 (gate de D, punto 7: «pantalla completa sin bordes, en los dos modos»).
 - **GIVEN** el puesto abierto, en cualquiera de los dos modos
 - **WHEN** se revisa la ventana
-- **THEN** está maximizada y su barra de título no tiene botones de cerrar, minimizar ni restaurar
+- **THEN** está maximizada a pantalla completa, sin bordes ni barra de título, cubre el monitor entero con la barra de tareas tapada y no tiene botones de cerrar, minimizar ni restaurar
 
 #### Scenario: Escape en mantenimiento
 Origen: tabla de modos de la decisión de David del 03/11/2026 («Cerrar por Escape: directo, según la excepción de mantenimiento»).

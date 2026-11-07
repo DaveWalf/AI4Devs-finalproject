@@ -2,6 +2,29 @@
 
 ## MODIFIED Requirements
 
+### Requirement: Ventana maximizada que se adapta
+
+Al abrir, la ventana del puesto SHALL quedar maximizada a pantalla completa, sin bordes ni barra de título y tapando la barra de tareas, en los dos modos, y la pantalla MUST ocupar su área. Cuando el ancho no admite dos columnas con el texto entero y las áreas de toque mínimas, las opciones MUST ir en una columna con desplazamiento vertical, sin achicar el texto ni los botones.
+
+#### Scenario: Abre maximizada
+Origen: decisión de David del 03/11/2026 (pantalla y configuración, punto 2: «deberá permanecer maximizada»).
+- **GIVEN** el puesto cerrado
+- **WHEN** se abre
+- **THEN** la ventana está maximizada
+
+#### Scenario: Pantalla completa sin bordes
+Origen: decisión de David del 06/11/2026 (gate de D, punto 7: «pantalla completa sin bordes, en los dos modos»), que gana sobre «deberá permanecer maximizada» del 03/11/2026.
+- **GIVEN** el puesto cerrado, en mantenimiento y, otra vez, en operativo
+- **WHEN** se abre
+- **THEN** la ventana no tiene bordes ni barra de título y su rectángulo es el del monitor entero, con la barra de tareas tapada
+
+#### Scenario: Ventana angosta
+Origen: decisión de David del 02/11/2026 (regla 4: la excepción queda explícita y no se consigue encogiendo los controles).
+- **GIVEN** el catálogo de nueve opciones y un área de 600 px de ancho
+- **WHEN** se muestra la selección
+- **THEN** las nueve opciones van en una sola columna, cada una exactamente una vez, y la pantalla se desplaza en vertical
+- **AND** el texto de las opciones tiene el mismo tamaño que con 1024 px de ancho
+
 ### Requirement: Estilo visual configurable
 
 La pestaña «Identidad visual» de Configuración SHALL ofrecer la sección «Estilo visual»: la opacidad de las superficies, de 72 % a 88 %, y el desenfoque del fondo detrás de ellas, de 0 a 12 px, que MUST previsualizarse al moverlos. Su «Guardar» MUST conservarlos en la carpeta de datos y aplicarlos al volver a abrir el puesto; cerrar Configuración sin guardarlos, con «Cancelar» o Escape, MUST volver a los valores de antes. A Configuración se entra según el modo del puesto.
@@ -22,25 +45,25 @@ Origen: pedido de David del 03/11/2026 (vista previa con guardar y cancelar).
 
 ### Requirement: Monitor asignado y recordado
 
-La pestaña Pantalla SHALL listar los monitores conectados con su resolución y cuál es el principal, y permitir elegir el del puesto. Al guardar, la ventana MUST pasar maximizada a ese monitor, y cada vez que el puesto abra MUST volver a él. Si el monitor guardado no está conectado, o lo guardado no se puede leer, MUST abrir maximizada en el principal y la pestaña MUST avisarlo.
+La pestaña Pantalla SHALL listar los monitores conectados con su resolución y cuál es el principal, y permitir elegir el del puesto. Al guardar, la ventana MUST pasar a pantalla completa en ese monitor, y cada vez que el puesto abra MUST volver a él. Si el monitor guardado no está conectado, o lo guardado no se puede leer, MUST abrir a pantalla completa en el principal y la pestaña MUST avisarlo.
 
 #### Scenario: Elegir el segundo monitor
 Origen: decisión de David del 03/11/2026 (pantalla y configuración, punto 2: «permanecer maximizada en el monitor a la cual se destine»).
 - **GIVEN** dos monitores conectados y el puesto en el principal
 - **WHEN** en Pantalla se elige el otro y se guarda
-- **THEN** la ventana queda maximizada en el monitor elegido
+- **THEN** la ventana queda a pantalla completa en el monitor elegido
 
 #### Scenario: Volver a abrir en el monitor guardado
 Origen: decisión de David del 03/11/2026 (punto 2: «recordando la configuración del monitor asignado en caso de ser más de uno»).
 - **GIVEN** el segundo monitor guardado como el del puesto
 - **WHEN** el puesto se cierra y se vuelve a abrir
-- **THEN** abre maximizado en el segundo monitor
+- **THEN** abre a pantalla completa en el segundo monitor
 
 #### Scenario: El monitor guardado no está
 Origen: nota de pantalla y configuración («queda por diseñar qué ocurre si el monitor asignado se desconecta»), borde.
 - **GIVEN** un monitor guardado que ya no está conectado
 - **WHEN** el puesto abre
-- **THEN** abre maximizado en el principal y la pestaña Pantalla dice que el monitor guardado no está conectado
+- **THEN** abre a pantalla completa en el principal y la pestaña Pantalla dice que el monitor guardado no está conectado
 
 #### Scenario: Un solo monitor
 Origen: decisión de David del 03/11/2026 (punto 2, «en caso de ser más de uno»), borde.
@@ -50,13 +73,20 @@ Origen: decisión de David del 03/11/2026 (punto 2, «en caso de ser más de uno
 
 ### Requirement: Sin rebote al arrastrar
 
-Arrastrar el dedo en cualquier pantalla del puesto SHALL NOT mover la página más allá de sus bordes ni hacerla rebotar. Las zonas que se desplazan, como la selección en la ventana angosta y las tablas de Configuración, MUST seguir desplazándose dentro de sus límites.
+Arrastrar el dedo en cualquier pantalla del puesto SHALL NOT mover la página más allá de sus bordes ni hacerla rebotar: la página MUST impedirlo con su estilo y el navegador del puesto MUST arrancar con el rebote elástico apagado. Las zonas que se desplazan, como la selección en la ventana angosta y las tablas de Configuración, MUST seguir desplazándose dentro de sus límites.
 
 #### Scenario: La página no rebota
 Origen: hallazgo de David del 04/11/2026 en su monitor táctil («arrastrar el dedo hace rebotar la pantalla») y los criterios táctiles del 03/11/2026 («zonas de acción estables»).
 - **GIVEN** el puesto en reposo, en la atención y con Configuración abierta
 - **WHEN** se revisa cómo responde la página a un arrastre más allá de su borde
 - **THEN** la página y su contenedor principal no admiten desplazarse más allá del borde ni encadenar el desplazamiento
+
+#### Scenario: El navegador arranca sin rebote elástico
+Origen: decisión de David del 06/11/2026 (gate de D, punto 9: «Rebote: CSS y el argumento de Chromium desde ya»).
+- **GIVEN** el puesto sin el puerto de depuración de las pruebas y, otra vez, con él
+- **WHEN** se arman los argumentos de su navegador
+- **THEN** los dos llevan `--disable-features=ElasticOverscroll`, y el segundo además el puerto de depuración
+- **AND** el proceso del navegador del puesto abierto arrancó con ese argumento
 
 #### Scenario: La ventana angosta sigue desplazándose
 Origen: «Ventana angosta» de este mismo spec, borde: quitar el rebote no quita el desplazamiento.

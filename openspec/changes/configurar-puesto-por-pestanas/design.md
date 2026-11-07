@@ -33,7 +33,7 @@ Ver `proposal.md` (Why). Lo que el código ya tiene, medido el 06/11/2026 sobre 
 
 ### D1. Nueve pestañas, con General primero
 
-General (modo, bitácoras y «Cerrar el puesto»), Personas, Opciones, Consumos, Comprobantes, Identidad visual (estilo y logos, el nombre de la pestaña de la maqueta), Impresora, Pantalla y Red (datos del equipo y prueba con el receptor). Las pestañas siguen el patrón de pestañas de WAI-ARIA (`role="tablist"`, `tab` y `tabpanel`, flechas, Inicio y Fin), con los colores y las superficies de `puesto.css`, en una fila de botones de 56 px con texto de 16 px, que en 1024 entra en el diálogo de 960 px.
+General (modo, bitácoras y «Cerrar el puesto»), Personas, Opciones, Consumos, Comprobantes, Identidad visual (estilo y logos, el nombre de la pestaña de la maqueta), Impresora, Pantalla y Red (datos del equipo, su IPv4 y prueba con el receptor). Las pestañas siguen el patrón de pestañas de WAI-ARIA (`role="tablist"`, `tab` y `tabpanel`, flechas, Inicio y Fin), con los colores y las superficies de `puesto.css`, en una fila de botones de 56 px con texto de 16 px, que en 1024 entra en el diálogo de 960 px.
 
 - **Descartada:** diez pestañas, con Estilo y Logos separados. En 1024 × 768 no entran en una fila sin achicar el texto o los blancos.
 - **Descartada:** copiar ahora el estilo de las pestañas de INWeb. El repo no tiene una referencia de INWeb, y la nota de pantalla y configuración (sección 4) deja la referencia concreta para contrastarla con INWeb al diseñar: se contrasta cuando David la dé.
@@ -72,26 +72,26 @@ La pestaña muestra la tabla de lectura y «Editar» (`#abrir-personas`) la pasa
 - **Descartada:** integrar `Intelektron.ClaveDelDia` (la referencia de la nota de modos). Publicaría en un repo público código de la empresa y el algoritmo de la clave; el validador real entra por la misma interfaz fuera de este corte.
 - **Descartada:** un límite de intentos ya. Con un validador que acepta todo no protege nada; va con el validador real.
 
-### D7. Sin botones en la barra de título y el cierre que pasa por el modo
+### D7. Pantalla completa sin bordes y el cierre que pasa por el modo
 
-En `SourceInitialized`, `MainWindow` quita `WS_SYSMENU` del estilo de la ventana (`SetWindowLongPtr`), lo que saca cerrar, minimizar y restaurar sin dejar de estar maximizada. `Closing` se cancela si el puesto está en operativo y el cierre no viene autorizado por la clave; entonces pide a la pantalla, por un servicio `CierrePuesto`, que muestre la clave. Un cierre autorizado, uno en mantenimiento y el fin de la sesión de Windows (`Application.SessionEnding`) pasan sin pedir nada, y todos siguen siendo el cierre ordenado de hoy. Escape se escucha en la raíz de la pantalla y sólo actúa en reposo sin diálogos.
+`MainWindow.xaml` pasa a `WindowStyle="None"`, `ResizeMode="NoResize"` y `WindowState="Maximized"`: una ventana de WPF sin bordes y maximizada cubre el monitor entero, también la barra de tareas, y no tiene barra de título ni botones, en los dos modos (decisión de David del 06/11, punto 7 del gate). Para Windows sigue maximizada (`IsZoomed`), así que «Abre maximizada» de `PresentacionTactilTests` debería seguir valiendo sin cambios; no está medido hasta la tarea 2.3, y si falla se para por el punto 16. `Closing` se cancela si el puesto está en operativo y el cierre no viene autorizado por la clave; entonces pide a la pantalla, por un servicio `CierrePuesto`, que muestre la clave. Un cierre autorizado, uno en mantenimiento y el fin de la sesión de Windows (`Application.SessionEnding`) pasan sin pedir nada, y todos siguen siendo el cierre ordenado de hoy. Escape se escucha en la raíz de la pantalla y sólo actúa en reposo sin diálogos.
 
-- **Descartada:** `WindowStyle="None"`. Con la ventana maximizada tapa la barra de tareas, que es la pantalla completa que la nota distingue de «maximizada».
+- **Descartada:** maximizada con la barra de título sin botones (quitar `WS_SYSMENU` en `SourceInitialized`), la propuesta original del punto 7 del gate. Dejaba la barra de tareas a la vista; David eligió el 06/11 la pantalla completa sin bordes en los dos modos, que gana sobre «deberá permanecer maximizada» del 03/11 y sobre la nota de pantalla.
 - **Descartada:** dejar el botón y frenarlo en `Closing`. La decisión del 03/11 pide que no esté.
 - **Descartada:** sólo Escape. Una All-in-One táctil no tiene teclado; «Cerrar el puesto» en General es su camino.
 
 ### D8. La asistencia pasa a la pestaña Comprobantes, fuera de la máquina
 
-`PestanaComprobantes.razor` usa el mismo `Asistencia` (`Entrar`, `ComprobantesDelDia`, `Reimprimir`, `Recuperar`, `Salir`) con la misma tabla, el aviso de incertidumbre y los motivos de hoy. La sesión vive en el diálogo, en un `SesionOperador` que comparten Comprobantes y Consumos, y termina con «Salir», al cerrar Configuración, al salir de reposo, cuando una acción vuelve sin privilegio (como `DespuesDeAccion` hoy) o a los 30 s sin un toque dentro de esas dos pestañas, con el temporizador de la pantalla. `Asistencia.Salir` suma el registro `PRIVILEGED_SESSION_CLOSED` con la causa. `EstadoAtencion.Asistencia` y los miembros de asistencia de `MaquinaAtencion` (`:14`, `:48`, `:120-129`, `:309`, `:319-322` y `:340-443`) quedan sin uso y se borran.
+`PestanaComprobantes.razor` usa el mismo `Asistencia` (`Entrar`, `ComprobantesDelDia`, `Reimprimir`, `Recuperar`, `Salir`) con la misma tabla, el aviso de incertidumbre y los motivos de hoy. La sesión vive en el diálogo, en un `SesionOperador` de la pestaña Comprobantes (Consumos no la usa: D9), y termina con «Salir», al cerrar Configuración, al salir de reposo, cuando una acción vuelve sin privilegio (como `DespuesDeAccion` hoy) o a los 30 s sin un toque dentro de esa pestaña, con el temporizador de la pantalla. `Asistencia.Salir` suma el registro `PRIVILEGED_SESSION_CLOSED` con la causa. `EstadoAtencion.Asistencia` y los miembros de asistencia de `MaquinaAtencion` (`:14`, `:48`, `:120-129`, `:309`, `:319-322` y `:340-443`) quedan sin uso y se borran.
 
 - **Descartada:** mantener el estado `Asistencia` de la máquina y abrirlo desde Configuración. Configuración sólo existe en reposo (`PantallaAtencion.razor:279`): entrar a ese estado la cerraría.
 
-### D9. Consumos: una consulta propia, con orden en SQL y el operador de Comprobantes
+### D9. Consumos: una consulta propia, con orden en SQL, para quien entra a Configuración
 
-`ConsultaConsumos.Leer(FiltroConsumos)` en `Infrastructure.Sqlite` une consumo, persona y opción de la versión del consumo, servicio, comprobante y último trabajo, con `comconFechaNegocio BETWEEN $desde AND $hasta` y los filtros opcionales por persona, servicio y opción, todos parametrizados. El orden sale de una lista cerrada (`Hora`, `Persona`, `Opcion`, `Servicio`, `Cargo`, `Estado`) que se traduce a una expresión fija, nunca de un texto de la pantalla (OWASP A03); el cargo se ordena por `json_extract(comconPrecioAplicado, '$.EmployeeChargeMinor')`. Pide 501 filas para saber si hay más y muestra 500. El filtro de persona lista los `PersonId` de la versión activa y de las anteriores, con el nombre de la más reciente y la marca de baja. Cada consulta registra `CONSUMPTIONS_QUERIED` con el `PersonId` y el `GrantId` del operador, comprobados de nuevo como en cada acción de RB26.
+`ConsultaConsumos.Leer(FiltroConsumos)` en `Infrastructure.Sqlite` une consumo, persona y opción de la versión del consumo, servicio, comprobante y último trabajo, con `comconFechaNegocio BETWEEN $desde AND $hasta` y los filtros opcionales por persona, servicio y opción, todos parametrizados. El orden sale de una lista cerrada (`Hora`, `Persona`, `Opcion`, `Servicio`, `Cargo`, `Estado`) que se traduce a una expresión fija, nunca de un texto de la pantalla (OWASP A03); el cargo se ordena por `json_extract(comconPrecioAplicado, '$.EmployeeChargeMinor')`. Pide 501 filas para saber si hay más y muestra 500. El filtro de persona lista los `PersonId` de la versión activa y de las anteriores, con el nombre de la más reciente y la marca de baja. La pestaña no pide ningún código: la ve quien entró a Configuración, en mantenimiento o con la clave del día (decisión de David del 06/11, punto 3 del gate). Cada consulta registra `CONSUMPTIONS_QUERIED` con el actor nulo, `NO_AUTHENTICATION` y `Access`, como el resto de Configuración (D17), con los filtros, el orden y la cantidad de filas, sin nombres ni códigos.
 
 - **Descartada:** ordenar en la pantalla. Con el tope de 500, ordenaría sólo lo que entró, y el escenario «El orden decide qué entra en el tope» fallaría.
-- **Descartada:** abrir Consumos con sólo entrar a Configuración. Es la alternativa del punto 3 del gate: la clave del día no identifica a nadie y la tabla muestra qué comió cada persona.
+- **Descartada:** pedir el código de un operador con `OPERATOR`, con la sesión de Comprobantes, la propuesta original del punto 3 del gate porque la tabla muestra qué comió cada persona. David decidió el 06/11 que Consumos lo ve cualquiera que entre a Configuración; «Comprobantes» sigue pidiendo `OPERATOR`, porque reimprime y recupera. En operativo protege la entrada la clave del día; en mantenimiento cualquiera ve los consumos, como edita personas (punto 11 del gate).
 
 ### D10. El monitor por su identificador de dispositivo, en un archivo
 
@@ -100,11 +100,18 @@ En `SourceInitialized`, `MainWindow` quita `WS_SYSMENU` del estilo de la ventana
 - **Descartada:** `System.Windows.Forms.Screen`. Suma Windows Forms al host para leer una lista que dan tres llamadas de `user32`.
 - **Descartada:** guardar sólo `\\.\DISPLAY2`. Cambia de número cuando cambia el orden de los monitores.
 
-### D11. Red: `System.Net.NetworkInformation`, sólo lectura
+### D11. Red: leer con `System.Net.NetworkInformation` y editar la IPv4 con `netsh`
 
-`DatosDeRed` lee el nombre del equipo y los adaptadores con `OperationalStatus.Up`, sin el de loopback, con sus IPv4, máscaras, puertas y DNS, detrás de una interfaz para que la prueba use un doble. No hay campos ni «Guardar».
+`DatosDeRed.Leer()` devuelve el nombre del equipo y los adaptadores con `OperationalStatus.Up`, sin el de loopback, cada uno con su índice IPv4 (`GetIPv4Properties().Index`), si usa DHCP, sus IPv4 con su máscara, sus puertas y sus DNS. La vista se arma con una función pura sobre esos datos: «Sin conexión de red» se prueba con una lista vacía y la pestaña, con los adaptadores reales del equipo, sin dobles (`AGENTS.md` los permite sólo para impresora y lector).
 
-- **Descartada:** cambiar la IP con `netsh` o WMI. Pide permisos de administrador, puede cortar la conexión con el receptor en medio de una atención y es del sistema operativo, no del puesto.
+La edición elige el adaptador de esa lista, nunca un texto, y pide IPv4 fija (dirección, máscara, puerta opcional y hasta dos DNS) o DHCP (decisión de David del 06/11, punto 8 del gate). `ConfiguracionIPv4.Validar` acepta sólo IPv4 en notación decimal con puntos: `IPAddress.TryParse` con `AddressFamily.InterNetwork` y el texto igual a su forma canónica, para rechazar `1`, `010.1.1.1` o un texto con más cosas; una máscara contigua; una puerta dentro de la subred; y DNS válidos. `ArgumentosNetsh.Armar` es una función pura que, sólo con valores validados, devuelve un comando por paso: `interface ipv4 set address name=<índice> source=static address=… mask=… gateway=…` (o `gateway=none`), `interface ipv4 set dnsservers name=<índice> source=static address=… register=primary validate=no` (o `address=none`), `interface ipv4 add dnsservers name=<índice> address=… index=2 validate=no` para el segundo DNS, y para DHCP `set address … source=dhcp` y `set dnsservers … source=dhcp`. El adaptador va por su índice, que `netsh` acepta en `name=`, así que ningún argumento lleva espacios ni comillas.
+
+«Aplicar» valida y muestra la confirmación, que avisa que la conexión puede cortarse y que Windows pide permiso de administrador en cada paso. Confirmar corre cada comando con `EjecutorNetsh`: `ProcessStartInfo` con `netsh.exe` de `System32`, `Verb = "runas"`, `UseShellExecute = true` y la ventana oculta; espera su salida y corta en el primer paso que termina con un código distinto de cero o cuyo permiso se rechaza (`Win32Exception` con 1223). El puesto no corre elevado: sólo `netsh` pide elevación. `EjecutorNetsh` lo registra sólo `MainWindow`; sin él, como en las pruebas, la confirmación dice que la edición de red no está disponible y no ejecuta nada, así que ninguna prueba ni la CI pueden cambiar la red del equipo. El resultado de cada aplicación sale de una función pura (aplicada, cancelada o fallida, con el paso y su código) y queda en la general como `CONFIGURATION_CHANGED` con `NETWORK_IPV4`, el adaptador, la IPv4 de antes y la pedida, el actor nulo, `NO_AUTHENTICATION` y `Access`. El cambio real lo prueba David en su monitor.
+
+- **Descartada:** sólo lectura, la propuesta original del punto 8 del gate. David decidió el 06/11 editar la IPv4 con `netsh`.
+- **Descartada:** correr el puesto elevado o cambiar la red con WMI. Elevaría toda la atención para un ajuste que se hace pocas veces; `netsh` elevado aparte limita el permiso a cada comando.
+- **Descartada:** un `cmd /c` o un script `netsh -f` elevados, que pedirían un solo permiso. El primero pide elevación para un intérprete de comandos y no para `netsh`; el segundo eleva el contenido de un archivo que otro proceso del usuario podría cambiar entre la escritura y la lectura.
+- **Descartada:** pasar el nombre del adaptador. Puede tener espacios y caracteres que habría que escapar; el índice es sólo dígitos.
 
 ### D12. La prueba de conexión, por etapas, sobre el camino del envío
 
@@ -126,11 +133,15 @@ La sección de logos usa `InputFile` (`accept=".png,.webp,.svg"`), lee hasta 2 M
 
 - **Descartada:** copiar el archivo sin validarlo y dejar que el arranque lo descarte. El logo vigente desaparecería sin aviso hasta el próximo arranque.
 
-### D15. El rebote, con CSS y medido en el monitor
+### D15. El rebote, con CSS y con el argumento de Chromium
 
-`overscroll-behavior: none` en `html` y `body`, y `overscroll-behavior: contain` en el diálogo, la selección de la ventana angosta y las dos tablas. El E2E lo comprueba en el estilo calculado; que alcance para el WebView2 de la All-in-One lo dice la prueba de David en su monitor.
+`overscroll-behavior: none` en `html` y `body`, y `overscroll-behavior: contain` en el diálogo, la selección de la ventana angosta y las dos tablas. Además, el navegador del puesto arranca con `--disable-features=ElasticOverscroll` (decisión de David del 06/11, punto 14 del gate). `ElasticOverscroll` es la feature con que Chromium declara el rebote elástico en Windows y Android: `BASE_FEATURE(kElasticOverscroll, "ElasticOverscroll", …)` bajo `#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_WIN)` en `ui/base/ui_base_features.cc`, leído en la etiqueta `139.0.7258.127` de chromium.googlesource.com el 06/11/2026. Según «CoreWebView2EnvironmentOptions.AdditionalBrowserArguments Property» de Microsoft Learn, WebView2 une las features de `--disable-features` con las propias y quita de las habilitadas las que se deshabilitan. La lista de banderas de WebView2 no la nombra y advierte que las banderas pueden cambiar sin aviso: por eso van las dos capas.
 
-- **Descartada:** apagar ya el rebote elástico de Chromium con un argumento del WebView2. Sin medirlo en el monitor no se sabe si es la causa, y cambia el entorno del WebView2 para todo el puesto (punto 14 del gate).
+El argumento se compone en `MainWindow` con una función pura, `ArgumentosWebView2.Componer(entorno.ArgumentosNavegador)`, aparte de `EntornoDemostracion.ArgumentosNavegador`, porque `EntornoDemostracionTests.cs:125-131` exige que ése sea sólo el puerto CDP y no cambia. `MainWindow` arma siempre las opciones del entorno del WebView2, también sin carpeta ni puerto (hoy sólo lo hace con alguno: `MainWindow.xaml.cs:64-79`). El E2E comprueba el estilo calculado y que la línea de comandos del navegador del puesto lleve el argumento; si alcanza para el WebView2 de la All-in-One lo dice la prueba de David en su monitor.
+
+- **Descartada:** sólo CSS, la propuesta original del punto 14 del gate. David decidió el 06/11 sumar el argumento desde ya.
+- **Descartada:** sumarlo a `EntornoDemostracion.ArgumentosNavegador`. Cambiaría `EntornoDemostracionTests`, una prueba existente fuera de las 13 del punto 4.
+- **Descartada:** la variable `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`. Alcanza a todo WebView2 del proceso, la ignoran las apps elevadas y no queda en el código.
 
 ### D16. El ícono, generado y con su procedencia
 
@@ -140,7 +151,7 @@ La sección de logos usa `InputFile` (`accept=".png,.webp,.svg"`), lee hasta 2 M
 
 ### D17. El actor sigue nulo; `Access` dice cómo se entró
 
-Los registros de Configuración siguen con `ActorPersonId` nulo y `ActorReason` `NO_AUTHENTICATION`, y suman `Access`: `MAINTENANCE_MODE` o `DAILY_KEY`. La clave genera `DAILY_KEY_ACCEPTED` o `DAILY_KEY_REJECTED` con la acción (`OPEN_CONFIGURATION`, `CLOSE_KIOSK`, `ACTIVATE_OPERATIVE`) y, al rechazar, la causa (`INVALID_FORMAT`), nunca lo tipeado. El modo, el monitor, los logos y los textos usan `CONFIGURATION_CHANGED` con `KIOSK_MODE`, `DISPLAY_MONITOR`, `COMPANY_LOGO`, `CONCESSIONAIRE_LOGO` y `TICKET_TEXTS`. Todos los tipos nuevos van a la general, como cualquier tipo que el escritor de B no reconoce como interacción.
+Los registros de Configuración siguen con `ActorPersonId` nulo y `ActorReason` `NO_AUTHENTICATION`, y suman `Access`: `MAINTENANCE_MODE` o `DAILY_KEY`. La clave genera `DAILY_KEY_ACCEPTED` o `DAILY_KEY_REJECTED` con la acción (`OPEN_CONFIGURATION`, `CLOSE_KIOSK`, `ACTIVATE_OPERATIVE`) y, al rechazar, la causa (`INVALID_FORMAT`), nunca lo tipeado. El modo, el monitor, los logos, los textos y la red usan `CONFIGURATION_CHANGED` con `KIOSK_MODE`, `DISPLAY_MONITOR`, `COMPANY_LOGO`, `CONCESSIONAIRE_LOGO`, `TICKET_TEXTS` y `NETWORK_IPV4`; la consulta de consumos, `CONSUMPTIONS_QUERIED` (D9). Todos los tipos nuevos van a la general, como cualquier tipo que el escritor de B no reconoce como interacción.
 
 - **Descartada:** cambiar `ActorReason` a `DAILY_KEY`. Cambiaría lo que exige `BitacorasDelPuestoTests.SinActor` en tres pruebas (cinco afirmaciones: `:123`, `:129`, `:147`, `:165` y `:166`), y mezclaría quién actuó con cómo entró.
 
@@ -154,8 +165,9 @@ Las 13 del punto 4 del gate, medidas sobre `9202347`: 4 de `PantallaAtencionTest
 
 - [En mantenimiento, cualquiera que toque el engranaje edita personas y cupos y cierra el puesto] → es el punto 11 del gate: un piloto arranca en operativo, y cada acción queda en la general con `Access`.
 - [La clave de desarrollo acepta cualquier número] → el diálogo lo dice; el validador real entra por `IValidadorClaveDelDia` (D6).
-- [Quitar `WS_SYSMENU` deja a Alt+F4 sin efecto o lo convierte en un pedido de cierre según la versión de Windows] → `Closing` cubre los dos caminos; se mide en el E2E con `WM_CLOSE` y en el monitor.
-- [El rebote puede no ser del CSS] → D15 y el punto 14 del gate: lo dice el monitor de David.
+- [La pantalla completa sin bordes tapa la barra de tareas y puede cambiar lo que miden los E2E de presentación (1024 × 768 y 600 de ancho; sin medir)] → se sale con Escape o «Cerrar el puesto» en mantenimiento, o con la clave en operativo, y Alt+F4 pasa por `Closing`; si una prueba existente falla, se para (punto 16).
+- [El rebote puede no ser del CSS, y una bandera de Chromium puede cambiar de nombre o desaparecer] → van las dos capas (D15); el E2E detecta si el argumento deja de llegar al navegador, y el monitor de David dice si alcanza.
+- [Editar la IPv4 puede cortar la conexión del puesto, o dejarla a medias si se rechaza un permiso entre dos pasos] → la confirmación lo avisa, cada aplicación queda en la general con el paso en que se cortó, la atención no depende de la red, y ninguna prueba ni la CI corren `netsh` (sin `EjecutorNetsh` no se ejecuta nada): el cambio real lo prueba David en su monitor.
 - [La tabla con cientos de personas] → se mide con la semilla de quince y 200 personas en el E2E y en una captura; si el dibujado pasa de 500 ms, queda como riesgo para la verificación.
 - [El delta de `administracion-local` modifica un requisito de C, que no está archivado] → `openspec validate` lo informa («Archive would refuse this delta … target spec does not exist»): C se archiva antes que D (punto 13 del gate).
 - [Varios monitores no se prueban en la CI] → `ElegirMonitor` se prueba con dobles y el E2E cubre el caso del monitor guardado que no está; el cambio real de monitor lo prueba David.
