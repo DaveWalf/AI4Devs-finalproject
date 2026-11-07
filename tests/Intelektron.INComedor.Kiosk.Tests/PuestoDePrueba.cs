@@ -2,6 +2,7 @@ using System.Text.Json;
 using Bunit;
 using Intelektron.INComedor.Infrastructure.Sqlite;
 using Intelektron.INComedor.Kiosk.Atencion;
+using Intelektron.INComedor.Kiosk.Red;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Intelektron.INComedor.Kiosk.Tests;
@@ -23,6 +24,7 @@ public sealed class PuestoDePrueba : IDisposable
 
         Cierre = new CierrePuesto(() => Cierres++);
         Pantalla = new PantallaDelPuesto(Movimientos.Add);
+        Conexion = new PruebaConexion(new Uri("https://localhost:5001/"), Path.Combine(Carpeta, "certificados"));
     }
 
     public string Carpeta { get; } = Path.Combine(Path.GetTempPath(), "incomedor-tests", "puesto-" + Guid.NewGuid().ToString("N"));
@@ -44,6 +46,9 @@ public sealed class PuestoDePrueba : IDisposable
 
     public List<MonitorDelPuesto> Movimientos { get; } = [];
 
+    /// <summary>La prueba de conexión del puesto (D12): por defecto, la carpeta sin certificados, así que no prueba nada.</summary>
+    public PruebaConexion Conexion { get; set; }
+
     public IRenderedComponent<PantallaAtencion> Dibujar(IImpresoraComprobantes? impresora = null)
     {
         Servicio = new ServicioAtencion(RutaBase, Reloj, impresora ?? new ImpresoraDePrueba());
@@ -55,6 +60,7 @@ public sealed class PuestoDePrueba : IDisposable
         Contexto.Services.AddSingleton(Cierre);
         Contexto.Services.AddSingleton(Pantalla);
         Contexto.Services.AddSingleton(new AlmacenPantalla(Carpeta));
+        Contexto.Services.AddSingleton(Conexion);
         return Contexto.Render<PantallaAtencion>();
     }
 

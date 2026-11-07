@@ -2,6 +2,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using Intelektron.INComedor.Kiosk.Red;
 using Intelektron.INComedor.Kiosk.Atencion;
 using Intelektron.INComedor.Kiosk.Demostracion;
 using Intelektron.INComedor.Kiosk.Sincronizacion;
@@ -49,6 +50,10 @@ public partial class MainWindow : Window
             var almacenPantalla = new AlmacenPantalla(entorno.Carpeta);
             servicios.AddSingleton(almacenPantalla);
             servicios.AddSingleton(PrepararPantalla(almacenPantalla));
+            // La edición de red corre netsh con permiso de administrador: sólo la ventana real lo registra (D11), y la prueba
+            // de conexión usa la dirección y los certificados del receptor de siempre (D12).
+            servicios.AddSingleton(new EjecutorNetsh());
+            servicios.AddSingleton(new PruebaConexion(entorno.DireccionReceptor, entorno.CarpetaCertificados));
             servicios.AddSingleton(new MaquinaAtencion(atencion));
             servicios.AddSingleton(new LogosLocales(entorno.Carpeta));
             servicios.AddSingleton(new AlmacenEstiloVisual(entorno.Carpeta));

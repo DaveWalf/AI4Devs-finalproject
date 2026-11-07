@@ -1,0 +1,264 @@
+@using Intelektron.INComedor.Kiosk.Red
+
+@*
+    La pestaña Red (D11 y D12 de configurar-puesto-por-pestanas): el nombre del equipo y sus adaptadores activos; la IPv4 de
+    un adaptador elegido de la lista, nunca tipeado, fija o por DHCP, que «Aplicar» valida y confirma antes de correr cada
+    netsh con su permiso de administrador; y la prueba de conexión con el receptor por etapas, sin enviar ningún lote.
+*@
+<p id="nombre-equipo" class="nombre-equipo">Equipo: <strong>@_datos.NombreEquipo</strong></p>
+
+@if (_datos.Adaptadores.Count == 0)
+{
+    <p id="sin-red" class="aviso" role="status">@MensajesAtencion.SinRed</p>
+}
+else
+{
+    <ul class="lista-adaptadores" aria-label="Adaptadores de red activos">
+        @for (var i = 0; i < _datos.Adaptadores.Count; i++)
+        {
+            var indice = i;
+            var adaptador = _datos.Adaptadores[indice];
+            <li>
+                <label class="adaptador">
+                    <input type="radio" name="adaptador-red" checked="@(indice == _elegido)" disabled="@Ocupada" @onchange="() => ElegirAdaptador(indice)" />
+                    <span class="datos-adaptador">
+                        <strong>@adaptador.Nombre</strong>
+                        <span>@(adaptador.Dhcp ? "DHCP" : "IPv4 fija")</span>
+                        @foreach (var direccion in adaptador.Direcciones)
+                        {
+                            <span>IPv4 @direccion.Direccion / @direccion.Mascara</span>
+                        }
+                        <span>Puerta: @(adaptador.Puertas.Count == 0 ? "ninguna" : string.Join(", ", adaptador.Puertas))</span>
+                        <span>DNS: @(adaptador.Dns.Count == 0 ? "ninguno" : string.Join(", ", adaptador.Dns))</span>
+                    </span>
+                </label>
+            </li>
+        }
+    </ul>
+
+    <fieldset class="edicion-red" disabled="@Ocupada">
+        <legend>IPv4 del adaptador elegido</legend>
+        <div class="modo-red">
+            <label><input id="red-dhcp" type="radio" name="modo-red" checked="@_dhcp" @onchange="() => _dhcp = true" /> DHCP</label>
+            <label><input id="red-fija" type="radio" name="modo-red" checked="@(!_dhcp)" @onchange="() => _dhcp = false" /> IPv4 fija</label>
+        </div>
+        @if (!_dhcp)
+        {
+            <div class="campos-red">
+                <label for="ipv4-direccion">Dirección</label>
+                <input id="ipv4-direccion" type="text" inputmode="decimal" maxlength="15" value="@_direccion"
+                       aria-invalid="@Invalido(CampoIPv4.Direccion)" @oninput="e => _direccion = Texto(e)" />
+                <label for="ipv4-mascara">Máscara</label>
+                <input id="ipv4-mascara" type="text" inputmode="decimal" maxlength="15" value="@_mascara"
+                       aria-invalid="@Invalido(CampoIPv4.Mascara)" @oninput="e => _mascara = Texto(e)" />
+                <label for="ipv4-puerta">Puerta de enlace (opcional)</label>
+                <input id="ipv4-puerta" type="text" inputmode="decimal" maxlength="15" value="@_puerta"
+                       aria-invalid="@Invalido(CampoIPv4.Puerta)" @oninput="e => _puerta = Texto(e)" />
+                <label for="ipv4-dns1">DNS (opcional)</label>
+                <input id="ipv4-dns1" type="text" inputmode="decimal" maxlength="15" value="@_dns1"
+                       aria-invalid="@Invalido(CampoIPv4.Dns1)" @oninput="e => _dns1 = Texto(e)" />
+                <label for="ipv4-dns2">Segundo DNS (opcional)</label>
+                <input id="ipv4-dns2" type="text" inputmode="decimal" maxlength="15" value="@_dns2"
+                       aria-invalid="@Invalido(CampoIPv4.Dns2)" @oninput="e => _dns2 = Texto(e)" />
+            </div>
+        }
+        <div class="acciones">
+            <button id="aplicar-red" type="button" class="principal" @onclick="AplicarCambios">Aplicar</button>
+        </div>
+    </fieldset>
+
+    @if (_confirmando && _pedida is not null)
+    {
+        <div id="confirmacion-red" class="confirmacion-red" role="alertdialog" aria-labelledby="titulo-confirmacion-red" aria-describedby="aviso-confirmacion-red">
+            <p id="titulo-confirmacion-red"><strong>¿Aplicar @Resumen(_pedida) al adaptador @_datos.Adaptadores[_elegido].Nombre?</strong></p>
+            <p id="aviso-confirmacion-red">@MensajesAtencion.RedAviso</p>
+            <div class="acciones">
+                <button id="confirmar-red" type="button" class="principal" @onclick="Confirmar">Aplicar</button>
+                <button id="cancelar-red" type="button" @onclick="() => _confirmando = false">Cancelar</button>
+            </div>
+        </div>
+    }
+
+    @if (_aviso is not null)
+    {
+        <p id="aviso-red" class="aviso" role="alert">@_aviso</p>
+    }
+}
+
+<section class="prueba-conexion" aria-labelledby="titulo-prueba-conexion">
+    <h3 id="titulo-prueba-conexion">Conexión con el receptor</h3>
+    <p id="direccion-receptor">Receptor: @(DireccionReceptor?.ToString() ?? "sin configurar")</p>
+    @if (!TieneCertificados)
+    {
+        <p id="sin-certificados" class="aviso" role="status">@MensajesAtencion.SinCertificados</p>
+    }
+    <div class="acciones">
+        <button id="probar-conexion" type="button" disabled="@(!TieneCertificados || ProbarConexion is null || _probando)" @onclick="Probar">
+            @(_probando ? "Probando…" : "Probar conexión")
+        </button>
+    </div>
+    @if (_conexion is not null)
+    {
+        <ol id="etapas-conexion" class="etapas-conexion">
+            @foreach (var etapa in _conexion.Etapas)
+            {
+                <li class="@Clase(etapa.Estado)">@NombreEtapa(etapa.Etapa): @TextoEstado(etapa)</li>
+            }
+        </ol>
+    }
+</section>
+
+@code {
+    /// <summary>Los datos de red; sin ellos, los del equipo (D11).</summary>
+    [Parameter]
+    public DatosRed? Datos { get; set; }
+
+    /// <summary>Aplica la IPv4 con netsh y la registra; null si el puesto no tiene el ejecutor, como en las pruebas.</summary>
+    [Parameter]
+    public Func<AdaptadorRed, IPv4Validada, Task<ResultadoRed?>>? Aplicar { get; set; }
+
+    /// <summary>La dirección del receptor configurado.</summary>
+    [Parameter]
+    public Uri? DireccionReceptor { get; set; }
+
+    /// <summary>Si la carpeta de datos tiene los certificados del puesto (D12).</summary>
+    [Parameter]
+    public bool TieneCertificados { get; set; }
+
+    /// <summary>Prueba la conexión con el receptor y la registra; null si el puesto no la tiene.</summary>
+    [Parameter]
+    public Func<Task<ResultadoConexion?>>? ProbarConexion { get; set; }
+
+    private DatosRed _datos = new(string.Empty, []);
+    private int _elegido;
+    private bool _dhcp;
+    private string _direccion = string.Empty;
+    private string _mascara = string.Empty;
+    private string _puerta = string.Empty;
+    private string _dns1 = string.Empty;
+    private string _dns2 = string.Empty;
+    private IReadOnlyList<CampoIPv4> _invalidos = [];
+    private IPv4Validada? _pedida;
+    private bool _confirmando;
+    private bool _aplicando;
+    private string? _aviso;
+    private bool _probando;
+    private ResultadoConexion? _conexion;
+
+    private bool Ocupada => _confirmando || _aplicando;
+
+    protected override void OnInitialized()
+    {
+        _datos = Datos ?? DatosDeRed.Leer();
+        if (_datos.Adaptadores.Count > 0)
+        {
+            ElegirAdaptador(0);
+        }
+    }
+
+    /// <summary>Elegir un adaptador carga su IPv4 actual en los campos, para editarla desde lo que tiene.</summary>
+    private void ElegirAdaptador(int indice)
+    {
+        var adaptador = _datos.Adaptadores[indice];
+        _elegido = indice;
+        _dhcp = adaptador.Dhcp;
+        _direccion = adaptador.Direcciones.FirstOrDefault()?.Direccion ?? string.Empty;
+        _mascara = adaptador.Direcciones.FirstOrDefault()?.Mascara ?? string.Empty;
+        _puerta = adaptador.Puertas.FirstOrDefault() ?? string.Empty;
+        _dns1 = adaptador.Dns.ElementAtOrDefault(0) ?? string.Empty;
+        _dns2 = adaptador.Dns.ElementAtOrDefault(1) ?? string.Empty;
+        _invalidos = [];
+        _aviso = null;
+    }
+
+    /// <summary>Valida; con un valor inválido lo señala y no pide confirmación, y con todos válidos la pide (D11).</summary>
+    private void AplicarCambios()
+    {
+        _aviso = null;
+        var validacion = new ConfiguracionIPv4(_dhcp, _direccion, _mascara, _puerta, _dns1, _dns2).Validar();
+        _invalidos = validacion.Invalidos;
+        _pedida = validacion.Valida;
+        if (_pedida is null)
+        {
+            _aviso = MensajesAtencion.RedRevisar;
+            return;
+        }
+
+        _confirmando = true;
+    }
+
+    /// <summary>Corre los pasos con su permiso; sin ejecutor, dice que la edición no está disponible y no corre nada.</summary>
+    private async Task Confirmar()
+    {
+        _confirmando = false;
+        var resultado = Aplicar is null || _pedida is null ? null : await AplicarConEspera(Aplicar, _pedida);
+        _aviso = resultado?.Mensaje ?? MensajesAtencion.RedNoDisponible;
+        if (resultado is { Aplicados: > 0 } && Datos is null)
+        {
+            var nombre = _datos.Adaptadores[_elegido].Nombre;
+            _datos = DatosDeRed.Leer();
+            _elegido = Math.Max(0, _datos.Adaptadores.ToList().FindIndex(a => a.Nombre == nombre));
+        }
+    }
+
+    private async Task<ResultadoRed?> AplicarConEspera(Func<AdaptadorRed, IPv4Validada, Task<ResultadoRed?>> aplicar, IPv4Validada pedida)
+    {
+        _aplicando = true;
+        try
+        {
+            return await aplicar(_datos.Adaptadores[_elegido], pedida);
+        }
+        finally
+        {
+            _aplicando = false;
+        }
+    }
+
+    private async Task Probar()
+    {
+        if (ProbarConexion is null || !TieneCertificados)
+        {
+            return;
+        }
+
+        _probando = true;
+        _conexion = null;
+        try
+        {
+            _conexion = await ProbarConexion();
+        }
+        finally
+        {
+            _probando = false;
+        }
+    }
+
+    private string? Invalido(CampoIPv4 campo) => _invalidos.Contains(campo) ? "true" : null;
+
+    private static string Texto(ChangeEventArgs e) => e.Value?.ToString() ?? string.Empty;
+
+    private static string Resumen(IPv4Validada pedida) =>
+        pedida.Dhcp ? "DHCP" : $"la IPv4 {pedida.Direccion} / {pedida.Mascara}";
+
+    private static string NombreEtapa(EtapaConexion etapa) => etapa switch
+    {
+        EtapaConexion.Nombre => "Nombre",
+        EtapaConexion.Conexion => "Conexión",
+        EtapaConexion.Tls => "TLS mutuo",
+        _ => "Respuesta del receptor",
+    };
+
+    private static string TextoEstado(ResultadoEtapa etapa) => etapa.Estado switch
+    {
+        EstadoEtapa.Funciono => "funcionó",
+        EstadoEtapa.Fallo => $"falló: {etapa.Motivo}",
+        _ => "no se probó",
+    };
+
+    private static string Clase(EstadoEtapa estado) => estado switch
+    {
+        EstadoEtapa.Funciono => "funciono",
+        EstadoEtapa.Fallo => "fallo",
+        _ => "no-probada",
+    };
+}

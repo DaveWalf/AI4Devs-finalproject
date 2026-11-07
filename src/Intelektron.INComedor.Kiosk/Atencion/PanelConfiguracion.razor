@@ -1,5 +1,6 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Intelektron.INComedor.Infrastructure.Sqlite
+@using Intelektron.INComedor.Kiosk.Red
 
 @*
     Configuración por pestañas (D1 a D3 de configurar-puesto-por-pestanas): un diálogo modal que no cambia el estado de la
@@ -222,6 +223,11 @@
         </section>
 
         <section role="tabpanel" id="seccion-red" class="seccion" aria-labelledby="pestana-red" hidden="@Oculta(Pestana.Red)">
+            @* La red se lee al elegir la pestaña por primera vez, y la pestaña queda montada después (D2, D11). *@
+            @if (_redMontada)
+            {
+                <PestanaRed Aplicar="AplicarRed" DireccionReceptor="DireccionReceptor" TieneCertificados="TieneCertificados" ProbarConexion="ProbarConexion" />
+            }
         </section>
 
         <div class="acciones pie-dialogo">
@@ -256,6 +262,7 @@
     private readonly ElementReference[] _botones = new ElementReference[Todas.Length];
     private ElementReference _dialogo;
     private Pestana _elegida = Pestana.General;
+    private bool _redMontada;
     private bool _enfocarPestana;
     private Panel? _panel;
     private string? _avisoGuardado;
@@ -324,6 +331,22 @@
     /// <summary>El aviso de que no se pudo guardar el modo; null sin aviso.</summary>
     [Parameter]
     public string? AvisoModo { get; set; }
+
+    /// <summary>Aplica la IPv4 de un adaptador; devuelve null si el puesto no tiene el ejecutor de netsh (D11).</summary>
+    [Parameter]
+    public Func<AdaptadorRed, IPv4Validada, Task<ResultadoRed?>>? AplicarRed { get; set; }
+
+    /// <summary>La dirección del receptor configurado (D12).</summary>
+    [Parameter]
+    public Uri? DireccionReceptor { get; set; }
+
+    /// <summary>Si la carpeta de datos tiene los certificados del puesto (D12).</summary>
+    [Parameter]
+    public bool TieneCertificados { get; set; }
+
+    /// <summary>Prueba la conexión con el receptor y la registra; null si no se pudo probar (D12).</summary>
+    [Parameter]
+    public Func<Task<ResultadoConexion?>>? ProbarConexion { get; set; }
 
     /// <summary>Por qué el puesto no abrió en el monitor guardado; null si abrió en él (D10).</summary>
     [Parameter]
@@ -444,6 +467,7 @@
         }
 
         _elegida = pestana;
+        _redMontada |= pestana == Pestana.Red;
     }
 
     /// <summary>Flechas, Inicio y Fin mueven la pestaña elegida y el foco con ella (patrón de pestañas de WAI-ARIA, D1).</summary>

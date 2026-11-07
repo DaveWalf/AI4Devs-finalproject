@@ -60,6 +60,13 @@ public static class MensajesAtencion
     public const string MonitorIlegible = "No se pudo leer el monitor guardado: el puesto abrió en el principal";
     public const string MonitorGuardado = "Se guardó el monitor del puesto";
     public const string MonitorNoGuardado = "No se pudo guardar el monitor: sigue el de antes";
+    public const string SinRed = "Sin conexión de red";
+    public const string RedRevisar = "Revisá los campos marcados: cada valor tiene que ser una IPv4 válida";
+    public const string RedAviso = "El cambio puede cortar la conexión del puesto, y Windows pide permiso de administrador en cada paso";
+    public const string RedNoDisponible = "La edición de red no está disponible en este puesto: la red no cambió";
+    public const string RedAplicada = "Se aplicó la IPv4 del adaptador";
+    public const string RedSinPermiso = "No se dio el permiso de administrador: la red no cambió";
+    public const string SinCertificados = "El puesto no tiene certificados: atiende sin receptor y la conexión no se puede probar";
 
     // La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas).
     public const string SinConsumos = "No hay consumos con estos filtros";

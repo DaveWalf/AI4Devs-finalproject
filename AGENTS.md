@@ -31,6 +31,8 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 - La prueba de impresión de Configuración (sin consumo ni fila en la base) y los textos del comprobante salen
   de la segunda ola por el mismo change; sigue ahí el resto del diagnóstico y la impresora física, que espera
   el dispositivo elegido.
+- La pestaña Red, con los datos de red del equipo, la edición de la IPv4 con `netsh` y la prueba de conexión con el
+  receptor por etapas, sale de la segunda ola por el mismo change; sigue ahí el resto del diagnóstico.
 - `docs/` describe el producto completo: es antecedente, no requisito. El requisito es la spec viva
   de `openspec/specs/` más el change activo.
 
@@ -65,6 +67,8 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 - Un test nuevo se ve fallar antes de implementar lo que lo hace pasar.
 - SQLite con `Microsoft.Data.Sqlite` y SQL parametrizado, sin ORM en el puesto; pruebas sobre un
   archivo SQLite real temporal, con dobles sólo para impresora y lector.
+- Ninguna prueba ni la CI registran `EjecutorNetsh` ni corren `netsh`: cambiarían la red del equipo. Se prueba el armado
+  de los argumentos (`ArgumentosNetsh`), y el cambio real lo prueba David en su monitor.
 - Pantallas sólo Razor; WPF es la ventana host del BlazorWebView, no una segunda tecnología de UI.
 - El Kiosk y sus pruebas usan `net11.0-windows10.0.17763.0`, no `net11.0-windows`: sin la versión de plataforma,
   WebView2 falla al abrir la ventana (`Microsoft.Windows.SDK.NET`) y las pruebas no referencian al Kiosk (NU1201).

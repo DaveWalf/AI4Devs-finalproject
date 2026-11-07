@@ -1,4 +1,5 @@
 @using Intelektron.INComedor.Infrastructure.Sqlite
+@using Intelektron.INComedor.Kiosk.Red
 @implements IDisposable
 @inject MaquinaAtencion Maquina
 @inject ServicioAtencion Servicio
@@ -215,7 +216,9 @@
                             Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador"
                             Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
-                            AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id" />
+                            AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
+                            AplicarRed="AplicarRed" DireccionReceptor="@_pruebaConexion?.Direccion"
+                            TieneCertificados="@(_pruebaConexion?.TieneCertificados == true)" ProbarConexion="ProbarConexion" />
     }
 
     @* La clave del día, cuando el modo la pide para abrir Configuración, cerrar el puesto o pasar a operativo (D6). *@
@@ -246,6 +249,8 @@
     private TextosComprobante _textos = TextosComprobante.PorDefecto;
     private AlmacenPantalla? _almacenPantalla;
     private PantallaDelPuesto? _pantallaDelPuesto;
+    private EjecutorNetsh? _ejecutorNetsh;
+    private PruebaConexion? _pruebaConexion;
     private IValidadorClaveDelDia _validador = new ClaveDelDiaDeDesarrollo();
     private AccionClave? _pedidoClave;
     private string _fuenteCierre = "ESCAPE";
@@ -306,6 +311,8 @@
         _almacenPantalla = Proveedor.GetService(typeof(AlmacenPantalla)) as AlmacenPantalla;
         _pantallaDelPuesto = Proveedor.GetService(typeof(PantallaDelPuesto)) as PantallaDelPuesto;
         _cierre = Proveedor.GetService(typeof(CierrePuesto)) as CierrePuesto;
+        _ejecutorNetsh = Proveedor.GetService(typeof(EjecutorNetsh)) as EjecutorNetsh;
+        _pruebaConexion = Proveedor.GetService(typeof(PruebaConexion)) as PruebaConexion;
         if (_cierre is not null)
         {
             _cierre.RequiereClave = _modo == ModoPuesto.Operativo;
@@ -662,6 +669,39 @@
             ActorReason = SinAutenticacion,
         });
         return resultado == "APPLIED";
+    }
+
+    /// <summary>
+    /// La IPv4 de un adaptador con netsh, un comando por paso y cada uno con su permiso de administrador (D11); cada aplicación
+    /// queda en la general con el adaptador, antes y después y el resultado. Sin el ejecutor, que sólo registra la ventana,
+    /// null: no corre nada ni registra nada, como en las pruebas.
+    /// </summary>
+    private async Task<ResultadoRed?> AplicarRed(AdaptadorRed adaptador, IPv4Validada pedida)
+    {
+        if (_ejecutorNetsh is not { } ejecutor)
+        {
+            return null;
+        }
+
+        var resultado = await ResultadoRed.AplicarAsync(ArgumentosNetsh.Armar(adaptador.Indice, pedida),
+            comando => ejecutor.EjecutarAsync(comando, CancellationToken.None));
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", resultado.Registro(adaptador, pedida, _acceso),
+            resultado.Estado == EstadoRed.Aplicada ? SeveridadBitacora.Info : SeveridadBitacora.Warning);
+        return resultado;
+    }
+
+    /// <summary>La prueba de conexión con el receptor (D12), en la general con la dirección y las etapas; sin certificados, nada.</summary>
+    private async Task<ResultadoConexion?> ProbarConexion()
+    {
+        if (_pruebaConexion is not { TieneCertificados: true } prueba)
+        {
+            return null;
+        }
+
+        var resultado = await prueba.ProbarAsync(CancellationToken.None);
+        RegistrarConfiguracion("CONNECTIVITY_TESTED", resultado.Registro(_acceso),
+            resultado.Funciono ? SeveridadBitacora.Info : SeveridadBitacora.Warning);
+        return resultado;
     }
 
     private static string CodigoDe(ModoPuesto modo) => modo == ModoPuesto.Operativo ? "OPERATIVE" : "MAINTENANCE";

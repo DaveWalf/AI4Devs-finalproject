@@ -361,6 +361,21 @@ html, body { overscroll-behavior: none; }
 .lista-monitores { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .lista-monitores .monitor { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 12px; font-size: 17px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel) / .6); }
 .lista-monitores input[type="radio"] { width: 28px; height: 28px; accent-color: var(--acento); }
+.nombre-equipo { margin: 0 0 8px; }
+.lista-adaptadores { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.lista-adaptadores .adaptador { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 12px; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel) / .6); }
+.lista-adaptadores input[type="radio"], .modo-red input[type="radio"] { width: 28px; height: 28px; accent-color: var(--acento); }
+.datos-adaptador { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.edicion-red { border: 1px solid var(--borde); border-radius: 10px; padding: 8px 12px 12px; margin: 0 0 12px; }
+.modo-red { display: flex; gap: 24px; min-height: 48px; align-items: center; font-size: 17px; }
+.modo-red label { display: flex; align-items: center; gap: 8px; }
+.campos-red { display: grid; grid-template-columns: max-content minmax(0, 220px); gap: 8px 12px; align-items: center; margin: 8px 0; }
+.campos-red input { min-height: 44px; font-size: 17px; }
+.campos-red input[aria-invalid="true"] { border-color: var(--error); outline: 2px solid var(--error); }
+.confirmacion-red { border: 2px solid var(--aviso); border-radius: 10px; padding: 8px 12px; margin: 0 0 12px; background: rgb(var(--papel) / .9); }
+.etapas-conexion { margin: 8px 0 0; padding-left: 24px; font-size: 16px; }
+.etapas-conexion .fallo { color: var(--error); }
+.etapas-conexion .no-probada { color: var(--tinta-suave); }
 
 /* La raíz recibe el foco en reposo para que Escape llegue (D7); el foco no se dibuja ahí. */
 .puesto:focus { outline: none; }

@@ -397,6 +397,17 @@ guardado no está conectado, o lo guardado no se puede leer, el puesto abre en e
 guardado queda en la general como `DISPLAY_MONITOR`. Con un solo monitor lo cubren las pruebas; el cambio real entre
 dos monitores lo prueba David en su equipo.
 
+**Red en Configuración.** La pestaña Red muestra el nombre del equipo y cada adaptador activo con su IPv4, su máscara,
+su puerta de enlace, sus DNS y si usa DHCP. En un adaptador elegido de la lista se puede fijar la IPv4 (dirección,
+máscara, puerta opcional y hasta dos DNS) o volver a DHCP: cada valor se valida como IPv4, «Aplicar» pide confirmar y
+avisa que el cambio puede cortar la conexión del puesto, y cada paso corre `netsh` con el permiso de administrador que
+Windows pide en ese momento; el puesto no corre elevado. Cada aplicación queda en la general como `NETWORK_IPV4`, con el
+adaptador, la IPv4 de antes y la pedida y en qué paso se cortó, si se cortó. Las pruebas sólo arman los argumentos y
+nunca corren `netsh`; el cambio real lo prueba David en su monitor, con cuidado, porque puede dejar el equipo sin red.
+«Probar conexión» prueba el receptor configurado por etapas (el nombre, la conexión, el TLS mutuo con los certificados
+del puesto y la respuesta del receptor), dice en cuál falló y queda en la general como `CONNECTIVITY_TESTED`, sin enviar
+ningún lote; sin certificados, la pestaña dice que el puesto atiende sin receptor y no prueba nada.
+
 **Impresora en Configuración.** La pestaña Impresora tiene, con la impresora simulada, sus modos; «Imprimir una
 prueba», que manda a la impresora del puesto un comprobante con la leyenda PRUEBA, sin persona ni importe, dice si
 salió, si no tiene papel o si quedó incierto, y no crea ninguna fila en la base ni se confunde con el comprobante de

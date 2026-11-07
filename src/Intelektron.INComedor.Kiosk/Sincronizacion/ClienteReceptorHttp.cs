@@ -19,6 +19,8 @@ public sealed partial class ClienteReceptorHttp : IReceptorLotes, IDisposable
     private const string RutaLotes = "api/incomedor/v1/sync-batches";
     private const int TopeRespuesta = 1024 * 1024;
 
+    private static readonly HttpRequestOptionsKey<MarcaTls> TlsEstablecido = new("INComedor.TlsEstablecido");
+
     private readonly HttpClient _http;
     private readonly List<X509Certificate2> _propios = [];
 
@@ -31,7 +33,22 @@ public sealed partial class ClienteReceptorHttp : IReceptorLotes, IDisposable
             RemoteCertificateValidationCallback = (_, servidor, _, errores) => ServidorDeLaAutoridad(servidor, errores, autoridad),
         };
         // Sin redirecciones: el puesto sólo habla con la dirección configurada (OWASP A10).
-        _http = new HttpClient(new SocketsHttpHandler { SslOptions = tls, AllowAutoRedirect = false })
+        // El filtro corre una vez establecido el TLS mutuo, antes de HTTP: la prueba de conexión lo usa para saber en qué
+        // etapa se cortó un pedido (D12 de configurar-puesto-por-pestanas). Devuelve el mismo flujo.
+        _http = new HttpClient(new SocketsHttpHandler
+        {
+            SslOptions = tls,
+            AllowAutoRedirect = false,
+            PlaintextStreamFilter = (contexto, _) =>
+            {
+                if (contexto.InitialRequestMessage.Options.TryGetValue(TlsEstablecido, out var marca))
+                {
+                    marca.Listo = true;
+                }
+
+                return ValueTask.FromResult(contexto.PlaintextStream);
+            },
+        })
         {
             BaseAddress = direccion,
             Timeout = espera ?? TimeSpan.FromSeconds(10),
@@ -73,6 +90,34 @@ public sealed partial class ClienteReceptorHttp : IReceptorLotes, IDisposable
 
     public Task<RespuestaReceptor> ConsultarAsync(Guid batchId, CancellationToken cancelacion) =>
         PedirAsync(new HttpRequestMessage(HttpMethod.Get, $"{RutaLotes}/{batchId}"), cancelacion);
+
+    /// <summary>
+    /// La consulta de un lote que no existe, para la prueba de conexión (D12 de configurar-puesto-por-pestanas): si se
+    /// estableció el TLS mutuo y, si el receptor respondió, su estado y su código. No envía ningún lote ni toca la cola.
+    /// </summary>
+    public async Task<SondaReceptor> ProbarAsync(CancellationToken cancelacion)
+    {
+        var marca = new MarcaTls();
+        using var pedido = new HttpRequestMessage(HttpMethod.Get, $"{RutaLotes}/{Guid.NewGuid()}");
+        pedido.Options.Set(TlsEstablecido, marca);
+        try
+        {
+            using var respuesta = await _http.SendAsync(pedido, HttpCompletionOption.ResponseHeadersRead, cancelacion);
+            return new SondaReceptor(true, (int)respuesta.StatusCode, await CodigoDelProblemaAsync(respuesta, cancelacion), null);
+        }
+        catch (HttpRequestException e)
+        {
+            return new SondaReceptor(marca.Listo, null, null, e.HttpRequestError.ToString());
+        }
+        catch (IOException)
+        {
+            return new SondaReceptor(marca.Listo, null, null, "IO");
+        }
+        catch (TaskCanceledException) when (!cancelacion.IsCancellationRequested)
+        {
+            return new SondaReceptor(marca.Listo, null, null, "TIMEOUT");
+        }
+    }
 
     public void Dispose()
     {
@@ -182,4 +227,12 @@ public sealed partial class ClienteReceptorHttp : IReceptorLotes, IDisposable
 
     [GeneratedRegex("^[A-Z_]{1,40}$")]
     private static partial Regex CodigoDelContrato();
+
+    private sealed class MarcaTls
+    {
+        public bool Listo { get; set; }
+    }
 }
+
+/// <summary>Lo que vio la sonda: si se estableció el TLS mutuo y, si el receptor respondió, su estado y su código.</summary>
+public sealed record SondaReceptor(bool TlsEstablecido, int? Estado, string? Codigo, string? Error);
