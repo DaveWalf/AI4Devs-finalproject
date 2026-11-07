@@ -60,8 +60,7 @@ Mientras no haya INWeb, cada guardado de Configuración copia la versión activa
 configuración, le aplica la edición y la activa con origen `LOCAL`, conservando las anteriores; las personas, las
 credenciales y las opciones que no cambian conservan sus identificadores, así que el cupo usado del día sigue
 contando (D1 y D2 de
-[administrar-personas-y-opciones](../openspec/changes/administrar-personas-y-opciones/design.md), enlace que el
-archivado del change tiene que actualizar).
+[administrar-personas-y-opciones](../openspec/changes/archive/2026-11-06-administrar-personas-y-opciones/design.md)).
 
 ## Datos centrales de configuración y consolidación
 
