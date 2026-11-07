@@ -1,6 +1,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Intelektron.INComedor.Infrastructure.Sqlite
 @using Intelektron.INComedor.Kiosk.Red
+@using Microsoft.AspNetCore.Components.Forms
 
 @*
     Configuración por pestañas (D1 a D3 de configurar-puesto-por-pestanas): un diálogo modal que no cambia el estado de la
@@ -144,6 +145,44 @@
                     <button id="guardar-configuracion" type="button" class="principal" @onclick="GuardarElEstilo">Guardar</button>
                 </div>
             </section>
+            @if (Logos is not null && GuardarLogo is not null)
+            {
+                @* Los logos con las reglas de LogosLocales; la vista previa es un img, donde un SVG no ejecuta scripts (D14). *@
+                <section class="logos" aria-labelledby="titulo-logos">
+                    <h3 id="titulo-logos">Logos</h3>
+                    <div class="lista-logos">
+                        @foreach (var logo in LogosEditables)
+                        {
+                            var indice = (int)logo;
+                            var clave = logo == LogoPuesto.Empresa ? "empresa" : "concesionaria";
+                            var titulo = logo == LogoPuesto.Empresa ? "Logo de la empresa" : "Logo de la concesionaria";
+                            <div class="logo-editable">
+                                <span id="titulo-logo-@clave">@titulo</span>
+                                <div class="cuadricula-logo">
+                                    <img id="vista-logo-@clave" src="@VistaLogo(logo)" alt="@titulo" />
+                                </div>
+                                <InputFile id="@($"archivo-logo-{clave}")" accept=".png,.webp,.svg" aria-labelledby="@($"titulo-logo-{clave}")"
+                                           OnChange="e => ElegirLogo(e, logo)" />
+                                <button id="ejemplo-logo-@clave" type="button" @onclick="() => VolverAlEjemplo(logo)">Volver al de ejemplo</button>
+                                @if (_avisoLogo[indice] is { } aviso)
+                                {
+                                    <p id="aviso-logo-@clave" class="aviso" role="alert">@aviso</p>
+                                }
+                            </div>
+                        }
+                    </div>
+                    @if (_avisoLogos is not null)
+                    {
+                        <p id="aviso-logos" class="aviso" role="alert">@_avisoLogos</p>
+                    }
+                    @if (HayLogosPendientes)
+                    {
+                        <div class="acciones">
+                            <button id="guardar-logos" type="button" class="principal" @onclick="GuardarLogos">Guardar los logos</button>
+                        </div>
+                    }
+                </section>
+            }
         </section>
 
         <section role="tabpanel" id="seccion-impresora" class="seccion" aria-labelledby="pestana-impresora" hidden="@Oculta(Pestana.Impresora)">
@@ -262,6 +301,11 @@
     private readonly ElementReference[] _botones = new ElementReference[Todas.Length];
     private ElementReference _dialogo;
     private Pestana _elegida = Pestana.General;
+    private static readonly LogoPuesto[] LogosEditables = [LogoPuesto.Empresa, LogoPuesto.Concesionaria];
+    private readonly LogoElegido?[] _logoPendiente = new LogoElegido?[2];
+    private readonly bool[] _logoAlEjemplo = new bool[2];
+    private readonly string?[] _avisoLogo = new string?[2];
+    private string? _avisoLogos;
     private bool _redMontada;
     private bool _enfocarPestana;
     private Panel? _panel;
@@ -331,6 +375,14 @@
     /// <summary>El aviso de que no se pudo guardar el modo; null sin aviso.</summary>
     [Parameter]
     public string? AvisoModo { get; set; }
+
+    /// <summary>Los logos vigentes de la cabecera, para la vista previa (D14).</summary>
+    [Parameter]
+    public Logos? Logos { get; set; }
+
+    /// <summary>Guarda un logo, o vuelve al de ejemplo con null; false si no se pudo escribir (D14).</summary>
+    [Parameter]
+    public Func<LogoPuesto, LogoElegido?, bool>? GuardarLogo { get; set; }
 
     /// <summary>Aplica la IPv4 de un adaptador; devuelve null si el puesto no tiene el ejecutor de netsh (D11).</summary>
     [Parameter]
@@ -468,6 +520,86 @@
 
         _elegida = pestana;
         _redMontada |= pestana == Pestana.Red;
+    }
+
+    private bool HayLogosPendientes => _logoPendiente.Any(l => l is not null) || _logoAlEjemplo.Any(e => e);
+
+    /// <summary>Lo pendiente de un logo, o el vigente: el de ejemplo pedido, el archivo elegido o el de la cabecera.</summary>
+    private string VistaLogo(LogoPuesto logo)
+    {
+        var indice = (int)logo;
+        var ejemplo = logo == LogoPuesto.Empresa ? LogosLocales.EmpresaDeEjemplo : LogosLocales.ConcesionariaDeEjemplo;
+        var vigente = logo == LogoPuesto.Empresa ? Logos?.Empresa : Logos?.Concesionaria;
+        return _logoAlEjemplo[indice] ? ejemplo : _logoPendiente[indice]?.UriData ?? vigente ?? ejemplo;
+    }
+
+    /// <summary>
+    /// Lee el archivo elegido con un tope de 2 MB más un byte y lo valida con las reglas de LogosLocales; uno que no sirve
+    /// dice por qué y deja el logo vigente (D14).
+    /// </summary>
+    private async Task ElegirLogo(InputFileChangeEventArgs e, LogoPuesto logo)
+    {
+        var indice = (int)logo;
+        _avisoLogo[indice] = null;
+        _avisoLogos = null;
+        _logoPendiente[indice] = null;
+        _logoAlEjemplo[indice] = false;
+        var archivo = e.File;
+        byte[] contenido = [];
+        if (archivo.Size <= LogosLocales.TamanoMaximo)
+        {
+            try
+            {
+                await using var flujo = archivo.OpenReadStream(LogosLocales.TamanoMaximo + 1);
+                using var memoria = new System.IO.MemoryStream();
+                await flujo.CopyToAsync(memoria);
+                contenido = memoria.ToArray();
+            }
+            catch (System.IO.IOException)
+            {
+                _avisoLogo[indice] = MensajesAtencion.LogoInvalido;
+                return;
+            }
+        }
+
+        var validacion = LogosLocales.Validar(archivo.Name, archivo.Size, contenido);
+        _logoPendiente[indice] = validacion.Logo;
+        _avisoLogo[indice] = validacion.Motivo;
+    }
+
+    private void VolverAlEjemplo(LogoPuesto logo)
+    {
+        var indice = (int)logo;
+        _logoPendiente[indice] = null;
+        _logoAlEjemplo[indice] = true;
+        _avisoLogo[indice] = null;
+        _avisoLogos = null;
+    }
+
+    /// <summary>Guarda lo pendiente de cada logo y deja Configuración abierta, con el aviso de lo guardado (D3, D14).</summary>
+    private void GuardarLogos()
+    {
+        if (GuardarLogo is null)
+        {
+            return;
+        }
+
+        var guardados = true;
+        foreach (var logo in LogosEditables)
+        {
+            var indice = (int)logo;
+            if (!_logoAlEjemplo[indice] && _logoPendiente[indice] is null)
+            {
+                continue;
+            }
+
+            guardados &= GuardarLogo(logo, _logoAlEjemplo[indice] ? null : _logoPendiente[indice]);
+            _logoPendiente[indice] = null;
+            _logoAlEjemplo[indice] = false;
+        }
+
+        _avisoGuardado = guardados ? MensajesAtencion.LogosGuardados : null;
+        _avisoLogos = guardados ? null : MensajesAtencion.LogosNoGuardados;
     }
 
     /// <summary>Flechas, Inicio y Fin mueven la pestaña elegida y el foco con ella (patrón de pestañas de WAI-ARIA, D1).</summary>

@@ -60,6 +60,11 @@ public static class MensajesAtencion
     public const string MonitorIlegible = "No se pudo leer el monitor guardado: el puesto abrió en el principal";
     public const string MonitorGuardado = "Se guardó el monitor del puesto";
     public const string MonitorNoGuardado = "No se pudo guardar el monitor: sigue el de antes";
+    public const string LogoPasaDe2MB = "El archivo pasa de 2 MB: el logo vigente no cambió";
+    public const string LogoFormato = "El logo tiene que ser un archivo PNG, WebP o SVG: el logo vigente no cambió";
+    public const string LogoInvalido = "El archivo no es una imagen válida: el logo vigente no cambió";
+    public const string LogosGuardados = "Se guardaron los logos";
+    public const string LogosNoGuardados = "No se pudieron guardar los logos: siguen los de antes";
     public const string SinRed = "Sin conexión de red";
     public const string RedRevisar = "Revisá los campos marcados: cada valor tiene que ser una IPv4 válida";
     public const string RedAviso = "El cambio puede cortar la conexión del puesto, y Windows pide permiso de administrador en cada paso";

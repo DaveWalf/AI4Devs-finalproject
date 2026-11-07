@@ -253,8 +253,21 @@ Cambian sólo las 13 pruebas existentes del punto 4 del gate (D18): al cerrar ca
 
 ## 10. Logos desde Configuración (recorte de respaldo)
 
-- [ ] 10.1 Agregar `Kiosk.Tests/LogosDesdeConfiguracionTests.cs` con bUnit e `InputFile` (un PNG de 40 KB que se ve en la cuadrícula, se guarda y queda en la cabecera y en un puesto nuevo; un WebP de 2 MB más un byte; un `.png` de texto; un SVG con `script` que se ve como `img` sin el elemento en la página; «Volver al de ejemplo»; `CONFIGURATION_CHANGED` con `COMPANY_LOGO`, el SHA-256, el tamaño y el formato, sin el contenido). Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~LogosDesdeConfiguracion"`; pegar la salida
-- [ ] 10.2 Implementar la sección de logos de Identidad visual con las reglas de `LogosLocales` (D14), sin cambiar `LogosLocalesTests`. Verificar con el filtro de 10.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el `git diff` del párrafo inicial; sumar a `readme.md` cómo cambiar los logos sin tocar la carpeta; pegar las salidas
+- [x] 10.1 Agregar `Kiosk.Tests/LogosDesdeConfiguracionTests.cs` con bUnit e `InputFile` (un PNG de 40 KB que se ve en la cuadrícula, se guarda y queda en la cabecera y en un puesto nuevo; un WebP de 2 MB más un byte; un `.png` de texto; un SVG con `script` que se ve como `img` sin el elemento en la página; «Volver al de ejemplo»; `CONFIGURATION_CHANGED` con `COMPANY_LOGO`, el SHA-256, el tamaño y el formato, sin el contenido). Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~LogosDesdeConfiguracion"`; pegar la salida
+  `Kiosk.Tests/LogosDesdeConfiguracionTests.cs` (6) con bUnit e `InputFile` (`UploadFiles` de bUnit 2.12.5): el PNG de 40 KB que se ve en la cuadrícula, se guarda y queda en la cabecera y en un puesto nuevo (`new LogosLocales(carpeta).Leer()`); el WebP de 2 MB más un byte; el `.png` de texto; el SVG con `script` que se ve como `img` sin el elemento en la página; «Volver al de ejemplo»; y `CONFIGURATION_CHANGED` con `COMPANY_LOGO`, el SHA-256, el tamaño y el formato, sin el contenido. `PuestoDePrueba` registra `LogosLocales` sobre su carpeta. Esqueletos de `Validar`, `Actual`, `Guardar` y `VolverAlDeEjemplo` con `NotImplementedException` y los mensajes. Rojo, 07/11 01:19:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~LogosDesdeConfiguracion"
+        5 System.ArgumentOutOfRangeException (sin InputFile en la pestaña) · 1 Bunit.ElementNotFoundException
+  total: 6 · error: 6 · correcto: 0
+  ```
+- [x] 10.2 Implementar la sección de logos de Identidad visual con las reglas de `LogosLocales` (D14), sin cambiar `LogosLocalesTests`. Verificar con el filtro de 10.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el `git diff` del párrafo inicial; sumar a `readme.md` cómo cambiar los logos sin tocar la carpeta; pegar las salidas
+  `LogosLocales.Validar` (la extensión, el tamaño declarado antes de leer y la firma), `Actual`, `Guardar` (por un temporal, borrando las otras extensiones del mismo logo) y `VolverAlDeEjemplo`; `Leer` y su búsqueda no cambian de conducta (`Buscar` pasa a ser `Encontrar(...)?.UriData`). La sección «Logos» de Identidad visual con `InputFile` (`accept=".png,.webp,.svg"`, lectura con tope de 2 MB más un byte), la vista previa como `img` con `data:` sobre una cuadrícula, «Volver al de ejemplo» y «Guardar los logos»; `PantallaAtencion.GuardarLogo` registra `COMPANY_LOGO` o `CONCESSIONAIRE_LOGO` con la huella y redibuja la cabecera (D14). Un primer verde dio 13 de 15: la cabecera no se redibujaba porque el guardado corre en el panel; `StateHasChanged()` en `GuardarLogo`. 07/11 01:20:
+  ```
+  --filter "LogosDesdeConfiguracion|LogosLocales"           total: 15 · error: 0 · correcto: 15   (6 nuevas y las 9 de LogosLocalesTests)
+  git diff --stat -- tests/Intelektron.INComedor.Kiosk.Tests/LogosLocalesTests.cs    (vacío: sin cambios)
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)     total: 327 · error: 0 · correcto: 327
+  ```
+  `readme.md` suma cómo cambiar los logos desde Identidad visual sin tocar la carpeta.
 
 ## 11. Ícono (recorte de respaldo)
 

@@ -61,6 +61,7 @@ public sealed class PuestoDePrueba : IDisposable
         Contexto.Services.AddSingleton(Pantalla);
         Contexto.Services.AddSingleton(new AlmacenPantalla(Carpeta));
         Contexto.Services.AddSingleton(Conexion);
+        Contexto.Services.AddSingleton(new LogosLocales(Carpeta));
         return Contexto.Render<PantallaAtencion>();
     }
 

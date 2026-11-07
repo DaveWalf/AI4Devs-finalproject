@@ -217,6 +217,7 @@
                             Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
+                            Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
                             AplicarRed="AplicarRed" DireccionReceptor="@_pruebaConexion?.Direccion"
                             TieneCertificados="@(_pruebaConexion?.TieneCertificados == true)" ProbarConexion="ProbarConexion" />
     }
@@ -233,6 +234,7 @@
     private string _codigo = string.Empty;
     private Timer? _temporizador;
     private Logos _logos = new(LogosLocales.EmpresaDeEjemplo, LogosLocales.ConcesionariaDeEjemplo);
+    private LogosLocales? _logosLocales;
     private AlmacenEstiloVisual? _almacenEstilo;
     private EstiloVisual _guardado = EstiloVisual.PorDefecto;
     private EstiloVisual _vista = EstiloVisual.PorDefecto;
@@ -285,6 +287,7 @@
         // Sin carpeta de logos registrada (las pruebas que no la usan), quedan los de ejemplo (D4).
         if (Proveedor.GetService(typeof(LogosLocales)) is LogosLocales logos)
         {
+            _logosLocales = logos;
             _logos = logos.Leer();
         }
 
@@ -670,6 +673,55 @@
         });
         return resultado == "APPLIED";
     }
+
+    /// <summary>
+    /// Un logo en marcas\ de la carpeta de datos, o el de ejemplo con null (D14); la cabecera lo muestra en el acto. Queda en
+    /// la general por su huella SHA-256, su tamaño y su formato, nunca por su contenido.
+    /// </summary>
+    private bool GuardarLogo(LogoPuesto logo, LogoElegido? elegido)
+    {
+        if (_logosLocales is not { } logos)
+        {
+            return false;
+        }
+
+        var antes = logos.Actual(logo);
+        var resultado = "APPLIED";
+        try
+        {
+            if (elegido is null)
+            {
+                logos.VolverAlDeEjemplo(logo);
+            }
+            else
+            {
+                logos.Guardar(logo, elegido);
+            }
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            resultado = "FAILED";
+        }
+
+        _logos = logos.Leer();
+        // El guardado corre en el panel: la cabecera de esta pantalla se redibuja con el logo nuevo.
+        StateHasChanged();
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = logo == LogoPuesto.Empresa ? "COMPANY_LOGO" : "CONCESSIONAIRE_LOGO",
+            Before = Huella(antes),
+            After = Huella(elegido),
+            Result = resultado,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+        return resultado == "APPLIED";
+    }
+
+    private static object Huella(LogoElegido? logo) => logo is null
+        ? new { Example = true }
+        : new { Example = false, logo.Sha256, Size = logo.Contenido.Length, Format = logo.Formato };
 
     /// <summary>
     /// La IPv4 de un adaptador con netsh, un comando por paso y cada uno con su permiso de administrador (D11); cada aplicación

@@ -330,6 +330,10 @@ Los logos del repo son de ejemplo, porque el cliente va anonimizado. Para ver lo
 dejarlos en la carpeta de datos como `marcas\empresa.png` y `marcas\concesionaria.png` (también `.webp` o `.svg`,
 de hasta 2 MB; con dos formatos gana el `.png`). Un archivo que no corresponde a su extensión, que pasa de 2 MB o
 un SVG con DTD se ignora y queda el de ejemplo. Se leen al abrir la atención.
+Sin tocar la carpeta, la pestaña Identidad visual de Configuración tiene «Logos»: se elige el archivo de cada uno, se
+ve sobre una cuadrícula antes de guardarlo, con las mismas reglas (lo que no sirve dice por qué y deja el vigente), y
+«Guardar los logos» lo escribe en `marcas\` y lo pone en la cabecera en el acto; «Volver al de ejemplo» y guardar lo
+borra. Cada guardado queda en la general por la huella SHA-256 del archivo, su tamaño y su formato, nunca su contenido.
 
 El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre
 **Configuración por pestañas**: General (el modo y el estado de las bitácoras), Personas, Opciones, Consumos,
