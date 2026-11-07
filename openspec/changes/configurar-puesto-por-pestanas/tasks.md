@@ -294,8 +294,33 @@ Cambian sólo las 13 pruebas existentes del punto 4 del gate (D18): al cerrar ca
 
 ## 12. Integración
 
-- [ ] 12.1 Sumar la evidencia del change a `docs/aplicacion-del-curso.md`, con el nombre del change y sin enlace propio a su carpeta (D5 de `mostrar-aplicacion-del-curso`), y su entrada en `prompts.md` si el apply deja un ajuste humano nuevo. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo) y `git grep -i --untracked -E "tem[i]s|lost[a]l" -- . ":!openspec/changes/archive"` vacío (los corchetes evitan que el comando se encuentre a sí mismo; la exclusión deja afuera el `tasks.md` archivado de C, que copia el comando de su tarea 5.3); pegar las salidas
-- [ ] 12.2 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además el `git diff` del párrafo inicial con sólo los cuatro archivos del punto 4 del gate
+- [x] 12.1 Sumar la evidencia del change a `docs/aplicacion-del-curso.md`, con el nombre del change y sin enlace propio a su carpeta (D5 de `mostrar-aplicacion-del-curso`), y su entrada en `prompts.md` si el apply deja un ajuste humano nuevo. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo) y `git grep -i --untracked -E "tem[i]s|lost[a]l" -- . ":!openspec/changes/archive"` vacío (los corchetes evitan que el comando se encuentre a sí mismo; la exclusión deja afuera el `tasks.md` archivado de C, que copia el comando de su tarea 5.3); pegar las salidas
+  `docs/aplicacion-del-curso.md` suma la evidencia de `configurar-puesto-por-pestanas`, por su nombre y sin enlace a su carpeta (D5 de `mostrar-aplicacion-del-curso`), en tres filas: TDD (el rojo de cada grupo, lo escrito después del código visto fallar con una afirmación imposible o un mutante, sólo los cuatro archivos aprobados y la solución de 566 a 728 pruebas), componentes y accesibilidad (las nueve pestañas con el patrón de WAI-ARIA, la pantalla completa sin bordes y sin rebote, medidos por `ConfiguracionPorPestanasE2ETests` y `AccesoPuestoE2ETests`; sigue «Pendiente») y OWASP (`ArgumentosNetsh`, A03). El apply no dejó ajustes humanos nuevos, pero el gate del 06/11 no estaba en `prompts.md`: entra como el punto 14 de «Criterio humano», como el 10 y el 13 registran los gates de sus changes (la Red con `netsh`, el argumento del rebote, la pantalla completa sin bordes, Consumos para cualquiera, las 13 pruebas de cuatro archivos y el recorte de respaldo). 07/11 01:25:
+  ```
+  enlaces.ps1 -Archivos docs/aplicacion-del-curso.md, prompts.md, readme.md, AGENTS.md, src/…/wwwroot/img/PROCEDENCIA.md
+  enlaces rotos: 0
+  control negativo (un destino que no existe y un ancla que no está)
+  ROTO …\control-enlaces.md:3 no-existe.md
+  ANCLA …\control-enlaces.md:3 control-enlaces.md#ancla-que-no-esta
+  enlaces rotos: 2
+  git grep -i --untracked -E "tem[i]s|lost[a]l" -- . ":!openspec/changes/archive"    (vacío, código de salida 1)
+  ```
+- [x] 12.2 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además el `git diff` del párrafo inicial con sólo los cuatro archivos del punto 4 del gate
+  Contra la instancia `INMO-DW-AR` de `INCOMEDOR_SQLSERVER`. **Dos corridas, a la vista.** La primera (07/11 01:26 a 01:29, lanzada con `Start-Process` desde un shell que terminó enseguida) dio 727 de 728: en `ConfiguracionPorPestanasE2ETests` «Los consumos de hoy a 1024 × 768» la prueba llegó a su captura y el puesto cerró, pero la limpieza del escenario tiró `Quedaron vivos: pwsh.exe PID 32052, conhost.exe PID 44752, dotnet.exe PID 50884, Intelektron.INComedor.E2E.Tests.exe PID 47024`: los procesos de la propia corrida. Causa probable, leída en el código: `ProcesosYPuertos.Arbol` arma el árbol por PID de padre sin comparar horas de creación, y el `pwsh` huérfano tenía un PID de padre muerto que Windows reusó dentro del árbol del puesto; `Process.Kill(entireProcessTree)` sí las compara y no los mató. Es el defecto de la infraestructura del E2E que ya apareció al verificar C; arreglarlo toca `ProcesosYPuertos.cs`, una prueba existente fuera de las cuatro aprobadas, así que queda abierto. La segunda, en primer plano con el padre vivo (01:30 a 01:33):
+  ```
+  openspec validate --all --strict                 Totals: 12 passed, 0 failed (12 items)
+  dotnet build INComedor.sln -warnaserror          0 Errores · BUILD EXIT: 0
+  dotnet test INComedor.sln --no-build
+    Contracts correcto [+23/x0/?0] · Sync.Api correcto [+62/x0/?0] · Infrastructure.Sqlite correcto [+202/x0/?0]
+    Domain correcto [+91/x0/?0] · Kiosk correcto [+327/x0/?0] · E2E correcto [+23/x0/?0]
+    total: 728 · error: 0 · correcto: 728 · TEST EXIT: 0 · 2 min 36 s
+  git diff --name-status --diff-filter=M 9202347 -- tests
+  M	tests/Intelektron.INComedor.E2E.Tests/AdministracionE2ETests.cs
+  M	tests/Intelektron.INComedor.Kiosk.Tests/PanelConfiguracionTests.cs
+  M	tests/Intelektron.INComedor.Kiosk.Tests/PanelPersonasTests.cs
+  M	tests/Intelektron.INComedor.Kiosk.Tests/PantallaAtencionTests.cs
+  ```
+  Son los cuatro archivos del punto 4 del gate: 31 inserciones y 28 borrados (`git diff --stat 9202347`). 162 pruebas más que al archivar C (566).
 
 ## Workflow follow-up
 
