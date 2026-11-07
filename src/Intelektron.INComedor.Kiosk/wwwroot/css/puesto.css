@@ -310,6 +310,13 @@ body:has(.puesto) {
 .dialogo.ancho { min-height: min(660px, calc(100vh - 32px)); }
 .dialogo .pie-dialogo { margin-top: auto; }
 .modo-puesto { font-size: 18px; font-weight: 600; }
+
+/* La raíz recibe el foco en reposo para que Escape llegue (D7); el foco no se dibuja ahí. */
+.puesto:focus { outline: none; }
+
+/* La clave del día (D6): un campo de 56 px, enmascarado y numérico. */
+.campo-clave { min-height: 56px; padding: 0 12px; font: inherit; font-size: 22px; letter-spacing: .2em; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel)); }
+.fondo-clave { z-index: 20; }
 .dialogo .indicacion { font-size: 15px; color: var(--tinta-suave); }
 .abrir-paneles { justify-content: flex-start; }
 .panel-administracion { display: flex; flex-direction: column; gap: 12px; min-height: 0; }

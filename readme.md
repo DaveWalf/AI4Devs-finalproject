@@ -341,6 +341,17 @@ vista previa y su «Guardar» en `estilo-visual.json` de la carpeta de datos; Im
 modos. En mantenimiento, cualquiera que toque el puesto en reposo puede cambiar el estilo o simular una impresora sin
 papel.
 
+**Modos, clave del día y cierre.** El puesto tiene dos modos, que atienden igual y sólo cambian la entrada a
+Configuración y el cierre. En **mantenimiento**, el de una carpeta nueva, el engranaje abre Configuración directo y
+Escape en reposo (o «Cerrar el puesto» en General) cierra el puesto en orden. En **operativo** las dos cosas piden la
+**clave del día**; en este corte es la de desarrollo, que acepta cualquier número de 1 a 12 dígitos y lo dice en el
+diálogo, y nunca se guarda ni se registra. Pasar a operativo, desde General, también la pide; volver a mantenimiento,
+no. El modo queda en `modo-puesto.json` de la carpeta de datos. La ventana ocupa la **pantalla completa sin bordes**
+en los dos modos, sin barra de título ni botón de cierre y tapando la barra de tareas; en operativo, Alt+F4 o el
+pedido de cierre de otro programa muestran la clave en lugar de cerrar, y el apagado de Windows nunca se frena. Cada
+clave pedida, cada entrada, cada cambio de modo y cada cierre quedan en la general con el actor nulo,
+`NO_AUTHENTICATION` y cómo se entró (`MAINTENANCE_MODE` o `DAILY_KEY`). Un piloto tiene que arrancar en operativo.
+
 **Personas y opciones en Configuración.** Mientras no haya INWeb, el puesto es el dueño de sus datos: las pestañas
 Personas y Opciones abren, con «Editar», «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y
 su «Cancelar», que vuelven al resumen de la pestaña. El primero lista cada persona con su estado, sus cupos por servicio y categoría (límite diario de 0 a 99) y las opciones

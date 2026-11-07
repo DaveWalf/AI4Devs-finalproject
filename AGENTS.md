@@ -24,6 +24,10 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
   recorte: siguen ahí la generación nueva al restaurar una base, los saltos del reloj, el evento de
   emergencia sin SQLite, el diagnóstico de bitácoras, su conservación y acceso, la raíz configurable
   y la bitácora del receptor.
+- Los modos de mantenimiento y operativo, con la clave del día de desarrollo (cualquier número de 1 a 12
+  dígitos, detrás de `IValidadorClaveDelDia`), salen de la segunda ola por el change
+  `configurar-puesto-por-pestanas`. Siguen ahí la cuenta individual de mantenimiento y la clave del día real
+  de INWeb, que entra por esa misma interfaz sin copiar su biblioteca a este repo.
 - `docs/` describe el producto completo: es antecedente, no requisito. El requisito es la spec viva
   de `openspec/specs/` más el change activo.
 

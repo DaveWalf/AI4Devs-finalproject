@@ -41,6 +41,8 @@ public partial class MainWindow : Window
             // puesto, con KIOSK_STOPPED y la última pasada de las bitácoras (escribir-bitacoras-externas, D4 y D9).
             Closed += (_, _) => atencion.Dispose();
             servicios.AddSingleton(atencion);
+            servicios.AddSingleton(new AlmacenModoPuesto(entorno.Carpeta));
+            servicios.AddSingleton(PrepararCierre());
             servicios.AddSingleton(new MaquinaAtencion(atencion));
             servicios.AddSingleton(new LogosLocales(entorno.Carpeta));
             servicios.AddSingleton(new AlmacenEstiloVisual(entorno.Carpeta));
@@ -52,6 +54,31 @@ public partial class MainWindow : Window
             Selector = "#app",
             ComponentType = demostracion ? typeof(PantallaDemostracion) : typeof(PantallaAtencion),
         });
+    }
+
+    /// <summary>
+    /// El cierre según el modo (D7 de configurar-puesto-por-pestanas): en operativo, un pedido de cierre que no viene de la
+    /// clave del día (Alt+F4 u otro programa) se frena y la pantalla pide la clave; el fin de la sesión de Windows nunca se
+    /// frena. El cierre autorizado sale del manejador de la pantalla y se hace después, en el despachador.
+    /// </summary>
+    private CierrePuesto PrepararCierre()
+    {
+        var cierre = new CierrePuesto(() => Dispatcher.BeginInvoke(new Action(Close)));
+        var sesionTerminando = false;
+        if (Application.Current is { } aplicacion)
+        {
+            aplicacion.SessionEnding += (_, _) => sesionTerminando = true;
+        }
+
+        Closing += (_, e) =>
+        {
+            if (!sesionTerminando && cierre.DebeFrenar)
+            {
+                e.Cancel = true;
+                cierre.PedirClave();
+            }
+        };
+        return cierre;
     }
 
     /// <summary>

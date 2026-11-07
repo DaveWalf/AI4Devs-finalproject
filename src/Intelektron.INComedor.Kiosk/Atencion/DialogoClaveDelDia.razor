@@ -1,0 +1,74 @@
+@using Microsoft.AspNetCore.Components.Web
+
+@*
+    La clave del día (D6 de configurar-puesto-por-pestanas): un campo numérico enmascarado que no vuelve a dibujar lo
+    tipeado, «Aceptar», «Cancelar» y el aviso de desarrollo. Lo tipeado sólo va al validador: nunca se guarda ni se
+    registra. Escape cancela sin que la tecla siga hasta la pantalla de atrás.
+*@
+<div class="fondo-dialogo fondo-clave">
+    <div id="dialogo-clave" class="dialogo superficie" role="dialog" aria-modal="true" aria-labelledby="titulo-clave" tabindex="-1"
+         @ref="_dialogo" @onkeydown="Tecla" @onkeydown:stopPropagation="true">
+        <h2 id="titulo-clave">Clave del día</h2>
+        <p id="motivo-clave">@Motivo</p>
+        <p id="aviso-desarrollo" class="aviso">@MensajesAtencion.ClaveDeDesarrollo</p>
+        @* Sin value: lo tipeado no vuelve a dibujarse, y un intento rechazado deja el campo vacío con un elemento nuevo. *@
+        <input @key="_intento" id="clave-del-dia" class="campo-clave" type="password" inputmode="numeric" autocomplete="off"
+               maxlength="@ClaveDelDiaDeDesarrollo.LargoMaximo" aria-label="Clave del día" @oninput="e => _clave = e.Value?.ToString() ?? string.Empty" />
+        @if (_invalida)
+        {
+            <p id="clave-invalida" class="aviso" role="alert">@MensajesAtencion.ClaveInvalida</p>
+        }
+        <div class="acciones">
+            <button id="cancelar-clave" type="button" @onclick="() => Cancelada.InvokeAsync()">Cancelar</button>
+            <button id="aceptar-clave" type="button" class="principal" @onclick="Aceptar">Aceptar</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ElementReference _dialogo;
+    private string _clave = string.Empty;
+    private bool _invalida;
+    private int _intento;
+
+    [Parameter, EditorRequired]
+    public IValidadorClaveDelDia Validador { get; set; } = null!;
+
+    /// <summary>La fecha local del puesto, que el validador real necesita.</summary>
+    [Parameter]
+    public DateOnly Fecha { get; set; }
+
+    /// <summary>Para qué se pide: abrir Configuración, cerrar el puesto o pasar a operativo.</summary>
+    [Parameter]
+    public string Motivo { get; set; } = string.Empty;
+
+    /// <summary>El resultado de cada «Aceptar»: true si la clave vale, false si se rechazó por su forma.</summary>
+    [Parameter]
+    public EventCallback<bool> Resultado { get; set; }
+
+    [Parameter]
+    public EventCallback Cancelada { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool primera)
+    {
+        if (primera)
+        {
+            await _dialogo.FocusAsync();
+        }
+    }
+
+    private Task Aceptar()
+    {
+        var valida = Validador.Validar(_clave, Fecha);
+        _clave = string.Empty;
+        _invalida = !valida;
+        if (!valida)
+        {
+            _intento++;
+        }
+
+        return Resultado.InvokeAsync(valida);
+    }
+
+    private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelada.InvokeAsync() : Task.CompletedTask;
+}

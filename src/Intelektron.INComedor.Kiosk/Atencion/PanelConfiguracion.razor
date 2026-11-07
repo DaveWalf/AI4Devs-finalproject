@@ -9,9 +9,10 @@
     descartan lo no guardado, también con un panel de edición abierto. Sólo un panel de edición se abre a la vez: Personas y
     Opciones comparten los id de sus botones desde administrar-personas-y-opciones.
 *@
-<div class="fondo-dialogo">
+<div class="fondo-dialogo" inert="@Inerte">
+    @* Escape no sigue hasta la pantalla de atrás, que lo leería como un pedido de cierre en reposo (D7). *@
     <div class="dialogo superficie ancho" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
-         @ref="_dialogo" @onkeydown="Tecla">
+         @ref="_dialogo" @onkeydown="Tecla" @onkeydown:stopPropagation="true">
         <h2 id="titulo-configuracion">Configuración</h2>
 
         <div class="pestanas" role="tablist" aria-label="Secciones de Configuración">
@@ -31,7 +32,25 @@
         }
 
         <section role="tabpanel" id="seccion-general" class="seccion" aria-labelledby="pestana-general" hidden="@Oculta(Pestana.General)">
-            <p id="modo-puesto" class="modo-puesto">Modo: mantenimiento</p>
+            <p id="modo-puesto" class="modo-puesto">Modo: @(Modo == ModoPuesto.Operativo ? "operativo" : "mantenimiento")</p>
+            <div class="acciones abrir-paneles">
+                @if (Modo == ModoPuesto.Mantenimiento)
+                {
+                    <button id="pasar-operativo" type="button" @onclick="() => PasarAOperativo.InvokeAsync()">Pasar a operativo</button>
+                }
+                else
+                {
+                    <button id="pasar-mantenimiento" type="button" @onclick="() => PasarAMantenimiento.InvokeAsync()">Pasar a mantenimiento</button>
+                }
+                @if (PuedeCerrar)
+                {
+                    <button id="cerrar-puesto" type="button" @onclick="() => CerrarPuesto.InvokeAsync()">Cerrar el puesto</button>
+                }
+            </div>
+            @if (AvisoModo is not null)
+            {
+                <p id="aviso-modo" class="aviso" role="alert">@AvisoModo</p>
+            }
             @if (Bitacoras is not null)
             {
                 @* El estado de cada bitácora, sin datos de personas (escribir-bitacoras-externas). *@
@@ -203,6 +222,32 @@
 
     [Parameter]
     public EventCallback Cancelar { get; set; }
+
+    /// <summary>El modo vigente del puesto, que General muestra (D5).</summary>
+    [Parameter]
+    public ModoPuesto Modo { get; set; }
+
+    /// <summary>Pasar a operativo pide la clave del día; volver a mantenimiento, no (acceso-puesto).</summary>
+    [Parameter]
+    public EventCallback PasarAOperativo { get; set; }
+
+    [Parameter]
+    public EventCallback PasarAMantenimiento { get; set; }
+
+    /// <summary>«Cerrar el puesto», el camino táctil del cierre; sólo con un cierre que lo pueda hacer (D7).</summary>
+    [Parameter]
+    public EventCallback CerrarPuesto { get; set; }
+
+    [Parameter]
+    public bool PuedeCerrar { get; set; }
+
+    /// <summary>El aviso de que no se pudo guardar el modo; null sin aviso.</summary>
+    [Parameter]
+    public string? AvisoModo { get; set; }
+
+    /// <summary>Con la clave del día pedida encima, el diálogo queda inerte.</summary>
+    [Parameter]
+    public bool Inerte { get; set; }
 
     private string Editar => _resumen?.SoloLectura == true ? "Ver" : "Editar";
 

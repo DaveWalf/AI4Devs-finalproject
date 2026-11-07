@@ -39,6 +39,14 @@ public static class MensajesAtencion
     /// <summary>«Guardar» de Identidad visual deja Configuración abierta con este aviso (D3 de configurar-puesto-por-pestanas).</summary>
     public const string EstiloGuardado = "Se guardó el estilo visual";
 
+    /// <summary>El aviso del diálogo de la clave del día en este corte (D6 de configurar-puesto-por-pestanas).</summary>
+    public const string ClaveDeDesarrollo = "Desarrollo: se acepta cualquier número. En la versión operativa la valida la clave del día de INWeb";
+
+    public const string ClaveInvalida = "La clave no es válida";
+
+    /// <summary>El modo no se pudo escribir en la carpeta de datos: sigue el de antes.</summary>
+    public const string ModoNoGuardado = "No se pudo guardar el modo: sigue el de antes";
+
     /// <summary>El resumen de Personas u Opciones cuando la base no respondió al abrir Configuración.</summary>
     public const string ConfiguracionNoLeida = "No se pudo leer la configuración de la base";
 
