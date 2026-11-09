@@ -56,7 +56,9 @@ public class AdministracionE2ETests : IAsyncLifetime
         await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToHaveTextAsync("Se guardó la versión 2 de la configuración");
 
         await pagina.Locator("#abrir-personas").ClickAsync();
-        await Assertions.Expect(pagina.Locator("tr.persona")).ToHaveCountAsync(10);
+        // La pestaña ya muestra las 10 personas en la tabla de consulta, sin campos: se espera a las 10 filas del panel, con
+        // su nombre editable, porque la búsqueda de abajo mira una sola vez.
+        await Assertions.Expect(pagina.Locator("tr.persona input.nombre-persona")).ToHaveCountAsync(10);
         // La captura muestra una persona con cupos: la lista se desplaza hasta «Persona sintética 01». Blazor pone el valor del
         // campo como propiedad, no como atributo: se busca por la propiedad.
         Assert.True(await pagina.EvaluateAsync<bool>(
