@@ -26,7 +26,7 @@ public class MigracionLotesTests
 
     private static readonly string[] ColumnasEventosDelLote = ["comlotCodigo", "comevCodigo"];
 
-    [Fact(DisplayName = "AT51 · AT27 · Base en la versión 2 con eventos pendientes: queda en la versión 3 con las tablas de lotes vacías, y el consumo y su evento siguen iguales, en PENDING")]
+    [Fact(DisplayName = "AT51 · AT27 · Base en la versión 2 con eventos pendientes: queda en la versión 4 con las tablas de lotes vacías, y el consumo y su evento siguen iguales, en PENDING")]
     public void Base_en_version_2_con_un_evento_pendiente_queda_en_version_3()
     {
         using var archivo = new ArchivoTemporal();
@@ -36,7 +36,7 @@ public class MigracionLotesTests
         var base_ = BaseComedor.Abrir(archivo.Ruta);
 
         using var conexion = base_.AbrirConexion();
-        Assert.Equal(3L, Sql.Escalar<long>(conexion, "PRAGMA user_version"));
+        Assert.Equal(4L, Sql.Escalar<long>(conexion, "PRAGMA user_version"));
         Assert.Equal(0L, Sql.Contar(conexion, "tbComedorLotesSincronizacion"));
         Assert.Equal(0L, Sql.Contar(conexion, "tbComedorLotesSincronizacion_Eventos"));
         Assert.Equal(antes, Foto(archivo.Ruta));
@@ -44,7 +44,7 @@ public class MigracionLotesTests
         Assert.Equal("PENDING", Sql.Escalar<string>(conexion, "SELECT comevsEstado FROM tbComedorEventosSalida"));
     }
 
-    [Fact(DisplayName = "AT51 · RB06 · Base en la versión 1: queda en la versión 3 con tbComedorPermisosOperadores y las tablas de lotes vacías, y el consumo y su evento siguen iguales")]
+    [Fact(DisplayName = "AT51 · RB06 · Base en la versión 1: queda en la versión 4 con tbComedorPermisosOperadores y las tablas de lotes vacías, y el consumo y su evento siguen iguales")]
     public void Base_en_version_1_queda_en_version_3_con_las_tablas_de_lotes_vacias()
     {
         using var archivo = new ArchivoTemporal();
@@ -54,7 +54,7 @@ public class MigracionLotesTests
         var base_ = BaseComedor.Abrir(archivo.Ruta);
 
         using var conexion = base_.AbrirConexion();
-        Assert.Equal(3L, Sql.Escalar<long>(conexion, "PRAGMA user_version"));
+        Assert.Equal(4L, Sql.Escalar<long>(conexion, "PRAGMA user_version"));
         Assert.Equal(0L, Sql.Contar(conexion, "tbComedorPermisosOperadores"));
         Assert.Equal(0L, Sql.Contar(conexion, "tbComedorLotesSincronizacion"));
         Assert.Equal(0L, Sql.Contar(conexion, "tbComedorLotesSincronizacion_Eventos"));

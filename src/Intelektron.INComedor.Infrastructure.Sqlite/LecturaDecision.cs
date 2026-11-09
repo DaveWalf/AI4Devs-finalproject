@@ -51,8 +51,34 @@ internal static class LecturaDecision
             throw new InvalidOperationException($"La opción de menú {menuItemId} no tiene cargas de cupo.");
         }
 
-        return new OpcionMenu(leida.Version, leida.ServicioId, leida.Nombre, leida.Moneda, leida.Escala, leida.ImporteEmpleadoUnidadesMenores, cargas);
+        return new OpcionMenu(leida.Version, leida.ServicioId, leida.Nombre, leida.Moneda, leida.Escala, leida.ImporteEmpleadoUnidadesMenores, cargas,
+            LeerFranjas(conexion, transaccion, puesto.SnapshotId, menuItemId));
     }
+
+    /// <summary>Las franjas horarias de la opción en la versión dada; ninguna es «todo el día» (D6 de administrar-personas-y-opciones).</summary>
+    internal static List<FranjaHoraria> LeerFranjas(SqliteConnection conexion, SqliteTransaction? transaccion, Guid snapshotId, Guid menuItemId)
+    {
+        var franjas = new List<FranjaHoraria>();
+        using var comando = ComandosSqlite.Crear(conexion, transaccion,
+            """
+            SELECT comfraHoraInicio, comfraHoraFin FROM tbComedorFranjasOpcionesMenu
+            WHERE comvcCodigo = $vc AND commenCodigo = $men ORDER BY comfraHoraInicio, comfraHoraFin
+            """,
+            ("$vc", snapshotId), ("$men", menuItemId));
+        using var lector = comando.ExecuteReader();
+        while (lector.Read())
+        {
+            franjas.Add(new FranjaHoraria(LeerHora(lector.GetString(0)), LeerHora(lector.GetString(1))));
+        }
+
+        return franjas;
+    }
+
+    internal static TimeOnly LeerHora(string texto) => TimeOnly.ParseExact(texto, "HH:mm", CultureInfo.InvariantCulture);
+
+    /// <summary>La hora local del puesto en el instante dado, la misma zona de la fecha de negocio (D6).</summary>
+    internal static TimeOnly HoraLocal(PuestoLocal puesto, DateTimeOffset ahora) =>
+        TimeOnly.FromDateTime(TimeZoneInfo.ConvertTime(ahora, puesto.ZonaHoraria).DateTime);
 
     internal static bool LeerPersonaActiva(SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, Guid personaId) =>
         ComandosSqlite.EscalarLong(conexion, transaccion,
@@ -133,8 +159,14 @@ internal static class LecturaDecision
         MotivoDenegacion.CredentialRevoked => "CREDENTIAL_REVOKED",
         MotivoDenegacion.CredentialExpired => "CREDENTIAL_EXPIRED",
         MotivoDenegacion.RuleDenied => "RULE_DENIED",
+        // El receptor sólo acepta los códigos de contrato que conoce: fuera de horario viaja como SERVICE_NOT_ENABLED (D5).
+        MotivoDenegacion.OutsideServiceHours => "SERVICE_NOT_ENABLED",
         _ => throw new ArgumentOutOfRangeException(nameof(motivo), motivo, null),
     };
+
+    /// <summary>La causa interna de un motivo que el contrato agrupa en otro código; null si el código lo dice todo.</summary>
+    internal static string? CausaDeMotivo(MotivoDenegacion motivo) =>
+        motivo == MotivoDenegacion.OutsideServiceHours ? "OUTSIDE_SERVICE_HOURS" : null;
 
     private sealed record OpcionMenuLeida(int Version, Guid ServicioId, string Nombre, string Moneda, int Escala, long ImporteEmpleadoUnidadesMenores);
 }
@@ -146,4 +178,5 @@ internal sealed record OpcionMenu(
     string Moneda,
     int Escala,
     long ImporteEmpleadoUnidadesMenores,
-    IReadOnlyList<CargaMenu> Cargas);
+    IReadOnlyList<CargaMenu> Cargas,
+    IReadOnlyList<FranjaHoraria> Franjas);

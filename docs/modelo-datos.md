@@ -48,9 +48,19 @@ UUID identifica hechos y referencias; las claves externas se mantienen como text
 | Ticket | `TicketId`, `ConsumptionId` UUID R; `PrintData` JSON mínimo R; `CreatedAtUtc` UTC R | PK TicketId; UQ y FK ConsumptionId; un ticket lógico por consumo. Sin biometría ni costo del concesionario. |
 | PrintJob | `JobId`, `TicketId` UUID R; `CopyNumber` int R; `Status` enum R; `SpoolerJobId` texto O; `LastErrorCode` texto O; `UpdatedAtUtc` UTC R | PK JobId; FK Ticket; UQ `(TicketId, CopyNumber)`. Primera copia 0; copias posteriores auditadas. Envío al spooler no prueba papel. |
 | OutboxEvent | `EventId` UUID R; `IntentId` UUID O; `TicketId` UUID O; `IncidentId` UUID O; `EventType` enum R; `PayloadVersion` int R; `Payload` JSON R; `PayloadHash` bytes(32) R; `State` enum R | PK EventId; FK intención/ticket cuando corresponda; IncidentId opcional para transiciones de ConnectivityIncident. Consumptions y decisiones se graban con el hecho; eventos de impresión, con su transición. Mismo EventId/contenido en reenvíos. |
+| MenuServiceWindow | `SnapshotId`, `MenuItemId`, `ServiceWindowId` UUID R; `StartLocal`, `EndLocal` hora HH:mm R | PK `(SnapshotId, ServiceWindowId)`; FK a la opción de la misma versión; inicio distinto del fin. Hora local del puesto, inicio incluido y fin excluido; si el inicio es mayor, cruza la medianoche. Sin filas, la opción está disponible todo el día. |
+| ConfigurationSnapshotOrigin | `SnapshotId` UUID R; `Origin` enum R (`LOCAL`, `INWEB`) | PK y FK snapshot. Sin fila, la versión es local. Con la activa de INWeb, el puesto no edita personas ni opciones. |
 | SyncBatch y SyncBatchItem | Lote: `BatchId` UUID R; `BodyHash` bytes(32) R; `CreatedAtUtc` UTC R; `State` enum R; `AckPayload` JSON O. Ítem: `BatchId`, `EventId` UUID R | PK lote; PK ítem compuesta; FK lote/evento. Lote persistido antes de enviar; body inmutable en cada retry. Un evento puede reenviarse en otro lote sin duplicar incorporación. |
 
 PersonId, QuotaScopeId y QuotaBucketId son identidades estables entre snapshots: las publicaciones mantienen esas referencias o incluyen una migración explícita. El contador de cuota no se reinicia al cambiar de versión. Las referencias históricas se conservan hasta el vencimiento de la retención aplicable, pendiente de definición; no se rompe una FK ni se borra un consumo para aplicar una baja.
+
+En el puesto implementado, MenuServiceWindow es `tbComedorFranjasOpcionesMenu` y ConfigurationSnapshotOrigin es
+`tbComedorOrigenesVersiones`: las crea la migración 0004, la versión de esquema 4, sin tocar ninguna tabla existente.
+Mientras no haya INWeb, cada guardado de Configuración copia la versión activa entera con sus diez tablas de
+configuración, le aplica la edición y la activa con origen `LOCAL`, conservando las anteriores; las personas, las
+credenciales y las opciones que no cambian conservan sus identificadores, así que el cupo usado del día sigue
+contando (D1 y D2 de
+[administrar-personas-y-opciones](../openspec/changes/archive/2026-11-06-administrar-personas-y-opciones/design.md)).
 
 ## Datos centrales de configuración y consolidación
 

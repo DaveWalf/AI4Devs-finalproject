@@ -180,7 +180,7 @@ public class BitacorasDelPuestoTests : IDisposable
             Assert.False(string.IsNullOrEmpty(contexto.GetProperty("AppVersion").GetString()));
             Assert.Equal(Environment.Version.ToString(), contexto.GetProperty("RuntimeVersion").GetString());
             Assert.False(string.IsNullOrEmpty(contexto.GetProperty("OsDescription").GetString()));
-            Assert.Equal(3, contexto.GetProperty("SchemaVersion").GetInt32());
+            Assert.Equal(4, contexto.GetProperty("SchemaVersion").GetInt32());
             Assert.Equal(JsonValueKind.Number, contexto.GetProperty("ConfigurationVersion").ValueKind);
         }
 
@@ -200,7 +200,7 @@ public class BitacorasDelPuestoTests : IDisposable
 
         Assert.Equal(JsonValueKind.Null, contexto.GetProperty("AppVersion").ValueKind);
         Assert.Equal(Environment.Version.ToString(), contexto.GetProperty("RuntimeVersion").GetString());
-        Assert.Equal(3, contexto.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(4, contexto.GetProperty("SchemaVersion").GetInt32());
     }
 
     [Fact(DisplayName = "bitacoras-externas · Configuración al día: con las dos bitácoras sin pendientes, dice que las dos están al día")]

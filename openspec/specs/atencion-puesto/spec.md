@@ -237,7 +237,7 @@ Origen: RB06 («decisión calculada bajo el bloqueo») y AT02.
 
 ### Requirement: Aviso claro cuando no queda ninguna opción
 
-Si la persona no tiene ninguna opción disponible, el puesto SHALL mostrar «No tenés opciones disponibles ahora» con la línea «Hoy ya usaste:» o, sin categoría agotada, un motivo: el de `PERSON_INACTIVE` si la persona está inactiva y, si no, «No tenés servicios habilitados. Consultá al responsable del comedor». MUST NOT ofrecer opciones ni «Confirmar», y MUST volver a reposo con «Listo» o a los 10 s, sin intención ni consumo.
+Si la persona no tiene ninguna opción disponible, el puesto SHALL mostrar «No tenés opciones disponibles ahora» con «Hoy ya usaste:» o, sin categoría agotada, el primer motivo que aplique: el de `PERSON_INACTIVE`; «No hay opciones disponibles en este horario» si alguna quedó retenida por su franja; o «No tenés servicios habilitados. Consultá al responsable del comedor». MUST NOT ofrecer opciones ni «Confirmar», y MUST volver a reposo con «Listo» o a los 10 s, sin intención ni consumo.
 
 #### Scenario: Todo el cupo del día usado
 Origen: pedido de David del 04/11/2026 («Debe informarme con claridad si la persona no tiene cupo»).
@@ -263,6 +263,12 @@ Origen: TK02.1, trabajo incluido 1 («resultado y regreso a reposo»), y HU03-E.
 - **GIVEN** la pantalla sin opciones de una persona
 - **WHEN** pasan 10 s sin un toque
 - **THEN** el puesto vuelve a reposo sin el nombre ni el detalle de esa persona
+
+#### Scenario: Fuera de horario
+Origen: pedido de David del 04/11/2026 (franjas en Configuración) y la regla general del mismo día («Si no le queda ninguna, una pantalla clara con ese detalle»).
+- **GIVEN** `0001` sin consumos en el día y todas las opciones del catálogo con la franja de 11:00 a 14:00
+- **WHEN** se identifica a las 16:00
+- **THEN** la pantalla muestra «No tenés opciones disponibles ahora» y «No hay opciones disponibles en este horario», sin «Hoy ya usaste:», sin opciones ni «Confirmar»
 
 ### Requirement: La oferta queda en la bitácora
 

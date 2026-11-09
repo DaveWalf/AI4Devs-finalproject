@@ -37,6 +37,13 @@ efectiva e importar un paquete autorizado; no introduce una edición local paral
 de derechos ni de D-A02. Cambiar un endpoint tampoco cambia SiteId o KioskId sin un
 procedimiento de provisión autorizado. No se permite SQL libre sobre la base operativa.
 
+**Precisión del 04/11/2026 para el período sin INWeb** (decisión de David: «Puesto hasta que haya INWeb»). Mientras
+no haya INWeb conectado, el dueño de las personas, los códigos, los cupos, las opciones y sus franjas horarias es el
+puesto: Configuración los edita y cada guardado es una versión local nueva y completa, que conserva las anteriores y
+queda en la bitácora general con el antes y el después. Al conectarse INWeb, la versión activa pasa a ser de INWeb y
+esa edición se bloquea; el estilo visual y la impresora siguen siendo del equipo. Lo implementa el change
+`administrar-personas-y-opciones`, con su recorte (sin permisos de operador ni importación del paquete de INWeb).
+
 ## Mantenimiento alternativo y pendientes de M0
 
 D-C22 confirma una cuenta individual local para administrar cuando el lector no funciona o no está disponible, también sin INWeb. Usa la misma identidad de actor y los grants del snapshot; autenticar no concede permisos. OPERATOR y SYSTEM_ADMINISTRATOR no se heredan. La sesión privilegiada no puede convertirse en sesión de consumo, y administrador sin OPERATOR no reimprime. Acceder al mantenimiento no requiere diagnosticar previamente el lector ni tener una sesión biométrica abierta.

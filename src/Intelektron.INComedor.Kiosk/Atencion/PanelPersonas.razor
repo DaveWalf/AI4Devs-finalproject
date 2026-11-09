@@ -1,0 +1,279 @@
+@using System.Globalization
+@using Intelektron.INComedor.Infrastructure.Sqlite
+
+@*
+    «Personas habilitadas» (administrar-personas-y-opciones): la lista de la versión activa con su estado, sus cupos y las
+    opciones que habilitan, y su edición mientras no haya INWeb (D3). Nunca muestra un código: el campo de una persona nueva
+    es de sólo dígitos, enmascarado y sin autocompletado, y no vuelve a dibujar lo tipeado (D10). El servicio valida y
+    decide; la pantalla sólo arma la edición entera y señala los campos que el guardado rechaza (D11).
+*@
+<section id="panel-personas" class="panel-administracion" aria-labelledby="titulo-personas">
+    <h3 id="titulo-personas">Personas habilitadas</h3>
+
+    @if (_vista.SoloLectura)
+    {
+        <p id="aviso-inweb" class="aviso" role="status">@MensajesAtencion.INWebAdministra</p>
+    }
+
+    @if (_aviso is not null)
+    {
+        <p id="aviso-panel" class="aviso" role="alert">@_aviso</p>
+    }
+
+    <div class="lista-administracion">
+        @for (var i = 0; i < _filas.Count; i++)
+        {
+            var indice = i;
+            var fila = _filas[indice];
+            <article class="persona @(fila.Quitar ? "de-baja" : "")" data-indice="@indice" aria-invalid="@Marca(indice, "PersonaId")">
+                <div class="encabezado-fila">
+                    @if (Editable)
+                    {
+                        <input class="nombre-persona" type="text" maxlength="@AdministracionLocal.LargoNombrePersona" aria-label="Nombre visible"
+                               value="@fila.Nombre" aria-invalid="@Marca(indice, "Nombre")" @oninput="e => fila.Nombre = Texto(e)" />
+                    }
+                    else
+                    {
+                        <h4 class="nombre-persona">@fila.Nombre</h4>
+                    }
+                    <span class="estado-persona">@Estado(fila)</span>
+                </div>
+
+                @if (fila.Nueva)
+                {
+                    @* Sin value: lo tipeado no vuelve a dibujarse (D10). *@
+                    <label class="campo-codigo">
+                        Código
+                        <input class="codigo-persona" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
+                               maxlength="@AdministracionLocal.LargoCodigo" aria-invalid="@Marca(indice, "Codigo")" @oninput="e => fila.Codigo = Texto(e)" />
+                    </label>
+                }
+
+                @if (fila.Cupos.Count == 0)
+                {
+                    <p class="sin-cupos">Sin cupos</p>
+                }
+                else
+                {
+                    <ul class="cupos">
+                        @for (var j = 0; j < fila.Cupos.Count; j++)
+                        {
+                            var posicion = j;
+                            var cupo = fila.Cupos[posicion];
+                            <li class="cupo">
+                                <span class="nombre-cupo">@NombrePar(cupo.ServicioId, cupo.CategoriaId)</span>
+                                @if (Editable)
+                                {
+                                    <input class="limite" type="number" inputmode="numeric" min="0" max="@AdministracionLocal.LimiteMaximo"
+                                           aria-label="Límite diario" value="@cupo.Limite" aria-invalid="@Marca(indice, $"Cupos[{posicion}].Limite")"
+                                           @oninput="e => cupo.Limite = Texto(e)" />
+                                    <button type="button" class="quitar-cupo" @onclick="() => fila.Cupos.Remove(cupo)">Quitar cupo</button>
+                                }
+                                else
+                                {
+                                    <span class="limite">límite @cupo.Limite</span>
+                                }
+                                @if (cupo.ReglasQueSeReemplazan)
+                                {
+                                    <span class="aviso-reglas">Tiene reglas con vigencia o prioridad: se reemplazan si lo cambiás</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+
+                @if (Editable)
+                {
+                    var libres = ParesLibres(fila);
+                    <div class="acciones-fila">
+                        @if (libres.Count > 0)
+                        {
+                            <select class="nuevo-cupo" aria-label="Cupo para agregar" @onchange="e => fila.ParElegido = Texto(e)">
+                                <option value="" selected="@(fila.ParElegido.Length == 0)">Elegí un cupo</option>
+                                @foreach (var par in libres)
+                                {
+                                    var valor = _pares.IndexOf(par).ToString(CultureInfo.InvariantCulture);
+                                    <option value="@valor" selected="@(fila.ParElegido == valor)">@NombrePar(par.Servicio, par.Categoria)</option>
+                                }
+                            </select>
+                            <button type="button" class="agregar-cupo" @onclick="() => AgregarCupo(fila)">Agregar cupo</button>
+                        }
+                        @if (fila.Nueva)
+                        {
+                            <button type="button" class="quitar-persona" @onclick="() => _filas.Remove(fila)">Descartar</button>
+                        }
+                        else if (fila.Activa)
+                        {
+                            <button type="button" class="@(fila.Quitar ? "deshacer-quitar" : "quitar-persona")" @onclick="() => fila.Quitar = !fila.Quitar">
+                                @(fila.Quitar ? "Deshacer" : "Quitar")
+                            </button>
+                        }
+                    </div>
+                }
+
+                <p class="habilitadas" data-cantidad="@fila.Habilitadas.Count">
+                    @(fila.Habilitadas.Count == 0 ? "Ninguna opción habilitada" : "Habilita: " + string.Join(" · ", fila.Habilitadas))
+                </p>
+            </article>
+        }
+    </div>
+
+    <div class="acciones">
+        @if (Editable)
+        {
+            <button id="agregar-persona" type="button" @onclick="AgregarPersona">Agregar persona</button>
+        }
+        <button id="cancelar-panel" type="button" @onclick="() => Cerrar.InvokeAsync(null)">Cancelar</button>
+        @if (Editable)
+        {
+            <button id="guardar-panel" type="button" class="principal" @onclick="Guardar">Guardar</button>
+        }
+    </div>
+</section>
+
+@code {
+    private VistaAdministracion _vista = null!;
+    private List<FilaPersona> _filas = [];
+    private List<(Guid Servicio, Guid Categoria)> _pares = [];
+    private IReadOnlyList<CampoRechazado> _campos = [];
+    private string? _aviso;
+
+    [Parameter, EditorRequired]
+    public AdministracionLocal Administracion { get; set; } = null!;
+
+    /// <summary>Se cierra el panel: con el aviso de la versión guardada, o null si se canceló.</summary>
+    [Parameter]
+    public EventCallback<string?> Cerrar { get; set; }
+
+    private bool Editable => !_vista.SoloLectura;
+
+    protected override void OnInitialized() => Cargar(Administracion.Leer());
+
+    private void Cargar(VistaAdministracion vista)
+    {
+        _vista = vista;
+        var opciones = vista.Opciones.ToDictionary(o => o.Id, o => o.Nombre);
+        _filas = vista.Personas.Select(p => new FilaPersona
+        {
+            Id = p.Id,
+            Nombre = p.Nombre,
+            Activa = p.Activa,
+            Cupos = p.Cupos.Select(c => new FilaCupo(c.ServicioId, c.CategoriaId)
+            {
+                Limite = c.Limite.ToString(CultureInfo.InvariantCulture),
+                ReglasQueSeReemplazan = c.ReglasQueSeReemplazan,
+            }).ToList(),
+            Habilitadas = p.OpcionesHabilitadas.Select(id => opciones[id]).ToList(),
+        }).ToList();
+        _pares = vista.Servicios.SelectMany(s => vista.Categorias.Select(c => (s.Id, c.Id))).ToList();
+        _campos = [];
+    }
+
+    private void AgregarPersona()
+    {
+        _filas.Add(new FilaPersona { Nueva = true, Activa = true });
+    }
+
+    private void AgregarCupo(FilaPersona fila)
+    {
+        if (int.TryParse(fila.ParElegido, NumberStyles.None, CultureInfo.InvariantCulture, out var posicion) && posicion < _pares.Count)
+        {
+            var (servicio, categoria) = _pares[posicion];
+            fila.Cupos.Add(new FilaCupo(servicio, categoria) { Limite = "1" });
+        }
+
+        fila.ParElegido = string.Empty;
+    }
+
+    private List<(Guid Servicio, Guid Categoria)> ParesLibres(FilaPersona fila) =>
+        _pares.Where(p => !fila.Cupos.Any(c => c.ServicioId == p.Servicio && c.CategoriaId == p.Categoria)).ToList();
+
+    /// <summary>
+    /// Arma la edición entera, con cada fila en su posición, y la manda al servicio, que valida y decide. Un límite que no es
+    /// un número va como -1, para que el servicio lo rechace y lo registre como cualquier otro dato fuera de rango.
+    /// </summary>
+    private async Task Guardar()
+    {
+        var ediciones = _filas.Select(f =>
+        {
+            var cupos = f.Cupos.Select(c => new CupoEditado(c.ServicioId, c.CategoriaId,
+                int.TryParse(c.Limite, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var limite) ? limite : -1)).ToList();
+            return f.Nueva
+                ? new EdicionPersona(null, f.Nombre, cupos, f.Codigo)
+                : new EdicionPersona(f.Id, f.Nombre, cupos, Quitar: f.Quitar);
+        }).ToList();
+
+        ResultadoGuardado resultado;
+        try
+        {
+            resultado = Administracion.GuardarPersonas(ediciones);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _aviso = MensajesAtencion.PanelNoGuardado;
+            return;
+        }
+
+        switch (resultado.Tipo)
+        {
+            case TipoGuardado.Aplicado:
+                await Cerrar.InvokeAsync(MensajesAtencion.VersionGuardada(resultado.VersionActiva));
+                break;
+            case TipoGuardado.Denegado:
+                Cargar(Administracion.Leer());
+                _aviso = MensajesAtencion.INWebAdministra;
+                break;
+            default:
+                _campos = resultado.Campos;
+                _aviso = resultado.Motivo == CodigosAdministracion.CodigoDuplicado ? MensajesAtencion.CodigoYaExiste : MensajesAtencion.PanelInvalido;
+                break;
+        }
+    }
+
+    private string? Marca(int indice, string campo) =>
+        _campos.Any(c => c.Indice == indice && c.Campo == campo) ? "true" : null;
+
+    private string NombrePar(Guid servicio, Guid categoria)
+    {
+        var nombreServicio = _vista.Servicios.FirstOrDefault(s => s.Id == servicio)?.Nombre ?? "?";
+        var nombreCategoria = _vista.Categorias.FirstOrDefault(c => c.Id == categoria)?.Nombre ?? "?";
+        return nombreServicio == nombreCategoria ? nombreServicio : $"{nombreServicio} · {nombreCategoria}";
+    }
+
+    private static string Estado(FilaPersona fila) =>
+        fila.Nueva ? "Nueva" : fila.Quitar ? "Se da de baja al guardar" : fila.Activa ? "Activa" : "De baja";
+
+    private static string Texto(ChangeEventArgs e) => e.Value?.ToString() ?? string.Empty;
+
+    private sealed class FilaPersona
+    {
+        public Guid Id { get; init; }
+
+        public bool Nueva { get; init; }
+
+        public string Nombre { get; set; } = string.Empty;
+
+        public string Codigo { get; set; } = string.Empty;
+
+        public bool Activa { get; init; }
+
+        public bool Quitar { get; set; }
+
+        public List<FilaCupo> Cupos { get; init; } = [];
+
+        public List<string> Habilitadas { get; init; } = [];
+
+        public string ParElegido { get; set; } = string.Empty;
+    }
+
+    private sealed class FilaCupo(Guid servicioId, Guid categoriaId)
+    {
+        public Guid ServicioId { get; } = servicioId;
+
+        public Guid CategoriaId { get; } = categoriaId;
+
+        public string Limite { get; set; } = string.Empty;
+
+        public bool ReglasQueSeReemplazan { get; init; }
+    }
+}

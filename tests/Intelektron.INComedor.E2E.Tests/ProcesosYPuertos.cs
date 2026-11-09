@@ -17,11 +17,20 @@ public static class ProcesosYPuertos
     private const int FamiliaIPv6 = 23;
     private const int TablaDeEscuchasConPid = 3;
     private const uint BufferInsuficiente = 122;
+    private const uint ConsultaLimitada = 0x1000;
 
     /// <summary>El PID dado y todos sus descendientes vivos, con el nombre de su ejecutable.</summary>
-    public static IReadOnlyDictionary<int, string> Arbol(int raiz)
+    public static IReadOnlyDictionary<int, string> Arbol(int raiz) => Arbol(raiz, Instantanea(), Creado);
+
+    /// <summary>
+    /// El árbol de <paramref name="raiz"/> sobre una instantánea de procesos (PID, PID del padre y ejecutable). Windows
+    /// reusa los PID: un proceso cuyo padre terminó sigue nombrándolo aunque ese PID ya sea de otro. Por eso, cuando se
+    /// conoce la hora de creación del padre, un hijo entra sólo si la suya se conoce y no es anterior, como en
+    /// <c>Process.Kill(entireProcessTree: true)</c>. Sin la hora del padre (el puesto ya terminó), entran por su PPID.
+    /// </summary>
+    internal static IReadOnlyDictionary<int, string> Arbol(
+        int raiz, IReadOnlyList<(int Pid, int Padre, string Nombre)> procesos, Func<int, long?> creado)
     {
-        var procesos = Instantanea();
         var arbol = new Dictionary<int, string>();
         if (procesos.FirstOrDefault(p => p.Pid == raiz) is { } propio)
         {
@@ -31,8 +40,14 @@ public static class ProcesosYPuertos
         var pendientes = new Queue<int>([raiz]);
         while (pendientes.TryDequeue(out var padre))
         {
+            var desde = creado(padre);
             foreach (var hijo in procesos.Where(p => p.Padre == padre && p.Pid != padre && !arbol.ContainsKey(p.Pid)))
             {
+                if (desde is { } horaPadre && (creado(hijo.Pid) is not { } horaHijo || horaHijo < horaPadre))
+                {
+                    continue;
+                }
+
                 arbol[hijo.Pid] = hijo.Nombre;
                 pendientes.Enqueue(hijo.Pid);
             }
@@ -70,6 +85,28 @@ public static class ProcesosYPuertos
         finally
         {
             CloseHandle(instantanea);
+        }
+    }
+
+    /// <summary>
+    /// La hora de creación del proceso (FILETIME), o null si no se puede abrir: terminó, o es de otra sesión o de otro
+    /// usuario. Los procesos que lanza el puesto son de su mismo usuario y siempre se pueden abrir.
+    /// </summary>
+    private static long? Creado(int pid)
+    {
+        var proceso = OpenProcess(ConsultaLimitada, false, (uint)pid);
+        if (proceso == IntPtr.Zero)
+        {
+            return null;
+        }
+
+        try
+        {
+            return GetProcessTimes(proceso, out var creacion, out _, out _, out _) ? creacion : null;
+        }
+        finally
+        {
+            CloseHandle(proceso);
         }
     }
 
@@ -144,6 +181,13 @@ public static class ProcesosYPuertos
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool CloseHandle(IntPtr handle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenProcess(uint acceso, [MarshalAs(UnmanagedType.Bool)] bool heredar, uint pid);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetProcessTimes(IntPtr proceso, out long creacion, out long salida, out long kernel, out long usuario);
 
     [DllImport("iphlpapi.dll")]
     private static extern uint GetExtendedTcpTable(IntPtr tabla, ref int tamano, [MarshalAs(UnmanagedType.Bool)] bool ordenar, int familia, int clase, uint reservado);
