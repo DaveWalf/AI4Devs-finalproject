@@ -45,6 +45,9 @@ public sealed class ServicioAtencion : IDisposable
 
     public ConsultaCatalogo Catalogo { get; private set; } = null!;
 
+    /// <summary>La oferta por persona: lo que se le ofrece al identificarse (D2 de ofrecer-solo-opciones-disponibles).</summary>
+    public ConsultaDisponibilidad Disponibilidad { get; private set; } = null!;
+
     public UnidadConfirmacion Unidad { get; private set; } = null!;
 
     public TrabajosImpresion Trabajos { get; private set; } = null!;
@@ -71,6 +74,7 @@ public sealed class ServicioAtencion : IDisposable
             _base = baseComedor;
             Identificacion = new IdentificacionPorCodigo(baseComedor, Reloj);
             Catalogo = new ConsultaCatalogo(baseComedor);
+            Disponibilidad = new ConsultaDisponibilidad(baseComedor, Reloj);
             Unidad = new UnidadConfirmacion(baseComedor, Reloj);
             Trabajos = new TrabajosImpresion(baseComedor, Reloj, Impresora);
             Asistencia = new Asistencia(baseComedor, Reloj, Trabajos);

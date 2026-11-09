@@ -15,7 +15,7 @@ public class FlujoPrincipalTests : IAsyncLifetime
 {
     // Los textos de las specs vivas: atencion-puesto (el éxito y el cupo) y envio-lotes (la franja).
     private const string Exito = "Consumo registrado. Retirá tu comprobante";
-    private const string Cupo = "Ya registraste este servicio. Consultá al responsable del comedor";
+    private const string UsoDelDia = "Hoy ya usaste: almuerzo 1 de 1";
     private const string Opcion = "Almuerzo común";
 
     // El ciclo de envío corre cada 30 s: un estado nuevo de la franja llega en un ciclo, con margen.
@@ -61,21 +61,25 @@ public class FlujoPrincipalTests : IAsyncLifetime
         await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
         Paso(reloj, "3. consumo registrado y comprobante impreso");
 
-        // 4. El mismo almuerzo otra vez: el cupo lo rechaza y no hay un segundo consumo (AT02).
-        await Pedir(pagina, "0001");
-        await pagina.Locator("#confirmar").ClickAsync();
-        await Assertions.Expect(pagina.Locator("#mensaje")).ToHaveTextAsync(Cupo);
+        // 4. Con el cupo de almuerzo del día usado, el puesto no ofrece ningún almuerzo y lo dice; sigue habiendo un solo consumo (AT02).
+        await pagina.Locator("#codigo").FillAsync("0001");
+        await pagina.Locator("#ingresar").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#uso-del-dia")).ToHaveTextAsync(UsoDelDia);
         await _escenario.CapturarAsync(pagina, "04-cupo");
+        var ofrecidas = await pagina.Locator(".opcion .nombre").AllInnerTextsAsync();
+        Assert.NotEmpty(ofrecidas);
+        Assert.All(ofrecidas, nombre => Assert.Contains(nombre.Trim(), NombresDeRefrigerio()));
         var consumo = Assert.Single(ConsumosDelPuesto());
         Assert.Single(Directory.GetFiles(Path.Combine(_escenario.Carpeta, "comprobantes")));
-        await pagina.Locator("#listo").ClickAsync();
-        Paso(reloj, $"4. cupo: un solo consumo en el puesto, {consumo}");
+        await pagina.Locator("#cancelar").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
+        Paso(reloj, $"4. cupo: sólo refrigerios ofrecidos, un solo consumo en el puesto, {consumo}");
 
-        // 5. Con el receptor apagado, la franja cuenta el consumo y el rechazo.
+        // 5. Con el receptor apagado, la franja cuenta el consumo; ya no hay un rechazo que sincronizar.
         var franja = pagina.GetByRole(AriaRole.Status, new() { Name = "Sincronización con el receptor" });
-        await Assertions.Expect(franja).ToContainTextAsync("2 pendientes", UnCiclo);
+        await Assertions.Expect(franja).ToContainTextAsync("1 pendiente", UnCiclo);
         await _escenario.CapturarAsync(pagina, "05-pendientes");
-        Paso(reloj, "5. franja: 2 pendientes");
+        Paso(reloj, "5. franja: 1 pendiente");
 
         // 6. El receptor vuelve, con la misma base y los mismos certificados, y el puesto queda al día.
         await _escenario.ArrancarReceptorAsync(reintentar: false);
@@ -125,6 +129,30 @@ public class FlujoPrincipalTests : IAsyncLifetime
         }
 
         return consumos;
+    }
+
+    /// <summary>Los nombres de las opciones de REFRIGERIO (el tipo de servicio ...0025 de la semilla), en la base del puesto.</summary>
+    private List<string> NombresDeRefrigerio()
+    {
+        var cadena = new SqliteConnectionStringBuilder
+        {
+            DataSource = Path.Combine(_escenario.Carpeta, "incomedor.db"),
+            Mode = SqliteOpenMode.ReadOnly,
+            Pooling = false,
+        }.ConnectionString;
+        using var conexion = new SqliteConnection(cadena);
+        conexion.Open();
+        using var comando = conexion.CreateCommand();
+        comando.CommandText = "SELECT commenNombre FROM tbComedorOpcionesMenu WHERE comsrvCodigo = $srv";
+        comando.Parameters.AddWithValue("$srv", Guid.Parse("00000000-0000-4000-8000-000000000025"));
+        using var filas = comando.ExecuteReader();
+        var nombres = new List<string>();
+        while (filas.Read())
+        {
+            nombres.Add(filas.GetString(0));
+        }
+
+        return nombres;
     }
 
     private async Task<List<Guid>> ConsolidadosDelReceptorAsync()

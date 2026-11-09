@@ -44,6 +44,11 @@
                 <div class="titulo superficie">
                     <h2>Elegí tu servicio de hoy</h2>
                     <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
+                    @* Sólo lo agotado hoy, que es lo que explica una opción ausente (D3 de ofrecer-solo-opciones-disponibles). *@
+                    @if (Maquina.UsoDelDia is { } uso)
+                    {
+                        <p id="uso-del-dia" class="uso-del-dia">@uso</p>
+                    }
                 </div>
                 @if (Maquina.Aviso is not null && Maquina.Estado == EstadoAtencion.Seleccion)
                 {
@@ -123,6 +128,24 @@
                     <div class="acciones">
                         <button id="volver" type="button" @onclick="Maquina.Volver">Volver</button>
                         <button id="reconfirmar" type="button" class="principal" @onclick="Reconfirmar">Reconfirmar</button>
+                    </div>
+                </section>
+                break;
+
+            case EstadoAtencion.SinOpciones:
+                @* Ninguna opción disponible: el aviso, lo usado o el motivo, y «Listo» (D4); sin opciones ni «Confirmar». *@
+                <section class="tarjeta superficie">
+                    <p id="mensaje" class="mensaje" role="status">@MensajesAtencion.SinOpciones</p>
+                    @if (Maquina.UsoDelDia is { } usado)
+                    {
+                        <p id="uso-del-dia" class="aviso">@usado</p>
+                    }
+                    else if (Maquina.MotivoSinOpciones is { } motivo)
+                    {
+                        <p id="motivo-sin-opciones" class="aviso">@motivo</p>
+                    }
+                    <div class="acciones">
+                        <button id="listo" type="button" class="principal" @onclick="Maquina.Listo">Listo</button>
                     </div>
                 </section>
                 break;
