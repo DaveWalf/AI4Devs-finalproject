@@ -322,6 +322,24 @@ Cambian sólo las 13 pruebas existentes del punto 4 del gate (D18): al cerrar ca
   ```
   Son los cuatro archivos del punto 4 del gate: 31 inserciones y 28 borrados (`git diff --stat 9202347`). 162 pruebas más que al archivar C (566).
 
+## 13. Correcciones de la verificación
+
+- [x] 13.1 Cubrir la advertencia 1 de `/openspec-verify-change` del 08/11 sobre `a72c184`: el escenario «El monitor guardado» de `configuracion-puesto` pide el monitor de antes y el de después, y `MonitorPuestoTests.La_pestana_pantalla` sólo miraba el ajuste, el resultado y el acceso. Agregar a `MonitorPuestoTests.cs` (de este change) una prueba con otro monitor guardado antes, que guarda el principal real y afirma `Before.Device` y `After.Device`; verla fallar con un mutante del registro y revertirlo
+  La conducta ya existía, así que el rojo sale de un mutante en `PantallaAtencion.razor:667` (`Before` siempre nulo), revertido después. Ninguna prueba existente cambia: `MonitorPuestoTests.cs` es de este change. 08/11 21:54 y 21:56:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ResultadoRed|FullyQualifiedName~MonitorPuesto"   (con los dos mutantes)
+  con errores configuracion-puesto · El monitor guardado: … el monitor de antes y el de después, APPLIED y MAINTENANCE_MODE
+    System.InvalidOperationException : The requested operation requires an element of type 'Object', but the target element has type 'Null'.
+  (mutantes revertidos)   total: 14 · error: 0 · correcto: 14
+  ```
+- [x] 13.2 Cubrir la advertencia 2: los escenarios «Una aplicación completa» y «Un permiso rechazado» de «Cada aplicación de red queda en la bitácora general» piden el registro aplicado con sus dos pasos y el cancelado sin pasos aplicados, y `ResultadoRedTests.El_registro` sólo miraba el fallido. Agregar a `ResultadoRedTests.cs` (de este change) las dos pruebas del registro; verlas fallar con un mutante de `ResultadoRed.Registro` y revertirlo
+  Rojo con un mutante en `ResultadoRed.cs:68` (`Result` siempre `FAILED`), revertido después, en la misma corrida de 13.1:
+  ```
+  con errores conectividad-puesto · Un permiso rechazado en la bitácora: …   Expected: Tuple ("NETWORK_IPV4", "CANCELLED", 2, 0, 1)   Actual: Tuple ("NETWORK_IPV4", "FAILED", 2, 0, 1)
+  con errores conectividad-puesto · Una aplicación completa en la bitácora: … Expected: Tuple ("NETWORK_IPV4", "APPLIED", 2, 2)   Actual: Tuple ("NETWORK_IPV4", "FAILED", 2, 2)
+  total: 14 · error: 3 · correcto: 11
+  ```
+
 ## Workflow follow-up
 
 - Probar en el monitor táctil de David con el acceso directo «Probar puesto INComedor»: la pantalla completa sin bordes y el cierre en los dos modos, el rebote (D15, punto 14 del gate), la tabla de personas, con cuidado la edición de la IPv4 en la pestaña Red (puede cortar la red del equipo) y, con un segundo monitor, la pestaña Pantalla.

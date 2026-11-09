@@ -66,6 +66,39 @@ public class ResultadoRedTests
         Assert.Equal("MAINTENANCE_MODE", registro.GetProperty("Access").GetString());
     }
 
+    [Fact(DisplayName = "conectividad-puesto · Una aplicación completa en la bitácora: el registro dice APPLIED con sus dos pasos aplicados, sin paso cortado ni código, y MAINTENANCE_MODE")]
+    public async Task El_registro_de_una_aplicacion_completa()
+    {
+        var (resultado, _) = await Aplicar(new SalidaNetsh(false, 0), new SalidaNetsh(false, 0));
+
+        var registro = JsonSerializer.SerializeToElement(resultado.Registro(Adaptador, Pedida, "MAINTENANCE_MODE"));
+
+        Assert.Equal(("NETWORK_IPV4", "APPLIED", 2, 2), (registro.GetProperty("Setting").GetString(), registro.GetProperty("Result").GetString(),
+            registro.GetProperty("Steps").GetInt32(), registro.GetProperty("AppliedSteps").GetInt32()));
+        Assert.Equal(JsonValueKind.Null, registro.GetProperty("FailedStep").ValueKind);
+        Assert.Equal(JsonValueKind.Null, registro.GetProperty("ExitCode").ValueKind);
+        Assert.Equal("192.168.10.25", registro.GetProperty("Before").GetProperty("Addresses")[0].GetProperty("Address").GetString());
+        Assert.Equal("192.168.10.30", registro.GetProperty("After").GetProperty("Address").GetString());
+        Assert.Equal(JsonValueKind.Null, registro.GetProperty("ActorPersonId").ValueKind);
+        Assert.Equal("NO_AUTHENTICATION", registro.GetProperty("ActorReason").GetString());
+        Assert.Equal("MAINTENANCE_MODE", registro.GetProperty("Access").GetString());
+    }
+
+    [Fact(DisplayName = "conectividad-puesto · Un permiso rechazado en la bitácora: el registro dice CANCELLED en el primer paso, sin pasos aplicados ni código")]
+    public async Task El_registro_de_un_permiso_rechazado()
+    {
+        var (resultado, _) = await Aplicar(new SalidaNetsh(true, 0), new SalidaNetsh(false, 0));
+
+        var registro = JsonSerializer.SerializeToElement(resultado.Registro(Adaptador, Pedida, "DAILY_KEY"));
+
+        Assert.Equal(("NETWORK_IPV4", "CANCELLED", 2, 0, 1), (registro.GetProperty("Setting").GetString(), registro.GetProperty("Result").GetString(),
+            registro.GetProperty("Steps").GetInt32(), registro.GetProperty("AppliedSteps").GetInt32(), registro.GetProperty("FailedStep").GetInt32()));
+        Assert.Equal(JsonValueKind.Null, registro.GetProperty("ExitCode").ValueKind);
+        Assert.Equal(JsonValueKind.Null, registro.GetProperty("ActorPersonId").ValueKind);
+        Assert.Equal("NO_AUTHENTICATION", registro.GetProperty("ActorReason").GetString());
+        Assert.Equal("DAILY_KEY", registro.GetProperty("Access").GetString());
+    }
+
     private static async Task<(ResultadoRed Resultado, int Corridos)> Aplicar(params SalidaNetsh[] salidas)
     {
         var comandos = ArgumentosNetsh.Armar(12, Pedida);

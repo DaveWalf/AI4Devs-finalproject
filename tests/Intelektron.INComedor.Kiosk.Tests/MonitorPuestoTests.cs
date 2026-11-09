@@ -91,6 +91,26 @@ public class MonitorPuestoTests
         Assert.True(SinActor(cambio));
     }
 
+    [Fact(DisplayName = "configuracion-puesto · El monitor guardado: con otro monitor guardado antes, elegir el principal real y guardarlo deja CONFIGURATION_CHANGED con el monitor de antes y el de después, APPLIED y MAINTENANCE_MODE")]
+    public async Task El_monitor_guardado_en_la_bitacora()
+    {
+        using var puesto = new PuestoDePrueba();
+        new AlmacenPantalla(puesto.Carpeta).Guardar(Segundo);
+        var principal = Monitores.Leer().Single(m => m.Principal);
+        var pantalla = puesto.Dibujar();
+        await pantalla.Find(".engranaje").ClickAsync(new());
+        await pantalla.Find("#pestana-pantalla").ClickAsync(new());
+
+        await pantalla.Find("#guardar-monitor").ClickAsync(new());
+
+        var cambio = ContextoDe(Assert.Single(puesto.General(), l => Tipo(l) == "CONFIGURATION_CHANGED"));
+        Assert.Equal("DISPLAY_MONITOR", cambio.GetProperty("Setting").GetString());
+        Assert.Equal(Segundo.Dispositivo, cambio.GetProperty("Before").GetProperty("Device").GetString());
+        Assert.Equal(principal.Dispositivo, cambio.GetProperty("After").GetProperty("Device").GetString());
+        Assert.Equal(("APPLIED", "MAINTENANCE_MODE"), (cambio.GetProperty("Result").GetString(), cambio.GetProperty("Access").GetString()));
+        Assert.True(SinActor(cambio));
+    }
+
     [Fact(DisplayName = "presentacion-puesto · Con el monitor guardado ausente al abrir, la pestaña Pantalla dice que no está conectado")]
     public async Task La_pestana_avisa_el_monitor_ausente()
     {
