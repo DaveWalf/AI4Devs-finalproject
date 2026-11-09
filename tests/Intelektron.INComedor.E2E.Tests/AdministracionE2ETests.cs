@@ -42,27 +42,29 @@ public class AdministracionE2ETests : IAsyncLifetime
 
         // Personas habilitadas: la persona nueva con su código y ALMUERZO límite 1.
         await pagina.Locator(".engranaje").ClickAsync();
+        await pagina.Locator("#pestana-personas").ClickAsync();
         await pagina.Locator("#abrir-personas").ClickAsync();
         await pagina.Locator("#agregar-persona").ClickAsync();
         // Blazor dibuja la fila nueva después del clic: «Last» antes de que exista toma a la última persona guardada, que
         // recibía el nombre (en la CI, 3 de 4 corridas). Se escribe cuando ya hay 10 filas, las 9 guardadas y la nueva.
-        await Assertions.Expect(pagina.Locator("article.persona")).ToHaveCountAsync(10);
-        var nueva = pagina.Locator("article.persona").Last;
+        await Assertions.Expect(pagina.Locator("tr.persona")).ToHaveCountAsync(10);
+        var nueva = pagina.Locator("tr.persona").Last;
         await nueva.Locator("input.nombre-persona").FillAsync(Nombre);
         await nueva.Locator("input.codigo-persona").FillAsync(Codigo);
-        await nueva.Locator("select.nuevo-cupo").SelectOptionAsync(new SelectOptionValue { Label = "ALMUERZO" });
-        await nueva.Locator("button.agregar-cupo").ClickAsync();
+        await nueva.Locator("td.cupo[data-cupo=\"ALMUERZO\"] input.limite").FillAsync("1");
         await pagina.Locator("#guardar-panel").ClickAsync();
         await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToHaveTextAsync("Se guardó la versión 2 de la configuración");
 
         await pagina.Locator("#abrir-personas").ClickAsync();
-        await Assertions.Expect(pagina.Locator("article.persona")).ToHaveCountAsync(10);
+        // La pestaña ya muestra las 10 personas en la tabla de consulta, sin campos: se espera a las 10 filas del panel, con
+        // su nombre editable, porque la búsqueda de abajo mira una sola vez.
+        await Assertions.Expect(pagina.Locator("tr.persona input.nombre-persona")).ToHaveCountAsync(10);
         // La captura muestra una persona con cupos: la lista se desplaza hasta «Persona sintética 01». Blazor pone el valor del
         // campo como propiedad, no como atributo: se busca por la propiedad.
         Assert.True(await pagina.EvaluateAsync<bool>(
             """
             () => {
-                const fila = [...document.querySelectorAll('article.persona')]
+                const fila = [...document.querySelectorAll('tr.persona')]
                     .find(a => a.querySelector('input.nombre-persona')?.value === 'Persona sintética 01');
                 fila?.scrollIntoView({ block: 'start' });
                 return fila !== undefined;
@@ -87,6 +89,7 @@ public class AdministracionE2ETests : IAsyncLifetime
 
         // Opciones del comedor: «Almuerzo común» con la franja de 11:00 a 14:00, para la captura 14.
         await pagina.Locator(".engranaje").ClickAsync();
+        await pagina.Locator("#pestana-opciones").ClickAsync();
         await pagina.Locator("#abrir-opciones").ClickAsync();
         var almuerzo = pagina.Locator("article.opcion-admin").First;
         await Assertions.Expect(almuerzo.Locator("input.nombre-opcion")).ToHaveValueAsync("Almuerzo común");

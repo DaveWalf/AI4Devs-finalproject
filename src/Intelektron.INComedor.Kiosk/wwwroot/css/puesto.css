@@ -284,6 +284,112 @@ body:has(.puesto) {
 /* «Personas habilitadas» y «Opciones del comedor» (administrar-personas-y-opciones): el diálogo se ensancha, la lista se
    desplaza en vertical y cada control táctil mide al menos 56 px. */
 .dialogo.ancho { width: min(960px, 100%); }
+
+/* Sin rebote al arrastrar (D15 de configurar-puesto-por-pestanas): la página no se desplaza más allá de sus bordes ni
+   encadena el desplazamiento; el diálogo, la selección y las tablas se desplazan dentro de sus límites. El navegador
+   arranca además con el rebote elástico apagado. */
+html, body { overscroll-behavior: none; }
+.dialogo, .lista, .caja-tabla { overscroll-behavior: contain; }
+
+/* Configuración por pestañas (D1 y D2 de configurar-puesto-por-pestanas): las nueve en una fila de botones de 56 px con
+   texto de 16 px, que en 1024 entra en el diálogo de 960 px; todas montadas y sólo la elegida visible. */
+.pestanas { display: flex; flex-wrap: nowrap; gap: 4px; border-bottom: 2px solid var(--tinta-suave); }
+.dialogo .pestanas button {
+    min-width: 0;
+    min-height: 56px;
+    padding: 0 10px;
+    font-size: 16px;
+    white-space: nowrap;
+    border-radius: 10px 10px 0 0;
+    border: 1px solid transparent;
+    background: transparent;
+}
+.dialogo .pestanas button[aria-selected="true"] {
+    background: rgb(var(--papel));
+    border-color: var(--tinta-suave);
+    border-bottom: 3px solid var(--acento);
+    font-weight: 700;
+}
+.dialogo [role="tabpanel"] { display: flex; flex-direction: column; gap: 12px; min-height: 0; flex: 1 1 auto; overflow: auto; }
+.dialogo [role="tabpanel"][hidden] { display: none; }
+/* Un alto fijo, para que la fila de pestañas no salte al cambiar de una con poco contenido a otra con mucho; el pie abajo.
+   Cada pestaña se desplaza dentro de sí, y la tabla de personas toma el resto del alto: diez filas en 1024 × 768 (D4). */
+.dialogo.ancho { height: min(760px, calc(100vh - 32px)); padding: 16px; gap: 12px; overflow: hidden; }
+.dialogo .pie-dialogo { margin-top: auto; }
+
+/* Personas en una tabla (D4): filas de 44 px con campos de 44 px, el encabezado fijo y la tabla con su propio
+   desplazamiento; en 1024 × 768 entran unas diez filas. Los encabezados ordenan. */
+.oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tabla-administracion { flex: 1 1 auto; }
+.caja-tabla { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--tinta-suave); border-radius: 10px; }
+.tabla-personas td.accion-tabla { position: sticky; top: 0; z-index: 1; background: rgb(var(--papel)); border-bottom: 2px solid var(--tinta-suave); text-align: right; }
+.tabla-personas { width: 100%; border-collapse: collapse; font-size: 16px; }
+.tabla-personas th { position: sticky; top: 0; z-index: 1; background: rgb(var(--papel)); text-align: left; border-bottom: 2px solid var(--tinta-suave); }
+.tabla-personas th, .tabla-personas td { height: 44px; padding: 0 8px; }
+.tabla-personas tbody tr { border-bottom: 1px solid rgb(0 0 0 / .08); }
+.tabla-personas tr.de-baja { opacity: .7; }
+.tabla-personas td.cupo, .tabla-personas td.habilitadas { text-align: center; font-variant-numeric: tabular-nums; }
+.dialogo .tabla-personas button { min-height: 44px; min-width: 0; padding: 0 10px; font-size: 16px; }
+.dialogo .tabla-personas th button.ordenar { width: 100%; border: none; background: transparent; text-align: left; font-weight: 700; }
+.tabla-personas th[aria-sort="ascending"] button.ordenar::after { content: " ▲"; }
+.tabla-personas th[aria-sort="descending"] button.ordenar::after { content: " ▼"; }
+.tabla-personas input { min-height: 44px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
+.tabla-personas input.nombre-persona { width: 100%; min-width: 180px; }
+.tabla-personas input.limite { width: 64px; }
+.tabla-personas input.codigo-persona { width: 110px; }
+.tabla-personas [aria-invalid="true"] { outline: 3px solid #b3261e; outline-offset: 1px; }
+
+/* Consumos (D9): los filtros en una fila que se parte, y la tabla con su encabezado fijo, como la de personas. */
+.consumos { display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; }
+.filtros-consumos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; font-size: 16px; }
+.filtros-consumos label { display: flex; flex-direction: column; gap: 4px; }
+.filtros-consumos input, .filtros-consumos select { min-height: 44px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
+.tabla-consumos { width: 100%; border-collapse: collapse; font-size: 16px; }
+.tabla-consumos th { position: sticky; top: 0; z-index: 1; background: rgb(var(--papel)); text-align: left; border-bottom: 2px solid var(--tinta-suave); }
+.tabla-consumos th, .tabla-consumos td { height: 44px; padding: 0 8px; }
+.tabla-consumos tbody tr { border-bottom: 1px solid rgb(0 0 0 / .08); }
+.tabla-consumos td.cargo { text-align: right; font-variant-numeric: tabular-nums; }
+.dialogo .tabla-consumos th button.ordenar { width: 100%; min-height: 44px; min-width: 0; padding: 0 4px; border: none; background: transparent; text-align: left; font-size: 16px; font-weight: 700; }
+.tabla-consumos th[aria-sort="ascending"] button.ordenar::after { content: " ▲"; }
+.tabla-consumos th[aria-sort="descending"] button.ordenar::after { content: " ▼"; }
+.modo-puesto { font-size: 18px; font-weight: 600; }
+.textos-comprobante { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px 12px; font-size: 17px; }
+.textos-comprobante h3, .textos-comprobante p, .textos-comprobante .acciones { grid-column: 1 / -1; }
+.textos-comprobante input { min-height: 56px; padding: 0 12px; font: inherit; font-size: 18px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel)); }
+.textos-comprobante input[aria-invalid="true"] { outline: 3px solid #b3261e; outline-offset: 2px; }
+.pie-comprobante { font-style: italic; }
+.lista-monitores { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.lista-monitores .monitor { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 12px; font-size: 17px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel) / .6); }
+.lista-monitores input[type="radio"] { width: 28px; height: 28px; accent-color: var(--acento); }
+.lista-logos { display: flex; flex-wrap: wrap; gap: 16px; }
+.logo-editable { display: flex; flex-direction: column; gap: 8px; flex: 1 1 240px; }
+.cuadricula-logo { display: flex; align-items: center; justify-content: center; height: 120px; border: 1px solid var(--borde); border-radius: 10px;
+    background: repeating-conic-gradient(rgb(0 0 0 / .08) 0 25%, rgb(255 255 255 / .6) 0 50%) 0 0 / 20px 20px; }
+.cuadricula-logo img { max-width: 90%; max-height: 100px; object-fit: contain; }
+.logo-editable input[type="file"] { min-height: 44px; font-size: 16px; }
+.nombre-equipo { margin: 0 0 8px; }
+.lista-adaptadores { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.lista-adaptadores .adaptador { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 12px; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel) / .6); }
+.lista-adaptadores input[type="radio"], .modo-red input[type="radio"] { width: 28px; height: 28px; accent-color: var(--acento); }
+.datos-adaptador { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.edicion-red { border: 1px solid var(--borde); border-radius: 10px; padding: 8px 12px 12px; margin: 0 0 12px; }
+.modo-red { display: flex; gap: 24px; min-height: 48px; align-items: center; font-size: 17px; }
+.modo-red label { display: flex; align-items: center; gap: 8px; }
+.campos-red { display: grid; grid-template-columns: max-content minmax(0, 220px); gap: 8px 12px; align-items: center; margin: 8px 0; }
+.campos-red input { min-height: 44px; font-size: 17px; }
+.campos-red input[aria-invalid="true"] { border-color: var(--error); outline: 2px solid var(--error); }
+.confirmacion-red { border: 2px solid var(--aviso); border-radius: 10px; padding: 8px 12px; margin: 0 0 12px; background: rgb(var(--papel) / .9); }
+.etapas-conexion { margin: 8px 0 0; padding-left: 24px; font-size: 16px; }
+.etapas-conexion .fallo { color: var(--error); }
+.etapas-conexion .no-probada { color: var(--tinta-suave); }
+
+/* La raíz recibe el foco en reposo para que Escape llegue (D7); el foco no se dibuja ahí. */
+.puesto:focus { outline: none; }
+
+/* La clave del día (D6): un campo de 56 px, enmascarado y numérico. */
+.campo-clave { min-height: 56px; padding: 0 12px; font: inherit; font-size: 22px; letter-spacing: .2em; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel)); }
+.fondo-clave { z-index: 20; }
+.dialogo .indicacion { font-size: 15px; color: var(--tinta-suave); }
 .abrir-paneles { justify-content: flex-start; }
 .panel-administracion { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .lista-administracion {

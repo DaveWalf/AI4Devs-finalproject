@@ -204,11 +204,12 @@ receptor, en la ventana:
 2. «Listo», y otra vez `0001`: la selección ya no ofrece ningún almuerzo, sólo los refrigerios, y dice «Hoy ya
    usaste: almuerzo 1 de 1». El cupo de ALMUERZO es 1 y no hay cómo registrar otro consumo.
 3. `0002` e «Ingresar»: «Esta credencial está vencida. Solicitá asistencia».
-4. En la franja de la impresora, «Sin papel»; `0001` con «Café con leche», un REFRIGERIO: «Tu consumo está
-   registrado. El comprobante queda pendiente».
-5. La impresora en «Disponible», `9001` y «Asistencia»: los comprobantes del día. «Recuperar» saca el pendiente
-   del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con la leyenda DUPLICADO.
-6. `9002` y «Asistencia»: «Tu permiso de operador está vencido».
+4. En la pestaña Impresora de Configuración, «Sin papel»; `0001` con «Café con leche», un REFRIGERIO: «Tu consumo
+   está registrado. El comprobante queda pendiente».
+5. La impresora en «Disponible» y, en la pestaña Comprobantes, `9001` e «Ingresar»: los comprobantes del día.
+   «Recuperar» saca el pendiente del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con
+   la leyenda DUPLICADO. «Salir», cerrar Configuración o 30 s sin tocar la pestaña terminan la sesión del operador.
+6. En la pestaña Comprobantes, `9002` e «Ingresar»: «Tu permiso de operador está vencido».
 7. En reposo, el engranaje y «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
    `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión 2
    de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
@@ -293,18 +294,18 @@ Códigos sintéticos:
 | `0002` | Credencial vencida: «Esta credencial está vencida» |
 | `0003` | Credencial revocada: «Esta credencial ya no está habilitada» |
 | `0004` | Credencial todavía no vigente: «No pudimos identificarte» |
-| `9001` | Operador con permiso `OPERATOR` vigente, por «Asistencia» |
-| `9002` | Operador con el permiso vencido: «Asistencia» se deniega |
-| `9003` | Operador con el permiso revocado: «Asistencia» se deniega |
-| `9004` | Administrador sin `OPERATOR`: «Asistencia» se deniega |
+| `9001` | Operador con permiso `OPERATOR` vigente, en la pestaña Comprobantes |
+| `9002` | Operador con el permiso vencido: Comprobantes lo deniega |
+| `9003` | Operador con el permiso revocado: Comprobantes lo deniega |
+| `9004` | Administrador sin `OPERATOR`: Comprobantes lo deniega |
 
 El comprobante sale después del commit hacia una impresora simulada, que escribe un archivo de texto por
 copia en `%LOCALAPPDATA%\INComedor\demo\comprobantes\` (`<TicketId>-<copia>.txt`). Cuando sale, la pantalla
 muestra además una impresora de la que sale el comprobante, con la opción, la fecha y el cargo y sin el nombre;
 tocarlo equivale a «Listo», y con movimiento reducido aparece sin animación. Los modos de la impresora
 (Disponible, Sin papel o Incierta) están en Configuración. Con «Sin papel», el consumo queda registrado y el
-comprobante, pendiente, sin comprobante en pantalla. Por «Asistencia», un operador con `9001` ve los comprobantes del
-día. Puede recuperar el original que falló, que es el mismo trabajo y no una copia nueva. También puede
+comprobante, pendiente, sin comprobante en pantalla. La pantalla de reposo ya no tiene «Asistencia»: en la pestaña
+Comprobantes de Configuración, un operador con `9001` ve los comprobantes del día. Puede recuperar el original que falló, que es el mismo trabajo y no una copia nueva. También puede
 reimprimir con un motivo de una lista fija, y la copia sale con la leyenda DUPLICADO y su número.
 
 Todo lo que pasa en el puesto queda primero en la base y después, fuera de la atención, en dos bitácoras de texto
@@ -329,18 +330,41 @@ Los logos del repo son de ejemplo, porque el cliente va anonimizado. Para ver lo
 dejarlos en la carpeta de datos como `marcas\empresa.png` y `marcas\concesionaria.png` (también `.webp` o `.svg`,
 de hasta 2 MB; con dos formatos gana el `.png`). Un archivo que no corresponde a su extensión, que pasa de 2 MB o
 un SVG con DTD se ignora y queda el de ejemplo. Se leen al abrir la atención.
+Sin tocar la carpeta, la pestaña Identidad visual de Configuración tiene «Logos»: se elige el archivo de cada uno, se
+ve sobre una cuadrícula antes de guardarlo, con las mismas reglas (lo que no sirve dice por qué y deja el vigente), y
+«Guardar los logos» lo escribe en `marcas\` y lo pone en la cabecera en el acto; «Volver al de ejemplo» y guardar lo
+borra. Cada guardado queda en la general por la huella SHA-256 del archivo, su tamaño y su formato, nunca su contenido.
 
-El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre Configuración **sin clave en este corte** (la clave llega con el
-segundo change): «Estilo visual», con la opacidad de las superficies (72 a 88 %, 76 % por defecto) y el
-desenfoque del fondo (0 a 12 px, 4 px por defecto) con vista previa, «Guardar» en `estilo-visual.json` de la
-carpeta de datos y «Cancelar» o Escape; y, con la impresora simulada, sus modos. Cualquiera que toque el puesto en
-reposo puede cambiar el estilo o simular una impresora sin papel.
+El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre
+**Configuración por pestañas**: General (el modo y el estado de las bitácoras), Personas, Opciones, Consumos,
+Comprobantes, Identidad visual, Impresora, Pantalla y Red, en una fila de botones de 56 px que entra en 1024 × 768.
+Todas quedan montadas, así que lo editado en una pestaña sobrevive al pasar a otra hasta cerrar. Cada «Guardar»
+guarda sólo lo de su pestaña y deja Configuración abierta con el aviso de lo guardado; «Cancelar» o Escape la cierran
+y descartan lo no guardado, también con un panel de edición abierto. Identidad visual tiene el «Estilo visual», con la
+opacidad de las superficies (72 a 88 %, 76 % por defecto) y el desenfoque del fondo (0 a 12 px, 4 px por defecto) con
+vista previa y su «Guardar» en `estilo-visual.json` de la carpeta de datos; Impresora, con la impresora simulada, sus
+modos. En mantenimiento, cualquiera que toque el puesto en reposo puede cambiar el estilo o simular una impresora sin
+papel.
 
-**Personas y opciones en Configuración.** Mientras no haya INWeb, el puesto es el dueño de sus datos: el diálogo
-suma «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y su «Cancelar» (o Escape). El
-primero lista cada persona con su estado, sus cupos por servicio y categoría (límite diario de 0 a 99) y las opciones
-que esos cupos habilitan; permite agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus
-cupos y quitarla, que la da de baja y revoca su código sin borrar sus consumos. El código se tipea en un campo
+**Modos, clave del día y cierre.** El puesto tiene dos modos, que atienden igual y sólo cambian la entrada a
+Configuración y el cierre. En **mantenimiento**, el de una carpeta nueva, el engranaje abre Configuración directo y
+Escape en reposo (o «Cerrar el puesto» en General) cierra el puesto en orden. En **operativo** las dos cosas piden la
+**clave del día**; en este corte es la de desarrollo, que acepta cualquier número de 1 a 12 dígitos y lo dice en el
+diálogo, y nunca se guarda ni se registra. Pasar a operativo, desde General, también la pide; volver a mantenimiento,
+no. El modo queda en `modo-puesto.json` de la carpeta de datos. La ventana ocupa la **pantalla completa sin bordes**
+en los dos modos, sin barra de título ni botón de cierre y tapando la barra de tareas; en operativo, Alt+F4 o el
+pedido de cierre de otro programa muestran la clave en lugar de cerrar, y el apagado de Windows nunca se frena. Cada
+clave pedida, cada entrada, cada cambio de modo y cada cierre quedan en la general con el actor nulo,
+`NO_AUTHENTICATION` y cómo se entró (`MAINTENANCE_MODE` o `DAILY_KEY`). Un piloto tiene que arrancar en operativo.
+
+**Personas y opciones en Configuración.** Mientras no haya INWeb, el puesto es el dueño de sus datos: las pestañas
+Personas y Opciones abren, con «Editar», «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y
+su «Cancelar», que vuelven a la pestaña. Personas es una **tabla**: una fila por persona y una columna por cada cupo
+que usa el catálogo (en la semilla, ALMUERZO y REFRIGERIO), con su límite diario de 0 a 99 o «—» sin cupo, el estado
+y la cantidad de opciones que esos cupos habilitan. En 1024 × 768 entran diez filas de 44 px, el encabezado queda fijo
+y cada encabezado ordena la vista sin cambiar lo que se guarda. «Editar», en el encabezado, la pasa a edición en el
+mismo lugar: agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus cupos (vaciar una celda
+quita el cupo) y quitarla, que la da de baja y revoca su código sin borrar sus consumos. El código se tipea en un campo
 enmascarado de sólo dígitos, conserva sus ceros iniciales, no se puede repetir aunque esté revocado, y nunca se
 muestra ni se registra. El segundo muestra cada opción con su servicio, su importe, sus cargas de cupo y sus
 **franjas horarias**, en la hora local del puesto, de inicio incluido a fin excluido (de 22:00 a 02:00 cruza la
@@ -364,19 +388,58 @@ ya no la abre.
 
 | Comprobante en pantalla | Configuración |
 |---|---|
-| ![La impresora en pantalla con el comprobante de «Almuerzo con gaseosa»](docs/capturas/09-comprobante-en-pantalla.jpg) | ![Configuración con «Estilo visual» y los modos de la impresora simulada](docs/capturas/10-configuracion.jpg) |
+| ![La impresora en pantalla con el comprobante de «Almuerzo con gaseosa»](docs/capturas/09-comprobante-en-pantalla.jpg) | ![Configuración en la pestaña General: las nueve pestañas, el modo y el estado de las bitácoras](docs/capturas/10-configuracion.jpg) |
 
 | Lo ya usado del día | Sin ninguna opción |
 |---|---|
 | ![Con el almuerzo del día usado, cinco opciones de refrigerio y «Hoy ya usaste: almuerzo 1 de 1»](docs/capturas/11-uso-del-dia.jpg) | ![«No tenés opciones disponibles ahora», lo usado del día y «Listo», sin opciones ni «Confirmar»](docs/capturas/12-sin-opciones.jpg) |
 
+**Pantalla en Configuración.** La pestaña Pantalla lista los monitores conectados con su resolución y cuál es el
+principal, y guarda el del puesto en `pantalla.json` por su identificador de interfaz, que sobrevive a un reinicio y a
+un cambio de orden: la ventana pasa a pantalla completa en él y vuelve a él cada vez que el puesto abre. Si el monitor
+guardado no está conectado, o lo guardado no se puede leer, el puesto abre en el principal y la pestaña lo avisa. Cada
+guardado queda en la general como `DISPLAY_MONITOR`. Con un solo monitor lo cubren las pruebas; el cambio real entre
+dos monitores lo prueba David en su equipo.
+
+**Red en Configuración.** La pestaña Red muestra el nombre del equipo y cada adaptador activo con su IPv4, su máscara,
+su puerta de enlace, sus DNS y si usa DHCP. En un adaptador elegido de la lista se puede fijar la IPv4 (dirección,
+máscara, puerta opcional y hasta dos DNS) o volver a DHCP: cada valor se valida como IPv4, «Aplicar» pide confirmar y
+avisa que el cambio puede cortar la conexión del puesto, y cada paso corre `netsh` con el permiso de administrador que
+Windows pide en ese momento; el puesto no corre elevado. Cada aplicación queda en la general como `NETWORK_IPV4`, con el
+adaptador, la IPv4 de antes y la pedida y en qué paso se cortó, si se cortó. Las pruebas sólo arman los argumentos y
+nunca corren `netsh`; el cambio real lo prueba David en su monitor, con cuidado, porque puede dejar el equipo sin red.
+«Probar conexión» prueba el receptor configurado por etapas (el nombre, la conexión, el TLS mutuo con los certificados
+del puesto y la respuesta del receptor), dice en cuál falló y queda en la general como `CONNECTIVITY_TESTED`, sin enviar
+ningún lote; sin certificados, la pestaña dice que el puesto atiende sin receptor y no prueba nada.
+
+**Impresora en Configuración.** La pestaña Impresora tiene, con la impresora simulada, sus modos; «Imprimir una
+prueba», que manda a la impresora del puesto un comprobante con la leyenda PRUEBA, sin persona ni importe, dice si
+salió, si no tiene papel o si quedó incierto, y no crea ninguna fila en la base ni se confunde con el comprobante de
+una atención; y los **textos del comprobante**: el encabezado (de 1 a 40 caracteres, «INComedor · comprobante» por
+defecto) y el pie (hasta 60), en `impresora.json` de la carpeta de datos, que se aplican desde el próximo comprobante,
+en la impresora y en pantalla, también a una copia. Cada prueba (`PRINTER_TESTED`) y cada guardado (`TICKET_TEXTS`)
+quedan en la general.
+
+**Consumos en Configuración.** La pestaña Consumos muestra los consumos registrados en el puesto en la fecha de
+negocio actual, del más reciente al más antiguo, con la hora, la persona y la opción como eran al consumir, el servicio,
+el cargo y el estado del comprobante. Filtra por un rango de hasta 366 días, por persona (también las dadas de baja),
+por servicio y por opción, y cada encabezado ordena la consulta antes del tope de 500 filas, que avisa si hay más. La ve
+quien entra a Configuración, sin el código de un operador (decisión de David del 06/11); los rechazos no son consumos y
+no aparecen, y ningún código se muestra. Cada consulta queda en la general como `CONSUMPTIONS_QUERIED`.
+
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|
-| ![«Personas habilitadas» con «Persona sintética 01», ALMUERZO 1 y REFRIGERIO 2 y las opciones que habilita, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |
+| ![La pestaña Personas en edición: la tabla con una fila por persona, ALMUERZO y REFRIGERIO en columnas y las opciones habilitadas, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |
+
+| Consumos del día |
+|---|
+| ![La pestaña Consumos con los filtros del día y un consumo de «Persona sintética 01», sin ningún código](docs/capturas/15-consumos-del-dia.jpg) |
 
 Las 06 a 10 las sacó el 03/11/2026 el apply de `presentar-atencion-tactil` y las rehízo el 04/11 el de
 `mover-engranaje-al-pie`; las 11 y 12, el de `ofrecer-solo-opciones-disponibles`; las 13 y 14, el 06/11 el E2E de
-`administrar-personas-y-opciones`. Todas, a 1024 × 768 por CDP. Las del
+`administrar-personas-y-opciones`. El 07/11, el E2E de `configurar-puesto-por-pestanas` rehízo la 06 (reposo sin
+«Asistencia»), la 10 (Configuración en General) y la 13 (la tabla de personas) y sacó la 15 (consumos del día). Todas, a
+1024 × 768 por CDP. Las del
 flujo principal, más arriba, son del 30/10 y muestran la presentación anterior.
 
 **Pantalla de demostración anterior.**

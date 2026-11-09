@@ -84,7 +84,7 @@ public class PanelConfiguracionTests : IDisposable
 
         await pantalla.Find("#guardar-configuracion").ClickAsync(new());
 
-        Assert.Empty(pantalla.FindAll("[role=\"dialog\"]"));
+        Assert.Equal(MensajesAtencion.EstiloGuardado, pantalla.Find("[role=\"dialog\"] #aviso-guardado").TextContent.Trim());
         Assert.Equal(new EstiloVisual(84, 8), new AlmacenEstiloVisual(_carpeta).Leer());
         using var otro = new BunitContext();
         var reabierta = Dibujar(new ImpresoraDePrueba(), otro);

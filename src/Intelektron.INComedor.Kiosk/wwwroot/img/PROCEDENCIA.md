@@ -23,6 +23,18 @@ Lighting/mood: Soft golden daylight and cozy ambient kitchen light, generous hos
 Constraints: Exactly two people: one woman chef on the viewer's left and one man chef on the viewer's right, both smiling and looking at the viewer, both preparing food. No other people. Anatomically sensible hands. No text, no lettering, no logos, no watermark, no interface, no buttons, no menu panels, no border. This is only the background image, not a screenshot. Opaque complete kitchen background.
 ```
 
+## `Recursos\incomedor-puesto.ico`
+
+- **Qué es**: el ícono del ejecutable y de la ventana del puesto (D16 de `configurar-puesto-por-pestanas`): un plato que
+  sonríe entre un tenedor y una cuchara. Está en `src\Intelektron.INComedor.Kiosk\Recursos\`, no en esta carpeta.
+- **Origen**: generado el 04/11/2026 por `C:\INComedor\herramientas\icono\generar-icono.ps1`, fuera del repo, que lo
+  dibuja con System.Drawing con la paleta de `puesto.css` (`--acento` `#3d5a40` en un degradé de `#4d7051` a `#33503a`, y
+  `--sobre-acento` `#fbf5ea`) y el cobre `#b5652b` del logo de ejemplo de la concesionaria. Tiene nueve tamaños en
+  entradas PNG: 16, 20, 24, 32, 40, 48, 64, 128 y 256 px; hasta 40 px, sin cubiertos ni borde del plato, para que se
+  lea. El 07/11/2026 se volvió a generar desde una copia del script y salió el mismo archivo, byte a byte.
+- **Marcas**: no contiene marcas de clientes ni de terceros, ni texto: sólo las formas que dibuja el script.
+- **SHA-256**: `4180432911cc1a752be8f9faf7cf6724079ec5b9610ddd462b238c647803f1dd` (24.423 bytes).
+
 ## `intelektron.svg`
 
 - **Qué es**: la marca Intelektron, que va discreta en el pie del puesto.

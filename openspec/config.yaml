@@ -9,6 +9,8 @@ context: |
   confirmación atómica (RB06) con replay por IntentId, comprobante con reimpresión, outbox y receptor idempotente.
   Entran recortados: las bitácoras mensuales (escribir-bitacoras-externas) y la administración local de personas,
   cupos, opciones y franjas mientras no haya INWeb (administrar-personas-y-opciones).
+  Entran también, por configurar-puesto-por-pestanas, los modos de mantenimiento y operativo con la clave del día
+  de desarrollo; siguen fuera la cuenta individual de mantenimiento y la clave del día real de INWeb.
   Fuera del corte, diseñado y no demostrado: multipuesto, diagnóstico, permisos de operador, importación de INWeb,
   cuenta de mantenimiento, biometría 1:N y 1:1 y auditoría de saltos del reloj.
   Stack: C# y .NET 11; pantallas Razor en Blazor Hybrid con host WPF; Microsoft.Data.Sqlite; receptor ASP.NET Core; xUnit.

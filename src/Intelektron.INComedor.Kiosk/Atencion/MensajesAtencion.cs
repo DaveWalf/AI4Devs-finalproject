@@ -36,6 +36,52 @@ public static class MensajesAtencion
     public const string INWebAdministra = "Estos datos los administra INWeb";
     public const string PanelNoGuardado = "No se pudo guardar: la base no respondió. No cambió nada";
 
+    /// <summary>«Guardar» de Identidad visual deja Configuración abierta con este aviso (D3 de configurar-puesto-por-pestanas).</summary>
+    public const string EstiloGuardado = "Se guardó el estilo visual";
+
+    /// <summary>El aviso del diálogo de la clave del día en este corte (D6 de configurar-puesto-por-pestanas).</summary>
+    public const string ClaveDeDesarrollo = "Desarrollo: se acepta cualquier número. En la versión operativa la valida la clave del día de INWeb";
+
+    public const string ClaveInvalida = "La clave no es válida";
+
+    /// <summary>El modo no se pudo escribir en la carpeta de datos: sigue el de antes.</summary>
+    public const string ModoNoGuardado = "No se pudo guardar el modo: sigue el de antes";
+
+    // La pestaña Impresora (comprobante-local de configurar-puesto-por-pestanas, D13).
+    public const string PruebaSalio = "La prueba salió";
+    public const string PruebaSinPapel = "La impresora no tiene papel";
+    public const string PruebaFallo = "La prueba no salió: revisá la impresora";
+    public const string PruebaIncierta = "No se sabe si la prueba salió: revisá la impresora";
+    public const string TextosGuardados = "Se guardaron los textos del comprobante";
+    public const string TextosNoGuardados = "No se pudieron guardar los textos: siguen los de antes";
+
+    // La pestaña Pantalla (presentacion-puesto de configurar-puesto-por-pestanas, D10).
+    public const string MonitorAusente = "El monitor guardado no está conectado: el puesto abrió en el principal";
+    public const string MonitorIlegible = "No se pudo leer el monitor guardado: el puesto abrió en el principal";
+    public const string MonitorGuardado = "Se guardó el monitor del puesto";
+    public const string MonitorNoGuardado = "No se pudo guardar el monitor: sigue el de antes";
+    public const string LogoPasaDe2MB = "El archivo pasa de 2 MB: el logo vigente no cambió";
+    public const string LogoFormato = "El logo tiene que ser un archivo PNG, WebP o SVG: el logo vigente no cambió";
+    public const string LogoInvalido = "El archivo no es una imagen válida: el logo vigente no cambió";
+    public const string LogosGuardados = "Se guardaron los logos";
+    public const string LogosNoGuardados = "No se pudieron guardar los logos: siguen los de antes";
+    public const string SinRed = "Sin conexión de red";
+    public const string RedRevisar = "Revisá los campos marcados: cada valor tiene que ser una IPv4 válida";
+    public const string RedAviso = "El cambio puede cortar la conexión del puesto, y Windows pide permiso de administrador en cada paso";
+    public const string RedNoDisponible = "La edición de red no está disponible en este puesto: la red no cambió";
+    public const string RedAplicada = "Se aplicó la IPv4 del adaptador";
+    public const string RedSinPermiso = "No se dio el permiso de administrador: la red no cambió";
+    public const string SinCertificados = "El puesto no tiene certificados: atiende sin receptor y la conexión no se puede probar";
+
+    // La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas).
+    public const string SinConsumos = "No hay consumos con estos filtros";
+    public const string RangoInvertido = "El inicio no puede ser posterior al fin";
+    public const string RangoDemasiadoLargo = "El rango no puede pasar de 366 días";
+    public const string HayMasConsumos = "Se muestran 500 consumos y hay más: acotá los filtros";
+
+    /// <summary>El resumen de Personas u Opciones cuando la base no respondió al abrir Configuración.</summary>
+    public const string ConfiguracionNoLeida = "No se pudo leer la configuración de la base";
+
     public static string VersionGuardada(int version) =>
         $"Se guardó la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración";
 

@@ -1,0 +1,348 @@
+# Tasks
+
+Cambian sólo las 13 pruebas existentes del punto 4 del gate (D18): al cerrar cada grupo, `git diff --diff-filter=M --stat 9202347 -- tests/` muestra a lo sumo `PantallaAtencionTests.cs`, `PanelPersonasTests.cs`, `PanelConfiguracionTests.cs` y `AdministracionE2ETests.cs`, y cada uno sólo desde el grupo que lo toca, con `9202347` la punta de `feature/administrar-personas-y-opciones-dw` sobre la que se apila esta rama. Cada prueba nueva se ve fallar antes de implementar, con la salida pegada; una E2E cuya conducta ya existe se ve fallar con una afirmación imposible que después se revierte. Si falla otra prueba existente, se para y se le pregunta a David (punto 16 del gate). Las pruebas de SQLite usan un archivo temporal real; el reloj, un `TimeProvider` fijo en la zona `America/Argentina/Buenos_Aires`. Los grupos 8 a 11 son el recorte de respaldo del punto 1 del gate: si David lo aplica, no se hacen y sus requisitos salen del delta antes de archivar.
+
+## 1. Configuración por pestañas
+
+- [x] 1.1 Agregar `Kiosk.Tests/PestanasConfiguracionTests.cs` con los escenarios de «Configuración por pestañas», «Lo editado se conserva hasta cerrar» y «Cada pestaña guarda lo suyo» (las nueve pestañas en orden con General elegida y su contenido; elegir Impresora deja visible sólo esa; flecha derecha e Inicio; la opacidad sin guardar sobrevive al cambio de pestaña; «Cancelar» y Escape descartan lo no guardado y conservan lo guardado; salir de reposo cierra Configuración; «Guardar» del estilo deja Configuración abierta con el aviso; el «Guardar» de Personas no guarda la vista previa del estilo; guardar sin poder escribir). Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~PestanasConfiguracion"`; pegar la salida
+  Once casos (diez hechos y una teoría de dos): las nueve pestañas en orden con General elegida, el modo y las bitácoras, y ocho `tabpanel` ocultos; Impresora como la única visible; flecha derecha a Personas e Inicio de vuelta a General con `tabindex` 0 en la elegida; la opacidad en 84 % que sobrevive a Impresora; «Cancelar» y Escape con un cupo guardado (versión 2 activa) y la opacidad sin guardar, que vuelve a 0.76; Escape con el panel de opciones abierto, que cierra Configuración entera; la identificación detrás del diálogo; «Guardar» del estilo, que deja Configuración abierta en Identidad visual con el aviso; «Guardar» de Personas, que no guarda la vista previa; y «Guardar» sin poder escribir. Sólo se sumó `MensajesAtencion.EstiloGuardado` para compilar. Rojo, 06/11 23:53:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~PestanasConfiguracion"
+        7 Bunit.ElementNotFoundException : No elements were found that matches the selector '#pestana-identidad'
+        1 Bunit.ElementNotFoundException : No elements were found that matches the selector '[role="tablist"]'
+        1 Bunit.ElementNotFoundException : No elements were found that matches the selector '#pestana-general'
+        1 Bunit.ElementNotFoundException : No elements were found that matches the selector '#pestana-impresora'
+        1 Bunit.ElementNotFoundException : No elements were found that matches the selector '#opacidad'   (el panel de opciones reemplazaba el diálogo)
+  total: 11 · error: 11 · correcto: 0
+  ```
+- [x] 1.2 Implementar las pestañas en `PanelConfiguracion` con el patrón de WAI-ARIA, todas montadas y la elegida visible (D1, D2), General con el estado de las bitácoras y el modo vigente, Opciones con su resumen y `#abrir-opciones`, y «Guardar» que no cierra (D3); cambiar, con la aprobación del gate, sólo la línea 87 de `PanelConfiguracionTests.Guardar_y_volver_a_abrir`. Verificar con el filtro de 1.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde (contra la instancia de `INCOMEDOR_SQLSERVER`) y el `git diff` del párrafo inicial con sólo `PanelConfiguracionTests.cs`; pegar las tres salidas
+  `PanelConfiguracion` con las nueve pestañas (`role="tablist"`, `tab` y `tabpanel`, `aria-selected`, `aria-controls`, `tabindex` 0 sólo en la elegida; flechas, Inicio y Fin con el foco que sigue a la elegida), todas montadas y las demás con `hidden`. General muestra «Modo: mantenimiento» (el modo real llega en 2.2) y las bitácoras; Personas y Opciones, su resumen («N personas/opciones en la versión V») y «Editar» (`#abrir-personas`, `#abrir-opciones`; «Ver» con INWeb), que abre el panel de C en la pestaña; Identidad visual, el estilo con su aviso de error y `#guardar-configuracion`; Impresora, los modos de la simulada. El pie sólo tiene «Cancelar». «Guardar» del estilo devuelve si pudo (`Func<bool>`) y deja Configuración abierta; Escape la cierra también con un panel abierto. **Decisión de implementación, a la vista:** `CodigoDuplicadoEnElPanelTests` (de la verificación de C) y `AdministracionE2ETests` usan en Personas `#guardar-panel`, `#aviso-panel` y `#aviso-guardado`, así que Personas conserva los id de C y, para que sigan únicos con todo montado, sólo un panel de edición se abre a la vez («Editar» de la otra pestaña queda deshabilitado con su indicación); y el aviso de lo guardado es uno solo, `#aviso-guardado`, debajo de las pestañas. D2 lo dice. El diálogo tiene un alto mínimo para que la fila de pestañas no salte. Cambió, con la aprobación del gate, sólo la línea 87 de `PanelConfiguracionTests.Guardar_y_volver_a_abrir`, que ahora afirma el aviso. 06/11 23:55 a 23:56:
+  ```
+  Kiosk.Tests --filter PestanasConfiguracion              total: 11 · error: 0 · correcto: 11
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)   total: 205 · error: 0 · correcto: 205   (194 y 11 nuevas)
+  git diff -U0 -- tests/Intelektron.INComedor.Kiosk.Tests/PanelConfiguracionTests.cs
+  @@ -87 +87 @@
+  -        Assert.Empty(pantalla.FindAll("[role=\"dialog\"]"));
+  +        Assert.Equal(MensajesAtencion.EstiloGuardado, pantalla.Find("[role=\"dialog\"] #aviso-guardado").TextContent.Trim());
+  git diff --name-status --diff-filter=M 9202347 -- tests   M  tests/Intelektron.INComedor.Kiosk.Tests/PanelConfiguracionTests.cs
+  ```
+- [x] 1.3 Agregar a `E2E.Tests/ConfiguracionPorPestanasE2ETests.cs` «Las pestañas entran en 1024 × 768» (las nueve en una fila, cada una de al menos 56 px, sin desplazar la pantalla), verla fallar con una afirmación imposible y revertirla; rehacer la captura 10 (`docs/capturas/10-configuracion.jpg`) con General y mirarla con `Read`; sumar al `readme.md` la descripción de las pestañas. Verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~ConfiguracionPorPestanas"` en verde; pegar las dos salidas y lo visto en la captura
+  `ConfiguracionPorPestanasE2ETests` mide, por CDP y a 1024 × 768, las nueve pestañas, su fila, su alto, sus bordes y el tamaño del documento, y saca la captura 10. Con las pestañas ocultas, `AdministracionE2ETests.Agregar_una_persona_y_atenderla` tocaba `#abrir-personas` y `#abrir-opciones` en pestañas que no se ven: suma, con la aprobación del gate, `#pestana-personas` y `#pestana-opciones` antes de esos dos botones (la parte de «cada pestaña se abre antes de tocar sus botones»; la tabla llega en 4.3), sin cambiar sus afirmaciones. Rojo con `Assert.True(Alto >= 560, "IMPOSIBLE")` y verde revertida, 06/11 23:57 y 07/11 00:01:
+  ```
+  dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~ConfiguracionPorPestanas"   (con la afirmación imposible)
+  con errores configuracion-puesto · Las pestañas entran en 1024 × 768: …   IMPOSIBLE
+  pestañas a 1024 × 768: {"Cantidad":9,"Arriba":[263.75 ×9],"Alto":56,"Derecha":916.7265625,"Izquierda":57,"Ancho":1024,"AltoVentana":768,"AnchoDocumento":1024,"AltoDocumento":768}
+  total: 1 · error: 1 · correcto: 0
+  dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~ConfiguracionPorPestanas|FullyQualifiedName~AdministracionE2E"   (revertida, con el alto fijo)
+  total: 2 · error: 0 · correcto: 2
+  ```
+  Captura `docs/capturas/10-configuracion.jpg` (1024 × 768, 60.939 bytes), mirada con `Read`: «Configuración» con las nueve pestañas en una fila, de «General» a «Red», General marcada con el fondo claro y el subrayado del acento; «Modo: mantenimiento»; «Bitácoras» con la general y la de interacciones «al día»; «Cancelar» abajo a la derecha; la atención atenuada detrás. Nada cortado. Para mirar en el monitor: la primera versión, sin alto mínimo, centraba el diálogo y la fila de pestañas cambiaba de altura con cada pestaña; ahora el diálogo ocupa casi todo el alto. En una de las corridas la salida mostró un «Unhandled exception. System.ArgumentException: Value does not fall within the expected range» de WPF sin ninguna prueba roja; no se repitió en otras dos corridas de las mismas pruebas, y queda en observación. `readme.md` describe Configuración por pestañas y el texto de la captura 10.
+
+## 2. Modos, clave del día y cierre
+
+- [x] 2.1 Agregar `Kiosk.Tests/ModoPuestoTests.cs` (sin archivo, ilegible y con un valor desconocido dan mantenimiento; operativo se conserva), `Kiosk.Tests/ClaveDelDiaTests.cs` (el aviso de desarrollo; `4711` aceptada; vacía y `12a4` rechazadas sin acción; «Cancelar» y Escape sin acción; `4711` ausente de la base, de las dos bitácoras y de la carpeta de datos) y `Kiosk.Tests/AccesoPuestoTests.cs` (engranaje directo en mantenimiento y con clave en operativo; pasar a operativo con la clave cancelada y aceptada; volver a mantenimiento sin clave; en operativo `0001` confirma sin clave; Escape en mantenimiento cierra, en operativo pide la clave y durante una atención no hace nada; «Cerrar el puesto» en General; los registros con `Access`, `DAILY_KEY_ACCEPTED`, `DAILY_KEY_REJECTED` y `CONFIGURATION_CHANGED` con `KIOSK_MODE`, todos con `NO_AUTHENTICATION`), con un `CierrePuesto` de prueba que cuenta los cierres. Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ModoPuesto|FullyQualifiedName~ClaveDelDia|FullyQualifiedName~AccesoPuesto"`; pegar la salida
+  Treinta y tres casos con `PuestoDePrueba` (nuevo: carpeta de datos propia con la base, el estilo y el modo, un `CierrePuesto` que sólo cuenta los cierres, porque en bUnit no hay ventana, y la general leída del archivo después de una pasada del escritor). `ModoPuestoTests` (6): sin archivo, cuatro contenidos ilegibles o desconocidos y el operativo que otro almacén lee. `ClaveDelDiaTests` (14): el validador con ocho claves (`4711`, `0`, 12 dígitos; vacía, `12a4`, 13 dígitos, con espacio y dígitos arábigos), el aviso y el campo enmascarado, vacía y `12a4`, «Cancelar» y Escape, y `4711` ausente de la base, de las bitácoras, del marcado y de los archivos de la carpeta, fuera de los UUID. `AccesoPuestoTests` (13): la entrada en los dos modos con `MAINTENANCE_MODE`, `DAILY_KEY_ACCEPTED` y `DAILY_KEY`; pasar a operativo cancelando y aceptando, con `KIOSK_MODE`; volver a mantenimiento sin clave; `0001` que confirma en operativo; Escape en mantenimiento con `KIOSK_CLOSE_REQUESTED`, en operativo con la clave, rechazada con `INVALID_FORMAT` y sin `12a4`, cancelada y durante una atención; «Cerrar el puesto» en los dos modos; y el pedido de cierre de la ventana. Esqueletos con `NotImplementedException` y los dos mensajes para compilar. Rojo, 07/11 00:06:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ModoPuesto|FullyQualifiedName~ClaveDelDia|FullyQualifiedName~AccesoPuesto"
+       28 System.NotImplementedException : The method or operation is not implemented.
+        2 Bunit.MissingEventHandlerException : The element does not have an event handler for the event 'onkeydown'
+        1 Bunit.ElementNotFoundException : No elements were found that matches the selector '#pasar-operativo'
+        1 Bunit.ElementNotFoundException : No elements were found that matches the selector '#cerrar-puesto'
+  total: 33 · error: 33 · correcto: 0
+  ```
+- [x] 2.2 Implementar `AlmacenModoPuesto` (D5), `IValidadorClaveDelDia` con `ClaveDelDiaDeDesarrollo` y `DialogoClaveDelDia` (D6), la entrada por el engranaje, los botones de modo y «Cerrar el puesto» de General, Escape en la raíz de la pantalla, `CierrePuesto` y los registros (D17). Verificar con el filtro de 2.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el `git diff` del párrafo inicial; pegar las salidas
+  `AccesoPuesto.cs`: `ModoPuesto`, `AlmacenModoPuesto` (`modo-puesto.json` con escritura atómica; sin archivo, ilegible o desconocido, mantenimiento), `IValidadorClaveDelDia` con `ClaveDelDiaDeDesarrollo` (1 a 12 dígitos ASCII) y `CierrePuesto` (la pantalla pone `RequiereClave` según el modo; `Cerrar` autoriza y cierra; `PedirClave` lo usa la ventana). `DialogoClaveDelDia.razor`: campo `password` numérico sin `value`, el aviso de desarrollo, «Aceptar», «Cancelar», Escape sin propagarse, y un elemento nuevo después de un rechazo para que el campo quede vacío. `PantallaAtencion`: el engranaje directo en mantenimiento y con la clave en operativo; Escape en la raíz, sólo en reposo sin diálogos, con el foco devuelto a la raíz al volver a reposo; `KIOSK_CLOSE_REQUESTED` con `Source` y `Access`; `DAILY_KEY_ACCEPTED` y `DAILY_KEY_REJECTED` con la acción; `KIOSK_MODE` con el antes, el después y lo vigente; y `Access` en todos los registros de Configuración, con el actor nulo y `NO_AUTHENTICATION` (D17). General muestra el modo, «Pasar a operativo» o «Pasar a mantenimiento» y «Cerrar el puesto» (sólo con un `CierrePuesto`). El diálogo de Configuración no deja pasar Escape a la raíz. 07/11 00:10 a 00:11:
+  ```
+  Kiosk.Tests --filter (los tres)                         total: 33 · error: 0 · correcto: 33
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)   total: 238 · error: 0 · correcto: 238   (205 y 33 nuevas)
+  dotnet build src/Intelektron.INComedor.Kiosk -warnaserror   0 Advertencia(s) · 0 Errores
+  git diff --name-status --diff-filter=M 9202347 -- tests   AdministracionE2ETests.cs y PanelConfiguracionTests.cs, los del grupo 1
+  ```
+- [x] 2.3 En `MainWindow.xaml`, `WindowStyle="None"`, `ResizeMode="NoResize"` y `WindowState="Maximized"` (pantalla completa sin bordes en los dos modos), y frenar en `Closing` el cierre no autorizado en operativo sin frenar `SessionEnding` (D7); agregar `E2E.Tests/AccesoPuestoE2ETests.cs`: en mantenimiento la ventana está maximizada (`IsZoomed`), sin `WS_CAPTION` ni `WS_THICKFRAME` y con su rectángulo igual al del monitor (`GetMonitorInfo`), y Escape la cierra en orden con `KIOSK_STOPPED`; con `modo-puesto.json` en operativo, la misma pantalla completa, `CloseMainWindow` no la cierra en 5 s y muestra la clave, y con `4711` se cierra en orden. Sumar a `readme.md` los modos, la clave de desarrollo, la pantalla completa y el cierre, y a `AGENTS.md` y al contexto de `openspec/config.yaml` que los modos con la clave de desarrollo salen de la segunda ola y siguen ahí la cuenta individual de mantenimiento y la clave real. Verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` completo en verde (`PresentacionTactilTests.La_ventana_abre_maximizada` y los dos E2E que cierran con `CloseMainWindow`, sin cambios; si uno falla, parar por el punto 16) y `git grep -n "clave del día" -- AGENTS.md openspec/config.yaml`; pegar las salidas
+  `MainWindow.xaml` con `WindowStyle="None"`, `ResizeMode="NoResize"` y `WindowState="Maximized"`; `MainWindow` registra `AlmacenModoPuesto` y un `CierrePuesto` que cierra por el despachador y frena en `Closing` el pedido no autorizado en operativo, salvo con `SessionEnding`. `AccesoPuestoE2ETests`, dos casos, con `IsZoomed`, el estilo de la ventana (`GetWindowLongPtr`) y su rectángulo contra `GetMonitorInfo`. Rojo con la ventana de antes y verde después, 07/11 00:12 y 00:13:
+  ```
+  dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~AccesoPuestoE2E"   (antes de cambiar la ventana)
+  con errores … En operativo: …       Assert.Equal() Failure: Values differ   Expected: 0   Actual: 12582912   (WS_CAPTION)
+  con errores … En mantenimiento: …   Assert.Equal() Failure: Values differ   Expected: 0   Actual: 12582912
+  total: 2 · error: 2 · correcto: 0
+  (con la ventana nueva)   total: 2 · error: 0 · correcto: 2
+  ventana en operativo: estilo 0x17080000, zoom True, rectángulo {0, 0, 1280, 800}, monitor {0, 0, 1280, 800}
+  pedido de cierre en operativo: sigue abierto a los 5 s, con la clave a la vista
+  puesto cerrado en orden, código de salida 0
+  ventana en mantenimiento: estilo 0x17080000, zoom True, rectángulo {0, 0, 1280, 800}, monitor {0, 0, 1280, 800}
+  dotnet test tests/Intelektron.INComedor.E2E.Tests   (completo, 07/11 00:14)
+  total: 15 · error: 0 · correcto: 15 · duración: 2m 58s   (12 de antes, entre ellos La_ventana_abre_maximizada y los dos que cierran con CloseMainWindow, sin cambios; 3 nuevos)
+  git grep -n "clave del día" -- AGENTS.md openspec/config.yaml
+  AGENTS.md:27, AGENTS.md:29, openspec/config.yaml:12, openspec/config.yaml:13
+  ```
+  Medido lo que el plan dejaba sin medir: la ventana sin bordes y maximizada sigue `IsZoomed`, así que «Abre maximizada» y su E2E siguen valiendo sin cambios. `readme.md` suma «Modos, clave del día y cierre».
+
+## 3. Comprobantes en Configuración
+
+- [x] 3.1 Agregar `Kiosk.Tests/PestanaComprobantesTests.cs` (reposo sin «Asistencia»; cerrar Configuración termina la sesión; 30 s sin tocar la pestaña la terminan, y 29 s no; el aviso del motivo al vencer el permiso) e `Infrastructure.Sqlite.Tests/SalidaAsistenciaTests.cs` (`Salir` registra `PRIVILEGED_SESSION_CLOSED` con la sesión y la causa, sin el código). Cambiar, con la aprobación del gate, sólo la entrada de las cuatro pruebas de `PantallaAtencionTests.cs` del punto 4 y su ayudante `EntrarAsistencia` (la pestaña en lugar de `#asistencia`, y el aviso y «Salir» de la pestaña), sin tocar sus afirmaciones de RB26. Ver fallar las nuevas y las cuatro con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~PestanaComprobantes|FullyQualifiedName~PantallaAtencionTests"` y `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~SalidaAsistencia"`; pegar las salidas
+  `Kiosk.Tests/PestanaComprobantesTests.cs` (6): reposo sin «Asistencia»; 9001 en la pestaña con su nombre, la tabla y «Salir»; cerrar Configuración termina la sesión con `PRIVILEGED_SESSION_CLOSED` y `CONFIGURATION_CLOSED`, y la pestaña vuelve a pedir un código; 30 s sin tocar la pestaña la terminan (con el temporizador de la pantalla); `SesionOperador` vence en el segundo 30 y no en el 29, y un toque reinicia el plazo; el permiso que vence durante la sesión deja el aviso `PERMISSION_EXPIRED`. `Infrastructure.Sqlite.Tests/SalidaAsistenciaTests.cs` (4): `Salir` con `EXIT`, `CONFIGURATION_CLOSED` y `TIMEOUT` deja un `PRIVILEGED_SESSION_CLOSED` con la sesión y la causa, sin el código, y una segunda salida no deja otro. Cambian, con la aprobación del gate, las cuatro de `PantallaAtencionTests.cs` del punto 4: el ayudante `EntrarAsistencia` y la entrada de `Persona_sin_permiso_sigue_en_reposo` (el engranaje, la pestaña, `#codigo-operador` y `#entrar-operador` en lugar de `#codigo` y `#asistencia`) y el id del aviso (`#aviso-comprobantes` en lugar de `#aviso`) en las dos que lo leen; sus afirmaciones de RB26 quedan. Esqueletos de `SesionOperador` y de `Salir(sesion, causa)` para compilar. Rojo, 07/11 00:18:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~PestanaComprobantes|FullyQualifiedName~PantallaAtencionTests"
+  con errores (las seis nuevas y las cuatro aprobadas)   8 Bunit.ElementNotFoundException · 1 Assert.Empty() Failure (el botón «Asistencia») · 1 NotImplementedException
+  total: 17 · error: 10 · correcto: 7
+  dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~SalidaAsistencia"
+  4 System.NotImplementedException    total: 4 · error: 4 · correcto: 0
+  ```
+- [x] 3.2 Implementar `PestanaComprobantes` y `SesionOperador` sobre `Asistencia` (D8), el registro de `Asistencia.Salir`, sacar «Asistencia» de reposo y borrar de `MaquinaAtencion` lo que queda sin uso. Verificar con los filtros de 3.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` y `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completos en verde, `git grep -n "EntrarAsistencia\|EstadoAtencion.Asistencia" -- src` vacío y el `git diff` del párrafo inicial con `PantallaAtencionTests.cs` sumado; rehacer la captura 06 (reposo sin «Asistencia») y actualizar en `readme.md` el paso del recorrido que reimprime; pegar las salidas y lo visto en la captura
+  `SesionOperador` (Kiosk) sobre `Asistencia`: entrar, pedir la reimpresión, reimprimir, recuperar, salir con su causa, el plazo de 30 s y la salida cuando una acción vuelve sin privilegio (`PERMISSION_LOST`). `PestanaComprobantes.razor` con la tabla, los motivos, el aviso de incertidumbre, «Salir» y el código que no vuelve a mostrarse; un toque en la pestaña reinicia el plazo. La pantalla abre la sesión con Configuración, la cierra con ella (`CONFIGURATION_CLOSED`) y la revisa con su temporizador (`TIMEOUT`). `Asistencia.Salir(sesion, causa)` registra `PRIVILEGED_SESSION_CLOSED` sólo si cerró una sesión abierta; `Salir(sesion)` es `EXIT`. Reposo sin «Asistencia», y de `MaquinaAtencion` salieron el estado `Asistencia` y sus miembros (128 líneas). Captura 06 rehecha con `ConfiguracionPorPestanasE2ETests.Reposo_sin_asistencia`, que se vio fallar con una afirmación imposible (dos «Ingresar») y se revirtió. 07/11 00:20 a 00:23:
+  ```
+  Kiosk.Tests y Sqlite.Tests --filter (los de 3.1)         total: 17 · error: 0 · correcto: 17   y   total: 4 · error: 0 · correcto: 4
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)    total: 244 · error: 0 · correcto: 244   (238 y 6 nuevas)
+  Infrastructure.Sqlite.Tests completo                     total: 188 · error: 0 · correcto: 188   (184 y 4 nuevas)
+  git grep -n "EntrarAsistencia\|EstadoAtencion.Asistencia" -- src   (vacío)
+  E2E --filter ConfiguracionPorPestanas                    total: 2 · error: 0 · correcto: 2
+  git diff --name-status --diff-filter=M 9202347 -- tests  AdministracionE2ETests.cs, PanelConfiguracionTests.cs, PantallaAtencionTests.cs
+  ```
+  Captura `docs/capturas/06-reposo-tactil.jpg` (1024 × 768), mirada con `Read`: «Identificate para comenzar», el campo del código e «Ingresar», sin «Asistencia»; los logos de ejemplo, el fondo de cocina y el engranaje abajo a la derecha, al lado de la marca. Nada cortado. `readme.md`: los pasos 4 a 6 del recorrido (la impresora en su pestaña, la reimpresión y el permiso vencido en Comprobantes), la tabla de códigos y el párrafo de la reimpresión.
+
+## 4. Personas en una tabla
+
+- [x] 4.1 Agregar `Kiosk.Tests/TablaPersonasTests.cs` con los escenarios de «Personas habilitadas con sus opciones y cupos» y «Personas ordenables por columna» (la fila de 0001; la persona sin cupos con «—»; cambiar REFRIGERIO de 0001 a 1; vaciar la celda; ordenar por REFRIGERIO dos veces; «Álvaro», «Ana» y «Beatriz»; la marca del campo inválido que sigue en su fila después de ordenar; las columnas de cupo que son sólo los pares que usa el catálogo). Cambiar, con la aprobación del gate, las siete pruebas de `PanelPersonasTests.cs` del punto 4 para que busquen las filas de la tabla en lugar de las tarjetas, sin cambiar qué afirman. Ver fallar las nuevas y las siete con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~TablaPersonas|FullyQualifiedName~PanelPersonasTests"`; pegar la salida
+  `Kiosk.Tests/TablaPersonasTests.cs` (8): la fila de 0001 («Activa», ALMUERZO 1, REFRIGERIO 2, 9 habilitadas); las columnas de cupo, sólo ALMUERZO y REFRIGERIO; «—» y 0 de la persona sin cupos; REFRIGERIO de 2 a 1 con la versión 2; la celda vacía que quita el cupo y deja sólo las de ALMUERZO; dos toques en REFRIGERIO con `aria-sort` descendente y las celdas sin cupo al final; «Álvaro», «Ana» y «Beatriz» en el orden del español; y la marca del nombre vacío que sigue en la fila nueva después de ordenar. Cambian, con la aprobación del gate, las siete de `PanelPersonasTests.cs` del punto 4: las filas `tr.persona` en lugar de las tarjetas `article.persona` (en el ayudante `Persona` y en cuatro búsquedas), los cupos leídos por su columna (`data-cupo`) en lugar de su nombre en la tarjeta, la persona sin cupos como celdas vacías en lugar de la línea «Sin cupos», los encabezados ordenables fuera de la cuenta de botones de INWeb y el cupo de ALMUERZO cargado en su columna; afirman lo mismo. `Ningun_codigo_en_el_panel` no cambió. Rojo, 07/11 00:26:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~TablaPersonas|FullyQualifiedName~PanelPersonasTests"
+        8 System.InvalidOperationException : Sequence contains no matching element   (no hay filas tr.persona)
+        3 System.InvalidOperationException : Sequence contains no elements
+        3 Bunit.ElementNotFoundException : No elements were found …
+        1 Assert.Equal() Failure: Collections differ
+  total: 17 · error: 15 · correcto: 2   (Ningun_codigo_en_el_panel y la de INWeb, que ya valían con tarjetas)
+  ```
+- [x] 4.2 Implementar la tabla de personas con «Editar», sus columnas, el orden en la vista y la edición en el orden de lectura (D4), en lugar de las tarjetas de `PanelPersonas`. Verificar con el filtro de 4.1 en verde (`Ningun_codigo_en_el_panel` sin cambios), `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el `git diff` del párrafo inicial con `PanelPersonasTests.cs` sumado; pegar las salidas
+  `PanelPersonas` pasa a tabla: `#tabla-personas` para leer y `#panel-personas` con «Editar» en el mismo lugar (D4); columnas de los pares que usan las cargas o alguna regla, en el orden del catálogo; vacío es sin cupo; la edición se arma en el orden de lectura y cada «Cupos[n]» rechazado vuelve a su celda; el orden es sólo de la vista, con las filas nuevas al final y las celdas sin cupo al final en los dos sentidos. Personas y Opciones siguen con los id de C. **Dos decisiones de implementación, a la vista:** (1) la tabla de lectura se dibuja sólo con la pestaña Personas elegida, porque con todas montadas dos pruebas aprobadas de la asistencia (`Salir_de_la_asistencia_vuelve_a_reposo` y `Permiso_que_vence_durante_la_sesion_vuelve_a_reposo`) encontraban en la página el nombre del operador, que la tabla oculta listaba; sus afirmaciones de RB26 no se tocaron, y así los nombres no quedan en la página mientras se usa otra pestaña; con la pestaña oculta queda sólo «Editar», que `CodigoDuplicadoEnElPanelTests` toca apenas se abre Configuración. (2) «Editar» va en la última celda del encabezado y el diálogo ancho ocupa el alto disponible con márgenes de 16 px, para que entren diez filas de 44 px en 1024 × 768 sin achicar filas ni controles. Abrir una edición elige su pestaña. 07/11 00:27 a 00:31:
+  ```
+  Kiosk.Tests --filter (TablaPersonas, PanelPersonasTests, CodigoDuplicado, PestanasConfiguracion)   total: 29 · error: 0 · correcto: 29
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)   total: 252 · error: 0 · correcto: 252   (244 y 8 nuevas)
+  git diff --name-status --diff-filter=M 9202347 -- tests   AdministracionE2ETests.cs, PanelConfiguracionTests.cs, PanelPersonasTests.cs, PantallaAtencionTests.cs
+  ```
+- [x] 4.3 Cambiar, con la aprobación del gate, los pasos de personas de `AdministracionE2ETests.Agregar_una_persona_y_atenderla` (la tabla, y tocar cada pestaña antes de sus botones), sin cambiar sus afirmaciones; agregar a `ConfiguracionPorPestanasE2ETests.cs` «Muchas personas en 1024 × 768» con 200 personas sintéticas más (al menos diez filas de 44 px a la vista y el encabezado fijo al desplazar) y medir cuánto tarda en dibujarse la tabla con 209 personas; rehacer la captura 13 y mirarla con `Read`; actualizar en `readme.md` el párrafo de personas. Verificar con `dotnet test tests/Intelektron.INComedor.E2E.Tests` completo en verde; pegar la salida, la medida (si pasa de 500 ms, queda como riesgo para la verificación) y lo visto en la captura
+  Cambian, con la aprobación del gate, los pasos de personas de `AdministracionE2ETests.Agregar_una_persona_y_atenderla`: la fila nueva es `tr.persona` y el cupo de ALMUERZO se carga en su columna en lugar del selector y «Agregar cupo»; la cuenta de 10 filas y el desplazamiento hasta «Persona sintética 01» buscan `tr.persona`. Sus afirmaciones no cambiaron. `ConfiguracionPorPestanasE2ETests.Muchas_personas_en_1024_x_768` suma 200 personas por SQL con el puesto abierto. Rojo con `Visibles >= 100` («IMPOSIBLE») y verde revertida, 07/11 00:32:
+  ```
+  dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~Muchas_personas"   (con la afirmación imposible)
+  con errores … Muchas personas en 1024 × 768 …   IMPOSIBLE
+  tabla de personas con 209 filas dibujada en 261 ms desde el toque en la pestaña
+  tabla a 1024 × 768: {"Visibles":10,"Alto":44,"CajaAbajo":667,"AltoVentana":768}
+  total: 1 · error: 1 · correcto: 0
+  dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~ConfiguracionPorPestanas|FullyQualifiedName~AdministracionE2E"   (revertida)
+  total: 4 · error: 0 · correcto: 4
+  ```
+  La medida: 261 ms desde el toque hasta las 209 filas, por debajo de los 500 ms del riesgo. Captura `docs/capturas/13-personas-habilitadas.jpg` (1024 × 768), mirada con `Read`: la pestaña Personas en edición, con «Nombre», «Estado», «ALMUERZO», «REFRIGERIO», «Opciones habilitadas» y «Código»; las filas de 44 px con los nombres y los límites como campos («Persona sintética 01» con 1 y 2 y 15 habilitadas, «Persona sintética 05» con 1 y 9), «Quitar» en cada una, la barra de desplazamiento de la tabla y «Agregar persona», «Cancelar» y «Guardar». Ningún código, nada cortado. Para mirar en el monitor: con un panel en edición se ven dos «Cancelar», el del panel y el del pie, que cierra Configuración entera. `readme.md`: el párrafo de personas describe la tabla, y el texto de la captura 13.
+
+## 5. Consumos
+
+- [x] 5.1 Agregar `Infrastructure.Sqlite.Tests/ConsultaConsumosTests.cs` con los escenarios de «Los consumos del día por defecto», «Filtros de la consulta» y «Orden por columna» que no necesitan pantalla (los de hoy del más reciente al más antiguo; otra fecha; el rechazo que no aparece; la persona renombrada; una persona en una semana; REFRIGERIO; la persona de baja; el rango invertido y el de más de 366 días; 520 consumos dan 500 y «hay más»; persona ascendente; cargo descendente; el de mayor cargo que entra por el orden). Crear `ConsultaConsumos` con `throw new NotImplementedException()`. Ver fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~ConsultaConsumos"`; pegar la salida
+  `Infrastructure.Sqlite.Tests/ConsultaConsumosTests.cs` (14 casos): los tres de hoy del más reciente al más antiguo con persona, opción, servicio, cargo y la fecha de hoy; otra fecha vacía; el rechazo que no aparece y el estado de su comprobante (confirmación real); la persona renombrada con el nombre de su versión; una persona en una semana; REFRIGERIO y una opción; la persona de baja en el filtro; el rango invertido, el de 367 días y el de 366 justos; 520 dan 500 y «hay más»; persona ascendente y descendente; cargo en los dos sentidos; y el de mayor cargo que entra por el orden. Los consumos que el escenario no confirma se insertan por SQL con las claves foráneas apagadas en esa conexión y el precio aplicado que cada caso elige. Esqueleto con `NotImplementedException`. Rojo, 07/11 00:36:
+  ```
+  dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~ConsultaConsumos"
+       14 System.NotImplementedException : The method or operation is not implemented.
+  total: 14 · error: 14 · correcto: 0
+  ```
+- [x] 5.2 Implementar `ConsultaConsumos` con el orden de una lista cerrada y todos los valores parametrizados (D9). Verificar con el filtro de 5.1 en verde y `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` completo en verde; pegar las salidas
+  `ConsultaConsumos`: une consumo, persona, opción y servicio de la versión del consumo y el último trabajo de su comprobante; rango validado (`INVERTED_RANGE`, `RANGE_TOO_LONG`, hasta 366 días); filtros parametrizados; el orden de una lista cerrada traducido a una expresión fija, con la intercalación del español registrada en la conexión para los nombres y `json_extract` para el cargo; 501 filas para saber si hay más. `Personas()`, `Servicios()` y `Opciones()` dan cada uno con el nombre de su versión más reciente (las personas, con la marca de baja). 07/11 00:37:
+  ```
+  Infrastructure.Sqlite.Tests --filter ConsultaConsumos   total: 14 · error: 0 · correcto: 14
+  Infrastructure.Sqlite.Tests completo                    total: 202 · error: 0 · correcto: 202   (188 y 14 nuevas)
+  ```
+- [x] 5.3 Agregar `Kiosk.Tests/PestanaConsumosTests.cs` (en mantenimiento, la pestaña muestra los consumos de hoy sin pedir ningún código; en operativo, después de la clave del día, también; Comprobantes sigue pidiendo el código de un operador; `CONSUMPTIONS_QUERIED` con el actor nulo, `NO_AUTHENTICATION`, `MAINTENANCE_MODE`, el servicio filtrado y 2 filas, sin nombres ni códigos; ningún código en el texto ni en los atributos; `aria-sort` en el encabezado elegido). Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~PestanaConsumos"`; pegar la salida
+  `Kiosk.Tests/PestanaConsumosTests.cs` (7): en mantenimiento, los dos consumos de hoy de 0001 sin ningún campo de código y con `aria-sort` descendente en «Hora»; en operativo, después de la clave `4711`, el consumo de hoy y `CONSUMPTIONS_QUERIED` con `DAILY_KEY`; Comprobantes, con la tabla de Consumos vista, sigue pidiendo el código; filtrar por REFRIGERIO con dos refrigerios deja `CONSUMPTIONS_QUERIED` con el actor nulo, `NO_AUTHENTICATION`, `MAINTENANCE_MODE`, el servicio y 2 filas, sin nombres ni el nombre del servicio; ningún código en el texto ni en los atributos (los filtros usan posiciones, no identificadores); el orden por persona con `aria-sort` ascendente y descendente; y el rango invertido con su aviso y la tabla igual. Sólo se sumaron los mensajes para compilar. Rojo, 07/11 00:38:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~PestanaConsumos"
+        2 Assert.NotEmpty() Failure · 2 Bunit.ElementNotFoundException · 1 Assert.Single() Failure · 1 Assert.Equal() Failure · 1 InvalidOperationException
+  total: 7 · error: 7 · correcto: 0
+  ```
+- [x] 5.4 Implementar `PestanaConsumos` sobre `ConsultaConsumos`, sin sesión de operador, con el día de hoy por defecto, los filtros y el registro con `Access` (D9, D17). Verificar con el filtro de 5.3 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el `git diff` del párrafo inicial; sacar la captura 15 (consumos del día, 1024 × 768) y mirarla con `Read`; sumar a `readme.md` la sección de consumos y a `docs/administracion-y-bitacoras.md` que la consulta la ve quien entra a Configuración y queda en la general; pegar las salidas y lo visto
+  `PestanaConsumos.razor` sobre `ConsultaConsumos` (que arma `ServicioAtencion`), sin sesión de operador: el día de hoy por defecto, los filtros por fechas, persona (con «(de baja)»), servicio y opción, «Consultar», el orden por encabezado sobre la consulta aplicada, el aviso del rango, «No hay consumos con estos filtros» y el de más de 500. La tabla se dibuja sólo con la pestaña elegida, como la de personas; los filtros se conservan hasta cerrar Configuración. La pantalla registra cada consulta hecha (no las rechazadas) como `CONSUMPTIONS_QUERIED` con los filtros, el orden, las filas, `Access`, el actor nulo y `NO_AUTHENTICATION` (D9, D17). Captura 15 con `ConfiguracionPorPestanasE2ETests.Los_consumos_de_hoy_a_1024_x_768`, vista fallar con una cuenta imposible (7 filas) y revertida. 07/11 00:40 a 00:44:
+  ```
+  Kiosk.Tests --filter PestanaConsumos                     total: 7 · error: 0 · correcto: 7
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)    total: 259 · error: 0 · correcto: 259   (252 y 7 nuevas)
+  E2E --filter Los_consumos_de_hoy   (con ToHaveCountAsync(7))   total: 1 · error: 1 · correcto: 0
+  E2E --filter Los_consumos_de_hoy   (revertida)                 total: 1 · error: 0 · correcto: 1
+  chequeo de enlaces de D8 sobre readme.md, docs/administracion-y-bitacoras.md y AGENTS.md   enlaces rotos: 0
+  git diff --name-status --diff-filter=M 9202347 -- tests   los cuatro archivos aprobados
+  ```
+  Captura `docs/capturas/15-consumos-del-dia.jpg` (1024 × 768), mirada con `Read`: la pestaña Consumos con «Desde» y «Hasta» en el día, «Persona», «Servicio» y «Opción» en «Todas» o «Todos», «Consultar», y la tabla con «Hora ▼», «Persona», «Opción», «Servicio», «Cargo» y «Estado» y una fila: 00:42, «Persona sintética 01», «Almuerzo común», ALMUERZO, ARS 1.500,00, «Enviado». Ningún código, nada cortado. `readme.md` suma «Consumos en Configuración», la captura 15 y la nota de las capturas rehechas; `docs/administracion-y-bitacoras.md`, la precisión del 06/11 sobre quién ve la consulta y su registro.
+
+## 6. Impresora
+
+- [x] 6.1 Agregar `Kiosk.Tests/PruebaImpresionTests.cs` (disponible: la impresora recibe PRUEBA y queda `PRINTER_TESTED`; sin papel; ninguna fila nueva en intenciones, consumos, comprobantes, trabajos ni eventos de salida; la prueba que no se muestra en la próxima atención) y `Kiosk.Tests/TextosComprobanteTests.cs` (encabezado y pie en la impresora simulada y en pantalla; vacío y con salto de línea rechazados; la copia de un operador con el encabezado nuevo y DUPLICADO; el archivo con un encabezado de 300 caracteres da los textos por defecto; `CONFIGURATION_CHANGED` con `TICKET_TEXTS`), y comprobar que `PanelConfiguracionTests.Los_modos_estan_en_configuracion` y `Sin_papel_desde_configuracion` siguen sin cambios con la sección dentro de la pestaña. Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~PruebaImpresion|FullyQualifiedName~TextosComprobante"`; pegar la salida
+  `Kiosk.Tests/PruebaImpresionTests.cs` (4): disponible, la impresora recibe PRUEBA sin persona, la pestaña dice que salió y `PRINTER_TESTED` queda con `PRINTED`, el actor nulo y `MAINTENANCE_MODE`; sin papel, el aviso y `FAILED` con `PAPER_OUT`; intenciones, consumos, comprobantes, trabajos y eventos de salida sin filas nuevas; y con la simulada, la prueba que no aparece como comprobante de la atención siguiente en «Sin papel». `Kiosk.Tests/TextosComprobanteTests.cs` (12): la forma de los textos (8 casos), encabezado y pie en la pantalla y en el archivo de la simulada con `TICKET_TEXTS`, vacío y con salto de línea rechazados con su campo, la copia de un operador con el encabezado nuevo, DUPLICADO y los mismos datos, y el archivo con un encabezado de 300 caracteres que da los textos por defecto. `PuestoDePrueba` registra `AlmacenImpresora`. Esqueletos con `NotImplementedException` y los mensajes. Rojo, 07/11 00:45:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~PruebaImpresion|FullyQualifiedName~TextosComprobante"
+        9 System.NotImplementedException · 7 Bunit.ElementNotFoundException
+  total: 16 · error: 16 · correcto: 0
+  ```
+- [x] 6.2 Implementar la pestaña Impresora con los modos de hoy, «Imprimir una prueba» y los textos en `impresora.json` (D13), leídos por `ImpresoraSimulada` y por el comprobante en pantalla. Verificar con el filtro de 6.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el `git diff` del párrafo inicial; sumar a `readme.md` la prueba y los textos, y a `AGENTS.md` que la prueba de impresión sale de la segunda ola; pegar las salidas
+  `TextosComprobante` (validación) y `AlmacenImpresora` (`impresora.json`, atómico, validado al leer y al guardar); `ImpresoraSimulada.Textos`, que va en la primera línea y, con pie, en la última; el comprobante en pantalla con el encabezado y el pie vigentes; «Imprimir una prueba» en la pantalla, directo a `IImpresoraComprobantes.Enviar` con un `TicketId` nuevo (D13); y la pestaña Impresora con los modos de siempre, la prueba con su resultado y los textos con su «Guardar», que deja Configuración abierta con el aviso. `MainWindow` registra `AlmacenImpresora`. 07/11 00:47 a 00:48:
+  ```
+  Kiosk.Tests --filter (los dos y PanelConfiguracionTests)   total: 24 · error: 0 · correcto: 24
+    (Los_modos_estan_en_configuracion, Sin_papel_desde_configuracion y Con_otra_impresora_no_hay_seccion sin cambios)
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)   total: 275 · error: 0 · correcto: 275   (259 y 16 nuevas)
+  git diff --name-status --diff-filter=M 9202347 -- tests   los cuatro archivos aprobados
+  ```
+  `readme.md` suma «Impresora en Configuración»; `AGENTS.md`, que la prueba de impresión y los textos salen de la segunda ola y siguen ahí el resto del diagnóstico y la impresora física.
+
+## 7. Sin rebote
+
+- [x] 7.1 Agregar `Kiosk.Tests/ArgumentosWebView2Tests.cs` (sin puerto, `--disable-features=ElasticOverscroll`; con el puerto 9333, ese argumento y `--remote-debugging-port=9333`; `EntornoDemostracion.ArgumentosNavegador` sigue siendo sólo el puerto) y, a `ConfiguracionPorPestanasE2ETests.cs`, «La página no rebota» (en reposo, en la selección y con Configuración abierta, `overscroll-behavior-y` calculado es `none` en `html` y `body` y `contain` en el diálogo, la selección y las tablas), «El navegador arranca sin rebote elástico» (la línea de comandos del navegador del árbol del puesto lleva `ElasticOverscroll` en `--disable-features`) y «La ventana angosta sigue desplazándose» (a 600 px se llega a «Confirmar»). Ver fallar las nuevas con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ArgumentosWebView2"` y `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~ConfiguracionPorPestanas"`; pegar las salidas
+  `Kiosk.Tests/ArgumentosWebView2Tests.cs` (2): sin puerto, `--disable-features=ElasticOverscroll`; con el puerto 9333, ese argumento y `--remote-debugging-port=9333`, con `EntornoDemostracion.ArgumentosNavegador` igual a sólo el puerto. En `ConfiguracionPorPestanasE2ETests`: «La página no rebota» (el `overscroll-behavior-y` calculado en reposo, en la selección, con Configuración en Personas y en Consumos), «El navegador arranca sin rebote elástico» (la línea de comandos de los `msedgewebview2.exe` del árbol del puesto, leída con `Get-CimInstance`, sin paquetes nuevos) y «La ventana angosta sigue desplazándose» (a 600 px se llega a «Confirmar»; ya valía, porque su conducta existía). Esqueleto de `ArgumentosWebView2` con `NotImplementedException`. Rojo, 07/11 00:49 y 00:50:
+  ```
+  Kiosk.Tests --filter ArgumentosWebView2    2 System.NotImplementedException    total: 2 · error: 2 · correcto: 0
+  E2E --filter ConfiguracionPorPestanas      total: 7 · error: 2 · correcto: 5
+    La página no rebota      Expected: "none"   Actual: "auto"
+    overscroll-behavior-y: reposo auto, auto · selección auto, auto, auto · personas auto, auto, auto, contain · consumos contain
+    El navegador arranca sin rebote elástico   Assert.Contains() Failure   (navegador del puesto: sin --disable-features)
+  ```
+- [x] 7.2 Sumar `overscroll-behavior` a `puesto.css` y `ArgumentosWebView2.Componer`, que `MainWindow` usa siempre para las opciones del entorno del WebView2 (D15). Verificar con los filtros de 7.1 en verde y `EntornoDemostracionTests` y `PresentacionTactilTests` sin cambios en verde; pegar las salidas
+  `puesto.css`: `overscroll-behavior: none` en `html` y `body`, y `contain` en el diálogo, la selección (`.lista`) y las cajas de las tablas (D15). `ArgumentosWebView2.Componer` (con la fuente del nombre en su comentario), que `MainWindow` usa siempre para las opciones del entorno del WebView2, también sin carpeta ni puerto. 07/11 00:50 a 00:51:
+  ```
+  Kiosk.Tests --filter "ArgumentosWebView2|EntornoDemostracion"   total: 32 · error: 0 · correcto: 32   (EntornoDemostracionTests sin cambios)
+  E2E --filter "ConfiguracionPorPestanas|PresentacionTactil"     total: 11 · error: 0 · correcto: 11   (PresentacionTactilTests sin cambios)
+  overscroll-behavior-y: reposo none, none · selección none, none, contain · personas none, none, contain, contain · consumos contain
+  navegador del puesto: --disable-features=ElasticOverscroll
+  ventana angosta: la página se desplazó 376,5 px hasta «Confirmar»
+  ```
+  Si el CSS y el argumento alcanzan en el WebView2 de la All-in-One lo dice la prueba de David en su monitor.
+
+## 8. Pantalla (recorte de respaldo)
+
+- [x] 8.1 Agregar `Kiosk.Tests/MonitorPuestoTests.cs` (`ElegirMonitor`: el guardado presente; el guardado ausente da el principal y el aviso; un solo monitor; lo guardado ilegible da el principal; la pestaña con un `Monitores` de prueba lista resolución y principal, guarda y registra `CONFIGURATION_CHANGED` con `DISPLAY_MONITOR` y `MAINTENANCE_MODE`). Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~MonitorPuesto"`; pegar la salida
+  `Kiosk.Tests/MonitorPuestoTests.cs` (7): `ElegirMonitor` con datos armados (el guardado presente; el guardado ausente da el principal y el aviso; un solo monitor; lo guardado ilegible da el principal y el aviso), `AlmacenPantalla` (sin archivo, ida y vuelta, ilegible), la pestaña con los monitores **reales** del equipo (resolución, «Principal», «Guardar» que escribe `pantalla.json`, pide mover la ventana y deja `DISPLAY_MONITOR` con `MAINTENANCE_MODE` y el actor nulo) y el aviso del monitor ausente. **Decisión de implementación, a la vista:** la tarea pedía la pestaña «con un `Monitores` de prueba»; va con los monitores reales, sin dobles (`AGENTS.md` los permite sólo para impresora y lector), y mover la ventana pasa por `PantallaDelPuesto`, un mediador como `CierrePuesto` que en bUnit sólo anota los pedidos. Esqueletos con `NotImplementedException` y los mensajes. Rojo, 07/11 00:53:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~MonitorPuesto"
+        6 System.NotImplementedException · 1 Bunit.ElementNotFoundException
+  total: 7 · error: 7 · correcto: 0
+  ```
+- [x] 8.2 Implementar `Monitores` con `user32`, `AlmacenPantalla`, la pestaña y la ubicación de la ventana al abrir y al guardar (D10); agregar a `AccesoPuestoE2ETests.cs` «El monitor guardado no está» (con un `pantalla.json` de un monitor inexistente, abre maximizada en el principal). Verificar con el filtro de 8.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el E2E en verde; sumar a `readme.md` el monitor y que con varios monitores lo prueba David; pegar las salidas
+  `Monitores` con `EnumDisplayMonitors`, `GetMonitorInfo` y `EnumDisplayDevices` (el nombre de interfaz del monitor como identificador), `ElegirMonitor`, `AlmacenPantalla` (`pantalla.json`, atómico), `PantallaDelPuesto`, la pestaña Pantalla con su aviso y «Guardar», y `MainWindow`, que al abrir pone la ventana en el área del monitor elegido (`SetWindowPos`) y la maximiza, y al guardar la pasa al nuevo (D10). `AccesoPuestoE2ETests.El_monitor_guardado_no_esta`, vista fallar con una afirmación imposible y revertida. 07/11 00:54 a 00:56:
+  ```
+  Kiosk.Tests --filter MonitorPuesto                       total: 7 · error: 0 · correcto: 7
+  E2E --filter El_monitor_guardado_no_esta   (con «IMPOSIBLE»)   total: 1 · error: 1 · correcto: 0
+  ventana en mantenimiento, con el monitor guardado ausente: estilo 0x17080000, zoom True, rectángulo {0, 0, 1280, 800}, monitor {0, 0, 1280, 800}
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)   total: 284 · error: 0 · correcto: 284   (275, 2 de 7.1 y 7 nuevas)
+  E2E --filter "AccesoPuestoE2E|PresentacionTactil"        total: 7 · error: 0 · correcto: 7
+  ```
+  `readme.md` suma «Pantalla en Configuración», con que el cambio real entre dos monitores lo prueba David.
+
+## 9. Red y conectividad (recorte de respaldo)
+
+- [x] 9.1 Agregar `Kiosk.Tests/ConfiguracionIPv4Tests.cs` (válidas: la IPv4 fija con puerta y dos DNS, sin puerta, sin DNS y DHCP; rechazadas con su campo: `192.168.10.300`, `1`, `010.1.1.1`, `192.168.10.30 & del`, la máscara `255.0.255.0`, una puerta fuera de la subred y un DNS inválido), `Kiosk.Tests/ArgumentosNetshTests.cs` (función pura: los comandos de una IPv4 fija con el índice 12; sin puerta, `gateway=none`; sin DNS, `address=none`; el segundo DNS con `add dnsservers … index=2`; DHCP; ningún argumento con espacios ni comillas), `Kiosk.Tests/ResultadoRedTests.cs` (función pura: todos los pasos en 0 es aplicada; el permiso rechazado en el primero es cancelada sin el segundo; un código distinto de cero en el primero es fallida con ese paso y su código; el registro `CONFIGURATION_CHANGED` con `NETWORK_IPV4`, el adaptador, antes y después, el actor nulo, `NO_AUTHENTICATION` y `Access`), `Kiosk.Tests/PestanaRedTests.cs` (con los adaptadores reales del equipo, sin dobles: el nombre del equipo y cada adaptador de `DatosDeRed.Leer()`, elegidos de una lista y sin campo de texto para el adaptador; la vista de una lista vacía dice «Sin conexión de red»; «Aplicar» con un valor inválido lo señala sin confirmación; con valores válidos muestra la confirmación con el aviso; «Cancelar» no ejecuta ni registra nada; sin `EjecutorNetsh`, confirmar dice que la edición no está disponible y no registra nada) y `Kiosk.Tests/PruebaConexionTests.cs` con el receptor de demostración de las pruebas existentes (las cuatro etapas en verde; un puerto que no escucha; un nombre `.invalid`; sin certificados; el evento pendiente que sigue pendiente y el receptor sin lotes nuevos; `CONNECTIVITY_TESTED` sin certificados). Ninguna prueba registra `EjecutorNetsh` ni corre `netsh`. Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ConfiguracionIPv4|FullyQualifiedName~ArgumentosNetsh|FullyQualifiedName~ResultadoRed|FullyQualifiedName~PestanaRed|FullyQualifiedName~PruebaConexion"`; pegar la salida
+  Cinco clases nuevas en `Kiosk.Tests`, con la API en esqueleto (`NotImplementedException`) y `PestanaRed` vacía: `ConfiguracionIPv4Tests` (4 válidas y 10 rechazadas con su campo: las siete de la tarea más loopback, la difusión de la subred y un segundo DNS inválido), `ArgumentosNetshTests` (6: la IPv4 fija con el índice 12, `gateway=none`, `address=none`, `add dnsservers … index=2`, DHCP y ningún argumento con espacios ni comillas, más un índice no positivo que no arma nada), `ResultadoRedTests` (4: aplicada, cancelada sin el segundo paso, fallida con su paso y su código, y el registro `NETWORK_IPV4`; la ejecución de cada paso es un argumento de la función, acá una lista de salidas dadas), `PestanaRedTests` (5, con los adaptadores reales del equipo y sin dobles; la lista vacía, con `DatosRed` armado) y `PruebaConexionTests` (6, con el `ReceptorDeDemostracion` de `ModoDemostracionReceptorTests`). `PuestoDePrueba` registra una `PruebaConexion` con la carpeta sin certificados. Ninguna prueba registra `EjecutorNetsh` ni corre `netsh`. Rojo, 07/11 01:08:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ConfiguracionIPv4|FullyQualifiedName~ArgumentosNetsh|FullyQualifiedName~ResultadoRed|FullyQualifiedName~PestanaRed|FullyQualifiedName~PruebaConexion"
+        30 System.NotImplementedException · 4 System.TypeInitializationException · 3 System.ArgumentOutOfRangeException · 2 Bunit.ElementNotFoundException
+  total: 35 · error: 35 · correcto: 0
+  ```
+- [x] 9.2 Implementar `DatosDeRed`, `ConfiguracionIPv4`, `ArgumentosNetsh`, el resultado y su registro, `EjecutorNetsh` (cada comando con `Verb = "runas"`, registrado sólo en `MainWindow`) y la pestaña Red con la confirmación (D11), y `PruebaConexion` sobre `ClienteReceptorHttp` (D12). Verificar con el filtro de 9.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde, `git grep -n "runas" -- src` sólo en `EjecutorNetsh` y el `git diff` del párrafo inicial; sumar a `readme.md` la pestaña, la edición de la IPv4 con su aviso y que el cambio real se prueba en el monitor, y a `AGENTS.md` que la prueba de conexión con el receptor sale de la segunda ola y sigue ahí el resto del diagnóstico; pegar las salidas
+  `Red/`: `DatosDeRed` (`NetworkInterface`, los activos con IPv4 y sin loopback, con su índice IPv4), `ConfiguracionIPv4.Validar` (forma canónica, unicast, máscara contigua, puerta en la subred; `IPv4Validada` sólo se crea ahí), `ArgumentosNetsh.Armar` (que vuelve a comprobar cada valor), `ResultadoRed` con su mensaje y su registro, `EjecutorNetsh` (`netsh.exe` de System32, `Verb = "runas"`, 1223 es el permiso rechazado), registrado sólo en `MainWindow`, y `PruebaConexion` (nombre, socket con 5 s, y la sonda nueva `ClienteReceptorHttp.ProbarAsync`, que consulta un lote que no existe y sabe si el TLS mutuo se estableció por el `PlaintextStreamFilter` del manejador). La pestaña Red con la confirmación y la prueba (D11, D12). **Dos pruebas más que la tarea, a la vista:** `Un_puerto_sin_tls` y `Tls_sin_respuesta_del_receptor` (un servidor de loopback, el segundo con `receptor.pfx`), para que la etapa TLS se distinga de la del receptor; escritas después del código, cada una vista fallar con su mutante (el filtro que no marca el TLS; la etapa que ignora la marca) y revertido. 07/11 01:13 a 01:16:
+  ```
+  filtro de 9.1                                   total: 35 · error: 0 · correcto: 35
+  --filter PruebaConexion (con las dos de TLS)    total: 8 · error: 0 · correcto: 8
+  mutante «marca.Listo = false»                   con errores · «El TLS se establece y el receptor no responde»: esperado [Funciono, Funciono, Funciono, Fallo], real [Funciono, Funciono, Fallo, NoProbada]
+  mutante «if (false && !sonda.TlsEstablecido)»   con errores · «Un puerto que no habla TLS»: esperado [Funciono, Funciono, Fallo, NoProbada], real [Funciono, Funciono, Funciono, Fallo]
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)   total: 321 · error: 0 · correcto: 321   (284 y 37 nuevas)
+  git grep -n --untracked "runas" -- src
+  src/Intelektron.INComedor.Kiosk/Red/EjecutorNetsh.cs:16:    /// <c>netsh.exe</c> de System32 con <c>runas</c>: …
+  src/Intelektron.INComedor.Kiosk/Red/EjecutorNetsh.cs:23:            Verb = "runas",
+  git diff --name-status --diff-filter=M 9202347 -- tests   → los cuatro archivos aprobados (PuestoDePrueba es de este change)
+  ```
+  `readme.md` suma «Red en Configuración» (la edición con su aviso, que las pruebas nunca corren `netsh` y que el cambio real lo prueba David en su monitor, con cuidado) y `AGENTS.md`, que la pestaña Red con la prueba de conexión sale de la segunda ola y sigue ahí el resto del diagnóstico, y la regla de que ninguna prueba ni la CI corren `netsh`.
+
+## 10. Logos desde Configuración (recorte de respaldo)
+
+- [x] 10.1 Agregar `Kiosk.Tests/LogosDesdeConfiguracionTests.cs` con bUnit e `InputFile` (un PNG de 40 KB que se ve en la cuadrícula, se guarda y queda en la cabecera y en un puesto nuevo; un WebP de 2 MB más un byte; un `.png` de texto; un SVG con `script` que se ve como `img` sin el elemento en la página; «Volver al de ejemplo»; `CONFIGURATION_CHANGED` con `COMPANY_LOGO`, el SHA-256, el tamaño y el formato, sin el contenido). Ver fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~LogosDesdeConfiguracion"`; pegar la salida
+  `Kiosk.Tests/LogosDesdeConfiguracionTests.cs` (6) con bUnit e `InputFile` (`UploadFiles` de bUnit 2.12.5): el PNG de 40 KB que se ve en la cuadrícula, se guarda y queda en la cabecera y en un puesto nuevo (`new LogosLocales(carpeta).Leer()`); el WebP de 2 MB más un byte; el `.png` de texto; el SVG con `script` que se ve como `img` sin el elemento en la página; «Volver al de ejemplo»; y `CONFIGURATION_CHANGED` con `COMPANY_LOGO`, el SHA-256, el tamaño y el formato, sin el contenido. `PuestoDePrueba` registra `LogosLocales` sobre su carpeta. Esqueletos de `Validar`, `Actual`, `Guardar` y `VolverAlDeEjemplo` con `NotImplementedException` y los mensajes. Rojo, 07/11 01:19:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~LogosDesdeConfiguracion"
+        5 System.ArgumentOutOfRangeException (sin InputFile en la pestaña) · 1 Bunit.ElementNotFoundException
+  total: 6 · error: 6 · correcto: 0
+  ```
+- [x] 10.2 Implementar la sección de logos de Identidad visual con las reglas de `LogosLocales` (D14), sin cambiar `LogosLocalesTests`. Verificar con el filtro de 10.1 en verde, `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` completo en verde y el `git diff` del párrafo inicial; sumar a `readme.md` cómo cambiar los logos sin tocar la carpeta; pegar las salidas
+  `LogosLocales.Validar` (la extensión, el tamaño declarado antes de leer y la firma), `Actual`, `Guardar` (por un temporal, borrando las otras extensiones del mismo logo) y `VolverAlDeEjemplo`; `Leer` y su búsqueda no cambian de conducta (`Buscar` pasa a ser `Encontrar(...)?.UriData`). La sección «Logos» de Identidad visual con `InputFile` (`accept=".png,.webp,.svg"`, lectura con tope de 2 MB más un byte), la vista previa como `img` con `data:` sobre una cuadrícula, «Volver al de ejemplo» y «Guardar los logos»; `PantallaAtencion.GuardarLogo` registra `COMPANY_LOGO` o `CONCESSIONAIRE_LOGO` con la huella y redibuja la cabecera (D14). Un primer verde dio 13 de 15: la cabecera no se redibujaba porque el guardado corre en el panel; `StateHasChanged()` en `GuardarLogo`. 07/11 01:20:
+  ```
+  --filter "LogosDesdeConfiguracion|LogosLocales"           total: 15 · error: 0 · correcto: 15   (6 nuevas y las 9 de LogosLocalesTests)
+  git diff --stat -- tests/Intelektron.INComedor.Kiosk.Tests/LogosLocalesTests.cs    (vacío: sin cambios)
+  Kiosk.Tests completo (INCOMEDOR_SQLSERVER=INMO-DW-AR)     total: 327 · error: 0 · correcto: 327
+  ```
+  `readme.md` suma cómo cambiar los logos desde Identidad visual sin tocar la carpeta.
+
+## 11. Ícono (recorte de respaldo)
+
+- [x] 11.1 Agregar a `AccesoPuestoE2ETests.cs` «La ventana con su ícono» (`WM_GETICON` de la ventana distinto de cero y `ExtractIconEx` del ejecutable con al menos un ícono). Ver fallar con `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~AccesoPuesto"`; pegar la salida
+  `AccesoPuestoE2ETests.cs` (de este change) suma «La ventana con su ícono»: con el puesto compilado, `WM_GETICON` grande y chico de la ventana distintos de cero y `ExtractIconEx` del ejecutable (`MainModule.FileName`) con al menos un ícono, con la medida en `registro.txt`. Rojo, 07/11 01:23:
+  ```
+  dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~AccesoPuesto"
+  01:23:02.407 ícono: WM_GETICON grande 0x0, chico 0x0; Intelektron.INComedor.Kiosk.exe con 0 íconos
+  con errores presentacion-puesto · La ventana con su ícono … · Assert.NotEqual() Failure: Values are equal · Expected: Not 0 · Actual: 0
+  total: 4 · error: 1 · correcto: 3
+  ```
+- [x] 11.2 Generar `Recursos\incomedor-puesto.ico` con la paleta de `puesto.css` (16, 32, 48 y 256 px), sumarlo como `ApplicationIcon` y como `Icon` de la ventana, y escribir su procedencia en `wwwroot\img\PROCEDENCIA.md`, sin marcas de clientes (D16). Verificar con el filtro de 11.1 en verde y `git grep -n "incomedor-puesto.ico" -- src`; pegar las salidas
+  `Recursos\incomedor-puesto.ico`, generado por una copia de `C:\INComedor\herramientas\icono\generar-icono.ps1` en el scratchpad (sin tocar la carpeta de herramientas): sale igual, byte a byte, al del acceso directo del 04/11 (SHA-256 `4180432911cc1a752be8f9faf7cf6724079ec5b9610ddd462b238c647803f1dd`, 24.423 bytes), con la paleta de `puesto.css` y nueve tamaños en PNG, que incluyen 16, 32, 48 y 256 px; la vista previa, mirada: un plato que sonríe entre tenedor y cuchara, sin marcas ni texto. `ApplicationIcon` y `Resource` en el `.csproj`, `Icon` en `MainWindow.xaml`, y su procedencia en `wwwroot\img\PROCEDENCIA.md`, que dice que no contiene marcas de clientes (D16). 07/11 01:23:
+  ```
+  dotnet build INComedor.sln -warnaserror                  Compilación correcta (0 advertencias, 0 errores)
+  E2E --filter AccesoPuesto                                total: 4 · error: 0 · correcto: 4
+  01:23:43.749 ícono: WM_GETICON grande 0x18300D89, chico 0x54760FD1; Intelektron.INComedor.Kiosk.exe con 1 íconos
+  git grep -n --untracked "incomedor-puesto.ico" -- src
+  src/Intelektron.INComedor.Kiosk/Intelektron.INComedor.Kiosk.csproj:7:    <ApplicationIcon>Recursos\incomedor-puesto.ico</ApplicationIcon>
+  src/Intelektron.INComedor.Kiosk/Intelektron.INComedor.Kiosk.csproj:14:    <Resource Include="Recursos\incomedor-puesto.ico" />
+  src/Intelektron.INComedor.Kiosk/MainWindow.xaml:6:        … WindowState="Maximized" Icon="Recursos/incomedor-puesto.ico">
+  src/Intelektron.INComedor.Kiosk/wwwroot/img/PROCEDENCIA.md:26:## `Recursos\incomedor-puesto.ico`
+  ```
+
+## 12. Integración
+
+- [x] 12.1 Sumar la evidencia del change a `docs/aplicacion-del-curso.md`, con el nombre del change y sin enlace propio a su carpeta (D5 de `mostrar-aplicacion-del-curso`), y su entrada en `prompts.md` si el apply deja un ajuste humano nuevo. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso` (`enlaces rotos: 0`, con su control negativo) y `git grep -i --untracked -E "tem[i]s|lost[a]l" -- . ":!openspec/changes/archive"` vacío (los corchetes evitan que el comando se encuentre a sí mismo; la exclusión deja afuera el `tasks.md` archivado de C, que copia el comando de su tarea 5.3); pegar las salidas
+  `docs/aplicacion-del-curso.md` suma la evidencia de `configurar-puesto-por-pestanas`, por su nombre y sin enlace a su carpeta (D5 de `mostrar-aplicacion-del-curso`), en tres filas: TDD (el rojo de cada grupo, lo escrito después del código visto fallar con una afirmación imposible o un mutante, sólo los cuatro archivos aprobados y la solución de 566 a 728 pruebas), componentes y accesibilidad (las nueve pestañas con el patrón de WAI-ARIA, la pantalla completa sin bordes y sin rebote, medidos por `ConfiguracionPorPestanasE2ETests` y `AccesoPuestoE2ETests`; sigue «Pendiente») y OWASP (`ArgumentosNetsh`, A03). El apply no dejó ajustes humanos nuevos, pero el gate del 06/11 no estaba en `prompts.md`: entra como el punto 14 de «Criterio humano», como el 10 y el 13 registran los gates de sus changes (la Red con `netsh`, el argumento del rebote, la pantalla completa sin bordes, Consumos para cualquiera, las 13 pruebas de cuatro archivos y el recorte de respaldo). 07/11 01:25:
+  ```
+  enlaces.ps1 -Archivos docs/aplicacion-del-curso.md, prompts.md, readme.md, AGENTS.md, src/…/wwwroot/img/PROCEDENCIA.md
+  enlaces rotos: 0
+  control negativo (un destino que no existe y un ancla que no está)
+  ROTO …\control-enlaces.md:3 no-existe.md
+  ANCLA …\control-enlaces.md:3 control-enlaces.md#ancla-que-no-esta
+  enlaces rotos: 2
+  git grep -i --untracked -E "tem[i]s|lost[a]l" -- . ":!openspec/changes/archive"    (vacío, código de salida 1)
+  ```
+- [x] 12.2 Correr `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror` y `dotnet test INComedor.sln` completo contra la instancia de `INCOMEDOR_SQLSERVER`, y pegar los totales por proyecto; verificar además el `git diff` del párrafo inicial con sólo los cuatro archivos del punto 4 del gate
+  Contra la instancia `INMO-DW-AR` de `INCOMEDOR_SQLSERVER`. **Dos corridas, a la vista.** La primera (07/11 01:26 a 01:29, lanzada con `Start-Process` desde un shell que terminó enseguida) dio 727 de 728: en `ConfiguracionPorPestanasE2ETests` «Los consumos de hoy a 1024 × 768» la prueba llegó a su captura y el puesto cerró, pero la limpieza del escenario tiró `Quedaron vivos: pwsh.exe PID 32052, conhost.exe PID 44752, dotnet.exe PID 50884, Intelektron.INComedor.E2E.Tests.exe PID 47024`: los procesos de la propia corrida. Causa probable, leída en el código: `ProcesosYPuertos.Arbol` arma el árbol por PID de padre sin comparar horas de creación, y el `pwsh` huérfano tenía un PID de padre muerto que Windows reusó dentro del árbol del puesto; `Process.Kill(entireProcessTree)` sí las compara y no los mató. Es el defecto de la infraestructura del E2E que ya apareció al verificar C; arreglarlo toca `ProcesosYPuertos.cs`, una prueba existente fuera de las cuatro aprobadas, así que queda abierto. La segunda, en primer plano con el padre vivo (01:30 a 01:33):
+  ```
+  openspec validate --all --strict                 Totals: 12 passed, 0 failed (12 items)
+  dotnet build INComedor.sln -warnaserror          0 Errores · BUILD EXIT: 0
+  dotnet test INComedor.sln --no-build
+    Contracts correcto [+23/x0/?0] · Sync.Api correcto [+62/x0/?0] · Infrastructure.Sqlite correcto [+202/x0/?0]
+    Domain correcto [+91/x0/?0] · Kiosk correcto [+327/x0/?0] · E2E correcto [+23/x0/?0]
+    total: 728 · error: 0 · correcto: 728 · TEST EXIT: 0 · 2 min 36 s
+  git diff --name-status --diff-filter=M 9202347 -- tests
+  M	tests/Intelektron.INComedor.E2E.Tests/AdministracionE2ETests.cs
+  M	tests/Intelektron.INComedor.Kiosk.Tests/PanelConfiguracionTests.cs
+  M	tests/Intelektron.INComedor.Kiosk.Tests/PanelPersonasTests.cs
+  M	tests/Intelektron.INComedor.Kiosk.Tests/PantallaAtencionTests.cs
+  ```
+  Son los cuatro archivos del punto 4 del gate: 31 inserciones y 28 borrados (`git diff --stat 9202347`). 162 pruebas más que al archivar C (566).
+
+## 13. Correcciones de la verificación
+
+- [x] 13.1 Cubrir la advertencia 1 de `/openspec-verify-change` del 08/11 sobre `a72c184`: el escenario «El monitor guardado» de `configuracion-puesto` pide el monitor de antes y el de después, y `MonitorPuestoTests.La_pestana_pantalla` sólo miraba el ajuste, el resultado y el acceso. Agregar a `MonitorPuestoTests.cs` (de este change) una prueba con otro monitor guardado antes, que guarda el principal real y afirma `Before.Device` y `After.Device`; verla fallar con un mutante del registro y revertirlo
+  La conducta ya existía, así que el rojo sale de un mutante en `PantallaAtencion.razor:667` (`Before` siempre nulo), revertido después. Ninguna prueba existente cambia: `MonitorPuestoTests.cs` es de este change. 08/11 21:54 y 21:56:
+  ```
+  dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ResultadoRed|FullyQualifiedName~MonitorPuesto"   (con los dos mutantes)
+  con errores configuracion-puesto · El monitor guardado: … el monitor de antes y el de después, APPLIED y MAINTENANCE_MODE
+    System.InvalidOperationException : The requested operation requires an element of type 'Object', but the target element has type 'Null'.
+  (mutantes revertidos)   total: 14 · error: 0 · correcto: 14
+  ```
+- [x] 13.2 Cubrir la advertencia 2: los escenarios «Una aplicación completa» y «Un permiso rechazado» de «Cada aplicación de red queda en la bitácora general» piden el registro aplicado con sus dos pasos y el cancelado sin pasos aplicados, y `ResultadoRedTests.El_registro` sólo miraba el fallido. Agregar a `ResultadoRedTests.cs` (de este change) las dos pruebas del registro; verlas fallar con un mutante de `ResultadoRed.Registro` y revertirlo
+  Rojo con un mutante en `ResultadoRed.cs:68` (`Result` siempre `FAILED`), revertido después, en la misma corrida de 13.1:
+  ```
+  con errores conectividad-puesto · Un permiso rechazado en la bitácora: …   Expected: Tuple ("NETWORK_IPV4", "CANCELLED", 2, 0, 1)   Actual: Tuple ("NETWORK_IPV4", "FAILED", 2, 0, 1)
+  con errores conectividad-puesto · Una aplicación completa en la bitácora: … Expected: Tuple ("NETWORK_IPV4", "APPLIED", 2, 2)   Actual: Tuple ("NETWORK_IPV4", "FAILED", 2, 2)
+  total: 14 · error: 3 · correcto: 11
+  ```
+
+## Workflow follow-up
+
+- Probar en el monitor táctil de David con el acceso directo «Probar puesto INComedor»: la pantalla completa sin bordes y el cierre en los dos modos, el rebote (D15, punto 14 del gate), la tabla de personas, con cuidado la edición de la IPv4 en la pestaña Red (puede cortar la red del equipo) y, con un segundo monitor, la pestaña Pantalla.
+- Archivar antes `administrar-personas-y-opciones`: el delta de `administracion-local` modifica un requisito suyo (punto 13 del gate).
+- Verificar con `/openspec-verify-change` y archivar en la misma rama antes del PR.
+- Redactar el borrador del PR en `C:\AI\INComedor\ai4devs\gestion\PR-configurar-puesto-por-pestanas-dw.md`, con la forma de `PR-escribir-bitacoras-externas-dw.md`.

@@ -192,16 +192,32 @@ public sealed class Asistencia
         return denegada ?? Enviado(trabajoId);
     }
 
-    /// <summary>Cierra la sesión privilegiada: la sesión no sirve para otra acción (RB26).</summary>
-    public void Salir(Guid sesion)
+    /// <summary>Cierra la sesión privilegiada porque el operador tocó «Salir» (RB26).</summary>
+    public void Salir(Guid sesion) => Salir(sesion, "EXIT");
+
+    /// <summary>
+    /// Cierra la sesión privilegiada: la sesión no sirve para otra acción (RB26). Si estaba abierta, deja
+    /// PRIVILEGED_SESSION_CLOSED con la sesión y la causa, sin el código, en la misma transacción (D8 de
+    /// configurar-puesto-por-pestanas, la sugerencia de la verificación de escribir-bitacoras-externas).
+    /// </summary>
+    public void Salir(Guid sesion, string causa)
     {
         using var conexion = _baseComedor.AbrirConexion();
-        ComandosSqlite.Ejecutar(conexion, null,
+        using var transaccion = BaseComedor.IniciarTransaccionEscritura(conexion);
+        var ahora = _reloj.GetUtcNow();
+        using var comando = ComandosSqlite.Crear(conexion, transaccion,
             """
             UPDATE tbComedorSesionesIdentidad SET comsidFechaVencimientoUtc = $ahora
             WHERE comsidCodigo = $sid AND comsidProposito = 'PRIVILEGED_ACTION' AND comsidFechaVencimientoUtc > $ahora
             """,
-            ("$sid", sesion), ("$ahora", FormatoInstante.Texto(_reloj.GetUtcNow())));
+            ("$sid", sesion), ("$ahora", FormatoInstante.Texto(ahora)));
+        if (comando.ExecuteNonQuery() > 0)
+        {
+            _bitacora.Insertar(conexion, transaccion, PuestoLocal.Leer(conexion, transaccion), ahora, "PRIVILEGED_SESSION_CLOSED",
+                new { IdentitySessionId = sesion, Cause = causa });
+        }
+
+        transaccion.Commit();
     }
 
     public static string CodigoDe(MotivoReimpresion motivo) => motivo switch

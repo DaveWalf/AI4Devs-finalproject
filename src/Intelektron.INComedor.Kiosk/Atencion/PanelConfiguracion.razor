@@ -1,103 +1,327 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Intelektron.INComedor.Infrastructure.Sqlite
+@using Intelektron.INComedor.Kiosk.Red
+@using Microsoft.AspNetCore.Components.Forms
 
 @*
-    Configuración en este corte (D5 de presentar-atencion-tactil): un diálogo modal que no cambia el estado de la
-    máquina, con «Estilo visual» y, sólo con la impresora simulada, sus modos. Se abre sin clave; la clave llega con el
-    segundo change. Mover un rango sólo avisa la vista previa; «Guardar» y «Cancelar» (o Escape) los decide la pantalla.
+    Configuración por pestañas (D1 a D3 de configurar-puesto-por-pestanas): un diálogo modal que no cambia el estado de la
+    máquina, con nueve pestañas según el patrón de WAI-ARIA. Todas quedan montadas y sólo la elegida se ve, así que lo
+    editado en una sobrevive al pasar a otra y los id de siempre siguen en el diálogo (D2). Cada «Guardar» guarda lo suyo y
+    deja Configuración abierta, con el aviso de lo guardado debajo de las pestañas (D3); «Cancelar» o Escape la cierran y
+    descartan lo no guardado, también con un panel de edición abierto. Sólo un panel de edición se abre a la vez: Personas y
+    Opciones comparten los id de sus botones desde administrar-personas-y-opciones.
 *@
-<div class="fondo-dialogo">
-    <div class="dialogo superficie @(_panel is null ? "" : "ancho")" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
-         @ref="_dialogo" @onkeydown="Tecla">
+<div class="fondo-dialogo" inert="@Inerte">
+    @* Escape no sigue hasta la pantalla de atrás, que lo leería como un pedido de cierre en reposo (D7). *@
+    <div class="dialogo superficie ancho" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
+         @ref="_dialogo" @onkeydown="Tecla" @onkeydown:stopPropagation="true">
         <h2 id="titulo-configuracion">Configuración</h2>
 
-        @* Cada panel se abre en lugar del contenido del diálogo, con su «Guardar» y su «Cancelar» (D12 de administrar-personas-y-opciones). *@
-        @if (_panel == Panel.Personas && Administracion is not null)
+        <div class="pestanas" role="tablist" aria-label="Secciones de Configuración">
+            @foreach (var pestana in Todas)
+            {
+                var elegida = pestana == _elegida;
+                var indice = (int)pestana;
+                <button type="button" role="tab" id="pestana-@Clave(pestana)" class="pestana" aria-selected="@(elegida ? "true" : "false")"
+                        aria-controls="seccion-@Clave(pestana)" tabindex="@(elegida ? "0" : "-1")" @ref="_botones[indice]"
+                        @onclick="() => Elegir(pestana)" @onkeydown="e => TeclaPestana(e, pestana)">@Nombre(pestana)</button>
+            }
+        </div>
+
+        @if (_avisoGuardado is not null)
         {
-            <PanelPersonas Administracion="Administracion" Cerrar="CerrarPanel" />
-        }
-        else if (_panel == Panel.Opciones && Administracion is not null)
-        {
-            <PanelOpciones Administracion="Administracion" Cerrar="CerrarPanel" />
-        }
-        else
-        {
-        <text>
-        @if (Administracion is not null)
-        {
-            <section id="administracion" aria-label="Personas y opciones">
-                <div class="acciones abrir-paneles">
-                    <button id="abrir-personas" type="button" @onclick="() => AbrirPanel(Panel.Personas)">Personas habilitadas</button>
-                    <button id="abrir-opciones" type="button" @onclick="() => AbrirPanel(Panel.Opciones)">Opciones del comedor</button>
-                </div>
-                @if (_avisoPanel is not null)
-                {
-                    <p id="aviso-guardado" class="aviso" role="status">@_avisoPanel</p>
-                }
-            </section>
+            <p id="aviso-guardado" class="aviso" role="status">@_avisoGuardado</p>
         }
 
-        <section aria-labelledby="titulo-estilo">
-            <h3 id="titulo-estilo">Estilo visual</h3>
-            <div class="parametro">
-                <label for="opacidad">Opacidad de las superficies</label>
-                <output id="valor-opacidad" for="opacidad">@Estilo.Opacidad %</output>
-                <input id="opacidad" type="range" min="@EstiloVisual.OpacidadMinima" max="@EstiloVisual.OpacidadMaxima" step="1"
-                       value="@Estilo.Opacidad" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Opacidad = valor })" />
+        <section role="tabpanel" id="seccion-general" class="seccion" aria-labelledby="pestana-general" hidden="@Oculta(Pestana.General)">
+            <p id="modo-puesto" class="modo-puesto">Modo: @(Modo == ModoPuesto.Operativo ? "operativo" : "mantenimiento")</p>
+            <div class="acciones abrir-paneles">
+                @if (Modo == ModoPuesto.Mantenimiento)
+                {
+                    <button id="pasar-operativo" type="button" @onclick="() => PasarAOperativo.InvokeAsync()">Pasar a operativo</button>
+                }
+                else
+                {
+                    <button id="pasar-mantenimiento" type="button" @onclick="() => PasarAMantenimiento.InvokeAsync()">Pasar a mantenimiento</button>
+                }
+                @if (PuedeCerrar)
+                {
+                    <button id="cerrar-puesto" type="button" @onclick="() => CerrarPuesto.InvokeAsync()">Cerrar el puesto</button>
+                }
             </div>
-            <div class="parametro">
-                <label for="desenfoque">Desenfoque del fondo</label>
-                <output id="valor-desenfoque" for="desenfoque">@Estilo.Desenfoque px</output>
-                <input id="desenfoque" type="range" min="@EstiloVisual.DesenfoqueMinimo" max="@EstiloVisual.DesenfoqueMaximo" step="1"
-                       value="@Estilo.Desenfoque" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Desenfoque = valor })" />
-            </div>
+            @if (AvisoModo is not null)
+            {
+                <p id="aviso-modo" class="aviso" role="alert">@AvisoModo</p>
+            }
+            @if (Bitacoras is not null)
+            {
+                @* El estado de cada bitácora, sin datos de personas (escribir-bitacoras-externas). *@
+                <section id="estado-bitacoras" aria-labelledby="titulo-bitacoras">
+                    <h3 id="titulo-bitacoras">Bitácoras</h3>
+                    <ul>
+                        @foreach (var bitacora in Bitacoras)
+                        {
+                            <li id="bitacora-@(bitacora.Destino == DestinoBitacora.General ? "general" : "interacciones")">@MensajesAtencion.EstadoBitacora(bitacora, Zona)</li>
+                        }
+                    </ul>
+                </section>
+            }
         </section>
 
-        @if (Impresora is not null)
-        {
-            <FranjaImpresora Impresora="Impresora" ModoCambiado="ModoImpresoraCambiado" />
-        }
+        <section role="tabpanel" id="seccion-personas" class="seccion" aria-labelledby="pestana-personas" hidden="@Oculta(Pestana.Personas)">
+            @if (Administracion is not null)
+            {
+                @* La tabla para leer y, con «Editar» en su encabezado, la misma tabla para editar en el mismo lugar (D4). *@
+                @* La tabla de lectura se dibuja sólo con su pestaña elegida: no tiene nada editado que conservar, y así los nombres
+                   de todas las personas no quedan en la página mientras se usa otra pestaña. La edición sigue montada (D2). *@
+                @if (_panel == Panel.Personas || _elegida == Pestana.Personas)
+                {
+                    <PanelPersonas Administracion="Administracion" Editando="@(_panel == Panel.Personas)" Cerrar="CerrarPanel"
+                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" />
+                }
+                else
+                {
+                    @* Con la pestaña oculta queda sólo «Editar», sin nombres en la página. *@
+                    <button id="abrir-personas" type="button" disabled="@(_panel is not null)" @onclick="() => AbrirPanel(Panel.Personas)">@Editar</button>
+                }
+            }
+        </section>
 
-        @if (Bitacoras is not null)
-        {
-            @* El estado de cada bitácora, sin datos de personas (escribir-bitacoras-externas). *@
-            <section id="estado-bitacoras" aria-labelledby="titulo-bitacoras">
-                <h3 id="titulo-bitacoras">Bitácoras</h3>
-                <ul>
-                    @foreach (var bitacora in Bitacoras)
+        <section role="tabpanel" id="seccion-opciones" class="seccion" aria-labelledby="pestana-opciones" hidden="@Oculta(Pestana.Opciones)">
+            @if (Administracion is not null)
+            {
+                @if (_panel == Panel.Opciones)
+                {
+                    <PanelOpciones Administracion="Administracion" Cerrar="CerrarPanel" />
+                }
+                else
+                {
+                    <p id="resumen-opciones">@ResumenOpciones</p>
+                    <div class="acciones abrir-paneles">
+                        <button id="abrir-opciones" type="button" disabled="@(_panel is not null)" @onclick="() => AbrirPanel(Panel.Opciones)">@Editar</button>
+                    </div>
+                    @if (_panel is not null)
                     {
-                        <li id="bitacora-@(bitacora.Destino == DestinoBitacora.General ? "general" : "interacciones")">@MensajesAtencion.EstadoBitacora(bitacora, Zona)</li>
+                        <p class="indicacion">Terminá o cancelá la edición de Personas para editar Opciones</p>
                     }
-                </ul>
+                }
+            }
+        </section>
+
+        <section role="tabpanel" id="seccion-consumos" class="seccion" aria-labelledby="pestana-consumos" hidden="@Oculta(Pestana.Consumos)">
+            @if (Consumos is not null)
+            {
+                <PestanaConsumos Consulta="Consumos" Visible="@(_elegida == Pestana.Consumos)" Zona="Zona" Registrar="RegistrarConsulta" />
+            }
+        </section>
+
+        <section role="tabpanel" id="seccion-comprobantes" class="seccion" aria-labelledby="pestana-comprobantes" hidden="@Oculta(Pestana.Comprobantes)">
+            @if (SesionOperador is not null)
+            {
+                <PestanaComprobantes Sesion="SesionOperador" Zona="Zona" />
+            }
+        </section>
+
+        <section role="tabpanel" id="seccion-identidad" class="seccion" aria-labelledby="pestana-identidad" hidden="@Oculta(Pestana.Identidad)">
+            <section aria-labelledby="titulo-estilo">
+                <h3 id="titulo-estilo">Estilo visual</h3>
+                <div class="parametro">
+                    <label for="opacidad">Opacidad de las superficies</label>
+                    <output id="valor-opacidad" for="opacidad">@Estilo.Opacidad %</output>
+                    <input id="opacidad" type="range" min="@EstiloVisual.OpacidadMinima" max="@EstiloVisual.OpacidadMaxima" step="1"
+                           value="@Estilo.Opacidad" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Opacidad = valor })" />
+                </div>
+                <div class="parametro">
+                    <label for="desenfoque">Desenfoque del fondo</label>
+                    <output id="valor-desenfoque" for="desenfoque">@Estilo.Desenfoque px</output>
+                    <input id="desenfoque" type="range" min="@EstiloVisual.DesenfoqueMinimo" max="@EstiloVisual.DesenfoqueMaximo" step="1"
+                           value="@Estilo.Desenfoque" @oninput="e => Cambiar(e, (estilo, valor) => estilo with { Desenfoque = valor })" />
+                </div>
+                @if (_avisoEstilo is not null)
+                {
+                    <p id="aviso-configuracion" class="aviso" role="alert">@_avisoEstilo</p>
+                }
+                <div class="acciones">
+                    <button id="guardar-configuracion" type="button" class="principal" @onclick="GuardarElEstilo">Guardar</button>
+                </div>
             </section>
-        }
+            @if (Logos is not null && GuardarLogo is not null)
+            {
+                @* Los logos con las reglas de LogosLocales; la vista previa es un img, donde un SVG no ejecuta scripts (D14). *@
+                <section class="logos" aria-labelledby="titulo-logos">
+                    <h3 id="titulo-logos">Logos</h3>
+                    <div class="lista-logos">
+                        @foreach (var logo in LogosEditables)
+                        {
+                            var indice = (int)logo;
+                            var clave = logo == LogoPuesto.Empresa ? "empresa" : "concesionaria";
+                            var titulo = logo == LogoPuesto.Empresa ? "Logo de la empresa" : "Logo de la concesionaria";
+                            <div class="logo-editable">
+                                <span id="titulo-logo-@clave">@titulo</span>
+                                <div class="cuadricula-logo">
+                                    <img id="vista-logo-@clave" src="@VistaLogo(logo)" alt="@titulo" />
+                                </div>
+                                <InputFile id="@($"archivo-logo-{clave}")" accept=".png,.webp,.svg" aria-labelledby="@($"titulo-logo-{clave}")"
+                                           OnChange="e => ElegirLogo(e, logo)" />
+                                <button id="ejemplo-logo-@clave" type="button" @onclick="() => VolverAlEjemplo(logo)">Volver al de ejemplo</button>
+                                @if (_avisoLogo[indice] is { } aviso)
+                                {
+                                    <p id="aviso-logo-@clave" class="aviso" role="alert">@aviso</p>
+                                }
+                            </div>
+                        }
+                    </div>
+                    @if (_avisoLogos is not null)
+                    {
+                        <p id="aviso-logos" class="aviso" role="alert">@_avisoLogos</p>
+                    }
+                    @if (HayLogosPendientes)
+                    {
+                        <div class="acciones">
+                            <button id="guardar-logos" type="button" class="principal" @onclick="GuardarLogos">Guardar los logos</button>
+                        </div>
+                    }
+                </section>
+            }
+        </section>
 
-        @if (Aviso is not null)
-        {
-            <p id="aviso-configuracion" class="aviso" role="alert">@Aviso</p>
-        }
+        <section role="tabpanel" id="seccion-impresora" class="seccion" aria-labelledby="pestana-impresora" hidden="@Oculta(Pestana.Impresora)">
+            @if (Impresora is not null)
+            {
+                <FranjaImpresora Impresora="Impresora" ModoCambiado="ModoImpresoraCambiado" />
+            }
 
-        <div class="acciones">
+            @* La prueba va directo a la impresora del puesto, sin consumo (D13). *@
+            @if (ImprimirPrueba is not null)
+            {
+                <section aria-labelledby="titulo-prueba">
+                    <h3 id="titulo-prueba">Prueba de impresión</h3>
+                    <p>Envía un comprobante con la leyenda PRUEBA, sin persona ni importe; no registra ningún consumo.</p>
+                    <div class="acciones abrir-paneles">
+                        <button id="imprimir-prueba" type="button" @onclick="Probar">Imprimir una prueba</button>
+                    </div>
+                    @if (_resultadoPrueba is not null)
+                    {
+                        <p id="resultado-prueba" class="aviso" role="status">@_resultadoPrueba</p>
+                    }
+                </section>
+            }
+
+            @* El encabezado y el pie del comprobante, desde el próximo que sale (D13). *@
+            @if (GuardarTextos is not null)
+            {
+                <section aria-labelledby="titulo-textos" class="textos-comprobante">
+                    <h3 id="titulo-textos">Textos del comprobante</h3>
+                    <label for="encabezado-comprobante">Encabezado</label>
+                    <input id="encabezado-comprobante" type="text" maxlength="@TextosComprobante.LargoEncabezado" value="@_encabezado"
+                           aria-invalid="@(_camposTextos.Contains("Encabezado") ? "true" : null)" @oninput="e => _encabezado = e.Value?.ToString() ?? string.Empty" />
+                    <label for="pie-comprobante">Pie</label>
+                    <input id="pie-comprobante" type="text" maxlength="@TextosComprobante.LargoPie" value="@_pie"
+                           aria-invalid="@(_camposTextos.Contains("Pie") ? "true" : null)" @oninput="e => _pie = e.Value?.ToString() ?? string.Empty" />
+                    @if (_avisoTextos is not null)
+                    {
+                        <p id="aviso-textos" class="aviso" role="status">@_avisoTextos</p>
+                    }
+                    <div class="acciones">
+                        <button id="guardar-textos" type="button" class="principal" @onclick="GuardarLosTextos">Guardar</button>
+                    </div>
+                </section>
+            }
+        </section>
+
+        <section role="tabpanel" id="seccion-pantalla" class="seccion" aria-labelledby="pestana-pantalla" hidden="@Oculta(Pestana.Pantalla)">
+            @* El monitor del puesto, recordado al volver a abrir; si el guardado no está, el principal y el aviso (D10). *@
+            @if (AvisoMonitor is not null)
+            {
+                <p id="aviso-monitor" class="aviso" role="status">@AvisoMonitor</p>
+            }
+            <p>Elegí el monitor del puesto: la ventana pasa a pantalla completa en él y vuelve a él cada vez que el puesto abre.</p>
+            <ul class="lista-monitores">
+                @for (var i = 0; i < _monitores.Count; i++)
+                {
+                    var indice = i;
+                    var monitor = _monitores[indice];
+                    <li>
+                        <label class="monitor">
+                            <input type="radio" name="monitor-puesto" checked="@(indice == _monitorElegido)" @onchange="() => _monitorElegido = indice" />
+                            <span>@(monitor.Nombre ?? monitor.Dispositivo) · @monitor.Area.Ancho × @monitor.Area.Alto@(monitor.Principal ? " · Principal" : "")</span>
+                        </label>
+                    </li>
+                }
+            </ul>
+            @if (_avisoMonitorError is not null)
+            {
+                <p id="aviso-monitor-error" class="aviso" role="status">@_avisoMonitorError</p>
+            }
+            @if (GuardarMonitor is not null && _monitores.Count > 0)
+            {
+                <div class="acciones">
+                    <button id="guardar-monitor" type="button" class="principal" @onclick="GuardarElMonitor">Guardar</button>
+                </div>
+            }
+        </section>
+
+        <section role="tabpanel" id="seccion-red" class="seccion" aria-labelledby="pestana-red" hidden="@Oculta(Pestana.Red)">
+            @* La red se lee al elegir la pestaña por primera vez, y la pestaña queda montada después (D2, D11). *@
+            @if (_redMontada)
+            {
+                <PestanaRed Aplicar="AplicarRed" DireccionReceptor="DireccionReceptor" TieneCertificados="TieneCertificados" ProbarConexion="ProbarConexion" />
+            }
+        </section>
+
+        <div class="acciones pie-dialogo">
             <button id="cancelar-configuracion" type="button" @onclick="Cancelar">Cancelar</button>
-            <button id="guardar-configuracion" type="button" class="principal" @onclick="Guardar">Guardar</button>
         </div>
-        </text>
-        }
     </div>
 </div>
 
 @code {
+    /// <summary>Las nueve pestañas, en el orden de D1.</summary>
+    private enum Pestana
+    {
+        General,
+        Personas,
+        Opciones,
+        Consumos,
+        Comprobantes,
+        Identidad,
+        Impresora,
+        Pantalla,
+        Red,
+    }
+
     private enum Panel
     {
         Personas,
         Opciones,
     }
 
-    private ElementReference _dialogo;
-    private Panel? _panel;
-    private string? _avisoPanel;
+    private static readonly Pestana[] Todas = Enum.GetValues<Pestana>();
 
-    /// <summary>La edición de personas y opciones; null no muestra sus botones (administrar-personas-y-opciones).</summary>
+    private readonly ElementReference[] _botones = new ElementReference[Todas.Length];
+    private ElementReference _dialogo;
+    private Pestana _elegida = Pestana.General;
+    private static readonly LogoPuesto[] LogosEditables = [LogoPuesto.Empresa, LogoPuesto.Concesionaria];
+    private readonly LogoElegido?[] _logoPendiente = new LogoElegido?[2];
+    private readonly bool[] _logoAlEjemplo = new bool[2];
+    private readonly string?[] _avisoLogo = new string?[2];
+    private string? _avisoLogos;
+    private bool _redMontada;
+    private bool _enfocarPestana;
+    private Panel? _panel;
+    private string? _avisoGuardado;
+    private string? _avisoEstilo;
+    private VistaAdministracion? _resumen;
+    private string? _resultadoPrueba;
+    private string _encabezado = string.Empty;
+    private string _pie = string.Empty;
+    private IReadOnlyList<string> _camposTextos = [];
+    private string? _avisoTextos;
+    private IReadOnlyList<MonitorDelPuesto> _monitores = [];
+    private int _monitorElegido;
+    private string? _avisoMonitorError;
+
+    /// <summary>La edición de personas y opciones; null deja esas pestañas vacías (administrar-personas-y-opciones).</summary>
     [Parameter]
     public AdministracionLocal? Administracion { get; set; }
 
@@ -105,7 +329,7 @@
     [Parameter, EditorRequired]
     public EstiloVisual Estilo { get; set; } = EstiloVisual.PorDefecto;
 
-    /// <summary>La impresora simulada, o null con cualquier otra: entonces no hay sección de impresora.</summary>
+    /// <summary>La impresora simulada, o null con cualquier otra: entonces la pestaña Impresora no tiene sus modos.</summary>
     [Parameter]
     public ImpresoraSimulada? Impresora { get; set; }
 
@@ -120,25 +344,280 @@
     [Parameter]
     public EventCallback<CambioModoImpresora> ModoImpresoraCambiado { get; set; }
 
-    /// <summary>Lo que el diálogo avisa, por ejemplo que no se pudo guardar; null sin aviso.</summary>
-    [Parameter]
-    public string? Aviso { get; set; }
-
     [Parameter]
     public EventCallback<EstiloVisual> VistaPrevia { get; set; }
 
-    [Parameter]
-    public EventCallback Guardar { get; set; }
+    /// <summary>Guarda el estilo de la vista previa; false si no se pudo escribir y quedó vigente el de antes (D3).</summary>
+    [Parameter, EditorRequired]
+    public Func<bool> GuardarEstilo { get; set; } = () => true;
 
     [Parameter]
     public EventCallback Cancelar { get; set; }
 
+    /// <summary>El modo vigente del puesto, que General muestra (D5).</summary>
+    [Parameter]
+    public ModoPuesto Modo { get; set; }
+
+    /// <summary>Pasar a operativo pide la clave del día; volver a mantenimiento, no (acceso-puesto).</summary>
+    [Parameter]
+    public EventCallback PasarAOperativo { get; set; }
+
+    [Parameter]
+    public EventCallback PasarAMantenimiento { get; set; }
+
+    /// <summary>«Cerrar el puesto», el camino táctil del cierre; sólo con un cierre que lo pueda hacer (D7).</summary>
+    [Parameter]
+    public EventCallback CerrarPuesto { get; set; }
+
+    [Parameter]
+    public bool PuedeCerrar { get; set; }
+
+    /// <summary>El aviso de que no se pudo guardar el modo; null sin aviso.</summary>
+    [Parameter]
+    public string? AvisoModo { get; set; }
+
+    /// <summary>Los logos vigentes de la cabecera, para la vista previa (D14).</summary>
+    [Parameter]
+    public Logos? Logos { get; set; }
+
+    /// <summary>Guarda un logo, o vuelve al de ejemplo con null; false si no se pudo escribir (D14).</summary>
+    [Parameter]
+    public Func<LogoPuesto, LogoElegido?, bool>? GuardarLogo { get; set; }
+
+    /// <summary>Aplica la IPv4 de un adaptador; devuelve null si el puesto no tiene el ejecutor de netsh (D11).</summary>
+    [Parameter]
+    public Func<AdaptadorRed, IPv4Validada, Task<ResultadoRed?>>? AplicarRed { get; set; }
+
+    /// <summary>La dirección del receptor configurado (D12).</summary>
+    [Parameter]
+    public Uri? DireccionReceptor { get; set; }
+
+    /// <summary>Si la carpeta de datos tiene los certificados del puesto (D12).</summary>
+    [Parameter]
+    public bool TieneCertificados { get; set; }
+
+    /// <summary>Prueba la conexión con el receptor y la registra; null si no se pudo probar (D12).</summary>
+    [Parameter]
+    public Func<Task<ResultadoConexion?>>? ProbarConexion { get; set; }
+
+    /// <summary>Por qué el puesto no abrió en el monitor guardado; null si abrió en él (D10).</summary>
+    [Parameter]
+    public string? AvisoMonitor { get; set; }
+
+    /// <summary>Guarda el monitor elegido y pide mover la ventana; false si no se pudo escribir.</summary>
+    [Parameter]
+    public Func<MonitorDelPuesto, bool>? GuardarMonitor { get; set; }
+
+    /// <summary>El monitor guardado, para marcarlo al abrir la pestaña; sin él, el principal.</summary>
+    [Parameter]
+    public string? MonitorGuardadoId { get; set; }
+
+    /// <summary>Los textos vigentes del comprobante, que la pestaña Impresora edita (D13).</summary>
+    [Parameter]
+    public TextosComprobante Textos { get; set; } = TextosComprobante.PorDefecto;
+
+    /// <summary>«Imprimir una prueba»: devuelve lo que dice la pestaña.</summary>
+    [Parameter]
+    public Func<string>? ImprimirPrueba { get; set; }
+
+    [Parameter]
+    public Func<string, string, ResultadoTextos>? GuardarTextos { get; set; }
+
+    /// <summary>La consulta de consumos; la ve quien entró a Configuración, sin el código de un operador (D9).</summary>
+    [Parameter]
+    public ConsultaConsumos? Consumos { get; set; }
+
+    /// <summary>La pantalla registra cada consulta de consumos con cómo se entró a Configuración (D17).</summary>
+    [Parameter]
+    public Action<PestanaConsumos.ConsultaRealizada>? RegistrarConsulta { get; set; }
+
+    /// <summary>La sesión del operador de Comprobantes, que la pantalla abre con Configuración y cierra con ella (D8).</summary>
+    [Parameter]
+    public SesionOperador? SesionOperador { get; set; }
+
+    /// <summary>Con la clave del día pedida encima, el diálogo queda inerte.</summary>
+    [Parameter]
+    public bool Inerte { get; set; }
+
+    private string Editar => _resumen?.SoloLectura == true ? "Ver" : "Editar";
+
+    private string ResumenOpciones => _resumen is { } vista
+        ? $"{vista.Opciones.Count} opciones en la versión {vista.VersionConfiguracion} de la configuración"
+        : MensajesAtencion.ConfiguracionNoLeida;
+
+    protected override void OnInitialized()
+    {
+        LeerResumen();
+        _encabezado = Textos.Encabezado;
+        _pie = Textos.Pie;
+        _monitores = Monitores.Leer();
+        var guardado = _monitores.ToList().FindIndex(m => m.Id == MonitorGuardadoId);
+        _monitorElegido = guardado >= 0 ? guardado : Math.Max(0, _monitores.ToList().FindIndex(m => m.Principal));
+    }
+
+    /// <summary>Guarda el monitor y deja Configuración abierta, con el aviso de lo guardado (D3, D10).</summary>
+    private void GuardarElMonitor()
+    {
+        if (GuardarMonitor is null || _monitorElegido >= _monitores.Count)
+        {
+            return;
+        }
+
+        var guardado = GuardarMonitor(_monitores[_monitorElegido]);
+        _avisoMonitorError = guardado ? null : MensajesAtencion.MonitorNoGuardado;
+        _avisoGuardado = guardado ? MensajesAtencion.MonitorGuardado : null;
+    }
+
+    private void Probar() => _resultadoPrueba = ImprimirPrueba?.Invoke();
+
+    /// <summary>Guarda sólo los textos y deja Configuración abierta: con el aviso de lo guardado o los campos señalados (D3).</summary>
+    private void GuardarLosTextos()
+    {
+        if (GuardarTextos?.Invoke(_encabezado, _pie) is not { } resultado)
+        {
+            return;
+        }
+
+        _camposTextos = resultado.Campos;
+        _avisoTextos = resultado.Aviso;
+        _avisoGuardado = resultado.Guardado ? MensajesAtencion.TextosGuardados : null;
+    }
+
     protected override async Task OnAfterRenderAsync(bool primera)
     {
-        // El foco entra al diálogo para que Escape funcione sin tocarlo antes.
+        // El foco entra al diálogo para que Escape funcione sin tocarlo antes; con el teclado, sigue a la pestaña elegida.
         if (primera)
         {
             await _dialogo.FocusAsync();
+        }
+        else if (_enfocarPestana)
+        {
+            _enfocarPestana = false;
+            await _botones[(int)_elegida].FocusAsync();
+        }
+    }
+
+    private static string Clave(Pestana pestana) => pestana switch
+    {
+        Pestana.Identidad => "identidad",
+        _ => pestana.ToString().ToLowerInvariant(),
+    };
+
+    private static string Nombre(Pestana pestana) => pestana switch
+    {
+        Pestana.Identidad => "Identidad visual",
+        _ => pestana.ToString(),
+    };
+
+    private bool Oculta(Pestana pestana) => pestana != _elegida;
+
+    private void Elegir(Pestana pestana)
+    {
+        if (pestana != _elegida)
+        {
+            _avisoGuardado = null;
+        }
+
+        _elegida = pestana;
+        _redMontada |= pestana == Pestana.Red;
+    }
+
+    private bool HayLogosPendientes => _logoPendiente.Any(l => l is not null) || _logoAlEjemplo.Any(e => e);
+
+    /// <summary>Lo pendiente de un logo, o el vigente: el de ejemplo pedido, el archivo elegido o el de la cabecera.</summary>
+    private string VistaLogo(LogoPuesto logo)
+    {
+        var indice = (int)logo;
+        var ejemplo = logo == LogoPuesto.Empresa ? LogosLocales.EmpresaDeEjemplo : LogosLocales.ConcesionariaDeEjemplo;
+        var vigente = logo == LogoPuesto.Empresa ? Logos?.Empresa : Logos?.Concesionaria;
+        return _logoAlEjemplo[indice] ? ejemplo : _logoPendiente[indice]?.UriData ?? vigente ?? ejemplo;
+    }
+
+    /// <summary>
+    /// Lee el archivo elegido con un tope de 2 MB más un byte y lo valida con las reglas de LogosLocales; uno que no sirve
+    /// dice por qué y deja el logo vigente (D14).
+    /// </summary>
+    private async Task ElegirLogo(InputFileChangeEventArgs e, LogoPuesto logo)
+    {
+        var indice = (int)logo;
+        _avisoLogo[indice] = null;
+        _avisoLogos = null;
+        _logoPendiente[indice] = null;
+        _logoAlEjemplo[indice] = false;
+        var archivo = e.File;
+        byte[] contenido = [];
+        if (archivo.Size <= LogosLocales.TamanoMaximo)
+        {
+            try
+            {
+                await using var flujo = archivo.OpenReadStream(LogosLocales.TamanoMaximo + 1);
+                using var memoria = new System.IO.MemoryStream();
+                await flujo.CopyToAsync(memoria);
+                contenido = memoria.ToArray();
+            }
+            catch (System.IO.IOException)
+            {
+                _avisoLogo[indice] = MensajesAtencion.LogoInvalido;
+                return;
+            }
+        }
+
+        var validacion = LogosLocales.Validar(archivo.Name, archivo.Size, contenido);
+        _logoPendiente[indice] = validacion.Logo;
+        _avisoLogo[indice] = validacion.Motivo;
+    }
+
+    private void VolverAlEjemplo(LogoPuesto logo)
+    {
+        var indice = (int)logo;
+        _logoPendiente[indice] = null;
+        _logoAlEjemplo[indice] = true;
+        _avisoLogo[indice] = null;
+        _avisoLogos = null;
+    }
+
+    /// <summary>Guarda lo pendiente de cada logo y deja Configuración abierta, con el aviso de lo guardado (D3, D14).</summary>
+    private void GuardarLogos()
+    {
+        if (GuardarLogo is null)
+        {
+            return;
+        }
+
+        var guardados = true;
+        foreach (var logo in LogosEditables)
+        {
+            var indice = (int)logo;
+            if (!_logoAlEjemplo[indice] && _logoPendiente[indice] is null)
+            {
+                continue;
+            }
+
+            guardados &= GuardarLogo(logo, _logoAlEjemplo[indice] ? null : _logoPendiente[indice]);
+            _logoPendiente[indice] = null;
+            _logoAlEjemplo[indice] = false;
+        }
+
+        _avisoGuardado = guardados ? MensajesAtencion.LogosGuardados : null;
+        _avisoLogos = guardados ? null : MensajesAtencion.LogosNoGuardados;
+    }
+
+    /// <summary>Flechas, Inicio y Fin mueven la pestaña elegida y el foco con ella (patrón de pestañas de WAI-ARIA, D1).</summary>
+    private void TeclaPestana(KeyboardEventArgs e, Pestana actual)
+    {
+        var indice = (int)actual;
+        int? destino = e.Key switch
+        {
+            "ArrowRight" => (indice + 1) % Todas.Length,
+            "ArrowLeft" => (indice + Todas.Length - 1) % Todas.Length,
+            "Home" => 0,
+            "End" => Todas.Length - 1,
+            _ => null,
+        };
+        if (destino is { } nueva)
+        {
+            Elegir(Todas[nueva]);
+            _enfocarPestana = true;
         }
     }
 
@@ -153,33 +632,52 @@
         return estilo.EnRango ? VistaPrevia.InvokeAsync(estilo) : Task.CompletedTask;
     }
 
-    /// <summary>Escape cierra el panel abierto, como su «Cancelar»; sin panel, cancela el diálogo.</summary>
-    private Task Tecla(KeyboardEventArgs e)
+    /// <summary>Guarda sólo el estilo y deja Configuración abierta: con el aviso de lo guardado o el de que no se pudo (D3).</summary>
+    private void GuardarElEstilo()
     {
-        if (e.Key != "Escape")
+        if (GuardarEstilo())
         {
-            return Task.CompletedTask;
+            _avisoEstilo = null;
+            _avisoGuardado = MensajesAtencion.EstiloGuardado;
         }
-
-        if (_panel is not null)
+        else
         {
-            CerrarPanel(null);
-            return Task.CompletedTask;
+            _avisoEstilo = MensajesAtencion.EstiloNoGuardado;
+            _avisoGuardado = null;
         }
-
-        return Cancelar.InvokeAsync();
     }
 
+    /// <summary>Escape cierra Configuración como «Cancelar», también con un panel de edición abierto (D3).</summary>
+    private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar.InvokeAsync() : Task.CompletedTask;
+
+    /// <summary>Abrir una edición elige su pestaña, que queda a la vista con la tabla o el panel.</summary>
     private void AbrirPanel(Panel panel)
     {
-        _avisoPanel = null;
+        _avisoGuardado = null;
         _panel = panel;
+        _elegida = panel == Panel.Personas ? Pestana.Personas : Pestana.Opciones;
     }
 
-    /// <summary>Vuelve al contenido del diálogo; si el panel guardó, con el aviso de la versión nueva.</summary>
+    /// <summary>Vuelve al resumen de la pestaña; si el panel guardó, con el aviso de la versión nueva.</summary>
     private void CerrarPanel(string? aviso)
     {
         _panel = null;
-        _avisoPanel = aviso;
+        if (aviso is not null)
+        {
+            _avisoGuardado = aviso;
+            LeerResumen();
+        }
+    }
+
+    private void LeerResumen()
+    {
+        try
+        {
+            _resumen = Administracion?.Leer();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _resumen = null;
+        }
     }
 }

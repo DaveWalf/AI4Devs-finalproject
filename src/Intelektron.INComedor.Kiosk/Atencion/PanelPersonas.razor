@@ -2,15 +2,20 @@
 @using Intelektron.INComedor.Infrastructure.Sqlite
 
 @*
-    «Personas habilitadas» (administrar-personas-y-opciones): la lista de la versión activa con su estado, sus cupos y las
-    opciones que habilitan, y su edición mientras no haya INWeb (D3). Nunca muestra un código: el campo de una persona nueva
-    es de sólo dígitos, enmascarado y sin autocompletado, y no vuelve a dibujar lo tipeado (D10). El servicio valida y
-    decide; la pantalla sólo arma la edición entera y señala los campos que el guardado rechaza (D11).
+    Personas en una tabla (D4 de configurar-puesto-por-pestanas, sobre «Personas habilitadas» de administrar-personas-y-opciones):
+    una fila por persona y una columna por cada par de servicio y categoría que usa el catálogo o alguna regla, con el límite
+    o «—». Para leer es #tabla-personas; con «Editar» pasa a #panel-personas en el mismo lugar: el nombre y cada límite son
+    campos (vacío es sin cupo, 0 es la denegación explícita), una fila nueva suma el código enmascarado, y «Quitar»,
+    «Guardar» y «Cancelar» actúan como en C. Ordenar cambia sólo la vista: la edición se arma en el orden de lectura y los
+    campos rechazados vuelven a su fila por esa posición. Nunca muestra un código; el servicio valida y decide (D10, D11).
 *@
-<section id="panel-personas" class="panel-administracion" aria-labelledby="titulo-personas">
-    <h3 id="titulo-personas">Personas habilitadas</h3>
+<section id="@(Editando ? "panel-personas" : "tabla-personas")" class="panel-administracion tabla-administracion" aria-label="Personas habilitadas">
+    @if (Editando)
+    {
+        <h3 id="titulo-personas">Personas habilitadas</h3>
+    }
 
-    @if (_vista.SoloLectura)
+    @if (Editando && _vista.SoloLectura)
     {
         <p id="aviso-inweb" class="aviso" role="status">@MensajesAtencion.INWebAdministra</p>
     }
@@ -20,188 +25,291 @@
         <p id="aviso-panel" class="aviso" role="alert">@_aviso</p>
     }
 
-    <div class="lista-administracion">
-        @for (var i = 0; i < _filas.Count; i++)
-        {
-            var indice = i;
-            var fila = _filas[indice];
-            <article class="persona @(fila.Quitar ? "de-baja" : "")" data-indice="@indice" aria-invalid="@Marca(indice, "PersonaId")">
-                <div class="encabezado-fila">
+    <div class="caja-tabla">
+        <table class="tabla-personas">
+            <thead>
+                <tr>
+                    @foreach (var columna in Columnas)
+                    {
+                        <th scope="col" data-columna="@columna.Clave" aria-sort="@Orden(columna.Clave)">
+                            <button type="button" class="ordenar" @onclick="() => Ordenar(columna.Clave)">@columna.Titulo</button>
+                        </th>
+                    }
                     @if (Editable)
                     {
-                        <input class="nombre-persona" type="text" maxlength="@AdministracionLocal.LargoNombrePersona" aria-label="Nombre visible"
-                               value="@fila.Nombre" aria-invalid="@Marca(indice, "Nombre")" @oninput="e => fila.Nombre = Texto(e)" />
+                        <th scope="col">Código</th>
+                        <th scope="col"><span class="oculto">Acciones</span></th>
                     }
-                    else
+                    else if (!Editando)
                     {
-                        <h4 class="nombre-persona">@fila.Nombre</h4>
+                        @* «Editar» (o «Ver» con INWeb) en el encabezado, sin una fila propia que le quite alto a la tabla. *@
+                        <td class="accion-tabla">
+                            <button id="abrir-personas" type="button" class="principal" disabled="@(!PuedeEditar)"
+                                    title="@(PuedeEditar ? null : "Terminá o cancelá la edición de Opciones")" @onclick="() => Editar.InvokeAsync()">@(_vista.SoloLectura ? "Ver" : "Editar")</button>
+                        </td>
                     }
-                    <span class="estado-persona">@Estado(fila)</span>
-                </div>
-
-                @if (fila.Nueva)
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var indice in OrdenDeVista())
                 {
-                    @* Sin value: lo tipeado no vuelve a dibujarse (D10). *@
-                    <label class="campo-codigo">
-                        Código
-                        <input class="codigo-persona" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
-                               maxlength="@AdministracionLocal.LargoCodigo" aria-invalid="@Marca(indice, "Codigo")" @oninput="e => fila.Codigo = Texto(e)" />
-                    </label>
-                }
-
-                @if (fila.Cupos.Count == 0)
-                {
-                    <p class="sin-cupos">Sin cupos</p>
-                }
-                else
-                {
-                    <ul class="cupos">
-                        @for (var j = 0; j < fila.Cupos.Count; j++)
+                    var fila = _filas[indice];
+                    <tr class="persona @(fila.Quitar ? "de-baja" : "")" data-indice="@indice" aria-invalid="@Marca(indice, "PersonaId")">
+                        <td>
+                            @if (Editable)
+                            {
+                                <input class="nombre-persona" type="text" maxlength="@AdministracionLocal.LargoNombrePersona" aria-label="Nombre visible"
+                                       value="@fila.Nombre" aria-invalid="@Marca(indice, "Nombre")" @oninput="e => fila.Nombre = Texto(e)" />
+                            }
+                            else
+                            {
+                                <span class="nombre-persona">@fila.Nombre</span>
+                            }
+                        </td>
+                        <td class="estado-persona">@Estado(fila)</td>
+                        @for (var j = 0; j < _pares.Count; j++)
                         {
-                            var posicion = j;
-                            var cupo = fila.Cupos[posicion];
-                            <li class="cupo">
-                                <span class="nombre-cupo">@NombrePar(cupo.ServicioId, cupo.CategoriaId)</span>
+                            var columna = j;
+                            <td class="cupo" data-cupo="@NombrePar(_pares[columna])">
                                 @if (Editable)
                                 {
                                     <input class="limite" type="number" inputmode="numeric" min="0" max="@AdministracionLocal.LimiteMaximo"
-                                           aria-label="Límite diario" value="@cupo.Limite" aria-invalid="@Marca(indice, $"Cupos[{posicion}].Limite")"
-                                           @oninput="e => cupo.Limite = Texto(e)" />
-                                    <button type="button" class="quitar-cupo" @onclick="() => fila.Cupos.Remove(cupo)">Quitar cupo</button>
+                                           aria-label="@($"Límite diario de {NombrePar(_pares[columna])}")" value="@fila.Limites[columna]"
+                                           aria-invalid="@MarcaCupo(indice, columna)" @oninput="e => fila.Limites[columna] = Texto(e)" />
                                 }
                                 else
                                 {
-                                    <span class="limite">límite @cupo.Limite</span>
+                                    @(fila.Limites[columna].Length == 0 ? "—" : fila.Limites[columna])
                                 }
-                                @if (cupo.ReglasQueSeReemplazan)
+                            </td>
+                        }
+                        <td class="habilitadas" data-cantidad="@fila.Habilitadas">@fila.Habilitadas</td>
+                        @if (!Editando)
+                        {
+                            <td></td>
+                        }
+                        @if (Editable)
+                        {
+                            <td>
+                                @if (fila.Nueva)
                                 {
-                                    <span class="aviso-reglas">Tiene reglas con vigencia o prioridad: se reemplazan si lo cambiás</span>
+                                    @* Sin value: lo tipeado no vuelve a dibujarse (D10 de administrar-personas-y-opciones). *@
+                                    <input class="codigo-persona" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Código"
+                                           maxlength="@AdministracionLocal.LargoCodigo" aria-invalid="@Marca(indice, "Codigo")" @oninput="e => fila.Codigo = Texto(e)" />
                                 }
-                            </li>
-                        }
-                    </ul>
-                }
-
-                @if (Editable)
-                {
-                    var libres = ParesLibres(fila);
-                    <div class="acciones-fila">
-                        @if (libres.Count > 0)
-                        {
-                            <select class="nuevo-cupo" aria-label="Cupo para agregar" @onchange="e => fila.ParElegido = Texto(e)">
-                                <option value="" selected="@(fila.ParElegido.Length == 0)">Elegí un cupo</option>
-                                @foreach (var par in libres)
+                            </td>
+                            <td>
+                                @if (fila.Nueva)
                                 {
-                                    var valor = _pares.IndexOf(par).ToString(CultureInfo.InvariantCulture);
-                                    <option value="@valor" selected="@(fila.ParElegido == valor)">@NombrePar(par.Servicio, par.Categoria)</option>
+                                    <button type="button" class="quitar-persona" @onclick="() => Descartar(fila)">Descartar</button>
                                 }
-                            </select>
-                            <button type="button" class="agregar-cupo" @onclick="() => AgregarCupo(fila)">Agregar cupo</button>
+                                else if (fila.Activa)
+                                {
+                                    <button type="button" class="@(fila.Quitar ? "deshacer-quitar" : "quitar-persona")" @onclick="() => fila.Quitar = !fila.Quitar">
+                                        @(fila.Quitar ? "Deshacer" : "Quitar")
+                                    </button>
+                                }
+                            </td>
                         }
-                        @if (fila.Nueva)
-                        {
-                            <button type="button" class="quitar-persona" @onclick="() => _filas.Remove(fila)">Descartar</button>
-                        }
-                        else if (fila.Activa)
-                        {
-                            <button type="button" class="@(fila.Quitar ? "deshacer-quitar" : "quitar-persona")" @onclick="() => fila.Quitar = !fila.Quitar">
-                                @(fila.Quitar ? "Deshacer" : "Quitar")
-                            </button>
-                        }
-                    </div>
+                    </tr>
                 }
-
-                <p class="habilitadas" data-cantidad="@fila.Habilitadas.Count">
-                    @(fila.Habilitadas.Count == 0 ? "Ninguna opción habilitada" : "Habilita: " + string.Join(" · ", fila.Habilitadas))
-                </p>
-            </article>
-        }
+            </tbody>
+        </table>
     </div>
 
-    <div class="acciones">
-        @if (Editable)
-        {
-            <button id="agregar-persona" type="button" @onclick="AgregarPersona">Agregar persona</button>
-        }
-        <button id="cancelar-panel" type="button" @onclick="() => Cerrar.InvokeAsync(null)">Cancelar</button>
-        @if (Editable)
-        {
-            <button id="guardar-panel" type="button" class="principal" @onclick="Guardar">Guardar</button>
-        }
-    </div>
+    @if (Editando)
+    {
+        <div class="acciones">
+            @if (Editable)
+            {
+                <button id="agregar-persona" type="button" @onclick="AgregarPersona">Agregar persona</button>
+            }
+            <button id="cancelar-panel" type="button" @onclick="() => Cerrar.InvokeAsync(null)">Cancelar</button>
+            @if (Editable)
+            {
+                <button id="guardar-panel" type="button" class="principal" @onclick="Guardar">Guardar</button>
+            }
+        </div>
+    }
 </section>
 
 @code {
+    private static readonly StringComparer PorNombre = StringComparer.Create(CultureInfo.GetCultureInfo("es-AR"), ignoreCase: true);
+
     private VistaAdministracion _vista = null!;
     private List<FilaPersona> _filas = [];
     private List<(Guid Servicio, Guid Categoria)> _pares = [];
     private IReadOnlyList<CampoRechazado> _campos = [];
+    private Dictionary<int, List<int>> _columnasEnviadas = [];
     private string? _aviso;
+    private string? _ordenColumna;
+    private bool _ordenAscendente = true;
+    private bool? _editandoCargado;
 
     [Parameter, EditorRequired]
     public AdministracionLocal Administracion { get; set; } = null!;
 
-    /// <summary>Se cierra el panel: con el aviso de la versión guardada, o null si se canceló.</summary>
+    /// <summary>Con «Editar», la tabla pasa a edición en el mismo lugar; sin él, sólo se lee.</summary>
+    [Parameter]
+    public bool Editando { get; set; }
+
+    /// <summary>Para leer, «Editar» pasa la tabla a edición; deshabilitado mientras Opciones está en edición (D2).</summary>
+    [Parameter]
+    public EventCallback Editar { get; set; }
+
+    [Parameter]
+    public bool PuedeEditar { get; set; } = true;
+
+    /// <summary>Se cierra la edición: con el aviso de la versión guardada, o null si se canceló.</summary>
     [Parameter]
     public EventCallback<string?> Cerrar { get; set; }
 
-    private bool Editable => !_vista.SoloLectura;
+    private bool Editable => Editando && !_vista.SoloLectura;
 
-    protected override void OnInitialized() => Cargar(Administracion.Leer());
+    private IEnumerable<(string Clave, string Titulo)> Columnas =>
+        new[] { ("Nombre", "Nombre"), ("Estado", "Estado") }
+            .Concat(_pares.Select(p => (NombrePar(p), NombrePar(p))))
+            .Append(("Opciones", "Opciones habilitadas"));
+
+    /// <summary>Cada vez que entra o sale de la edición, vuelve a leer la versión activa.</summary>
+    protected override void OnParametersSet()
+    {
+        if (_editandoCargado != Editando)
+        {
+            _editandoCargado = Editando;
+            Cargar(Administracion.Leer());
+        }
+    }
 
     private void Cargar(VistaAdministracion vista)
     {
         _vista = vista;
-        var opciones = vista.Opciones.ToDictionary(o => o.Id, o => o.Nombre);
+        _pares = ParesDeColumnas(vista);
         _filas = vista.Personas.Select(p => new FilaPersona
         {
             Id = p.Id,
             Nombre = p.Nombre,
             Activa = p.Activa,
-            Cupos = p.Cupos.Select(c => new FilaCupo(c.ServicioId, c.CategoriaId)
-            {
-                Limite = c.Limite.ToString(CultureInfo.InvariantCulture),
-                ReglasQueSeReemplazan = c.ReglasQueSeReemplazan,
-            }).ToList(),
-            Habilitadas = p.OpcionesHabilitadas.Select(id => opciones[id]).ToList(),
+            Limites = _pares.Select(par => p.Cupos.FirstOrDefault(c => c.ServicioId == par.Servicio && c.CategoriaId == par.Categoria) is { } cupo
+                ? cupo.Limite.ToString(CultureInfo.InvariantCulture)
+                : string.Empty).ToArray(),
+            Habilitadas = p.OpcionesHabilitadas.Count,
         }).ToList();
-        _pares = vista.Servicios.SelectMany(s => vista.Categorias.Select(c => (s.Id, c.Id))).ToList();
         _campos = [];
+        _columnasEnviadas = [];
+        _aviso = null;
     }
+
+    /// <summary>
+    /// Los pares que usan las cargas de las opciones, en el orden del catálogo, y después los de alguna regla que el catálogo
+    /// no usa; no cada servicio por cada categoría (D4).
+    /// </summary>
+    private static List<(Guid Servicio, Guid Categoria)> ParesDeColumnas(VistaAdministracion vista)
+    {
+        var pares = new List<(Guid, Guid)>();
+        foreach (var par in vista.Opciones.SelectMany(o => o.Cargas.Select(c => (o.ServicioId, c.CategoriaId)))
+                     .Concat(vista.Personas.SelectMany(p => p.Cupos.Select(c => (c.ServicioId, c.CategoriaId)))))
+        {
+            if (!pares.Contains(par))
+            {
+                pares.Add(par);
+            }
+        }
+
+        return pares
+            .OrderBy(p => vista.Servicios.Select(s => s.Id).ToList().IndexOf(p.Item1))
+            .ThenBy(p => vista.Categorias.Select(c => c.Id).ToList().IndexOf(p.Item2))
+            .ToList();
+    }
+
+    /// <summary>El orden de la vista: las filas de lectura ordenadas por la columna elegida, y las nuevas siempre al final.</summary>
+    private IEnumerable<int> OrdenDeVista()
+    {
+        var existentes = Enumerable.Range(0, _filas.Count).Where(i => !_filas[i].Nueva).ToList();
+        var nuevas = Enumerable.Range(0, _filas.Count).Where(i => _filas[i].Nueva);
+        if (_ordenColumna is not { } columna)
+        {
+            return existentes.Concat(nuevas);
+        }
+
+        var parIndice = _pares.FindIndex(p => NombrePar(p) == columna);
+        IEnumerable<int> ordenadas = columna switch
+        {
+            "Nombre" => Ordenadas(existentes, i => _filas[i].Nombre, PorNombre),
+            "Estado" => Ordenadas(existentes, i => _filas[i].Activa ? 0 : 1, Comparer<int>.Default),
+            "Opciones" => Ordenadas(existentes, i => _filas[i].Habilitadas, Comparer<int>.Default),
+            _ when parIndice >= 0 => OrdenarPorCupo(existentes, parIndice),
+            _ => existentes,
+        };
+        return ordenadas.Concat(nuevas);
+    }
+
+    private IEnumerable<int> Ordenadas<T>(List<int> filas, Func<int, T> clave, IComparer<T> comparador) =>
+        _ordenAscendente ? filas.OrderBy(clave, comparador).ThenBy(i => i) : filas.OrderByDescending(clave, comparador).ThenBy(i => i);
+
+    /// <summary>Por el límite de un cupo; una celda sin cupo va al final en los dos sentidos.</summary>
+    private IEnumerable<int> OrdenarPorCupo(List<int> filas, int columna)
+    {
+        int? Limite(int i) => int.TryParse(_filas[i].Limites[columna], NumberStyles.None, CultureInfo.InvariantCulture, out var limite) ? limite : null;
+        var conCupo = filas.Where(i => Limite(i) is not null).ToList();
+        var sinCupo = filas.Where(i => Limite(i) is null);
+        return Ordenadas(conCupo, i => Limite(i)!.Value, Comparer<int>.Default).Concat(sinCupo);
+    }
+
+    private void Ordenar(string columna)
+    {
+        _ordenAscendente = _ordenColumna != columna || !_ordenAscendente;
+        _ordenColumna = columna;
+    }
+
+    private string Orden(string columna) =>
+        _ordenColumna != columna ? "none" : _ordenAscendente ? "ascending" : "descending";
 
     private void AgregarPersona()
     {
-        _filas.Add(new FilaPersona { Nueva = true, Activa = true });
+        _filas.Add(new FilaPersona { Nueva = true, Activa = true, Limites = new string[_pares.Count] });
+        Array.Fill(_filas[^1].Limites, string.Empty);
     }
 
-    private void AgregarCupo(FilaPersona fila)
+    /// <summary>Descartar una fila nueva corre las posiciones: las marcas del último guardado ya no corresponden.</summary>
+    private void Descartar(FilaPersona fila)
     {
-        if (int.TryParse(fila.ParElegido, NumberStyles.None, CultureInfo.InvariantCulture, out var posicion) && posicion < _pares.Count)
-        {
-            var (servicio, categoria) = _pares[posicion];
-            fila.Cupos.Add(new FilaCupo(servicio, categoria) { Limite = "1" });
-        }
-
-        fila.ParElegido = string.Empty;
+        _filas.Remove(fila);
+        _campos = [];
+        _columnasEnviadas = [];
     }
-
-    private List<(Guid Servicio, Guid Categoria)> ParesLibres(FilaPersona fila) =>
-        _pares.Where(p => !fila.Cupos.Any(c => c.ServicioId == p.Servicio && c.CategoriaId == p.Categoria)).ToList();
 
     /// <summary>
-    /// Arma la edición entera, con cada fila en su posición, y la manda al servicio, que valida y decide. Un límite que no es
-    /// un número va como -1, para que el servicio lo rechace y lo registre como cualquier otro dato fuera de rango.
+    /// Arma la edición entera en el orden de lectura y la manda al servicio, que valida y decide. Una celda vacía es sin cupo;
+    /// un límite que no es un número va como -1, para que el servicio lo rechace y lo registre como cualquier otro dato fuera de
+    /// rango.
     /// </summary>
     private async Task Guardar()
     {
-        var ediciones = _filas.Select(f =>
+        _columnasEnviadas = [];
+        var ediciones = new List<EdicionPersona>();
+        for (var i = 0; i < _filas.Count; i++)
         {
-            var cupos = f.Cupos.Select(c => new CupoEditado(c.ServicioId, c.CategoriaId,
-                int.TryParse(c.Limite, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var limite) ? limite : -1)).ToList();
-            return f.Nueva
-                ? new EdicionPersona(null, f.Nombre, cupos, f.Codigo)
-                : new EdicionPersona(f.Id, f.Nombre, cupos, Quitar: f.Quitar);
-        }).ToList();
+            var fila = _filas[i];
+            var columnas = new List<int>();
+            var cupos = new List<CupoEditado>();
+            for (var j = 0; j < _pares.Count; j++)
+            {
+                if (fila.Limites[j].Trim().Length == 0)
+                {
+                    continue;
+                }
+
+                columnas.Add(j);
+                cupos.Add(new CupoEditado(_pares[j].Servicio, _pares[j].Categoria,
+                    int.TryParse(fila.Limites[j], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var limite) ? limite : -1));
+            }
+
+            _columnasEnviadas[i] = columnas;
+            ediciones.Add(fila.Nueva
+                ? new EdicionPersona(null, fila.Nombre, cupos, fila.Codigo)
+                : new EdicionPersona(fila.Id, fila.Nombre, cupos, Quitar: fila.Quitar));
+        }
 
         ResultadoGuardado resultado;
         try
@@ -233,10 +341,17 @@
     private string? Marca(int indice, string campo) =>
         _campos.Any(c => c.Indice == indice && c.Campo == campo) ? "true" : null;
 
-    private string NombrePar(Guid servicio, Guid categoria)
+    /// <summary>El campo rechazado «Cupos[n]» es la n-ésima celda con valor que se mandó de esa fila.</summary>
+    private string? MarcaCupo(int indice, int columna) =>
+        _columnasEnviadas.TryGetValue(indice, out var columnas) && columnas.IndexOf(columna) is var n and >= 0
+        && _campos.Any(c => c.Indice == indice && (c.Campo == $"Cupos[{n}].Limite" || c.Campo == $"Cupos[{n}]"))
+            ? "true"
+            : null;
+
+    private string NombrePar((Guid Servicio, Guid Categoria) par)
     {
-        var nombreServicio = _vista.Servicios.FirstOrDefault(s => s.Id == servicio)?.Nombre ?? "?";
-        var nombreCategoria = _vista.Categorias.FirstOrDefault(c => c.Id == categoria)?.Nombre ?? "?";
+        var nombreServicio = _vista.Servicios.FirstOrDefault(s => s.Id == par.Servicio)?.Nombre ?? "?";
+        var nombreCategoria = _vista.Categorias.FirstOrDefault(c => c.Id == par.Categoria)?.Nombre ?? "?";
         return nombreServicio == nombreCategoria ? nombreServicio : $"{nombreServicio} · {nombreCategoria}";
     }
 
@@ -259,21 +374,8 @@
 
         public bool Quitar { get; set; }
 
-        public List<FilaCupo> Cupos { get; init; } = [];
+        public string[] Limites { get; init; } = [];
 
-        public List<string> Habilitadas { get; init; } = [];
-
-        public string ParElegido { get; set; } = string.Empty;
-    }
-
-    private sealed class FilaCupo(Guid servicioId, Guid categoriaId)
-    {
-        public Guid ServicioId { get; } = servicioId;
-
-        public Guid CategoriaId { get; } = categoriaId;
-
-        public string Limite { get; set; } = string.Empty;
-
-        public bool ReglasQueSeReemplazan { get; init; }
+        public int Habilitadas { get; init; }
     }
 }

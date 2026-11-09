@@ -29,6 +29,9 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
 
     public ModoImpresoraSimulada Modo { get; set; } = ModoImpresoraSimulada.Disponible;
 
+    /// <summary>El encabezado y el pie que lleva cada comprobante desde el próximo que sale (D13 de configurar-puesto-por-pestanas).</summary>
+    public TextosComprobante Textos { get; set; } = TextosComprobante.PorDefecto;
+
     /// <summary>El último comprobante que aceptó como enviado, para mostrarlo en pantalla (D7 de presentar-atencion-tactil).</summary>
     public ComprobanteAImprimir? UltimoEnviado { get; private set; }
 
@@ -43,13 +46,17 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
         {
             Directory.CreateDirectory(Carpeta);
             var texto = new StringBuilder()
-                .AppendLine("INComedor · comprobante (demostración, datos sintéticos)")
+                .AppendLine(Textos.Encabezado + " (demostración, datos sintéticos)")
                 .AppendLine(comprobante.Leyenda ?? "ORIGINAL")
                 .AppendLine("Comprobante: " + comprobante.TicketId)
                 .AppendLine("Copia: " + comprobante.NumeroCopia)
-                .AppendLine(comprobante.DatosImpresion)
-                .ToString();
-            File.WriteAllText(Path.Combine(Carpeta, $"{comprobante.TicketId}-{comprobante.NumeroCopia}.txt"), texto, Encoding.UTF8);
+                .AppendLine(comprobante.DatosImpresion);
+            if (Textos.Pie.Length > 0)
+            {
+                texto.AppendLine(Textos.Pie);
+            }
+
+            File.WriteAllText(Path.Combine(Carpeta, $"{comprobante.TicketId}-{comprobante.NumeroCopia}.txt"), texto.ToString(), Encoding.UTF8);
         }
         catch (IOException)
         {

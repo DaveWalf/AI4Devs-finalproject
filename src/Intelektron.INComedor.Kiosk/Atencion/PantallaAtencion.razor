@@ -1,19 +1,21 @@
 @using Intelektron.INComedor.Infrastructure.Sqlite
+@using Intelektron.INComedor.Kiosk.Red
 @implements IDisposable
 @inject MaquinaAtencion Maquina
 @inject ServicioAtencion Servicio
 @inject IServiceProvider Proveedor
 
 @* La presentación táctil (D3 de presentar-atencion-tactil): los estilos están en wwwroot/css/puesto.css. *@
-<div class="puesto" style="@_vista.VariablesCss">
+@* Escape en reposo pide el cierre del puesto según el modo (D7 de configurar-puesto-por-pestanas). *@
+<div class="puesto" style="@_vista.VariablesCss" tabindex="-1" @ref="_raiz" @onkeydown="TeclaRaiz">
     @* Con Configuración abierta, el resto de la página es inerte: el foco no sale del diálogo (D5). *@
-    <header class="cabecera" inert="@ConfiguracionAbierta">
+    <header class="cabecera" inert="@HayDialogo">
         <img class="logo-empresa" src="@_logos.Empresa" alt="Logo de la empresa" />
         <span class="servicio">Comedor · tu pausa del día</span>
         <img class="logo-concesionaria" src="@_logos.Concesionaria" alt="Logo de la concesionaria" />
     </header>
 
-    <main class="atencion" inert="@ConfiguracionAbierta">
+    <main class="atencion" inert="@HayDialogo">
         @switch (Maquina.Estado)
         {
             case EstadoAtencion.ErrorAlmacenamiento:
@@ -30,7 +32,6 @@
                            value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" />
                     <div class="acciones">
                         <button id="ingresar" type="button" class="principal" @onclick="Ingresar">Ingresar</button>
-                        <button id="asistencia" type="button" @onclick="EntrarAsistencia">Asistencia</button>
                     </div>
                     @if (Maquina.Aviso is not null)
                     {
@@ -159,13 +160,17 @@
                         <div class="impresora">
                             <div class="boca" aria-hidden="true"></div>
                             <button id="listo" type="button" class="comprobante" aria-label="Retirar el comprobante" @onclick="Maquina.Listo">
-                                <span class="encabezado-comprobante">INComedor · comprobante</span>
+                                <span class="encabezado-comprobante">@_textos.Encabezado</span>
                                 <span class="leyenda">@papel.Leyenda · N.º @papel.Numero</span>
                                 <span class="opcion-comprobante">@papel.Opcion</span>
                                 <span>Fecha: @papel.FechaNegocio</span>
                                 @if (papel.Cargo.Length > 0)
                                 {
                                     <span>Cargo informado: @papel.Cargo</span>
+                                }
+                                @if (_textos.Pie.Length > 0)
+                                {
+                                    <span class="pie-comprobante">@_textos.Pie</span>
                                 }
                                 <span class="retirar">Tocá el comprobante para retirarlo</span>
                             </button>
@@ -180,64 +185,10 @@
                 </section>
                 break;
 
-            case EstadoAtencion.Asistencia:
-                <section class="tarjeta ancha superficie">
-                    <h2>Asistencia</h2>
-                    <p>Operador: <strong>@Maquina.NombreVisible</strong> · Identificación simulada por código (demostración)</p>
-                    @if (Maquina.MensajeAsistencia is not null)
-                    {
-                        <p id="mensaje-asistencia" role="status">@Maquina.MensajeAsistencia</p>
-                    }
-                    @if (Maquina.ReimpresionPedida is { } pedida)
-                    {
-                        <section aria-label="Motivo de la reimpresión">
-                            @if (Maquina.AvisoIncertidumbre)
-                            {
-                                <p id="aviso-incertidumbre" class="aviso" role="alert">@MensajesAtencion.Incertidumbre</p>
-                            }
-                            <p>Reimprimir el comprobante de las @Hora(pedida.CreadoUtc) · @pedida.Opcion. Elegí el motivo:</p>
-                            <div class="acciones">
-                                @foreach (var motivo in Enum.GetValues<MotivoReimpresion>())
-                                {
-                                    <button type="button" class="motivo" @onclick="() => Maquina.Reimprimir(motivo)">@MensajesAtencion.Motivo(motivo)</button>
-                                }
-                                <button id="cancelar-reimpresion" type="button" @onclick="Maquina.CancelarReimpresion">Cancelar</button>
-                            </div>
-                        </section>
-                    }
-                    else
-                    {
-                        <table>
-                            <thead><tr><th>Hora</th><th>Opción</th><th>Persona</th><th>Estado</th><th></th></tr></thead>
-                            <tbody>
-                                @foreach (var comprobante in Maquina.Comprobantes)
-                                {
-                                    <tr>
-                                        <td>@Hora(comprobante.CreadoUtc)</td>
-                                        <td>@comprobante.Opcion</td>
-                                        <td>@comprobante.NombreVisible</td>
-                                        <td>@Estado(comprobante.EstadoUltimoTrabajo)</td>
-                                        <td>
-                                            @if (comprobante.EstadoOriginal == EstadoTrabajoImpresion.Failed)
-                                            {
-                                                <button type="button" class="recuperar" @onclick="() => Maquina.Recuperar(comprobante.TrabajoOriginalId)">Recuperar</button>
-                                            }
-                                            <button type="button" class="reimprimir" @onclick="() => Maquina.PedirReimpresion(comprobante.TicketId)">Reimprimir</button>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    }
-                    <div class="acciones">
-                        <button id="salir" type="button" @onclick="Maquina.SalirAsistencia">Salir</button>
-                    </div>
-                </section>
-                break;
         }
     </main>
 
-    <footer class="pie" inert="@ConfiguracionAbierta">
+    <footer class="pie" inert="@HayDialogo">
         <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
         <div class="pie-derecha">
             <img class="marca-intelektron" src="img/intelektron.svg" alt="Intelektron" />
@@ -256,10 +207,26 @@
     @* Configuración sólo se abre en reposo, y no cambia el estado de la máquina (D5). *@
     @if (ConfiguracionAbierta)
     {
-        <PanelConfiguracion Estilo="_vista" Impresora="@(Servicio.Impresora as ImpresoraSimulada)" Aviso="@_avisoEstilo"
+        <PanelConfiguracion Estilo="_vista" Impresora="@(Servicio.Impresora as ImpresoraSimulada)"
                             Bitacoras="_estadoBitacoras" Zona="ZonaDelPuesto" ModoImpresoraCambiado="RegistrarModoImpresora"
                             Administracion="Servicio.Administracion"
-                            VistaPrevia="estilo => _vista = estilo" Guardar="GuardarConfiguracion" Cancelar="CancelarConfiguracion" />
+                            VistaPrevia="estilo => _vista = estilo" GuardarEstilo="GuardarConfiguracion" Cancelar="CancelarConfiguracion"
+                            Modo="_modo" AvisoModo="@_avisoModo" PasarAOperativo="PasarAOperativo" PasarAMantenimiento="PasarAMantenimiento"
+                            PuedeCerrar="@(_cierre is not null)" CerrarPuesto="@(() => SolicitarCierre("CLOSE_BUTTON"))"
+                            Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador"
+                            Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
+                            Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
+                            AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
+                            Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
+                            AplicarRed="AplicarRed" DireccionReceptor="@_pruebaConexion?.Direccion"
+                            TieneCertificados="@(_pruebaConexion?.TieneCertificados == true)" ProbarConexion="ProbarConexion" />
+    }
+
+    @* La clave del día, cuando el modo la pide para abrir Configuración, cerrar el puesto o pasar a operativo (D6). *@
+    @if (_pedidoClave is { } pedido)
+    {
+        <DialogoClaveDelDia Validador="_validador" Fecha="FechaLocal" Motivo="@MotivoClave(pedido)" Resultado="ResultadoClave"
+                            Cancelada="() => _pedidoClave = null" />
     }
 </div>
 
@@ -267,16 +234,49 @@
     private string _codigo = string.Empty;
     private Timer? _temporizador;
     private Logos _logos = new(LogosLocales.EmpresaDeEjemplo, LogosLocales.ConcesionariaDeEjemplo);
+    private LogosLocales? _logosLocales;
     private AlmacenEstiloVisual? _almacenEstilo;
     private EstiloVisual _guardado = EstiloVisual.PorDefecto;
     private EstiloVisual _vista = EstiloVisual.PorDefecto;
     private bool _configuracion;
-    private string? _avisoEstilo;
     private IReadOnlyList<EstadoBitacora>? _estadoBitacoras;
+    private ElementReference _raiz;
+    private EstadoAtencion? _estadoDibujado;
+    private AlmacenModoPuesto? _almacenModo;
+    private ModoPuesto _modo = ModoPuesto.Mantenimiento;
+    private string? _avisoModo;
+    private CierrePuesto? _cierre;
+    private SesionOperador? _sesionOperador;
+    private AlmacenImpresora? _almacenImpresora;
+    private TextosComprobante _textos = TextosComprobante.PorDefecto;
+    private AlmacenPantalla? _almacenPantalla;
+    private PantallaDelPuesto? _pantallaDelPuesto;
+    private EjecutorNetsh? _ejecutorNetsh;
+    private PruebaConexion? _pruebaConexion;
+    private IValidadorClaveDelDia _validador = new ClaveDelDiaDeDesarrollo();
+    private AccionClave? _pedidoClave;
+    private string _fuenteCierre = "ESCAPE";
+    private string _acceso = AccesoMantenimiento;
+
+    /// <summary>Para qué se pidió la clave del día; su código va a DAILY_KEY_ACCEPTED o DAILY_KEY_REJECTED (D17).</summary>
+    private enum AccionClave
+    {
+        AbrirConfiguracion,
+        CerrarPuesto,
+        ActivarOperativo,
+    }
+
+    private const string AccesoMantenimiento = "MAINTENANCE_MODE";
+    private const string AccesoClave = "DAILY_KEY";
 
     private static readonly TimeZoneInfo ZonaDelPuesto = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
 
     private bool ConfiguracionAbierta => _configuracion && Maquina.Estado == EstadoAtencion.Reposo;
+
+    /// <summary>Con Configuración o la clave del día a la vista, el resto de la página es inerte.</summary>
+    private bool HayDialogo => ConfiguracionAbierta || _pedidoClave is not null;
+
+    private DateOnly FechaLocal => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Servicio.Reloj.GetUtcNow(), ZonaDelPuesto).DateTime);
 
     /// <summary>Cinco filas con dos columnas; con una, tantas como opciones (D1).</summary>
     private string Filas => Maquina.ColumnasPagina == 2 ? "5" : Maquina.PaginaActual.Count.ToString();
@@ -287,12 +287,40 @@
         // Sin carpeta de logos registrada (las pruebas que no la usan), quedan los de ejemplo (D4).
         if (Proveedor.GetService(typeof(LogosLocales)) is LogosLocales logos)
         {
+            _logosLocales = logos;
             _logos = logos.Leer();
         }
 
         // Sin almacén registrado, el estilo por defecto y «Guardar» sólo dura la sesión (D5).
         _almacenEstilo = Proveedor.GetService(typeof(AlmacenEstiloVisual)) as AlmacenEstiloVisual;
         _guardado = _vista = _almacenEstilo?.Leer() ?? EstiloVisual.PorDefecto;
+
+        // Sin almacén del modo registrado (las pruebas que no lo usan), mantenimiento en memoria, como el estilo (D5).
+        _almacenModo = Proveedor.GetService(typeof(AlmacenModoPuesto)) as AlmacenModoPuesto;
+        _modo = _almacenModo?.Leer() ?? ModoPuesto.Mantenimiento;
+        if (Proveedor.GetService(typeof(IValidadorClaveDelDia)) is IValidadorClaveDelDia validador)
+        {
+            _validador = validador;
+        }
+
+        // Sin almacén de la impresora registrado, los textos por defecto; la simulada los usa desde el próximo comprobante (D13).
+        _almacenImpresora = Proveedor.GetService(typeof(AlmacenImpresora)) as AlmacenImpresora;
+        _textos = _almacenImpresora?.Leer() ?? TextosComprobante.PorDefecto;
+        if (Servicio.Impresora is ImpresoraSimulada simulada)
+        {
+            simulada.Textos = _textos;
+        }
+
+        _almacenPantalla = Proveedor.GetService(typeof(AlmacenPantalla)) as AlmacenPantalla;
+        _pantallaDelPuesto = Proveedor.GetService(typeof(PantallaDelPuesto)) as PantallaDelPuesto;
+        _cierre = Proveedor.GetService(typeof(CierrePuesto)) as CierrePuesto;
+        _ejecutorNetsh = Proveedor.GetService(typeof(EjecutorNetsh)) as EjecutorNetsh;
+        _pruebaConexion = Proveedor.GetService(typeof(PruebaConexion)) as PruebaConexion;
+        if (_cierre is not null)
+        {
+            _cierre.RequiereClave = _modo == ModoPuesto.Operativo;
+            _cierre.ClavePedida += PedirClaveDeLaVentana;
+        }
 
         Maquina.Iniciar();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
@@ -305,6 +333,11 @@
             CancelarConfiguracionFueraDeReposo();
             StateHasChanged();
         }
+        else if (ConfiguracionAbierta && _sesionOperador?.RevisarInactividad() == true)
+        {
+            // Treinta segundos sin un toque en Comprobantes cierran la sesión del operador (D8).
+            StateHasChanged();
+        }
     }
 
     /// <summary>El campo queda vacío apenas se envía: el código no se vuelve a mostrar.</summary>
@@ -313,14 +346,6 @@
         var codigo = _codigo;
         _codigo = string.Empty;
         Maquina.Identificar(codigo);
-        CancelarConfiguracionFueraDeReposo();
-    }
-
-    private void EntrarAsistencia()
-    {
-        var codigo = _codigo;
-        _codigo = string.Empty;
-        Maquina.EntrarAsistencia(codigo);
         CancelarConfiguracionFueraDeReposo();
     }
 
@@ -338,24 +363,407 @@
 
     private Task Confirmar() => Maquina.ConfirmarAsync();
 
+    /// <summary>El engranaje: directo en mantenimiento, con la clave del día en operativo (acceso-puesto).</summary>
     private void AbrirConfiguracion()
     {
-        if (Maquina.Estado == EstadoAtencion.Reposo)
+        if (Maquina.Estado != EstadoAtencion.Reposo)
         {
-            _vista = _guardado;
-            _avisoEstilo = null;
-            // El estado se lee antes de registrar la apertura: muestra lo que había al tocar el engranaje.
-            _estadoBitacoras = LeerEstadoBitacoras();
-            RegistrarConfiguracion("CONFIGURATION_OPENED", new { ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
-            _configuracion = true;
+            return;
         }
+
+        if (_modo == ModoPuesto.Operativo)
+        {
+            _pedidoClave = AccionClave.AbrirConfiguracion;
+            return;
+        }
+
+        AbrirConfiguracionCon(AccesoMantenimiento);
+    }
+
+    private void AbrirConfiguracionCon(string acceso)
+    {
+        _vista = _guardado;
+        _acceso = acceso;
+        _avisoModo = null;
+        // El estado se lee antes de registrar la apertura: muestra lo que había al tocar el engranaje.
+        _estadoBitacoras = LeerEstadoBitacoras();
+        RegistrarConfiguracion("CONFIGURATION_OPENED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
+        _sesionOperador = Servicio.Asistencia is { } asistencia ? new SesionOperador(asistencia, Servicio.Reloj) : null;
+        _configuracion = true;
     }
 
     /// <summary>
-    /// Sin escritura en la carpeta de datos, el estilo guardado queda como estaba y el diálogo lo avisa: la atención sigue
-    /// («Estilo por defecto y validado»). Cada guardado queda en la bitácora con el antes, el después y lo vigente (D9).
+    /// Escape en reposo, sin diálogos, pide el cierre del puesto; durante una atención no hace nada (acceso-puesto). Los
+    /// diálogos no dejan pasar la tecla hasta acá.
     /// </summary>
-    private void GuardarConfiguracion()
+    private void TeclaRaiz(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && Maquina.Estado == EstadoAtencion.Reposo && !HayDialogo)
+        {
+            SolicitarCierre("ESCAPE");
+        }
+    }
+
+    /// <summary>El cierre ordenado: directo en mantenimiento y, en operativo, después de la clave del día (D7).</summary>
+    private void SolicitarCierre(string fuente)
+    {
+        if (_cierre is null)
+        {
+            return;
+        }
+
+        if (_modo == ModoPuesto.Operativo)
+        {
+            _fuenteCierre = fuente;
+            _pedidoClave = AccionClave.CerrarPuesto;
+            return;
+        }
+
+        Cerrar(fuente, AccesoMantenimiento);
+    }
+
+    private void Cerrar(string fuente, string acceso)
+    {
+        RegistrarConfiguracion("KIOSK_CLOSE_REQUESTED", new { Source = fuente, Access = acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
+        _cierre?.Cerrar();
+    }
+
+    /// <summary>La ventana pidió cerrarse en operativo sin la clave: se la pide la pantalla, desde su hilo (D7).</summary>
+    private void PedirClaveDeLaVentana() => _ = InvokeAsync(() =>
+    {
+        _fuenteCierre = "WINDOW_CLOSE";
+        _pedidoClave = AccionClave.CerrarPuesto;
+        StateHasChanged();
+    });
+
+    private static string MotivoClave(AccionClave accion) => accion switch
+    {
+        AccionClave.AbrirConfiguracion => "Ingresá la clave del día para abrir Configuración",
+        AccionClave.CerrarPuesto => "Ingresá la clave del día para cerrar el puesto",
+        _ => "Ingresá la clave del día para pasar a operativo",
+    };
+
+    private static string CodigoDe(AccionClave accion) => accion switch
+    {
+        AccionClave.AbrirConfiguracion => "OPEN_CONFIGURATION",
+        AccionClave.CerrarPuesto => "CLOSE_KIOSK",
+        _ => "ACTIVATE_OPERATIVE",
+    };
+
+    /// <summary>Cada «Aceptar» de la clave queda en la general con su acción, nunca con lo tipeado (D17).</summary>
+    private void ResultadoClave(bool valida)
+    {
+        if (_pedidoClave is not { } accion)
+        {
+            return;
+        }
+
+        if (!valida)
+        {
+            RegistrarConfiguracion("DAILY_KEY_REJECTED", new
+            {
+                Action = CodigoDe(accion), Cause = "INVALID_FORMAT", ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion,
+            }, SeveridadBitacora.Warning);
+            return;
+        }
+
+        RegistrarConfiguracion("DAILY_KEY_ACCEPTED", new { Action = CodigoDe(accion), ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
+        _pedidoClave = null;
+        switch (accion)
+        {
+            case AccionClave.AbrirConfiguracion:
+                if (Maquina.Estado == EstadoAtencion.Reposo)
+                {
+                    AbrirConfiguracionCon(AccesoClave);
+                }
+
+                break;
+            case AccionClave.CerrarPuesto:
+                Cerrar(_fuenteCierre, AccesoClave);
+                break;
+            default:
+                CambiarModo(ModoPuesto.Operativo, AccesoClave);
+                break;
+        }
+    }
+
+    private void PasarAOperativo() => _pedidoClave = AccionClave.ActivarOperativo;
+
+    /// <summary>Volver a mantenimiento no pide la clave otra vez: ya se entró con ella (acceso-puesto).</summary>
+    private void PasarAMantenimiento() => CambiarModo(ModoPuesto.Mantenimiento, _acceso);
+
+    private void CambiarModo(ModoPuesto nuevo, string acceso)
+    {
+        var antes = _modo;
+        var resultado = "APPLIED";
+        try
+        {
+            _almacenModo?.Guardar(nuevo);
+            _modo = nuevo;
+            _avisoModo = null;
+            if (_cierre is not null)
+            {
+                _cierre.RequiereClave = _modo == ModoPuesto.Operativo;
+            }
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            resultado = "FAILED";
+            _avisoModo = MensajesAtencion.ModoNoGuardado;
+        }
+
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "KIOSK_MODE",
+            Before = CodigoDe(antes),
+            After = CodigoDe(nuevo),
+            Result = resultado,
+            Effective = CodigoDe(_modo),
+            Access = acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+    }
+
+    /// <summary>
+    /// Cada consulta de consumos queda en la general con los filtros, el orden y las filas, sin nombres ni códigos, con el actor
+    /// nulo y cómo se entró (D9 y D17, decisión de David del 06/11).
+    /// </summary>
+    private void RegistrarConsultaDeConsumos(PestanaConsumos.ConsultaRealizada consulta) =>
+        RegistrarConfiguracion("CONSUMPTIONS_QUERIED", new
+        {
+            From = consulta.Filtro.Desde.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            To = consulta.Filtro.Hasta.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            PersonId = consulta.Filtro.PersonaId,
+            ServiceId = consulta.Filtro.ServicioId,
+            MenuItemId = consulta.Filtro.OpcionId,
+            OrderBy = consulta.Filtro.Orden switch
+            {
+                OrdenConsumos.Persona => "PERSON",
+                OrdenConsumos.Opcion => "MENU_ITEM",
+                OrdenConsumos.Servicio => "SERVICE",
+                OrdenConsumos.Cargo => "CHARGE",
+                OrdenConsumos.Estado => "TICKET_STATUS",
+                _ => "TIME",
+            },
+            Ascending = consulta.Filtro.Ascendente,
+            Rows = consulta.Filas,
+            HasMore = consulta.HayMas,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    /// <summary>
+    /// «Imprimir una prueba»: directo a la impresora, con la leyenda PRUEBA y sin persona ni importe; no pasa por la base, así
+    /// que no crea intención, consumo, comprobante, trabajo ni evento de salida, y su TicketId nuevo nunca es el de una
+    /// atención (D13). Queda en la general con su resultado.
+    /// </summary>
+    private string ImprimirPrueba()
+    {
+        var ahora = TimeZoneInfo.ConvertTime(Servicio.Reloj.GetUtcNow(), ZonaDelPuesto);
+        var prueba = new ComprobanteAImprimir(Guid.NewGuid(), Guid.NewGuid(), 0,
+            $"Prueba de impresión · {ahora.ToString("dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)}", "PRUEBA");
+        RespuestaImpresora respuesta;
+        try
+        {
+            respuesta = Servicio.Impresora.Enviar(prueba);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            respuesta = RespuestaImpresora.Incierto();
+        }
+
+        var (resultado, mensaje) = respuesta.Envio switch
+        {
+            RespuestaEnvio.Enviado => ("PRINTED", MensajesAtencion.PruebaSalio),
+            RespuestaEnvio.Fallido => ("FAILED", respuesta.CodigoError == "PAPER_OUT" ? MensajesAtencion.PruebaSinPapel : MensajesAtencion.PruebaFallo),
+            _ => ("UNCERTAIN", MensajesAtencion.PruebaIncierta),
+        };
+        RegistrarConfiguracion("PRINTER_TESTED", new
+        {
+            Result = resultado, ErrorCode = respuesta.CodigoError, Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion,
+        });
+        return mensaje;
+    }
+
+    /// <summary>
+    /// Los textos del comprobante: validados antes de escribir, en impresora.json y, con la simulada, desde el próximo que sale.
+    /// Cada guardado queda en la general con el antes, el después y el resultado (D13 y D17).
+    /// </summary>
+    private ResultadoTextos GuardarTextos(string encabezado, string pie)
+    {
+        var antes = _textos;
+        var campos = TextosComprobante.Validar(encabezado, pie);
+        if (campos.Count > 0)
+        {
+            RegistrarCambioDeTextos(antes, null, "REJECTED", campos);
+            return new ResultadoTextos(false, campos, MensajesAtencion.PanelInvalido);
+        }
+
+        var nuevos = new TextosComprobante(encabezado, pie);
+        try
+        {
+            _almacenImpresora?.Guardar(nuevos);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            RegistrarCambioDeTextos(antes, nuevos, "FAILED", []);
+            return new ResultadoTextos(false, [], MensajesAtencion.TextosNoGuardados);
+        }
+
+        _textos = nuevos;
+        if (Servicio.Impresora is ImpresoraSimulada simulada)
+        {
+            simulada.Textos = nuevos;
+        }
+
+        RegistrarCambioDeTextos(antes, nuevos, "APPLIED", []);
+        return new ResultadoTextos(true, [], null);
+    }
+
+    private void RegistrarCambioDeTextos(TextosComprobante antes, TextosComprobante? despues, string resultado, IReadOnlyList<string> campos) =>
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "TICKET_TEXTS",
+            Before = new { Header = antes.Encabezado, Footer = antes.Pie },
+            After = despues is null ? null : new { Header = despues.Encabezado, Footer = despues.Pie },
+            Result = resultado,
+            Fields = campos,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    /// <summary>
+    /// El monitor del puesto: en pantalla.json y, con la ventana, a pantalla completa en él (D10). Queda en la general con el de
+    /// antes y el de después, el resultado y cómo se entró.
+    /// </summary>
+    private bool GuardarMonitor(MonitorDelPuesto monitor)
+    {
+        var antes = _almacenPantalla?.Leer().Guardada;
+        var resultado = "APPLIED";
+        try
+        {
+            _almacenPantalla?.Guardar(monitor);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            resultado = "FAILED";
+        }
+
+        if (resultado == "APPLIED")
+        {
+            _pantallaDelPuesto?.Mover(monitor);
+            if (_pantallaDelPuesto is not null)
+            {
+                _pantallaDelPuesto.Aviso = null;
+            }
+        }
+
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "DISPLAY_MONITOR",
+            Before = antes is null ? null : new { Device = antes.Dispositivo },
+            After = new { Device = monitor.Dispositivo, Width = monitor.Area.Ancho, Height = monitor.Area.Alto, Primary = monitor.Principal },
+            Result = resultado,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+        return resultado == "APPLIED";
+    }
+
+    /// <summary>
+    /// Un logo en marcas\ de la carpeta de datos, o el de ejemplo con null (D14); la cabecera lo muestra en el acto. Queda en
+    /// la general por su huella SHA-256, su tamaño y su formato, nunca por su contenido.
+    /// </summary>
+    private bool GuardarLogo(LogoPuesto logo, LogoElegido? elegido)
+    {
+        if (_logosLocales is not { } logos)
+        {
+            return false;
+        }
+
+        var antes = logos.Actual(logo);
+        var resultado = "APPLIED";
+        try
+        {
+            if (elegido is null)
+            {
+                logos.VolverAlDeEjemplo(logo);
+            }
+            else
+            {
+                logos.Guardar(logo, elegido);
+            }
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            resultado = "FAILED";
+        }
+
+        _logos = logos.Leer();
+        // El guardado corre en el panel: la cabecera de esta pantalla se redibuja con el logo nuevo.
+        StateHasChanged();
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = logo == LogoPuesto.Empresa ? "COMPANY_LOGO" : "CONCESSIONAIRE_LOGO",
+            Before = Huella(antes),
+            After = Huella(elegido),
+            Result = resultado,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+        return resultado == "APPLIED";
+    }
+
+    private static object Huella(LogoElegido? logo) => logo is null
+        ? new { Example = true }
+        : new { Example = false, logo.Sha256, Size = logo.Contenido.Length, Format = logo.Formato };
+
+    /// <summary>
+    /// La IPv4 de un adaptador con netsh, un comando por paso y cada uno con su permiso de administrador (D11); cada aplicación
+    /// queda en la general con el adaptador, antes y después y el resultado. Sin el ejecutor, que sólo registra la ventana,
+    /// null: no corre nada ni registra nada, como en las pruebas.
+    /// </summary>
+    private async Task<ResultadoRed?> AplicarRed(AdaptadorRed adaptador, IPv4Validada pedida)
+    {
+        if (_ejecutorNetsh is not { } ejecutor)
+        {
+            return null;
+        }
+
+        var resultado = await ResultadoRed.AplicarAsync(ArgumentosNetsh.Armar(adaptador.Indice, pedida),
+            comando => ejecutor.EjecutarAsync(comando, CancellationToken.None));
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", resultado.Registro(adaptador, pedida, _acceso),
+            resultado.Estado == EstadoRed.Aplicada ? SeveridadBitacora.Info : SeveridadBitacora.Warning);
+        return resultado;
+    }
+
+    /// <summary>La prueba de conexión con el receptor (D12), en la general con la dirección y las etapas; sin certificados, nada.</summary>
+    private async Task<ResultadoConexion?> ProbarConexion()
+    {
+        if (_pruebaConexion is not { TieneCertificados: true } prueba)
+        {
+            return null;
+        }
+
+        var resultado = await prueba.ProbarAsync(CancellationToken.None);
+        RegistrarConfiguracion("CONNECTIVITY_TESTED", resultado.Registro(_acceso),
+            resultado.Funciono ? SeveridadBitacora.Info : SeveridadBitacora.Warning);
+        return resultado;
+    }
+
+    private static string CodigoDe(ModoPuesto modo) => modo == ModoPuesto.Operativo ? "OPERATIVE" : "MAINTENANCE";
+
+    /// <summary>
+    /// Sin escritura en la carpeta de datos, el estilo guardado queda como estaba y el diálogo lo avisa: la atención sigue
+    /// («Estilo por defecto y validado»). Configuración queda abierta (D3 de configurar-puesto-por-pestanas). Cada guardado
+    /// queda en la bitácora con el antes, el después y lo vigente (D9 de escribir-bitacoras-externas).
+    /// </summary>
+    private bool GuardarConfiguracion()
     {
         var antes = _guardado;
         try
@@ -364,23 +772,23 @@
         }
         catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
         {
-            _avisoEstilo = MensajesAtencion.EstiloNoGuardado;
             RegistrarCambioDeEstilo(antes, _vista, "FAILED", vigente: antes);
-            return;
+            return false;
         }
 
         _guardado = _vista;
-        _avisoEstilo = null;
-        _configuracion = false;
         RegistrarCambioDeEstilo(antes, _guardado, "APPLIED", vigente: _guardado);
+        return true;
     }
 
     private void CancelarConfiguracion()
     {
+        // Cerrar Configuración termina la sesión del operador de Comprobantes (D8).
+        _sesionOperador?.Salir("CONFIGURATION_CLOSED");
+        _sesionOperador = null;
         _vista = _guardado;
-        _avisoEstilo = null;
         _configuracion = false;
-        RegistrarConfiguracion("CONFIGURATION_CANCELLED", new { ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
+        RegistrarConfiguracion("CONFIGURATION_CANCELLED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
     }
 
     /// <summary>Sin clave, Configuración no tiene actor: va nulo con este motivo, sin inventar a nadie (D9).</summary>
@@ -394,6 +802,7 @@
             After = new { Opacity = despues.Opacidad, Blur = despues.Desenfoque },
             Result = resultado,
             Effective = new { Opacity = vigente.Opacidad, Blur = vigente.Desenfoque },
+            Access = _acceso,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,
         });
@@ -405,6 +814,7 @@
             Before = CodigoDe(cambio.Antes),
             After = CodigoDe(cambio.Despues),
             Result = "APPLIED",
+            Access = _acceso,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,
         });
@@ -420,11 +830,11 @@
     /// Configuración sigue aunque SQLite no registre: el ajuste es local y la atención muestra el error de almacenamiento en
     /// su próxima escritura.
     /// </summary>
-    private void RegistrarConfiguracion(string tipo, object contexto)
+    private void RegistrarConfiguracion(string tipo, object contexto, string severidad = SeveridadBitacora.Info)
     {
         try
         {
-            Servicio.RegistroConfiguracion?.Registrar(tipo, contexto);
+            Servicio.RegistroConfiguracion?.Registrar(tipo, contexto, severidad);
         }
         catch (Microsoft.Data.Sqlite.SqliteException)
         {
@@ -446,22 +856,32 @@
 
     private Task Reconfirmar() => Maquina.ReconfirmarAsync();
 
-    private string Hora(DateTimeOffset instante) =>
-        TimeZoneInfo.ConvertTime(instante, TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires")).ToString("HH:mm");
-
-    private static string Estado(EstadoTrabajoImpresion estado) => estado switch
-    {
-        EstadoTrabajoImpresion.Submitted => "Enviado",
-        EstadoTrabajoImpresion.Failed => "Falló",
-        EstadoTrabajoImpresion.Unknown => "Incierto",
-        _ => "En cola",
-    };
-
     /// <summary>El ciclo de envío avisa desde su hilo; la franja se redibuja en el del componente.</summary>
     private void RefrescarSincronizacion() => _ = InvokeAsync(StateHasChanged);
 
+    /// <summary>
+    /// En reposo y sin diálogos, el foco vuelve a la raíz para que Escape llegue aunque no se haya tocado nada: al abrir, al
+    /// volver de una atención y al cerrar un diálogo (D7).
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool primera)
+    {
+        var enReposo = Maquina.Estado == EstadoAtencion.Reposo && !HayDialogo;
+        var estado = HayDialogo ? (EstadoAtencion?)null : Maquina.Estado;
+        if (enReposo && (primera || _estadoDibujado != EstadoAtencion.Reposo))
+        {
+            await _raiz.FocusAsync();
+        }
+
+        _estadoDibujado = estado;
+    }
+
     public void Dispose()
     {
+        if (_cierre is not null)
+        {
+            _cierre.ClavePedida -= PedirClaveDeLaVentana;
+        }
+
         Servicio.SincronizacionCambiada -= RefrescarSincronizacion;
         _temporizador?.Dispose();
     }
