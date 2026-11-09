@@ -257,6 +257,7 @@
     @if (ConfiguracionAbierta)
     {
         <PanelConfiguracion Estilo="_vista" Impresora="@(Servicio.Impresora as ImpresoraSimulada)" Aviso="@_avisoEstilo"
+                            Bitacoras="_estadoBitacoras" Zona="ZonaDelPuesto" ModoImpresoraCambiado="RegistrarModoImpresora"
                             VistaPrevia="estilo => _vista = estilo" Guardar="GuardarConfiguracion" Cancelar="CancelarConfiguracion" />
     }
 </div>
@@ -270,6 +271,9 @@
     private EstiloVisual _vista = EstiloVisual.PorDefecto;
     private bool _configuracion;
     private string? _avisoEstilo;
+    private IReadOnlyList<EstadoBitacora>? _estadoBitacoras;
+
+    private static readonly TimeZoneInfo ZonaDelPuesto = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
 
     private bool ConfiguracionAbierta => _configuracion && Maquina.Estado == EstadoAtencion.Reposo;
 
@@ -339,16 +343,20 @@
         {
             _vista = _guardado;
             _avisoEstilo = null;
+            // El estado se lee antes de registrar la apertura: muestra lo que había al tocar el engranaje.
+            _estadoBitacoras = LeerEstadoBitacoras();
+            RegistrarConfiguracion("CONFIGURATION_OPENED", new { ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
             _configuracion = true;
         }
     }
 
     /// <summary>
     /// Sin escritura en la carpeta de datos, el estilo guardado queda como estaba y el diálogo lo avisa: la atención sigue
-    /// («Estilo por defecto y validado»).
+    /// («Estilo por defecto y validado»). Cada guardado queda en la bitácora con el antes, el después y lo vigente (D9).
     /// </summary>
     private void GuardarConfiguracion()
     {
+        var antes = _guardado;
         try
         {
             _almacenEstilo?.Guardar(_vista);
@@ -356,12 +364,14 @@
         catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
         {
             _avisoEstilo = MensajesAtencion.EstiloNoGuardado;
+            RegistrarCambioDeEstilo(antes, _vista, "FAILED", vigente: antes);
             return;
         }
 
         _guardado = _vista;
         _avisoEstilo = null;
         _configuracion = false;
+        RegistrarCambioDeEstilo(antes, _guardado, "APPLIED", vigente: _guardado);
     }
 
     private void CancelarConfiguracion()
@@ -369,6 +379,68 @@
         _vista = _guardado;
         _avisoEstilo = null;
         _configuracion = false;
+        RegistrarConfiguracion("CONFIGURATION_CANCELLED", new { ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
+    }
+
+    /// <summary>Sin clave, Configuración no tiene actor: va nulo con este motivo, sin inventar a nadie (D9).</summary>
+    private const string SinAutenticacion = "NO_AUTHENTICATION";
+
+    private void RegistrarCambioDeEstilo(EstiloVisual antes, EstiloVisual despues, string resultado, EstiloVisual vigente) =>
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "VISUAL_STYLE",
+            Before = new { Opacity = antes.Opacidad, Blur = antes.Desenfoque },
+            After = new { Opacity = despues.Opacidad, Blur = despues.Desenfoque },
+            Result = resultado,
+            Effective = new { Opacity = vigente.Opacidad, Blur = vigente.Desenfoque },
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    private void RegistrarModoImpresora(CambioModoImpresora cambio) =>
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "PRINTER_SIMULATION_MODE",
+            Before = CodigoDe(cambio.Antes),
+            After = CodigoDe(cambio.Despues),
+            Result = "APPLIED",
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    private static string CodigoDe(ModoImpresoraSimulada modo) => modo switch
+    {
+        ModoImpresoraSimulada.Disponible => "AVAILABLE",
+        ModoImpresoraSimulada.SinPapel => "PAPER_OUT",
+        _ => "UNCERTAIN",
+    };
+
+    /// <summary>
+    /// Configuración sigue aunque SQLite no registre: el ajuste es local y la atención muestra el error de almacenamiento en
+    /// su próxima escritura.
+    /// </summary>
+    private void RegistrarConfiguracion(string tipo, object contexto)
+    {
+        try
+        {
+            Servicio.RegistroConfiguracion?.Registrar(tipo, contexto);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            // Ver el resumen: el ajuste no depende de la bitácora.
+        }
+    }
+
+    private IReadOnlyList<EstadoBitacora>? LeerEstadoBitacoras()
+    {
+        try
+        {
+            return Servicio.Bitacoras?.Estado();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            return null;
+        }
     }
 
     private Task Reconfirmar() => Maquina.ReconfirmarAsync();

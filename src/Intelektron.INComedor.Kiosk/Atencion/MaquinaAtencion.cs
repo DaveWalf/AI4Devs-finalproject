@@ -48,6 +48,9 @@ public sealed class MaquinaAtencion
     private Guid? _sesionAsistencia;
     private Task? _confirmacion;
     private DateTimeOffset _ultimoToque;
+    // El mensaje que se está mostrando y la decisión que lo produjo, para el cierre de la atención (D8 de escribir-bitacoras-externas).
+    private string? _codigoMensaje;
+    private Guid? _decisionId;
 
     public MaquinaAtencion(ServicioAtencion servicio)
     {
@@ -166,6 +169,7 @@ public sealed class MaquinaAtencion
 
         // Sin ninguna opción disponible no hay selección: la pantalla avisa y vuelve a reposo con «Listo» o a los 10 s (D4).
         Estado = _catalogo.Count == 0 ? EstadoAtencion.SinOpciones : EstadoAtencion.Seleccion;
+        _codigoMensaje = _catalogo.Count == 0 ? nameof(MensajesAtencion.SinOpciones) : null;
         Tocar();
         return ResultadoToque.Aceptado;
     }
@@ -207,7 +211,21 @@ public sealed class MaquinaAtencion
             return;
         }
 
-        Elegida = _catalogo.FirstOrDefault(o => o.Id == opcionId);
+        var opcion = _catalogo.FirstOrDefault(o => o.Id == opcionId);
+        // Cada elección queda con lo que se mostró; volver a tocar la misma no es una elección nueva (D8).
+        if (opcion is not null && opcion.Id != Elegida?.Id && !Registrar("OPTION_SELECTED", new
+            {
+                IdentitySessionId = _sesion,
+                MenuItemId = opcion.Id,
+                MenuVersion = opcion.Version,
+                MenuLabel = opcion.Nombre,
+                DisplayedCharge = opcion.Cargo,
+            }))
+        {
+            return;
+        }
+
+        Elegida = opcion;
         Aviso = null;
         Tocar();
     }
@@ -216,7 +234,13 @@ public sealed class MaquinaAtencion
     {
         if (Estado is EstadoAtencion.Seleccion or EstadoAtencion.Reconfirmacion)
         {
-            Limpiar();
+            Cerrar("SESSION_CANCELLED", new
+            {
+                IdentitySessionId = _sesion,
+                MenuItemId = Elegida?.Id,
+                MenuVersion = Elegida?.Version,
+                MenuLabel = Elegida?.Nombre,
+            });
         }
     }
 
@@ -270,7 +294,7 @@ public sealed class MaquinaAtencion
     {
         if (Estado is EstadoAtencion.Resultado or EstadoAtencion.SinOpciones)
         {
-            Limpiar();
+            CerrarConMensaje("DONE");
         }
     }
 
@@ -294,9 +318,18 @@ public sealed class MaquinaAtencion
         {
             SalirAsistencia();
         }
+        else if (Estado is EstadoAtencion.Resultado or EstadoAtencion.SinOpciones)
+        {
+            CerrarConMensaje("TIMEOUT");
+        }
         else
         {
-            Limpiar();
+            Cerrar("SESSION_TIMED_OUT", new
+            {
+                IdentitySessionId = _sesion,
+                FromState = Estado == EstadoAtencion.Seleccion ? "SELECTION" : "RECONFIRMATION",
+                MenuItemId = Elegida?.Id,
+            });
         }
 
         return true;
@@ -423,7 +456,19 @@ public sealed class MaquinaAtencion
         ResultadoConfirmacion resultado;
         try
         {
-            resultado = await Task.Run(() => _servicio.Unidad.Confirmar(solicitud));
+            // El pedido queda registrado antes de confirmar y fuera de la transacción de RB06: un pedido que se cae antes del
+            // commit también se reconstruye (D8). Va en el hilo de la confirmación, no en el de la pantalla.
+            resultado = await Task.Run(() =>
+            {
+                _servicio.RegistroAtencion?.Registrar("CONFIRMATION_REQUESTED", new
+                {
+                    solicitud.IdentitySessionId,
+                    solicitud.IntentId,
+                    solicitud.MenuItemId,
+                    solicitud.MenuVersion,
+                });
+                return _servicio.Unidad.Confirmar(solicitud);
+            });
         }
         catch (SqliteException)
         {
@@ -446,6 +491,8 @@ public sealed class MaquinaAtencion
                 ConsumoRegistrado = true;
                 MotivoResultado = null;
                 Mensaje = ComprobantePendiente ? MensajesAtencion.ComprobantePendiente : MensajesAtencion.Exito;
+                _codigoMensaje = ComprobantePendiente ? nameof(MensajesAtencion.ComprobantePendiente) : nameof(MensajesAtencion.Exito);
+                _decisionId = resultado.DecisionId;
                 ComprobanteEnPantalla = !ComprobantePendiente && _servicio.Impresora is ImpresoraSimulada { UltimoEnviado: { } enviado }
                                         && enviado.TicketId == resultado.TicketId
                     ? ComprobanteEnPantalla.Desde(enviado)
@@ -457,6 +504,8 @@ public sealed class MaquinaAtencion
                 ConsumoRegistrado = false;
                 MotivoResultado = resultado.ReasonCode;
                 Mensaje = MensajesAtencion.DeMotivo(resultado.ReasonCode);
+                _codigoMensaje = resultado.ReasonCode;
+                _decisionId = resultado.DecisionId;
                 Estado = EstadoAtencion.Resultado;
                 break;
 
@@ -480,6 +529,7 @@ public sealed class MaquinaAtencion
                     if (_catalogo.Count == 0)
                     {
                         Estado = EstadoAtencion.SinOpciones;
+                        _codigoMensaje = nameof(MensajesAtencion.SinOpciones);
                     }
                     else
                     {
@@ -491,12 +541,14 @@ public sealed class MaquinaAtencion
                 break;
 
             case TipoResultado.SesionNoUtilizable:
-                Limpiar();
+                _codigoMensaje = nameof(MensajesAtencion.SesionVencida);
+                CerrarConMensaje("RESULT");
                 Aviso = MensajesAtencion.SesionVencida;
                 break;
 
             default:
-                Limpiar();
+                _codigoMensaje = nameof(MensajesAtencion.NoConfirmado);
+                CerrarConMensaje("RESULT");
                 Aviso = MensajesAtencion.NoConfirmado;
                 break;
         }
@@ -527,10 +579,50 @@ public sealed class MaquinaAtencion
         return true;
     }
 
+    /// <summary>
+    /// Registra lo que cambia el estado de la atención en su transacción corta (D8). Un error de SQLite deja la atención en
+    /// error de almacenamiento, como cualquier otra escritura, y devuelve false.
+    /// </summary>
+    private bool Registrar(string tipo, object contexto)
+    {
+        try
+        {
+            _servicio.RegistroAtencion?.Registrar(tipo, contexto);
+            return true;
+        }
+        catch (SqliteException)
+        {
+            Estado = EstadoAtencion.ErrorAlmacenamiento;
+            return false;
+        }
+    }
+
+    /// <summary>Registra el fin de la atención y vuelve a reposo; si no se pudo registrar, queda el error de almacenamiento.</summary>
+    private void Cerrar(string tipo, object contexto)
+    {
+        var registrado = Registrar(tipo, contexto);
+        Limpiar();
+        if (!registrado)
+        {
+            Estado = EstadoAtencion.ErrorAlmacenamiento;
+        }
+    }
+
+    /// <summary>SESSION_CLOSED con el código del mensaje que se mostró y la decisión, si hubo (D8).</summary>
+    private void CerrarConMensaje(string motivoCierre) => Cerrar("SESSION_CLOSED", new
+    {
+        IdentitySessionId = _sesion,
+        MessageCode = _codigoMensaje,
+        DecisionId = _decisionId,
+        ClosedBy = motivoCierre,
+    });
+
     /// <summary>Vuelve a reposo sin rastro de la persona anterior.</summary>
     private void Limpiar()
     {
         Estado = EstadoAtencion.Reposo;
+        _codigoMensaje = null;
+        _decisionId = null;
         _sesion = null;
         _sesionAsistencia = null;
         _confirmacion = null;

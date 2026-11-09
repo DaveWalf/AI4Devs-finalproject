@@ -70,6 +70,19 @@ public sealed class BaseComedor
     }
 
     /// <summary>
+    /// Como <see cref="AbrirConexion"/>, pero sin crear el archivo si ya no está: el escritor de bitácoras corre fuera de la
+    /// atención y no tiene que dejar una base vacía donde alguien borró la suya (escribir-bitacoras-externas).
+    /// </summary>
+    internal SqliteConnection AbrirConexionExistente()
+    {
+        var conexion = new SqliteConnection(new SqliteConnectionStringBuilder(_cadenaConexion) { Mode = SqliteOpenMode.ReadWrite }.ToString());
+        conexion.Open();
+        Ejecutar(conexion, "PRAGMA foreign_keys = ON");
+        Ejecutar(conexion, "PRAGMA synchronous = FULL");
+        return conexion;
+    }
+
+    /// <summary>
     /// Inicia una transacción que toma el bloqueo de escritura al empezar (D7), no al primer INSERT.
     /// </summary>
     public static SqliteTransaction IniciarTransaccionEscritura(SqliteConnection conexion)

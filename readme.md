@@ -68,7 +68,7 @@ must y una should; su secuencia y aceptación figuran en el
 | F01 | Identificación y selección | Identificación simulada por código; catálogo, cancelación y reconfirmación (HU01.1). Should: rechazos de credencial (HU01.2-J). | Biometría 1:N y 1:1. |
 | F02 | Autorización y registro local | Cupo y fecha de negocio en SQLite (HU01.3); un único consumo ante doble toque, retry o reinicio (HU01.1, HU02.1). | Auditoría de saltos del reloj. |
 | F03 | Comprobante y recuperación | Ticket tras el commit local y reimpresión con permiso, sin registrar otra comida (HU03.1). | — |
-| F04 | Sincronización y supervisión | Outbox y receptor idempotente de lotes (HU02.2). | Multipuesto, configuración por snapshot, administración, diagnóstico, cuenta de mantenimiento y bitácoras. |
+| F04 | Sincronización y supervisión | Outbox y receptor idempotente de lotes (HU02.2). Bitácoras mensuales general e interacciones, fuera de SQLite (HU03.5, recortada). | Multipuesto, configuración por snapshot, administración, diagnóstico, cuenta de mantenimiento y lo que el recorte de las bitácoras deja fuera. |
 
 La segunda ola no se recorta del producto: los párrafos siguientes describen el
 producto completo, y su diseño se conserva en `docs/`.
@@ -209,6 +209,10 @@ receptor, en la ventana:
 5. La impresora en «Disponible», `9001` y «Asistencia»: los comprobantes del día. «Recuperar» saca el pendiente
    del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con la leyenda DUPLICADO.
 6. `9002` y «Asistencia»: «Tu permiso de operador está vencido».
+7. Cerrar la ventana y abrir `%LOCALAPPDATA%\INComedor\demo\bitacoras\<KioskId>\INComedor-interacciones-AAAAMM.log`
+   con cualquier editor de texto: cada atención de los pasos 1 a 6 se lee, en orden y con la misma sesión, de
+   `SESSION_OPENED` a `SESSION_CLOSED`, con la opción elegida, su importe y el mensaje que se mostró, y sin el código.
+   En `INComedor-general-AAAAMM.log` están el arranque y el cierre del puesto, lo hecho en Configuración y la impresión.
 
 La sincronización con el receptor se ve en «Receptor de lotes y puesto conectados», más abajo, y el E2E la recorre
 sola.
@@ -297,6 +301,14 @@ tocarlo equivale a «Listo», y con movimiento reducido aparece sin animación. 
 comprobante, pendiente, sin comprobante en pantalla. Por «Asistencia», un operador con `9001` ve los comprobantes del
 día. Puede recuperar el original que falló, que es el mismo trabajo y no una copia nueva. También puede
 reimprimir con un motivo de una lista fija, y la copia sale con la leyenda DUPLICADO y su número.
+
+Todo lo que pasa en el puesto queda primero en la base y después, fuera de la atención, en dos bitácoras de texto
+por mes en `%LOCALAPPDATA%\INComedor\demo\bitacoras\<KioskId>\`: `INComedor-interacciones-AAAAMM.log` (cada
+atención, la asistencia y los comprobantes) e `INComedor-general-AAAAMM.log` (arranque y cierre, Configuración, la
+sincronización y las propias bitácoras; la impresión va en las dos). Son JSON Lines en UTF-8, una línea por registro,
+con el mes del hecho y nunca el código tipeado. Si un archivo no se puede escribir, la atención sigue, lo pendiente
+espera en la base y se escribe al recuperarse con la marca `Recovered`; Configuración muestra si cada bitácora está
+al día o degradada. Lo que el recorte deja fuera está en [`AGENTS.md`](AGENTS.md).
 
 **Presentación táctil: catálogo de nueve, logos y Configuración.** Con `INCOMEDOR_CATALOGO=nueve` y una carpeta
 nueva en `INCOMEDOR_DEMO_DIR`, la base se siembra con nueve opciones en lugar de quince (tres sin cargo), para ver
@@ -456,7 +468,7 @@ tests/                                         [existe] un proyecto de pruebas p
 
 De ese árbol, hoy el Kiosk implementa la atención con identificación simulada por código, la asistencia
 con impresora simulada y la pantalla de demostración; `Infrastructure.Sqlite`, el primer corte de la
-transacción, la identificación, la impresión, el outbox y la cola de lotes (sin bitácoras mensuales), y `Sync.Api`
+transacción, la identificación, la impresión, el outbox, la cola de lotes y el escritor de las bitácoras mensuales, y `Sync.Api`
 la ingesta idempotente de lotes sobre SQL Server, sin el adaptador INWeb. Contracts hoy contiene los eventos de
 outbox, el lote, el acuse y el JSON canónico RFC 8785, no todo el JSON versionado.
 

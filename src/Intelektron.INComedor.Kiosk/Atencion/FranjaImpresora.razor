@@ -6,7 +6,7 @@
         @foreach (var modo in Enum.GetValues<ModoImpresoraSimulada>())
         {
             <button type="button" id="impresora-@modo.ToString().ToLowerInvariant()" aria-pressed="@(modo == Impresora.Modo ? "true" : "false")"
-                    @onclick="() => Impresora.Modo = modo">@Texto(modo)</button>
+                    @onclick="() => Elegir(modo)">@Texto(modo)</button>
         }
     </div>
     <p id="modo-impresora">Modo: @Texto(Impresora.Modo)</p>
@@ -15,6 +15,17 @@
 @code {
     [Parameter, EditorRequired]
     public ImpresoraSimulada Impresora { get; set; } = null!;
+
+    /// <summary>Avisa un modo distinto del que había, para registrarlo; tocar el mismo modo no es un cambio.</summary>
+    [Parameter]
+    public EventCallback<CambioModoImpresora> ModoCambiado { get; set; }
+
+    private Task Elegir(ModoImpresoraSimulada modo)
+    {
+        var antes = Impresora.Modo;
+        Impresora.Modo = modo;
+        return antes == modo ? Task.CompletedTask : ModoCambiado.InvokeAsync(new CambioModoImpresora(antes, modo));
+    }
 
     private static string Texto(ModoImpresoraSimulada modo) => modo switch
     {
