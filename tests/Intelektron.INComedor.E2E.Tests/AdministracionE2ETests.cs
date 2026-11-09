@@ -45,6 +45,9 @@ public class AdministracionE2ETests : IAsyncLifetime
         await pagina.Locator("#pestana-personas").ClickAsync();
         await pagina.Locator("#abrir-personas").ClickAsync();
         await pagina.Locator("#agregar-persona").ClickAsync();
+        // Blazor dibuja la fila nueva después del clic: «Last» antes de que exista toma a la última persona guardada, que
+        // recibía el nombre (en la CI, 3 de 4 corridas). Se escribe cuando ya hay 10 filas, las 9 guardadas y la nueva.
+        await Assertions.Expect(pagina.Locator("tr.persona")).ToHaveCountAsync(10);
         var nueva = pagina.Locator("tr.persona").Last;
         await nueva.Locator("input.nombre-persona").FillAsync(Nombre);
         await nueva.Locator("input.codigo-persona").FillAsync(Codigo);
