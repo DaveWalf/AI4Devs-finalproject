@@ -80,6 +80,8 @@ Desde `evaluar-habilitacion-local` cada change declara dos tallas, la de David y
 | [`recibir-lotes-idempotente`](../openspec/changes/archive/2026-10-30-recibir-lotes-idempotente/proposal.md#tallas) | La IA (Claude Code, Opus 5.5), 30/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
 | [`demostrar-flujo-de-punta-a-punta`](../openspec/changes/archive/2026-10-30-demostrar-flujo-de-punta-a-punta/proposal.md#tallas) | David, 30/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
 | [`demostrar-flujo-de-punta-a-punta`](../openspec/changes/archive/2026-10-30-demostrar-flujo-de-punta-a-punta/proposal.md#tallas) | La IA (Claude Code, Opus 5.5), 30/10/2026 | S | 2 a 4 h | 2,9 a 5,7 h |
+| [`presentar-atencion-tactil`](../openspec/changes/archive/2026-11-03-presentar-atencion-tactil/proposal.md#tallas) | David, 03/11/2026 | M | 4 a 8 h | 5,7 a 11,4 h |
+| [`presentar-atencion-tactil`](../openspec/changes/archive/2026-11-03-presentar-atencion-tactil/proposal.md#tallas) | La IA (Claude Code, Opus 5.5), 03/11/2026 | M | 4 a 6 h | 5,7 a 8,6 h |
 
 Horas reales del apply de ese change, medidas con el reloj de la sesión del 29/10/2026: **0,2 h** de la IA (12 minutos de reloj, de las 20:32 a las 20:44), con los cuatro grupos de tareas y sin la propuesta, el gate ni el informe de `/openspec-verify-change`. Quedan fuera, y no se midieron, la revisión del gate, el archivado y el PR, que son de David. La talla M de la IA sobreestimó el trabajo de la IA por un orden de magnitud; la S de David cubre además esas horas humanas. La reestimación del próximo change parte de esta diferencia y no de promediar.
 
@@ -93,6 +95,8 @@ Horas reales del apply de `demostrar-flujo-de-punta-a-punta`, medidas con el rel
 - el workflow sigue sin correr hasta el primer tag.
 
 Aparecieron tres del entorno de la sesión: Git Bash no arrancaba (el escaneo de secretos se trasladó a PowerShell y la copia limpia se armó con `git archive`), una DLL nativa de `Microsoft.Data.SqlClient` no carga en una ruta de 254 caracteres, y una primera corrida de gitleaks escaneó a medias con exit 0. Como en los changes anteriores, la S de David cubre además el tiempo humano, que no se midió: el gate, el video, el tag y la publicación del borrador.
+
+Horas reales del apply de `presentar-atencion-tactil`, medidas con el reloj de la sesión del 03/11/2026: **0,5 h** de la IA (29 minutos de reloj, de las 20:45, al empezar el paso de `/seguir`, a las 21:14, al cerrar la tarea 8.1). Cubren las 16 tareas en ocho grupos, 65 casos de prueba nuevos (62 sin ventana y 3 en la ventana real), las tres pruebas existentes aprobadas en el gate y cinco capturas del puesto compilado, miradas contra D3; no hubo pausas para decisiones de David. Las dos tallas fueron M (4 a 8 h la de David, 4 a 6 h la de la IA), y la medición quedó un orden de magnitud por debajo de la de la IA, como en el change 3: la composición para 1024 × 768, que la talla señalaba como el riesgo, entró en la primera medición del E2E una vez fijada la cabecera, el título de una línea y las filas de 64 px. La única fricción fue un localizador ambiguo del E2E nuevo («Almuerzo opcional» también está en «Almuerzo opcional con gaseosa»). Como en los changes anteriores, la M de David cubre además el tiempo humano, que no se midió: el gate, mirar el puesto en su monitor táctil, la decisión de llevarlo a la final y el PR.
 
 ### Regla de recorte
 

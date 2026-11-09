@@ -49,7 +49,7 @@ public class MaquinaAtencionTests : IDisposable
         Assert.Equal(1, maquina.Pagina);
         Assert.Equal(15, vistas.Count);
         Assert.Equal(15, vistas.Distinct().Count());
-        Assert.Equal(3, maquina.TotalPaginas);
+        Assert.Equal(2, maquina.TotalPaginas);
         Assert.All(maquina.PaginaActual, o => Assert.StartsWith("ARS ", o.Cargo));
     }
 

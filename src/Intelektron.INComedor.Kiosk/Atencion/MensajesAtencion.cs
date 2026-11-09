@@ -23,6 +23,7 @@ public static class MensajesAtencion
     public const string Incertidumbre = "El papel pudo haber salido. La copia nueva va a decir DUPLICADO";
     public const string ErrorAlmacenamiento = "Error de almacenamiento: la base no es de una versión conocida";
     public const string NoConfirmado = "No se pudo confirmar. Identificate de nuevo";
+    public const string EstiloNoGuardado = "No se pudo guardar el estilo: queda el anterior";
 
     /// <summary>El mensaje de cada motivo, distinto del de los demás.</summary>
     public static string DeMotivo(string? motivo) => motivo switch
@@ -43,9 +44,17 @@ public static class MensajesAtencion
         _ => "No se pudo completar la operación",
     };
 
-    /// <summary>El cargo con la cultura es-AR y la escala de la opción: «ARS 1.500,00» (D6).</summary>
+    /// <summary>
+    /// El cargo con la cultura es-AR y la escala de la opción: «ARS 1.500,00» (D6). Con importe cero, vacío: la opción
+    /// sin cargo no muestra importe (D2 de presentar-atencion-tactil).
+    /// </summary>
     public static string Cargo(string moneda, int escala, long importeUnidadesMenores)
     {
+        if (importeUnidadesMenores == 0)
+        {
+            return string.Empty;
+        }
+
         var valor = importeUnidadesMenores / (decimal)Math.Pow(10, escala);
         return moneda + " " + valor.ToString("N" + escala.ToString(CultureInfo.InvariantCulture), Cultura);
     }

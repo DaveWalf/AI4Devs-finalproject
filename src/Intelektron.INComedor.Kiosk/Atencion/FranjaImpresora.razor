@@ -1,15 +1,15 @@
-<section class="franja-impresora" aria-label="Simulación de impresora (demostración)">
-    <style>
-        .franja-impresora { margin-top: 2rem; padding: .5rem; border-top: 2px dashed #888; font-size: 1rem; }
-        .franja-impresora button { font-size: 1rem; min-width: 7rem; padding: .4rem .8rem; }
-    </style>
-    <strong>Simulación de impresora (demostración):</strong>
-    @foreach (var modo in Enum.GetValues<ModoImpresoraSimulada>())
-    {
-        <button type="button" id="impresora-@modo.ToString().ToLowerInvariant()" aria-pressed="@(modo == Impresora.Modo ? "true" : "false")"
-                @onclick="() => Impresora.Modo = modo">@Texto(modo)</button>
-    }
-    <span id="modo-impresora">Modo: @Texto(Impresora.Modo)</span>
+@* Los modos de la impresora simulada, dentro de Configuración (D5 de presentar-atencion-tactil); aplican desde el próximo envío. *@
+<section class="franja-impresora" aria-labelledby="titulo-impresora">
+    <h3 id="titulo-impresora">Impresora simulada</h3>
+    <p>Demostración: elegí cómo responde al próximo comprobante.</p>
+    <div class="acciones">
+        @foreach (var modo in Enum.GetValues<ModoImpresoraSimulada>())
+        {
+            <button type="button" id="impresora-@modo.ToString().ToLowerInvariant()" aria-pressed="@(modo == Impresora.Modo ? "true" : "false")"
+                    @onclick="() => Impresora.Modo = modo">@Texto(modo)</button>
+        }
+    </div>
+    <p id="modo-impresora">Modo: @Texto(Impresora.Modo)</p>
 </section>
 
 @code {

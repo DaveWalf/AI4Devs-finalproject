@@ -186,9 +186,9 @@ toca `%LOCALAPPDATA%\INComedor\demo\`. Las capturas de cada paso quedan en
 REFRIGERIO, cuatro personas y cuatro operadores, con los códigos de la tabla. El receptor de demostración genera
 sus certificados sintéticos y su base al arrancar («Receptor de lotes y puesto conectados», más abajo).
 
-**Variables de entorno.** [`.env.example`](.env.example) lista las cuatro, vacías y comentadas. Nada lo carga,
+**Variables de entorno.** [`.env.example`](.env.example) lista las cinco, vacías y comentadas. Nada lo carga,
 porque el puesto y el receptor leen el entorno del proceso: cada una se fija en la terminal, por ejemplo
-`$env:INCOMEDOR_SQLSERVER = 'MI-SERVIDOR'`. Todas son opcionales. `INCOMEDOR_CDP_PORT` es sólo para pruebas: con
+`$env:INCOMEDOR_SQLSERVER = 'MI-SERVIDOR'`. Todas son opcionales; `INCOMEDOR_CATALOGO=nueve` siembra una base nueva con nueve opciones. `INCOMEDOR_CDP_PORT` es sólo para pruebas: con
 el puerto abierto, cualquier proceso del equipo puede manejar la pantalla. Aparte de las del puesto, un puesto que
 corre sin elevar también obedece la variable propia de WebView2, `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`: si alguien
 la definió con `--remote-debugging-port`, abre el puerto aunque `INCOMEDOR_CDP_PORT` no esté.
@@ -265,9 +265,11 @@ Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.js
 dotnet run --project src/Intelektron.INComedor.Kiosk
 ```
 
-La ventana abre la atención del comensal, sin red. La identificación es simulada por código: el código
-solo abre la sesión, sin huella, porque la biometría es de la segunda ola (D-C24). Se tipea el código,
-se elige una opción de un catálogo de 15 en páginas de 6 y se confirma con la transacción de RB06.
+La ventana abre maximizada con la atención del comensal, sin red. La identificación es simulada por código: el
+código solo abre la sesión, sin huella, porque la biometría es de la segunda ola (D-C24). Se tipea el código,
+se elige una opción y se confirma con la transacción de RB06. Hasta diez opciones van juntas, sin páginas: hasta
+ocho en una columna y nueve o diez en dos columnas de hasta cinco; desde once, en páginas de diez. El catálogo
+sintético tiene 15 (dos páginas, de diez y de cinco). Una opción sin cargo no muestra importe.
 «Cancelar», o 30 s sin tocar nada antes de confirmar, vuelven a reposo sin escribir nada. El resultado
 vuelve a reposo con «Listo» o a los 10 s. Si la opción cambió de precio antes de confirmar, la pantalla
 muestra el valor vigente y pide reconfirmar.
@@ -286,11 +288,45 @@ Códigos sintéticos:
 | `9004` | Administrador sin `OPERATOR`: «Asistencia» se deniega |
 
 El comprobante sale después del commit hacia una impresora simulada, que escribe un archivo de texto por
-copia en `%LOCALAPPDATA%\INComedor\demo\comprobantes\` (`<TicketId>-<copia>.txt`). La franja «Simulación de
-impresora (demostración)», al pie, la pone en Disponible, Sin papel o Incierta. Con «Sin papel», el consumo
-queda registrado y el comprobante, pendiente. Por «Asistencia», un operador con `9001` ve los comprobantes del
+copia en `%LOCALAPPDATA%\INComedor\demo\comprobantes\` (`<TicketId>-<copia>.txt`). Cuando sale, la pantalla
+muestra además una impresora de la que sale el comprobante, con la opción, la fecha y el cargo y sin el nombre;
+tocarlo equivale a «Listo», y con movimiento reducido aparece sin animación. Los modos de la impresora
+(Disponible, Sin papel o Incierta) están en Configuración. Con «Sin papel», el consumo queda registrado y el
+comprobante, pendiente, sin comprobante en pantalla. Por «Asistencia», un operador con `9001` ve los comprobantes del
 día. Puede recuperar el original que falló, que es el mismo trabajo y no una copia nueva. También puede
 reimprimir con un motivo de una lista fija, y la copia sale con la leyenda DUPLICADO y su número.
+
+**Presentación táctil: catálogo de nueve, logos y Configuración.** Con `INCOMEDOR_CATALOGO=nueve` y una carpeta
+nueva en `INCOMEDOR_DEMO_DIR`, la base se siembra con nueve opciones en lugar de quince (tres sin cargo), para ver
+el caso de cinco más cuatro. La variable sólo cuenta al crear la base: una base ya sembrada no cambia.
+
+```powershell
+$env:INCOMEDOR_CATALOGO = 'nueve'
+$env:INCOMEDOR_DEMO_DIR = 'C:\INComedor\demo-nueve'
+dotnet run --project src/Intelektron.INComedor.Kiosk
+```
+
+Los logos del repo son de ejemplo, porque el cliente va anonimizado. Para ver los reales sin que entren al repo,
+dejarlos en la carpeta de datos como `marcas\empresa.png` y `marcas\concesionaria.png` (también `.webp` o `.svg`,
+de hasta 2 MB; con dos formatos gana el `.png`). Un archivo que no corresponde a su extensión, que pasa de 2 MB o
+un SVG con DTD se ignora y queda el de ejemplo. Se leen al abrir la atención.
+
+El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre Configuración **sin clave en este corte** (la clave llega con el
+segundo change): «Estilo visual», con la opacidad de las superficies (72 a 88 %, 76 % por defecto) y el
+desenfoque del fondo (0 a 12 px, 4 px por defecto) con vista previa, «Guardar» en `estilo-visual.json` de la
+carpeta de datos y «Cancelar» o Escape; y, con la impresora simulada, sus modos. Cualquiera que toque el puesto en
+reposo puede cambiar el estilo o simular una impresora sin papel.
+
+| Reposo | Nueve opciones: 5 + 4 | Quince: primera página de diez |
+|---|---|---|
+| ![Reposo con el fondo de cocina, los logos de ejemplo y el engranaje en el borde inferior derecho](docs/capturas/06-reposo-tactil.jpg) | ![Nueve opciones en dos columnas con «Almuerzo con gaseosa» elegida](docs/capturas/07-seleccion-nueve.jpg) | ![Diez opciones en dos columnas, «Página 1 de 2»](docs/capturas/08-quince-primera-pagina.jpg) |
+
+| Comprobante en pantalla | Configuración |
+|---|---|
+| ![La impresora en pantalla con el comprobante de «Almuerzo con gaseosa»](docs/capturas/09-comprobante-en-pantalla.jpg) | ![Configuración con «Estilo visual» y los modos de la impresora simulada](docs/capturas/10-configuracion.jpg) |
+
+Las sacó el 03/11/2026, a 1024 × 768 por CDP, el apply de `presentar-atencion-tactil`. Las del flujo principal, más
+arriba, son del 30/10 y muestran la presentación anterior.
 
 **Pantalla de demostración anterior.**
 

@@ -1,0 +1,326 @@
+/*
+ * Presentación táctil del puesto, «Cocina con sonrisas» (D3 de presentar-atencion-tactil).
+ * El fondo cubre la página y los chefs quedan a los costados del panel central, de 980 px como máximo. Las superficies
+ * son claras con la opacidad y el desenfoque de Estilo visual (--opacidad-superficie y --desenfoque-fondo, que fija el
+ * componente raíz); el texto es oscuro y opaco. Las acciones y las filas no bajan de 56 px, ni el texto de las opciones
+ * de 20 px. Para 1024 × 768: cabecera de 64, título de una línea, cinco filas de 64 con 8 de separación, barra de
+ * elección de 88 y pie de 56 (el engranaje de 56 × 56 vive en el pie, D1 de mover-engranaje-al-pie), unos 648 px en total.
+ */
+
+:root {
+    --tinta: #2b2118;
+    --tinta-suave: #5b4a3a;
+    --papel: 255 250 242;
+    --acento: #3d5a40;
+    --sobre-acento: #fbf5ea;
+    --borde: rgb(60 40 20 / .28);
+    --aviso: #7a3f00;
+    --error: #9c1a1a;
+    --opacidad-superficie: .76;
+    --desenfoque-fondo: 4px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; }
+
+body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: var(--tinta);
+    background: #dfbb94;
+}
+
+/* La pantalla de demostración anterior no lleva el fondo: sólo la atención. */
+body:has(.puesto) {
+    background: #dfbb94 url("../img/fondo-cocina.jpg") center top / cover no-repeat fixed;
+}
+
+.puesto {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.superficie {
+    background: rgb(var(--papel) / var(--opacidad-superficie));
+    backdrop-filter: blur(var(--desenfoque-fondo));
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+}
+
+/* Cabecera: logo de la empresa, nombre del servicio y logo de la concesionaria, sin controles. */
+.cabecera {
+    height: 64px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    background: rgb(var(--papel) / var(--opacidad-superficie));
+    backdrop-filter: blur(var(--desenfoque-fondo));
+    border-bottom: 1px solid var(--borde);
+}
+
+.cabecera img { height: 44px; width: auto; max-width: 180px; object-fit: contain; }
+.cabecera .servicio { flex: 1; text-align: center; font-family: Georgia, "Times New Roman", serif; font-size: 22px; }
+
+.engranaje {
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: rgb(43 33 24 / .72);
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.engranaje:focus-visible, .puesto button:focus-visible, .puesto input:focus-visible {
+    outline: 3px solid var(--acento);
+    outline-offset: 2px;
+}
+
+/* Panel central. */
+.atencion {
+    flex: 1;
+    width: min(980px, 100% - 32px);
+    margin: 0 auto;
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.atencion h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-weight: 500; font-size: 28px; }
+
+.atencion button {
+    min-height: 56px;
+    padding: 0 24px;
+    font: inherit;
+    font-size: 20px;
+    color: var(--tinta);
+    background: rgb(var(--papel) / var(--opacidad-superficie));
+    backdrop-filter: blur(var(--desenfoque-fondo));
+    border: 1px solid var(--tinta-suave);
+    border-radius: 12px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.atencion button.principal { background: var(--acento); color: var(--sobre-acento); border-color: var(--acento); }
+.atencion button:disabled, .atencion [aria-disabled="true"] { opacity: .55; cursor: default; }
+
+.tarjeta { padding: 24px; display: flex; flex-direction: column; gap: 16px; align-self: center; width: min(640px, 100%); }
+.tarjeta.ancha { width: 100%; }
+.tarjeta .acciones { display: flex; flex-wrap: wrap; gap: 12px; }
+.tarjeta p { margin: 0; font-size: 18px; }
+
+.atencion input {
+    min-height: 56px;
+    width: min(320px, 100%);
+    padding: 0 16px;
+    font: inherit;
+    font-size: 24px;
+    color: var(--tinta);
+    background: #fff;
+    border: 1px solid var(--tinta-suave);
+    border-radius: 10px;
+}
+
+.aviso { color: var(--aviso); font-size: 18px; font-weight: 600; }
+.error { color: var(--error); font-size: 20px; font-weight: 600; }
+.mensaje { font-size: 24px; font-weight: 600; }
+
+/* Selección: el título en una línea, la lista y la barra de elección. */
+.titulo {
+    min-height: 56px;
+    padding: 8px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 16px;
+}
+
+.titulo p { margin: 0; font-size: 18px; }
+
+.lista { container-type: inline-size; }
+
+.opciones { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+
+/* Dos columnas de cinco filas, con el flujo por columna: la primera se completa antes que la segunda (D1). */
+.opciones[data-columnas="2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, auto);
+    grid-auto-flow: column;
+}
+
+/* Si el ancho no admite dos columnas de 320 px, una sola; el desplazamiento vertical lo da la página. */
+@container (max-width: 655px) {
+    .opciones[data-columnas="2"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-flow: row; }
+}
+
+.atencion .opcion {
+    min-height: 64px;
+    margin: 0;
+    padding: 6px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+}
+
+.opcion .nombre { flex: 1; font-size: 20px; font-weight: 600; }
+.opcion .cargo { font-size: 18px; font-variant-numeric: tabular-nums; }
+
+.opcion .marca-elegida {
+    padding: 2px 10px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--sobre-acento);
+    background: var(--acento);
+    border-radius: 999px;
+}
+
+.atencion .opcion.elegida { border: 3px solid var(--acento); padding: 4px 16px; }
+
+.paginas { display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 18px; }
+
+.barra {
+    min-height: 88px;
+    padding: 12px 16px 12px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.barra #eleccion, .barra .indicacion { margin: 0; font-size: 18px; }
+.barra .acciones { display: flex; gap: 12px; margin-left: auto; }
+.barra button { min-width: 140px; }
+
+/* Asistencia. */
+.atencion table { border-collapse: collapse; width: 100%; font-size: 17px; }
+.atencion td, .atencion th { border-bottom: 1px solid var(--borde); padding: 6px; text-align: left; }
+.atencion td button { min-width: 0; padding: 0 14px; font-size: 17px; margin: 2px; }
+
+/* Pie de 56 px en todos los estados: la sincronización a la izquierda y, a la derecha, la marca Intelektron, discreta,
+   y el engranaje en el borde (su lugar queda reservado durante la atención). El borde derecho del botón queda a 8 px. */
+.pie {
+    min-height: 56px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 8px 0 16px;
+    font-size: 14px;
+    background: rgb(var(--papel) / var(--opacidad-superficie));
+    border-top: 1px solid var(--borde);
+}
+
+.pie .franja-sincronizacion { margin: 0; }
+.pie .mensaje-sincronizacion { margin-left: 6px; margin-right: 10px; }
+.pie .pie-derecha { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.pie .marca-intelektron { height: 16px; width: auto; opacity: .8; }
+.pie .lugar-engranaje { width: 56px; height: 56px; flex: none; }
+
+/* Configuración: un diálogo modal sobre la pantalla, con la vista previa del estilo detrás (D5). */
+.fondo-dialogo {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: rgb(20 14 8 / .35);
+}
+
+.dialogo {
+    width: min(520px, 100%);
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    outline: none;
+}
+
+.dialogo h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-weight: 500; font-size: 28px; }
+.dialogo h3 { margin: 0 0 8px; font-size: 19px; }
+.dialogo p { margin: 0 0 8px; font-size: 16px; }
+
+.parametro { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; margin: 12px 0; font-size: 17px; }
+.parametro output { font-weight: 600; font-variant-numeric: tabular-nums; }
+.parametro input[type="range"] { grid-column: 1 / -1; width: 100%; min-height: 56px; margin: 0; accent-color: var(--acento); }
+
+.dialogo .acciones { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+.dialogo button {
+    min-height: 56px;
+    min-width: 120px;
+    padding: 0 20px;
+    font: inherit;
+    font-size: 18px;
+    color: var(--tinta);
+    background: rgb(var(--papel));
+    border: 1px solid var(--tinta-suave);
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.dialogo button.principal { background: var(--acento); color: var(--sobre-acento); border-color: var(--acento); }
+.dialogo button[aria-pressed="true"] { border: 3px solid var(--acento); font-weight: 700; }
+.franja-impresora .acciones { justify-content: flex-start; }
+
+/* Comprobante en pantalla: la impresora y el papel que sale hacia abajo en 1,2 s (D7). */
+.impresora { display: flex; flex-direction: column; align-items: center; }
+
+.impresora .boca {
+    width: min(360px, 100%);
+    height: 28px;
+    background: linear-gradient(#4a3a2c, #2b2118);
+    border-radius: 10px 10px 4px 4px;
+    box-shadow: 0 4px 10px rgb(0 0 0 / .25);
+    position: relative;
+    z-index: 1;
+}
+
+.atencion .impresora .comprobante {
+    width: min(300px, calc(100% - 60px));
+    min-height: 56px;
+    margin-top: -6px;
+    padding: 18px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 16px;
+    color: var(--tinta);
+    background: #fffdf8;
+    backdrop-filter: none;
+    border: 1px solid var(--borde);
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 8px 18px rgb(0 0 0 / .18);
+    animation: salir-comprobante 1.2s ease-out both;
+}
+
+.comprobante .encabezado-comprobante { font-weight: 700; }
+.comprobante .opcion-comprobante { font-size: 18px; font-weight: 700; }
+.comprobante .retirar { margin-top: 8px; font-family: "Segoe UI", sans-serif; font-size: 15px; color: var(--tinta-suave); }
+
+@keyframes salir-comprobante {
+    from { transform: translateY(-100%); clip-path: inset(100% 0 0 0); }
+    to { transform: translateY(0); clip-path: inset(0 0 0 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+.numero-pagina { padding: 4px 12px; }

@@ -10,6 +10,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Demostracion\semilla_demostracion.sql" LogicalName="Demostracion.semilla_demostracion.sql" />
-    <EmbeddedResource Include="Atencion\semilla_atencion.sql" LogicalName="Atencion.semilla_atencion.sql" />
+    <EmbeddedResource Include="Atencion\semilla_atencion_comun.sql" LogicalName="Atencion.semilla_atencion_comun.sql" />
+    <EmbeddedResource Include="Atencion\opciones_quince.sql" LogicalName="Atencion.opciones_quince.sql" />
+    <EmbeddedResource Include="Atencion\opciones_nueve.sql" LogicalName="Atencion.opciones_nueve.sql" />
   </ItemGroup>
 </Project>

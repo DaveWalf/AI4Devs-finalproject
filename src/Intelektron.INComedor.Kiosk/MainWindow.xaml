@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:blazor="clr-namespace:Microsoft.AspNetCore.Components.WebView.Wpf;assembly=Microsoft.AspNetCore.Components.WebView.Wpf"
-        Title="INComedor · puesto de demostración" Height="760" Width="1000">
+        Title="INComedor · puesto de demostración" Height="760" Width="1000" WindowState="Maximized">
+    <!-- Abre maximizada y conserva 1000 × 760 al restaurar (D8 de presentar-atencion-tactil). -->
     <!-- La raíz la elige MainWindow.xaml.cs: la atención, o la pantalla de demostración con el argumento «demostracion» (D11). -->
     <blazor:BlazorWebView x:Name="blazorWebView" HostPage="wwwroot\index.html" />
 </Window>

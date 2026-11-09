@@ -30,7 +30,11 @@ public enum ResultadoToque
 /// </summary>
 public sealed class MaquinaAtencion
 {
-    public const int TamanoPagina = 6;
+    /// <summary>Hasta diez opciones van juntas; desde once, en páginas de diez (D1 de presentar-atencion-tactil).</summary>
+    public const int TamanoPagina = 10;
+
+    /// <summary>Una página de hasta ocho opciones va en una columna; de nueve o diez, en dos de hasta cinco (D1).</summary>
+    public const int MaximoUnaColumna = 8;
     public static readonly TimeSpan PlazoInactividad = TimeSpan.FromSeconds(30);
     public static readonly TimeSpan PlazoResultado = TimeSpan.FromSeconds(10);
 
@@ -63,6 +67,9 @@ public sealed class MaquinaAtencion
     public IReadOnlyList<OpcionCatalogo> PaginaActual =>
         _catalogo.Skip((Pagina - 1) * TamanoPagina).Take(TamanoPagina).ToList();
 
+    /// <summary>Cuántas columnas lleva la página actual: la pantalla sólo lo dibuja (D1).</summary>
+    public int ColumnasPagina => PaginaActual.Count > MaximoUnaColumna ? 2 : 1;
+
     public OpcionCatalogo? Elegida { get; private set; }
 
     /// <summary>La opción con su valor vigente, en la reconfirmación.</summary>
@@ -79,6 +86,12 @@ public sealed class MaquinaAtencion
     public bool ConsumoRegistrado { get; private set; }
 
     public bool ComprobantePendiente { get; private set; }
+
+    /// <summary>
+    /// El comprobante que sale de la impresora en pantalla: sólo con la impresora simulada y cuando el original quedó
+    /// enviado (D7 de presentar-atencion-tactil). Sin persona ni código.
+    /// </summary>
+    public ComprobanteEnPantalla? ComprobanteEnPantalla { get; private set; }
 
     /// <summary>Un aviso para la pantalla actual: el motivo de un rechazo, el puesto ocupado o la opción retirada.</summary>
     public string? Aviso { get; private set; }
@@ -412,6 +425,10 @@ public sealed class MaquinaAtencion
                 ConsumoRegistrado = true;
                 MotivoResultado = null;
                 Mensaje = ComprobantePendiente ? MensajesAtencion.ComprobantePendiente : MensajesAtencion.Exito;
+                ComprobanteEnPantalla = !ComprobantePendiente && _servicio.Impresora is ImpresoraSimulada { UltimoEnviado: { } enviado }
+                                        && enviado.TicketId == resultado.TicketId
+                    ? ComprobanteEnPantalla.Desde(enviado)
+                    : null;
                 Estado = EstadoAtencion.Resultado;
                 break;
 
@@ -481,6 +498,7 @@ public sealed class MaquinaAtencion
         MotivoResultado = null;
         ConsumoRegistrado = false;
         ComprobantePendiente = false;
+        ComprobanteEnPantalla = null;
         Aviso = null;
         Comprobantes = [];
         ReimpresionPedida = null;
