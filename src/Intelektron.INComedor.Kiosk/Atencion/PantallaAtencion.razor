@@ -9,7 +9,7 @@
 @* Escape en reposo pide el cierre del puesto según el modo (D7 de configurar-puesto-por-pestanas). *@
 <div class="puesto" style="@_vista.VariablesCss" tabindex="-1" @ref="_raiz" @onkeydown="TeclaRaiz">
     @* Con Configuración abierta, el resto de la página es inerte: el foco no sale del diálogo (D5). *@
-    <header class="cabecera" inert="@HayDialogo">
+    <header class="cabecera" inert="@(HayDialogo || CartelVisible)">
         <img class="logo-empresa" src="@_logos.Empresa" alt="Logo de la empresa" />
         <span class="servicio">Comedor · tu pausa del día</span>
         <img class="logo-concesionaria" src="@_logos.Concesionaria" alt="Logo de la concesionaria" />
@@ -58,9 +58,12 @@
 
             case EstadoAtencion.Seleccion:
             case EstadoAtencion.Confirmando:
-                <div class="titulo superficie">
+                @* «Cancelar» va en el título, a la derecha del saludo, y la selección no tiene barra al pie (D2 de confirmar-eleccion-en-cartel). *@
+                @* Con el cartel abierto, el resto de la pantalla queda inerte (D3). *@
+                <div class="titulo superficie" inert="@CartelVisible">
                     <h2>Elegí tu servicio de hoy</h2>
                     <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
+                    <button id="cancelar" type="button" disabled="@(Maquina.Estado == EstadoAtencion.Confirmando)" @onclick="Maquina.Cancelar">Cancelar</button>
                     @* Sólo lo agotado hoy, que es lo que explica una opción ausente (D3 de ofrecer-solo-opciones-disponibles). *@
                     @if (Maquina.UsoDelDia is { } uso)
                     {
@@ -69,16 +72,16 @@
                 </div>
                 @if (Maquina.Aviso is not null && Maquina.Estado == EstadoAtencion.Seleccion)
                 {
-                    <p id="aviso" class="aviso titulo superficie" role="status">@Maquina.Aviso</p>
+                    <p id="aviso" class="aviso titulo superficie" role="status" inert="@CartelVisible">@Maquina.Aviso</p>
                 }
-                <div class="lista">
+                <div class="lista" inert="@CartelVisible">
                     @* Con dos columnas, cinco filas y el flujo por columna: la primera se completa antes que la segunda (D1). *@
                     <div class="opciones" data-columnas="@Maquina.ColumnasPagina" data-filas="@Filas">
                         @foreach (var opcion in Maquina.PaginaActual)
                         {
                             var elegida = opcion.Id == Maquina.Elegida?.Id;
                             <button type="button" class="opcion @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
-                                    @onclick="() => Maquina.Elegir(opcion.Id)">
+                                    @onclick="() => ElegirOpcion(opcion.Id)">
                                 <span class="nombre">@opcion.Nombre</span>
                                 @if (elegida)
                                 {
@@ -94,43 +97,44 @@
                 </div>
                 @if (Maquina.TotalPaginas > 1)
                 {
-                    <div class="paginas">
+                    <div class="paginas" inert="@CartelVisible">
                         <button id="anterior" type="button" aria-disabled="@(Maquina.PuedeRetroceder ? "false" : "true")" @onclick="Maquina.Anterior">Anterior</button>
                         <span class="numero-pagina superficie">Página @Maquina.Pagina de @Maquina.TotalPaginas</span>
                         <button id="siguiente" type="button" aria-disabled="@(Maquina.PuedeAvanzar ? "false" : "true")" @onclick="Maquina.Siguiente">Siguiente</button>
                     </div>
                 }
-                <div class="barra superficie">
-                    @if (Maquina.Elegida is { } eleccion)
-                    {
-                        <p id="eleccion">
-                            Confirmar: <strong>@eleccion.Nombre</strong>
-                            @if (eleccion.Cargo.Length > 0)
+                @* El cartel de la elección: repite lo elegido con su cargo y es el único lugar con «Confirmar» (D1). *@
+                @if (CartelVisible && Maquina.Elegida is { } eleccion)
+                {
+                    var confirmando = Maquina.Estado == EstadoAtencion.Confirmando;
+                    <div class="fondo-cartel">
+                        <section id="cartel-eleccion" class="cartel superficie" role="dialog" aria-modal="true" aria-labelledby="titulo-cartel">
+                            <h2 id="titulo-cartel">¿Confirmás tu elección?</h2>
+                            <p id="eleccion">
+                                <strong class="nombre-eleccion">@eleccion.Nombre</strong>
+                                @if (eleccion.Cargo.Length > 0)
+                                {
+                                    <span class="cargo-eleccion">Cargo informado: @eleccion.Cargo</span>
+                                }
+                            </p>
+                            <div class="acciones">
+                                <button id="elegir-otra" type="button" disabled="@confirmando" @onclick="ElegirOtra">Elegir otra</button>
+                                @if (confirmando)
+                                {
+                                    <button id="confirmar" type="button" class="principal" disabled aria-busy="true">Confirmando…</button>
+                                }
+                                else
+                                {
+                                    <button id="confirmar" type="button" class="principal" @ref="_confirmarCartel" @onclick="Confirmar">Confirmar</button>
+                                }
+                            </div>
+                            @if (confirmando)
                             {
-                                <span> · Cargo informado: @eleccion.Cargo</span>
+                                <p id="ocupado" role="status">Confirmando: el puesto está ocupado</p>
                             }
-                        </p>
-                    }
-                    else
-                    {
-                        <p class="indicacion">Tocá tu opción y confirmá la elección</p>
-                    }
-                    <div class="acciones">
-                        <button id="cancelar" type="button" disabled="@(Maquina.Estado == EstadoAtencion.Confirmando)" @onclick="Maquina.Cancelar">Cancelar</button>
-                        @if (Maquina.Estado == EstadoAtencion.Confirmando)
-                        {
-                            <button id="confirmar" type="button" class="principal" disabled aria-busy="true">Confirmando…</button>
-                        }
-                        else
-                        {
-                            <button id="confirmar" type="button" class="principal" @onclick="Confirmar">Confirmar</button>
-                        }
+                        </section>
                     </div>
-                    @if (Maquina.Estado == EstadoAtencion.Confirmando)
-                    {
-                        <p id="ocupado" role="status">Confirmando: el puesto está ocupado</p>
-                    }
-                </div>
+                }
                 break;
 
             case EstadoAtencion.Reconfirmacion:
@@ -204,7 +208,7 @@
         }
     </main>
 
-    <footer class="pie" inert="@HayDialogo">
+    <footer class="pie" inert="@(HayDialogo || CartelVisible)">
         <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
         <div class="pie-derecha">
             <img class="marca-intelektron" src="img/intelektron.svg" alt="Intelektron" />
@@ -258,6 +262,13 @@
     private bool _configuracion;
     private IReadOnlyList<EstadoBitacora>? _estadoBitacoras;
     private ElementReference _raiz;
+    private ElementReference _confirmarCartel;
+
+    /// <summary>El cartel de la elección, estado de la pantalla y no de la máquina (D1 de confirmar-eleccion-en-cartel).</summary>
+    private bool _cartelAbierto;
+
+    /// <summary>Al abrirse el cartel, el foco va a «Confirmar» en el próximo dibujado (D3).</summary>
+    private bool _enfocarConfirmar;
     private EstadoAtencion? _estadoDibujado;
     private AlmacenModoPuesto? _almacenModo;
     private ModoPuesto _modo = ModoPuesto.Mantenimiento;
@@ -301,6 +312,13 @@
     private static readonly TimeZoneInfo ZonaDelPuesto = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
 
     private bool ConfiguracionAbierta => _configuracion && Maquina.Estado == EstadoAtencion.Reposo;
+
+    /// <summary>
+    /// El cartel se ve sólo abierto, con una opción elegida y en la selección o confirmando (D1): «Volver» de la
+    /// reconfirmación, un rechazo o el resultado no lo dejan abierto.
+    /// </summary>
+    private bool CartelVisible => _cartelAbierto && Maquina.Elegida is not null
+        && Maquina.Estado is EstadoAtencion.Seleccion or EstadoAtencion.Confirmando;
 
     /// <summary>Con Configuración o la clave del día a la vista, el resto de la página es inerte.</summary>
     private bool HayDialogo => ConfiguracionAbierta || _pedidoClave is not null;
@@ -447,7 +465,35 @@
         }
     }
 
-    private Task Confirmar() => Maquina.ConfirmarAsync();
+    private async Task Confirmar()
+    {
+        await Maquina.ConfirmarAsync();
+        // Si vuelve a la selección con un aviso (la opción ya no está), el cartel no la tapa (D1).
+        if (Maquina.Estado != EstadoAtencion.Confirmando)
+        {
+            _cartelAbierto = false;
+        }
+    }
+
+    /// <summary>Tocar una opción la marca, como antes, y abre el cartel con ella (D1 de confirmar-eleccion-en-cartel).</summary>
+    private void ElegirOpcion(Guid opcionId)
+    {
+        Maquina.Elegir(opcionId);
+        if (Maquina.Estado == EstadoAtencion.Seleccion && Maquina.Elegida?.Id == opcionId)
+        {
+            _cartelAbierto = true;
+            _enfocarConfirmar = true;
+        }
+    }
+
+    /// <summary>«Elegir otra» y Escape: cierran el cartel con la misma persona y la marca; mientras confirma, nada (D3).</summary>
+    private void ElegirOtra()
+    {
+        if (Maquina.Estado == EstadoAtencion.Seleccion)
+        {
+            _cartelAbierto = false;
+        }
+    }
 
     /// <summary>El engranaje: directo en mantenimiento, con la clave del día en operativo (acceso-puesto).</summary>
     private void AbrirConfiguracion()
@@ -485,6 +531,13 @@
     /// </summary>
     private void TeclaRaiz(KeyboardEventArgs e)
     {
+        // Con el cartel de la elección abierto, Escape es «Elegir otra» (D3 de confirmar-eleccion-en-cartel).
+        if (e.Key == "Escape" && CartelVisible)
+        {
+            ElegirOtra();
+            return;
+        }
+
         if (e.Key == "Escape" && Maquina.Estado == EstadoAtencion.Reposo && !HayDialogo)
         {
             SolicitarCierre("ESCAPE");
@@ -1008,6 +1061,18 @@
         }
 
         _estadoDibujado = estado;
+
+        // Fuera de la selección y de la confirmación, el cartel queda cerrado; abierto, el foco va a «Confirmar» (D1 y D3).
+        if (Maquina.Estado is not (EstadoAtencion.Seleccion or EstadoAtencion.Confirmando))
+        {
+            _cartelAbierto = false;
+        }
+
+        if (_enfocarConfirmar && CartelVisible && Maquina.Estado == EstadoAtencion.Seleccion)
+        {
+            _enfocarConfirmar = false;
+            await _confirmarCartel.FocusAsync();
+        }
 
         // Al volver a reposo con la simulación activa, el combo relee la lista (D10); el primer dibujado ya la tiene.
         if (volvioAReposo && SimulacionActiva)

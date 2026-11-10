@@ -40,6 +40,7 @@ public class PantallaAtencionTests : IDisposable
     {
         var pantalla = Dibujar();
         await Ingresar(pantalla, "0001");
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
 
         var controles = pantalla.FindAll(".opcion").Concat(new[] { "#anterior", "#siguiente", "#cancelar", "#confirmar" }.Select(pantalla.Find)).ToList();
 
@@ -52,6 +53,10 @@ public class PantallaAtencionTests : IDisposable
             Assert.NotEqual("-1", c.GetAttribute("tabindex"));
         });
         Assert.Equal("true", pantalla.Find("#anterior").GetAttribute("aria-disabled"));
+        Assert.Null(pantalla.Find("#cancelar").Closest("#cartel-eleccion"));
+        Assert.NotNull(pantalla.Find("#confirmar").Closest("#cartel-eleccion"));
+        Assert.True(pantalla.Find("div.titulo").HasAttribute("inert"));
+        Assert.True(pantalla.Find(".lista").HasAttribute("inert"));
     }
 
     [Fact(DisplayName = "AT52 · AT01 · Código vigente abre la selección (pantalla): muestra el nombre visible y el catálogo, y el campo del código queda vacío")]

@@ -101,6 +101,7 @@ public class PantallaDistribucionTests : IDisposable
     {
         var pantalla = Dibujar(9);
         await Ingresar(pantalla);
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
 
         var controles = pantalla.FindAll(".opcion").Concat(new[] { "#cancelar", "#confirmar" }.Select(pantalla.Find)).ToList();
 
