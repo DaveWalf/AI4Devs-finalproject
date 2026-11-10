@@ -8,15 +8,25 @@ pegado, para ver que sólo cambian las pruebas existentes de la propuesta. Las p
 
 ## 1. La consulta: 24 horas, texto, código y número
 
-- [ ] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: el rango por instante (24 h y el borde de
+- [x] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: el rango por instante (24 h y el borde de
   24 h y un minuto), el texto sin acentos ni mayúsculas, el número de comprobante, los comodines escapados y el filtro
   por persona del código. Verifica: `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests
   --filter-class *ConsultaConsumos*`, rojo antes y verde después.
-- [ ] 1.2 `FiltroConsumos` con `DesdeUtc`, `HastaUtc`, `Texto` y `PersonaCodigo` opcionales al final; la función
+  - `BusquedaConsumosTests` (8 casos) contra el esqueleto de la API: `total: 8`, `error: 8` (por ejemplo `Expected: 3` /
+    `Actual: 4` en las 24 horas, y `Expected: "UNKNOWN_CODE"` / `Actual: null`). Después: con `ConsultaConsumosTests`,
+    `total: 22`, `error: 0`.
+- [x] 1.2 `FiltroConsumos` con `DesdeUtc`, `HastaUtc`, `Texto` y `PersonaCodigo` opcionales al final; la función
   `normalizar`; el número de comprobante en `ConsumoConsultado` (D1 y D2). Verifica: 1.1 en verde y las pruebas
   existentes de la consulta sin cambios.
-- [ ] 1.3 Resolver un código a su persona sin abrir sesión (D3), con su prueba vista fallar antes. Verifica: la prueba en
+  - `FiltroConsumos` suma `DesdeUtc`, `HastaUtc`, `Texto` y `Codigo` al final, con `UltimasHoras` y `PorInstante`;
+    `ConsumoConsultado` suma `TicketId`, `TrabajoOriginalId` y `EstadoOriginal` al final, y `Numero`; la conexión registra
+    `normalizar` (NFD sin marcas, minúsculas) y el patrón escapa `\`, `%` y `_` con `ESCAPE ''`. Las 14 de
+    `ConsultaConsumosTests` pasan sin cambios.
+- [x] 1.3 Resolver un código a su persona sin abrir sesión (D3), con su prueba vista fallar antes. Verifica: la prueba en
   verde.
+  - Dentro de la consulta: el código, con `Trim()` como al identificar, se busca en las credenciales `SERIAL_CODE` de
+    cualquier versión; si no es de nadie, `UNKNOWN_CODE` sin consultar. `El_codigo_de_una_persona` y
+    `Un_codigo_que_no_es_de_nadie`, en rojo antes y en verde después.
 
 ## 2. La pestaña Consumos: 24 horas, búsqueda y número
 
