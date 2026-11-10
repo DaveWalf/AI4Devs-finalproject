@@ -53,17 +53,22 @@ Las pruebas existentes cambian sólo como dice el punto 8 del gate, con la aprob
 
 ## 4. El puesto compilado
 
-- [ ] 4.1 Agregar a `E2E.Tests` el ayudante `EntradaConfiguracionE2E.cs` y el archivo nuevo `AccesoOperadorE2ETests.cs`. En 1024 × 768 debe pasar esto:
+- [x] 4.1 Agregar a `E2E.Tests` el ayudante `EntradaConfiguracionE2E.cs` y el archivo nuevo `AccesoOperadorE2ETests.cs`. En 1024 × 768 debe pasar esto:
   - el teclado del diálogo mide al menos 56 px por tecla y entra en la ventana;
   - `9001` abre Configuración con tres pestañas;
   - la clave del día abre las nueve, con el aviso de clave sin validar.
   
   Verla fallar contra el EXE publicado del 2, con `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter "FullyQualifiedName~AccesoOperadorE2E"`.
-- [ ] 4.2 Publicar con `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, y con `INCOMEDOR_E2E_KIOSK_EXE` apuntando al EXE publicado:
+  - A las 14:38, contra el EXE publicado a las 14:12 desde `cf1b137`: `error: 1`, `Locator expected to be visible` en `Locator("#dialogo-clave")`, porque en mantenimiento el engranaje abría directo.
+  - La prueba mira también `inputmode="none"` en el WebView2 y deja la captura `teclado-clave-1024x768`.
+- [x] 4.2 Publicar con `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, y con `INCOMEDOR_E2E_KIOSK_EXE` apuntando al EXE publicado:
   - correr la suite de `E2E.Tests`;
   - aplicar D8 a las E2E existentes que fallen sólo por la clave en mantenimiento;
   - parar y preguntar si alguna falla por otra razón;
   - verificar que la suite pasa.
+  - Primera publicación, a las 14:40, y la suite contra ese EXE: `total: 28`, `error: 6`, todas en la línea que sigue al toque del engranaje en mantenimiento (la pestaña siguiente, detrás del diálogo de la clave). Pasaron la nueva y las demás.
+  - Con D8 en los siete toques (`AccesoPuestoE2ETests` 1, `AdministracionE2ETests` 2, `ConfiguracionPorPestanasE2ETests` 4), a las 14:51: `error: 1`. `ConfiguracionPorPestanasE2ETests.Muchas_personas_en_1024_x_768` veía 9 filas («Se ven 9 filas enteras.», `{"Visibles":9,…}`): el aviso de clave sin validar, en su propia línea arriba de Configuración, le quitaba alto a la tabla. No es D8, y el escenario vivo pide diez filas, así que no se tocó la prueba: el aviso y el nombre del operador van ahora en la fila del título (`.encabezado-configuracion`).
+  - Republicado a las 14:53 y la suite otra vez, a las 14:56: `total: 28`, `error: 0`; la tabla, `{"Visibles":10,"Alto":44,…}`. El teclado a 1024 × 768: cada tecla de 112 × 56 px, «Limpiar» y «ENTER» de 112 × 120 y el 0 de 231 × 56, todas dentro de la ventana; la captura, mirada, sigue el dibujo del punto 4 del gate.
 
 ## 5. Documentos y evidencia
 

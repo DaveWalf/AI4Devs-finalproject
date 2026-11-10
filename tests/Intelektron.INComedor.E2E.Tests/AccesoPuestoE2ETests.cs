@@ -89,7 +89,7 @@ public class AccesoPuestoE2ETests : IAsyncLifetime
         Assert.True(GetMonitorInfo(MonitorFromWindow(puesto.MainWindowHandle, 2), ref monitor));
         Assert.True((monitor.Marcas & 1) != 0, "El puesto no abrió en el monitor principal.");
 
-        await pagina.Locator(".engranaje").ClickAsync();
+        await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await pagina.Locator("#pestana-pantalla").ClickAsync();
         await Assertions.Expect(pagina.Locator("#aviso-monitor")).ToHaveTextAsync("El monitor guardado no está conectado: el puesto abrió en el principal");
     }

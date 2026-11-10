@@ -436,6 +436,11 @@ html, body { overscroll-behavior: none; }
 .teclado-numerico .tecla-ancha { grid-column: span 2; }
 .teclado-numerico #tecla-limpiar, .teclado-numerico #aceptar-clave { font-size: 18px; }
 #dialogo-clave .acciones { margin-top: 8px; justify-content: center; }
+
+/* El título de Configuración con el operador o el aviso de clave sin validar en su misma fila (D4 y D6 de
+   entrar-a-configuracion-con-teclado): no le quitan alto a las tablas en 1024 × 768. */
+.encabezado-configuracion { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.encabezado-configuracion p { margin: 0; font-size: 16px; }
 .dialogo .indicacion { font-size: 15px; color: var(--tinta-suave); }
 .abrir-paneles { justify-content: flex-start; }
 .panel-administracion { display: flex; flex-direction: column; gap: 12px; min-height: 0; }

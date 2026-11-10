@@ -15,16 +15,19 @@
     @* Escape no sigue hasta la pantalla de atrás, que lo leería como un pedido de cierre en reposo (D7). *@
     <div class="dialogo superficie ancho" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
          @ref="_dialogo" @onkeydown="Tecla" @onkeydown:stopPropagation="true">
-        <h2 id="titulo-configuracion">Configuración</h2>
         @* Con un operador, su nombre arriba; con la clave del día, el aviso de que no se validó (D4 y D6 de entrar-a-configuracion-con-teclado). *@
-        @if (Operador is not null)
-        {
-            <p id="operador-configuracion" class="operador-configuracion">Operador: @Operador</p>
-        }
-        @if (ClaveSinValidar)
-        {
-            <p id="aviso-clave-sin-validar" class="aviso" role="status">@MensajesAtencion.ClaveSinValidar</p>
-        }
+        @* Van en la fila del título, que tiene lugar: así no le quitan alto a las tablas de Personas y Consumos. *@
+        <div class="encabezado-configuracion">
+            <h2 id="titulo-configuracion">Configuración</h2>
+            @if (Operador is not null)
+            {
+                <p id="operador-configuracion" class="operador-configuracion">Operador: @Operador</p>
+            }
+            @if (ClaveSinValidar)
+            {
+                <p id="aviso-clave-sin-validar" class="aviso" role="status">@MensajesAtencion.ClaveSinValidar</p>
+            }
+        </div>
 
         <div class="pestanas" role="tablist" aria-label="Secciones de Configuración">
             @foreach (var pestana in Visibles)
