@@ -7,9 +7,13 @@ Las pruebas de base y receptor corren con `INCOMEDOR_SQLSERVER=INMO-DW-AR`.
 
 ## 1. La regla de prolijidad y el gate
 
-- [ ] 1.1 Agregar a `openspec/config.yaml` la regla de prolijidad visual de D5, en `rules.design` y `rules.tasks`, y el
+- [x] 1.1 Agregar a `openspec/config.yaml` la regla de prolijidad visual de D5, en `rules.design` y `rules.tasks`, y el
   registro del gate en `proposal.md`. Verifica: `openspec validate --all --strict` sin errores y
   `openspec instructions design --change ordenar-configuracion --json` que muestra la regla.
+  - Hecho el 10/11: `openspec validate --all --strict` → `Totals: 16 passed, 0 failed (16 items)`;
+    `openspec instructions design … --json` → rules `['Cada decisión nombra la alternativa descartada y ', 'Prolijidad
+    visual: los controles hermanos de una m']`; `instructions tasks` → la cuarta regla es «Prolijidad visual: toda tarea
+    que toque ». El gate quedó escrito en «Decisión del gate» de `proposal.md`.
 
 ## 2. El orden de las pestañas y «Cerrar»
 
