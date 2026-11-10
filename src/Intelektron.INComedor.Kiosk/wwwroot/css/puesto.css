@@ -19,6 +19,10 @@
     --error: #9c1a1a;
     --opacidad-superficie: .76;
     --desenfoque-fondo: 4px;
+    /* Las medidas que comparten los controles hermanos de la identificación: el campo y el combo (D4 de ordenar-configuracion). */
+    --alto-control: 56px;
+    --letra-control: 24px;
+    --relleno-control: 16px;
 }
 
 * { box-sizing: border-box; }
@@ -119,11 +123,11 @@ body:has(.puesto) {
 .tarjeta p { margin: 0; font-size: 18px; }
 
 .atencion input {
-    min-height: 56px;
+    min-height: var(--alto-control);
     width: min(320px, 100%);
-    padding: 0 16px;
+    padding: 0 var(--relleno-control);
     font: inherit;
-    font-size: 24px;
+    font-size: var(--letra-control);
     color: var(--tinta);
     background: #fff;
     border: 1px solid var(--tinta-suave);
@@ -138,17 +142,45 @@ body:has(.puesto) {
 /* El combo del modo simulación, con el alto táctil de los otros controles (D9 de simular-identificacion-por-lista). */
 .simulacion { display: flex; flex-direction: column; gap: 8px; }
 .simulacion label { font-size: 18px; }
-.atencion .simulacion select {
-    min-height: 56px;
-    width: min(480px, 100%);
-    padding: 0 12px;
+.atencion .simulacion .lista-boton {
+    min-height: var(--alto-control);
+    width: 100%;
+    padding: 0 var(--relleno-control);
     font: inherit;
-    font-size: 22px;
+    font-size: var(--letra-control);
     color: var(--tinta);
     background: #fff;
+    backdrop-filter: none;
     border: 1px solid var(--tinta-suave);
     border-radius: 10px;
 }
+
+/* La lista desplegable propia (D3 de ordenar-configuracion): el botón y su lista, dibujada en la página debajo de él, con
+   filas de 56 px y hasta ocho a la vista (ocho filas, el relleno y el borde: 458 px); con más, se desplaza adentro. */
+.lista-desplegable { position: relative; display: block; }
+.lista-boton { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; cursor: pointer; }
+.lista-boton::after { content: "\25BE"; flex: none; }
+.lista-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista-opciones {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    max-height: 458px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: #fff;
+    border: 1px solid var(--tinta-suave);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / .18);
+}
+.lista-fila { display: flex; align-items: center; min-height: 56px; padding: 0 var(--relleno-control); color: var(--tinta); cursor: pointer; }
+.lista-fila[aria-selected="true"] { font-weight: 700; }
+.lista-fila.activa { background: rgb(var(--papel)); box-shadow: inset 4px 0 0 var(--acento); }
 
 .aviso { color: var(--aviso); font-size: 18px; font-weight: 600; }
 .error { color: var(--error); font-size: 20px; font-weight: 600; }
@@ -380,8 +412,10 @@ html, body { overscroll-behavior: none; }
 /* Consumos (D9): los filtros en una fila que se parte, y la tabla con su encabezado fijo, como la de personas. */
 .consumos { display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; }
 .filtros-consumos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; font-size: 16px; }
-.filtros-consumos label { display: flex; flex-direction: column; gap: 4px; }
-.filtros-consumos input, .filtros-consumos select { min-height: 44px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
+.filtros-consumos label, .filtros-consumos .filtro { display: flex; flex-direction: column; gap: 4px; }
+.filtros-consumos .lista-desplegable { min-width: 200px; }
+.filtros-consumos .lista-opciones, .filtros-consumos .lista-fila { font-size: 16px; }
+.filtros-consumos input, .filtros-consumos .lista-boton { min-height: 44px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
 .tabla-consumos { width: 100%; border-collapse: collapse; font-size: 16px; }
 .tabla-consumos th { position: sticky; top: 0; z-index: 1; background: rgb(var(--papel)); text-align: left; border-bottom: 2px solid var(--tinta-suave); }
 .tabla-consumos th, .tabla-consumos td { height: 44px; padding: 0 8px; }

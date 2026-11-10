@@ -49,13 +49,16 @@ guardado). El comportamiento no exige el id nuevo, y conservarlo evita cambiar l
 
 Un componente con un botón que muestra el texto elegido (o el texto vacío, como «Elegí a una persona…» o «Todas») y, al
 tocarlo, una lista `role="listbox"` con una fila `role="option"` por entrada, dibujada en la página debajo del botón y
-con su mismo ancho, dentro de la ventana: si no entra hacia abajo, se abre hacia arriba, y con muchas entradas se
-desplaza adentro. El botón lleva `aria-haspopup="listbox"`, `aria-expanded` y el id que tenía el `<select>`
+con su mismo ancho, dentro de la ventana: muestra hasta ocho filas de 56 px (458 px con el relleno y el borde, que a
+1024 × 768 terminan en el píxel 738,5) y con más entradas se desplaza adentro. El botón lleva `aria-haspopup="listbox"`, `aria-expanded` y el id que tenía el `<select>`
 (`simulacion-persona`, `consumos-persona`, `consumos-servicio`, `consumos-opcion`). El valor de cada fila es el mismo que
 tenía la opción (la credencial, nunca un código; la posición en los filtros). Teclado: Enter o espacio abre; flechas,
-Inicio y Fin mueven el foco; Enter elige; Escape cierra y devuelve el foco al botón. Un fondo transparente debajo de la
-lista toma el toque afuera y la cierra. Elegir dispara el mismo `ValueChanged` que hoy dispara `@onchange`, así que
-`ElegirEnSimulacion` y los filtros no cambian de conducta.
+Inicio y Fin mueven la fila activa (`aria-activedescendant`); Enter elige; Escape cierra y devuelve el foco al botón,
+sin seguir hasta Configuración ni hasta reposo, que leerían su propio Escape. Un toque afuera cierra porque la lista
+pierde el foco (`focusout`): un fondo transparente con `position: fixed` habría quedado encerrado en la tarjeta, que
+lleva `backdrop-filter`. Cada fila lleva su valor en `data-valor`. Elegir dispara `ValorChanged` con el valor que antes
+traía `@onchange`, así que `ElegirEnSimulacion` y los filtros no cambian de conducta. Los filtros de Consumos no van
+dentro de un `label`: el label reenviaría al botón el toque en una fila y volvería a abrir la lista.
 
 - **Descartada: mover la ventana emergente del `<select>`.** La dibuja el WebView2, no la página; no hay una API de la
   página que la ubique.

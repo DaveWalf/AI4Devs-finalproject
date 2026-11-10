@@ -32,16 +32,12 @@
                     @if (SimulacionActiva)
                     {
                         @* El combo del modo simulación: el valor es la credencial, nunca el código; elegir identifica en el acto (D1 y D9). *@
-                        @* La clave cambia con cada elección: el select se vuelve a crear y queda en la opción vacía también en el DOM. *@
+                        @* Es la lista propia, dibujada en la página, y no un select nativo: así se abre en el monitor del puesto (D3 de *@
+                        @* ordenar-configuracion). La clave cambia con cada elección: la lista se vuelve a crear cerrada y sin elegida. *@
                         <div class="simulacion">
                             <label for="simulacion-persona">Simulación: elegí a la persona</label>
-                            <select id="simulacion-persona" @key="_eleccionesSimulacion" value="" @onchange="ElegirEnSimulacion">
-                                <option value="">Elegí a una persona…</option>
-                                @foreach (var entrada in _personasSimulacion)
-                                {
-                                    <option value="@entrada.CredencialId.ToString("D")">@entrada.NombreVisible</option>
-                                }
-                            </select>
+                            <ListaDesplegable @key="_eleccionesSimulacion" Id="simulacion-persona" Entradas="_entradasSimulacion" Valor=""
+                                              TextoVacio="Elegí a una persona…" ValorChanged="ElegirEnSimulacion" />
                         </div>
                     }
                     <div class="ingreso">
@@ -278,6 +274,7 @@
     private bool _simulacionGuardada;
     private string? _avisoSimulacion;
     private IReadOnlyList<EntradaSimulacion> _personasSimulacion = [];
+    private IReadOnlyList<EntradaLista> _entradasSimulacion = [];
     private int _eleccionesSimulacion;
     private CierrePuesto? _cierre;
     private SesionOperador? _sesionOperador;
@@ -419,10 +416,10 @@
     /// tipeado. El valor llega del DOM (OWASP): sólo un GUID llega a la identificación, y una credencial que no está en la
     /// versión activa la rechaza la identificación (D2). Cada elección vuelve a crear el combo en la opción vacía.
     /// </summary>
-    private void ElegirEnSimulacion(ChangeEventArgs e)
+    private void ElegirEnSimulacion(string valor)
     {
         _eleccionesSimulacion++;
-        if (!SimulacionActiva || !Guid.TryParseExact(e.Value?.ToString(), "D", out var credencial))
+        if (!SimulacionActiva || !Guid.TryParseExact(valor, "D", out var credencial))
         {
             return;
         }
@@ -440,18 +437,22 @@
         if (!SimulacionActiva || Maquina.Estado == EstadoAtencion.ErrorAlmacenamiento)
         {
             _personasSimulacion = [];
-            return;
+        }
+        else
+        {
+            try
+            {
+                _personasSimulacion = Servicio.Identificacion.ListarParaSimulacion();
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException)
+            {
+                // Sin la lista, el combo queda sólo con la opción vacía; la atención muestra el error en su próxima escritura.
+                _personasSimulacion = [];
+            }
         }
 
-        try
-        {
-            _personasSimulacion = Servicio.Identificacion.ListarParaSimulacion();
-        }
-        catch (Microsoft.Data.Sqlite.SqliteException)
-        {
-            // Sin la lista, el combo queda sólo con la opción vacía; la atención muestra el error en su próxima escritura.
-            _personasSimulacion = [];
-        }
+        // Las filas de la lista propia: la credencial como valor, nunca el código, y el nombre visible (D3 de ordenar-configuracion).
+        _entradasSimulacion = _personasSimulacion.Select(p => new EntradaLista(p.CredencialId.ToString("D"), p.NombreVisible)).ToList();
     }
 
     /// <summary>
