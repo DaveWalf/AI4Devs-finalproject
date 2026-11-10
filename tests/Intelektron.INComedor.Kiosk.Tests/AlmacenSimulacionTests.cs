@@ -3,8 +3,8 @@ using Intelektron.INComedor.Kiosk.Atencion;
 namespace Intelektron.INComedor.Kiosk.Tests;
 
 /// <summary>
-/// El modo simulación en simulacion.json de la carpeta de datos (D4 de simular-identificacion-por-lista): apagado salvo un
-/// archivo que diga ENCENDIDA, y una escritura que falla deja el archivo anterior y le avisa a quien llama.
+/// El modo simulación en simulacion.json de la carpeta de datos (D4 de simular-identificacion-por-lista): encendido salvo un
+/// archivo que diga APAGADA, y una escritura que falla deja el archivo anterior y le avisa a quien llama.
 /// </summary>
 public class AlmacenSimulacionTests : IDisposable
 {
@@ -25,13 +25,13 @@ public class AlmacenSimulacionTests : IDisposable
         }
     }
 
-    [Theory(DisplayName = "acceso-puesto · Un ajuste de simulación ilegible (almacén): sin archivo, ilegible o con otro valor, está apagada")]
+    [Theory(DisplayName = "acceso-puesto · Un ajuste de simulación ilegible (almacén): sin archivo, ilegible o con otro valor, está encendida")]
     [InlineData(null)]
     [InlineData("no es json")]
     [InlineData("{\"simulacion\":\"QUIZAS\"}")]
     [InlineData("{\"simulacion\":true}")]
     [InlineData("[\"ENCENDIDA\"]")]
-    public void Sin_un_ajuste_valido_esta_apagada(string? contenido)
+    public void Sin_un_ajuste_valido_esta_encendida(string? contenido)
     {
         Directory.CreateDirectory(_carpeta);
         if (contenido is not null)
@@ -39,7 +39,7 @@ public class AlmacenSimulacionTests : IDisposable
             File.WriteAllText(Ruta, contenido);
         }
 
-        Assert.False(new AlmacenSimulacion(_carpeta).Leer());
+        Assert.True(new AlmacenSimulacion(_carpeta).Leer());
     }
 
     [Fact(DisplayName = "acceso-puesto · Encenderla se conserva al volver a abrir (almacén): guardada encendida se lee encendida desde otro almacén, y apagada, apagada")]

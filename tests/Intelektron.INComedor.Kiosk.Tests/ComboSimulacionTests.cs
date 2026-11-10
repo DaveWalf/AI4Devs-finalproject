@@ -61,10 +61,10 @@ public class ComboSimulacionTests
         Assert.Equal("SIMULATION_LIST", rechazo.GetProperty("Origin").GetString());
     }
 
-    [Fact(DisplayName = "atencion-puesto · Sin el modo simulación no hay combo: una carpeta nueva en mantenimiento tiene el campo del código y «Ingresar», y ningún combo")]
+    [Fact(DisplayName = "atencion-puesto · Sin el modo simulación no hay combo: en mantenimiento con la simulación guardada apagada, tiene el campo del código y «Ingresar», y ningún combo")]
     public void Sin_el_modo_simulacion_no_hay_combo()
     {
-        using var puesto = Puesto();
+        using var puesto = Puesto(simulacion: false);
         var pantalla = puesto.Dibujar();
 
         Assert.NotEmpty(pantalla.FindAll("#codigo"));

@@ -129,6 +129,11 @@ body:has(.puesto) {
     border-radius: 10px;
 }
 
+/* La fila del código: el campo crece y «Ingresar» queda a su derecha, los dos de 56 px (D12 de simular-identificacion-por-lista). */
+.ingreso { display: flex; align-items: stretch; gap: 12px; }
+.atencion .ingreso input { flex: 1 1 auto; width: auto; min-width: 0; }
+.atencion .ingreso button { flex: none; }
+
 /* El combo del modo simulación, con el alto táctil de los otros controles (D9 de simular-identificacion-por-lista). */
 .simulacion { display: flex; flex-direction: column; gap: 8px; }
 .simulacion label { font-size: 18px; }

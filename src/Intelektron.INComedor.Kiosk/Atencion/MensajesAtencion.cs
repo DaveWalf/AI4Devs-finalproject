@@ -14,6 +14,9 @@ public static class MensajesAtencion
 {
     private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
 
+    /// <summary>El título de reposo, que saluda e invita a disfrutar la comida (D13 de simular-identificacion-por-lista).</summary>
+    public const string TituloReposo = "¡Hola! Identificate y disfrutá tu comida";
+
     public const string Exito = "Consumo registrado. Retirá tu comprobante";
     public const string ComprobantePendiente = "Tu consumo está registrado. El comprobante queda pendiente";
     public const string Ocupado = "Puesto ocupado: hay una confirmación en curso";

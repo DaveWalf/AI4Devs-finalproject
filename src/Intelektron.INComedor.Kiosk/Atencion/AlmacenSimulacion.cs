@@ -5,8 +5,9 @@ namespace Intelektron.INComedor.Kiosk.Atencion;
 
 /// <summary>
 /// El modo simulación en <c>simulacion.json</c> de la carpeta de datos, con la escritura atómica del modo del puesto (D4 de
-/// simular-identificacion-por-lista). Sin archivo, ilegible o con otro valor, apagado: una carpeta nueva nunca muestra la
-/// lista de personas. Lo guardado no basta para mostrarla: la pantalla la activa sólo en mantenimiento (D5).
+/// simular-identificacion-por-lista). Sólo "APAGADA" la apaga: sin archivo, ilegible o con otro valor, encendido, su valor
+/// por omisión desde la ampliación del 10/11 (D12). Lo guardado no basta para mostrar la lista: la pantalla la activa sólo
+/// en mantenimiento (D5).
 /// </summary>
 public sealed class AlmacenSimulacion
 {
@@ -29,13 +30,13 @@ public sealed class AlmacenSimulacion
         {
             using var documento = JsonDocument.Parse(File.ReadAllText(Ruta));
             var raiz = documento.RootElement;
-            return raiz.ValueKind == JsonValueKind.Object && raiz.TryGetProperty("simulacion", out var valor)
-                && valor.ValueKind == JsonValueKind.String && valor.GetString() == Encendida;
+            return !(raiz.ValueKind == JsonValueKind.Object && raiz.TryGetProperty("simulacion", out var valor)
+                && valor.ValueKind == JsonValueKind.String && valor.GetString() == Apagada);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
         {
-            // Sin archivo, o ilegible: apagada.
-            return false;
+            // Sin archivo, o ilegible: encendida, el valor por omisión.
+            return true;
         }
     }
 

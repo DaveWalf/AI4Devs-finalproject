@@ -26,13 +26,9 @@
 
             case EstadoAtencion.Reposo:
                 <section class="tarjeta superficie">
-                    <h2>Identificate para comenzar</h2>
+                    <h2>@MensajesAtencion.TituloReposo</h2>
                     <p>Identificación simulada por código (demostración)</p>
-                    <input id="codigo" type="text" inputmode="numeric" autocomplete="off" aria-label="Código"
-                           value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" @onkeydown="TeclaCodigo" />
-                    <div class="acciones">
-                        <button id="ingresar" type="button" class="principal" @onclick="Ingresar">Ingresar</button>
-                    </div>
+                    @* El combo va arriba del campo del código, y el campo e «Ingresar» en su fila (D12 de simular-identificacion-por-lista). *@
                     @if (SimulacionActiva)
                     {
                         @* El combo del modo simulación: el valor es la credencial, nunca el código; elegir identifica en el acto (D1 y D9). *@
@@ -48,6 +44,11 @@
                             </select>
                         </div>
                     }
+                    <div class="ingreso">
+                        <input id="codigo" type="text" inputmode="numeric" autocomplete="off" aria-label="Código"
+                               value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" @onkeydown="TeclaCodigo" />
+                        <button id="ingresar" type="button" class="principal" @onclick="Ingresar">Ingresar</button>
+                    </div>
                     @if (Maquina.Aviso is not null)
                     {
                         <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
@@ -290,12 +291,10 @@
     private const string AccesoMantenimiento = "MAINTENANCE_MODE";
     private const string AccesoClave = "DAILY_KEY";
 
-    /// <summary>El acceso del apagado que hace el arranque en operativo: nadie entró a Configuración (D5 de simular-identificacion-por-lista).</summary>
-    private const string AccesoArranque = "STARTUP";
-
     /// <summary>
     /// La simulación activa: guardada encendida y en mantenimiento (D5 de simular-identificacion-por-lista). No depende sólo
-    /// del archivo: un puesto operativo nunca muestra la lista, aunque lo guardado diga lo contrario.
+    /// del archivo: un puesto operativo nunca muestra la lista, aunque lo guardado diga lo contrario, y el operativo no
+    /// cambia lo guardado: al volver a mantenimiento está como se la dejó (D12).
     /// </summary>
     private bool SimulacionActiva => _simulacionGuardada && _modo == ModoPuesto.Mantenimiento;
 
@@ -357,14 +356,6 @@
         }
 
         Maquina.Iniciar();
-
-        // Un arranque en operativo con la simulación guardada encendida la guarda apagada y lo registra (D5): sólo pasa si
-        // alguien editó el archivo o se cortó la luz entre las dos escrituras del paso a operativo.
-        if (_modo == ModoPuesto.Operativo && _simulacionGuardada)
-        {
-            GuardarSimulacion(false, AccesoArranque);
-        }
-
         LeerPersonasSimulacion();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
@@ -619,12 +610,6 @@
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,
         });
-
-        // Pasar a operativo apaga la simulación, después de guardar el modo y con el mismo acceso (D5 de simular-identificacion-por-lista).
-        if (_modo == ModoPuesto.Operativo && _simulacionGuardada)
-        {
-            GuardarSimulacion(false, acceso);
-        }
     }
 
     /// <summary>El interruptor de General: sólo en mantenimiento, y con el acceso con que se entró a Configuración (D6).</summary>
