@@ -57,6 +57,22 @@ public class ListasEnPantallaTests
         Assert.NotEmpty(pantalla.FindAll("#codigo"));
         Assert.Empty(pantalla.FindAll("#saludo"));
         Assert.Empty(pantalla.FindAll("[role=\"dialog\"]"));
+        Assert.Equal(0, puesto.Cierres);
+    }
+
+    [Fact(DisplayName = "presentacion-puesto · Escape o un toque afuera cierran sin elegir: Escape en la lista del filtro Persona de Consumos la cierra y Configuración sigue abierta")]
+    public async Task Escape_en_un_filtro_no_cierra_configuracion()
+    {
+        using var puesto = Puesto();
+        var pantalla = puesto.Dibujar();
+        await EntradaConfiguracion.Entrar(pantalla);
+
+        await pantalla.Find("#consumos-persona").ClickAsync(new());
+        await pantalla.Find("#consumos-persona-lista").KeyDownAsync(new Microsoft.AspNetCore.Components.Web.KeyboardEventArgs { Key = "Escape" });
+
+        Assert.Empty(pantalla.FindAll("[role=\"listbox\"]"));
+        Assert.NotEmpty(pantalla.FindAll("[role=\"dialog\"]"));
+        Assert.Equal("Todas", pantalla.Find("#consumos-persona").TextContent.Trim());
     }
 
     private static PuestoDePrueba Puesto()

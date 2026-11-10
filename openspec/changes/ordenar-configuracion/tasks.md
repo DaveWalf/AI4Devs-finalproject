@@ -111,3 +111,25 @@ Las pruebas de base y receptor corren con `INCOMEDOR_SQLSERVER=INMO-DW-AR`.
     Domain 91, Sqlite 211, Kiosk 397, Sync.Api 62, E2E 29). Pruebas existentes cambiadas contra `86ae3b3`
     (`git diff --diff-filter=M --name-only`): `SimulacionE2ETests.cs`, `ComboSimulacionTests.cs`,
     `PestanaConsumosTests.cs` y `PestanasConfiguracionTests.cs`, las cuatro de D6.
+- [x] 4.4 Correcciones de la verificación (`/openspec-verify-change` por un agente de sólo lectura, sin críticos, 4
+  advertencias y 4 sugerencias), con el gate dado (decisión 13).
+  - Advertencia 1, Enter en el botón cerrado: abría por la tecla y el clic que Chromium genera con ella la volvía a
+    cerrar. Confirmado con la E2E nueva `El_combo_con_el_teclado` contra el EXE de `74788d6` («Locator expected to be
+    visible»); ahora abren el clic y las flechas. Pruebas: `Con_el_teclado` (Enter solo no abre en bUnit),
+    `La_flecha_abajo_abre` y la E2E con el teclado real, en verde.
+  - Advertencia 2, Escape: `ListasEnPantallaTests` afirma que el puesto no se cerró (`Cierres` en 0) y suma Escape en el
+    filtro Persona con Configuración abierta. Con un mutante sin `stopPropagation`, las dos fallan (`Expected: 0`,
+    `Actual: 1`); con él, `total: 4`, `error: 0`.
+  - Advertencia 3, los filtros de Consumos sin medir: E2E nueva `Los_filtros_de_consumos_y_su_lista`. Los filtros pasan
+    a 56 px como «Consultar» y a 240 px de ancho, el botón ocupa su contenedor (la lista medía 200 y el botón 120), las
+    filas no se parten en dos renglones, y dentro del diálogo la lista muestra cinco filas (290 px): de 232,0 a 522,0 px,
+    con el panel terminando en 667,0. Las dos capturas, miradas.
+  - Advertencia 4, títulos: «Configuración por pestañas» se quita y se agrega «Configuración por pestañas, con Consumos
+    primero» (OpenSpec no deja renombrar escenarios en un MODIFIED); D6 dice por qué los dos «Cancelar descarta…»
+    conservan el título. `DisplayName` de `PestanasConfiguracionTests.Abre_en_general_con_las_nueve_pestanas` al título
+    nuevo.
+  - Sugerencias 1, 3 y 4: `aria-controls` sólo con la lista abierta; la fila activa se acota si las entradas se achican
+    (`Las_entradas_se_achican_con_la_lista_abierta`, que antes lanzaba `IndexOutOfRangeException`); el `summary`
+    duplicado, el «Cancelar» del comentario de Escape y el fondo transparente de Risks. La sugerencia 2 (mantener la fila
+    activa a la vista con el teclado) queda abierta: pide JavaScript, y en el puesto táctil la lista se recorre con el
+    dedo.

@@ -158,7 +158,7 @@ body:has(.puesto) {
 /* La lista desplegable propia (D3 de ordenar-configuracion): el botón y su lista, dibujada en la página debajo de él, con
    filas de 56 px y hasta ocho a la vista (ocho filas, el relleno y el borde: 458 px); con más, se desplaza adentro. */
 .lista-desplegable { position: relative; display: block; }
-.lista-boton { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; cursor: pointer; }
+.lista-boton { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; cursor: pointer; }
 .lista-boton::after { content: "\25BE"; flex: none; }
 .lista-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lista-opciones {
@@ -178,7 +178,7 @@ body:has(.puesto) {
     border-radius: 10px;
     box-shadow: 0 8px 24px rgb(0 0 0 / .18);
 }
-.lista-fila { display: flex; align-items: center; min-height: 56px; padding: 0 var(--relleno-control); color: var(--tinta); cursor: pointer; }
+.lista-fila { display: block; min-height: 56px; line-height: 56px; padding: 0 var(--relleno-control); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--tinta); cursor: pointer; }
 .lista-fila[aria-selected="true"] { font-weight: 700; }
 .lista-fila.activa { background: rgb(var(--papel)); box-shadow: inset 4px 0 0 var(--acento); }
 
@@ -413,9 +413,12 @@ html, body { overscroll-behavior: none; }
 .consumos { display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; }
 .filtros-consumos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; font-size: 16px; }
 .filtros-consumos label, .filtros-consumos .filtro { display: flex; flex-direction: column; gap: 4px; }
-.filtros-consumos .lista-desplegable { min-width: 200px; }
+.filtros-consumos .lista-desplegable { min-width: 240px; }
 .filtros-consumos .lista-opciones, .filtros-consumos .lista-fila { font-size: 16px; }
-.filtros-consumos input, .filtros-consumos .lista-boton { min-height: 44px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
+/* Dentro del diálogo, hasta cinco filas a la vista (290 px con el relleno y el borde), para que la lista no salga del panel
+   de la pestaña aunque la fila de filtros ocupe dos renglones; con más, se desplaza adentro (ordenar-configuracion). */
+.dialogo .lista-opciones { max-height: 290px; }
+.filtros-consumos input, .filtros-consumos .lista-boton { min-height: 56px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
 .tabla-consumos { width: 100%; border-collapse: collapse; font-size: 16px; }
 .tabla-consumos th { position: sticky; top: 0; z-index: 1; background: rgb(var(--papel)); text-align: left; border-bottom: 2px solid var(--tinta-suave); }
 .tabla-consumos th, .tabla-consumos td { height: 44px; padding: 0 8px; }

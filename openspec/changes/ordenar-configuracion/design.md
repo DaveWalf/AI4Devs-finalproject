@@ -53,7 +53,9 @@ con su mismo ancho, dentro de la ventana: muestra hasta ocho filas de 56 px (458
 1024 × 768 terminan en el píxel 738,5) y con más entradas se desplaza adentro. El botón lleva `aria-haspopup="listbox"`, `aria-expanded` y el id que tenía el `<select>`
 (`simulacion-persona`, `consumos-persona`, `consumos-servicio`, `consumos-opcion`). El valor de cada fila es el mismo que
 tenía la opción (la credencial, nunca un código; la posición en los filtros). Teclado: Enter o espacio abre; flechas,
-Inicio y Fin mueven la fila activa (`aria-activedescendant`); Enter elige; Escape cierra y devuelve el foco al botón,
+Inicio y Fin mueven la fila activa (`aria-activedescendant`); Enter elige. Desde el botón cerrado abren el clic (también
+el que el navegador genera con Enter o espacio) y las flechas, pero no la tecla Enter: abriría y el clic de esa misma tecla
+la volvería a cerrar; Escape cierra y devuelve el foco al botón,
 sin seguir hasta Configuración ni hasta reposo, que leerían su propio Escape. Un toque afuera cierra porque la lista
 pierde el foco (`focusout`): un fondo transparente con `position: fixed` habría quedado encerrado en la tarjeta, que
 lleva `backdrop-filter`. Cada fila lleva su valor en `data-valor`. Elegir dispara `ValorChanged` con el valor que antes
@@ -86,8 +88,15 @@ verificación de este change es su primera aplicación: mide el combo, el campo 
 
 Sólo las que el comportamiento exige (decisión 13): las que leen General sin tocarla, porque ya no abre ahí; las que
 listan el orden o recorren la fila con las flechas; las que eligen en un `<select>` (el combo y los filtros de Consumos),
-que pasan a tocar el botón y la fila; y los `DisplayName` de los dos escenarios renombrados («Cerrar descarta…»). Ninguna
-cambia lo que afirma. Las que sólo tocan `#cancelar-configuracion` no cambian (D2).
+que pasan a tocar el botón y la fila; y el `DisplayName` del escenario que cambia de título. Ninguna cambia lo que afirma.
+Las que sólo tocan `#cancelar-configuracion` no cambian (D2).
+
+OpenSpec no deja renombrar un escenario dentro de un requisito modificado (el archivado lo rechazaría). Por eso «Configuración
+por pestañas», cuyo escenario «Abre en General con las nueve pestañas» quedaba falso, se quita y se agrega «Configuración
+por pestañas, con Consumos primero», con escenarios sin el número de pestañas, que el change 1b puede modificar sin el
+mismo problema. Los dos escenarios «Cancelar descarta…» de «Lo editado se conserva hasta cerrar» y de «Estilo visual
+configurable» conservan el título, que habla de cancelar lo no guardado, y su texto dice «Cerrar»; sus `DisplayName` no
+cambian.
 
 ### D7. El nombre del servicio, con «IN»
 
@@ -104,8 +113,9 @@ pasa a fijar el texto, que hasta ahora decía sólo «el nombre del servicio».
   afirma.
 - **[Una lista propia pierde algo del control nativo]** → Se prueba con bUnit el teclado y el toque afuera, y con el E2E
   que la lista queda entera dentro de la ventana; el monitor alternativo lo prueba David, porque la CI tiene uno solo.
-- **[La lista dentro del diálogo de Configuración]** → Se abre dentro del diálogo, que ya es `inert` para lo de atrás; su
-  fondo transparente queda dentro del diálogo.
+- **[La lista dentro del diálogo de Configuración]** → El panel de la pestaña tiene `overflow: auto`: dentro del diálogo la
+  lista muestra hasta cinco filas (290 px), para no salir del panel aunque los filtros ocupen dos renglones; la E2E de
+  los filtros lo mide.
 
 ## Migration Plan
 

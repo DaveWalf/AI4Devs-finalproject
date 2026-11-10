@@ -26,6 +26,7 @@ public class ListaDesplegableTests : IDisposable
         var boton = lista.Find("button#prueba");
         Assert.Equal("Todas", boton.TextContent.Trim());
         Assert.Equal(("listbox", "false"), (boton.GetAttribute("aria-haspopup"), boton.GetAttribute("aria-expanded")));
+        Assert.False(boton.HasAttribute("aria-controls"));
         Assert.Empty(lista.FindAll("[role=\"listbox\"]"));
         Assert.Empty(lista.FindAll("select"));
     }
@@ -37,7 +38,7 @@ public class ListaDesplegableTests : IDisposable
 
         await lista.Find("#prueba").ClickAsync(new());
 
-        Assert.Equal("true", lista.Find("#prueba").GetAttribute("aria-expanded"));
+        Assert.Equal(("true", "prueba-lista"), (lista.Find("#prueba").GetAttribute("aria-expanded"), lista.Find("#prueba").GetAttribute("aria-controls")));
         var filas = lista.FindAll("[role=\"listbox\"] [role=\"option\"]");
         Assert.Equal(["Todas", "Persona sintética 01", "Persona sintética 02", "Persona sintética 03"], filas.Select(f => f.TextContent.Trim()));
         Assert.Equal(["false", "false", "true", "false"], filas.Select(f => f.GetAttribute("aria-selected")));
@@ -77,12 +78,15 @@ public class ListaDesplegableTests : IDisposable
         Assert.Empty(_elegidos);
     }
 
-    [Fact(DisplayName = "presentacion-puesto · Con el teclado: Enter abre, dos flechas abajo y Enter eligen la segunda persona")]
+    [Fact(DisplayName = "presentacion-puesto · Con el teclado: Enter abre (por el clic que el navegador genera en el botón), dos flechas abajo y Enter eligen la segunda persona")]
     public async Task Con_el_teclado()
     {
         var lista = Dibujar();
 
+        // En el navegador, Enter sobre un botón genera un clic: ése es el que abre. bUnit no lo genera, así que va el clic.
         await lista.Find("#prueba").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
+        Assert.Empty(lista.FindAll("[role=\"listbox\"]"));
+        await lista.Find("#prueba").ClickAsync(new());
         var listbox = lista.Find("[role=\"listbox\"]");
         Assert.Equal("prueba-opcion-0", listbox.GetAttribute("aria-activedescendant"));
         await listbox.KeyDownAsync(new KeyboardEventArgs { Key = "ArrowDown" });
@@ -116,6 +120,29 @@ public class ListaDesplegableTests : IDisposable
         await lista.Find("#prueba").ClickAsync(new());
 
         Assert.Equal(3, lista.FindAll("[role=\"option\"]").Count);
+    }
+
+    [Fact(DisplayName = "presentacion-puesto · Con el teclado: la flecha abajo en el botón cerrado abre la lista, con la elegida activa")]
+    public async Task La_flecha_abajo_abre()
+    {
+        var lista = Dibujar(valor: "2");
+
+        await lista.Find("#prueba").KeyDownAsync(new KeyboardEventArgs { Key = "ArrowDown" });
+
+        Assert.Equal("prueba-opcion-3", lista.Find("[role=\"listbox\"]").GetAttribute("aria-activedescendant"));
+    }
+
+    [Fact(DisplayName = "presentacion-puesto · Listas desplegables (borde): si las entradas se achican con la lista abierta, la fila activa queda dentro y Enter elige la última")]
+    public async Task Las_entradas_se_achican_con_la_lista_abierta()
+    {
+        var lista = Dibujar();
+        await lista.Find("#prueba").ClickAsync(new());
+        await lista.Find("[role=\"listbox\"]").KeyDownAsync(new KeyboardEventArgs { Key = "End" });
+
+        lista.Render(p => p.Add(x => x.Entradas, Entradas[..1]));
+        await lista.Find("[role=\"listbox\"]").KeyDownAsync(new KeyboardEventArgs { Key = "Enter" });
+
+        Assert.Equal(["0"], _elegidos);
     }
 
     private IRenderedComponent<ListaDesplegable> Dibujar(string valor = "", bool opcionVacia = true, string textoVacio = "Todas") =>

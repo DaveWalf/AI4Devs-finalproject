@@ -52,8 +52,9 @@ Ninguna.
 
 ### Modified Capabilities
 
-- `configuracion-puesto`: «Configuración por pestañas» cambia el orden y la pestaña inicial; «Lo editado se conserva hasta
-  cerrar» nombra «Cerrar».
+- `configuracion-puesto`: «Configuración por pestañas» se reemplaza por «Configuración por pestañas, con Consumos
+  primero», con el orden y la pestaña inicial nuevos (OpenSpec no deja renombrar sus escenarios en un requisito
+  modificado); «Lo editado se conserva hasta cerrar» nombra «Cerrar».
 - `presentacion-puesto`: «Estilo visual configurable» nombra «Cerrar»; «Pantalla de identificación que invita a comer»
   alinea el combo con la fila del código; «Cabecera con logos y el engranaje en el pie» fija el nombre del servicio; un
   requisito nuevo, las listas desplegables dentro de la ventana del puesto.

@@ -3,11 +3,12 @@
     debajo de él, una lista role="listbox" con una fila role="option" por entrada. No es un <select>: la lista nativa la
     dibuja el WebView2 fuera de la página y, con el puesto en otro monitor, aparecía en el principal (hallazgo de David del
     10/11). Elegir una fila cierra y aplica; Escape o perder el foco (un toque afuera) cierran sin elegir. Con el teclado,
-    Enter, espacio o la flecha abajo abren, las flechas, Inicio y Fin recorren con aria-activedescendant, y Enter elige.
+    Enter y espacio abren por el clic que el navegador genera sobre el botón (no por la tecla: abriría y el clic la volvería
+    a cerrar), las flechas también abren, las flechas, Inicio y Fin recorren con aria-activedescendant, y Enter elige.
 *@
 <div class="lista-desplegable @Clase">
     <button id="@Id" type="button" class="lista-boton" aria-haspopup="listbox" aria-expanded="@(_abierta ? "true" : "false")"
-            aria-controls="@IdLista" aria-labelledby="@EtiquetaYValor" @ref="_boton" @onclick="Alternar" @onkeydown="TeclaBoton"
+            aria-controls="@(_abierta ? IdLista : null)" aria-labelledby="@EtiquetaYValor" @ref="_boton" @onclick="Alternar" @onkeydown="TeclaBoton"
             @onmousedown:preventDefault="_abierta">
 <span class="lista-texto">@TextoBoton</span></button>
     @if (_abierta)
@@ -109,11 +110,29 @@
         await ValorChanged.InvokeAsync(valor);
     }
 
+    /// <summary>
+    /// Las flechas abren la lista desde el botón. Enter y espacio no: el navegador ya genera con ellas un clic sobre el
+    /// botón, que abre por Alternar; abrir también acá la cerraría con ese mismo clic.
+    /// </summary>
     private void TeclaBoton(KeyboardEventArgs e)
     {
-        if (!_abierta && e.Key is "Enter" or " " or "ArrowDown")
+        if (!_abierta && e.Key is "ArrowDown" or "ArrowUp")
         {
             Abrir();
+        }
+    }
+
+    /// <summary>Si las entradas cambian con la lista abierta, la fila activa no queda fuera de la lista.</summary>
+    protected override void OnParametersSet()
+    {
+        if (Filas.Count == 0)
+        {
+            _abierta = false;
+            _activa = 0;
+        }
+        else if (_activa >= Filas.Count)
+        {
+            _activa = Filas.Count - 1;
         }
     }
 

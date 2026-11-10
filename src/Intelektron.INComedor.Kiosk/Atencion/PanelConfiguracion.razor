@@ -322,7 +322,6 @@
 </div>
 
 @code {
-    /// <summary>Las nueve pestañas, en el orden de D1.</summary>
     /// <summary>Las pestañas en el orden en que se muestran: Consumos primero y General al final (D1 de ordenar-configuracion).</summary>
     private enum Pestana
     {
@@ -735,7 +734,7 @@
         }
     }
 
-    /// <summary>Escape cierra Configuración como «Cancelar», también con un panel de edición abierto (D3).</summary>
+    /// <summary>Escape cierra Configuración como «Cerrar», también con un panel de edición abierto (D3).</summary>
     private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar.InvokeAsync() : Task.CompletedTask;
 
     /// <summary>Abrir una edición elige su pestaña, que queda a la vista con la tabla o el panel.</summary>

@@ -41,7 +41,7 @@ public class PestanasConfiguracionTests : IDisposable
         }
     }
 
-    [Fact(DisplayName = "configuracion-puesto · Abre en General con las nueve pestañas, en orden, y General muestra el modo y el estado de las bitácoras")]
+    [Fact(DisplayName = "configuracion-puesto · Abre en Consumos con todas las pestañas en orden, y General, la última, muestra el modo y el estado de las bitácoras")]
     public async Task Abre_en_general_con_las_nueve_pestanas()
     {
         var pantalla = Dibujar();
