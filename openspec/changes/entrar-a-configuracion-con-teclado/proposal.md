@@ -58,7 +58,7 @@ Ninguna.
 
 | Quién | Talla | Horas | Con el colchón del 30 % |
 |---|---|---|---|
-| David | La das en el gate | | |
+| David | Sin talla propia (gate del 10/11 a las 12:08) | | |
 | La IA (Claude Code, Opus 5.5), 10/11/2026 | **M** | 5 a 6 h | 6,5 a 7,8 h de capacidad |
 
 **Por qué la IA da M y no S.** Son 3 requisitos modificados, 3 nuevos y 2 retirados, con 13 escenarios nuevos o cambiados, en tres capas. Lo que más pesa no es el código sino las pruebas existentes que suman la clave: 28 archivos nombran el engranaje y unos 23 entran por él en mantenimiento. Lo que no lo lleva a L es que la sesión del operador ya existe (`Asistencia.Entrar`, RB26) y el diálogo de la clave también.
@@ -95,3 +95,20 @@ Cada punto lleva una propuesta y su alternativa; lo que decidas queda escrito ac
 10. **Calendario y recorte.** Se aplica después del 2, apilado sobre él, en 5 a 6 h. Tu prueba en el ejecutable va una sola vez, con los tres cambios. Recorte propuesto: si el 11/11 a las 08:00 este change no está archivado y en verde, queda fuera de la final, y la entrega queda con el 1 y el 2.
 11. **Rama.** `feature/entrar-a-configuracion-con-teclado-dw`, desde `feature/confirmar-eleccion-en-cartel-dw` en `8a57ef0` y sin seguimiento remoto. Su PR apunta a esa rama y se integra después de ella.
 12. **Tallas.** La de la IA es M; la tuya la das acá.
+
+### Decisión del gate
+
+El 10/11/2026, a las 12:08, David respondió «Todo aprobado.» al gate de las tres propuestas del día, con las recomendadas y sin talla propia. Queda así:
+
+- Punto 1 con la propuesta: la clave en los dos modos, y cerrar con Escape en mantenimiento sigue directo.
+- Punto 2 con la propuesta: de 1 a 12 dígitos, y «ENTER» con el campo vacío rechaza.
+- Punto 3 con la propuesta: el aviso de clave sin validar arriba de Configuración, hasta cerrarla.
+- Punto 4 con la propuesta: el teclado numérico extendido del dibujo.
+- Punto 5 con la propuesta: el operador entra en el mismo diálogo, sin elegir antes.
+- Punto 6 con la propuesta: el operador ve Consumos, Personas e Impresora, abriendo en Consumos.
+- Punto 7 con la propuesta: su persona como actor, sin su código.
+- Punto 8 como está: las pruebas existentes cambian sólo como dice D8. Si una falla por otra razón, se para.
+- Punto 9 con la propuesta: el alcance de D9 en `AGENTS.md` y `openspec/config.yaml`.
+- Punto 10 con la propuesta: el recorte del 11/11 a las 08:00.
+- Punto 11 como está, con la base nueva: la rama se rebasó sobre la punta de `confirmar-eleccion-en-cartel`, `cf1b137`, en lugar de `8a57ef0`. Esa punta es la base del `git diff` de pruebas del encabezado de `tasks.md`.
+- Punto 12 sin talla propia, así que la tabla de tallas queda con la de la IA.
