@@ -1,0 +1,181 @@
+@*
+    La lista desplegable propia (D3 de ordenar-configuracion): un botón con el texto elegido que abre, dentro de la página y
+    debajo de él, una lista role="listbox" con una fila role="option" por entrada. No es un <select>: la lista nativa la
+    dibuja el WebView2 fuera de la página y, con el puesto en otro monitor, aparecía en el principal (hallazgo de David del
+    10/11). Elegir una fila cierra y aplica; Escape o perder el foco (un toque afuera) cierran sin elegir. Con el teclado,
+    Enter y espacio abren por el clic que el navegador genera sobre el botón (no por la tecla: abriría y el clic la volvería
+    a cerrar), las flechas también abren, las flechas, Inicio y Fin recorren con aria-activedescendant, y Enter elige.
+*@
+<div class="lista-desplegable @Clase">
+    <button id="@Id" type="button" class="lista-boton" aria-haspopup="listbox" aria-expanded="@(_abierta ? "true" : "false")"
+            aria-controls="@(_abierta ? IdLista : null)" aria-labelledby="@EtiquetaYValor" @ref="_boton" @onclick="Alternar" @onkeydown="TeclaBoton"
+            @onmousedown:preventDefault="_abierta">
+<span class="lista-texto">@TextoBoton</span></button>
+    @if (_abierta)
+    {
+        <ul id="@IdLista" role="listbox" class="lista-opciones" tabindex="-1" aria-labelledby="@Id"
+            aria-activedescendant="@IdFila(_activa)" @ref="_lista" @onkeydown="TeclaLista" @onkeydown:stopPropagation="true"
+            @onfocusout="Cerrar">
+            @* Las teclas de la lista no siguen: el Escape de la lista no es el de Configuración ni el de reposo. *@
+            @for (var i = 0; i < Filas.Count; i++)
+            {
+                var indice = i;
+                var fila = Filas[i];
+                var elegida = fila.Valor == Valor;
+                <li id="@IdFila(indice)" role="option" class="lista-fila @(indice == _activa ? "activa" : "")"
+                    aria-selected="@(elegida ? "true" : "false")" data-valor="@fila.Valor" @onclick="() => Elegir(fila.Valor)">@fila.Texto</li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    private bool _abierta;
+    private int _activa;
+    private bool _enfocarLista;
+    private bool _enfocarBoton;
+    private ElementReference _boton;
+    private ElementReference _lista;
+
+    /// <summary>El id del botón, el que tenía el &lt;select&gt;; la lista y sus filas lo usan de prefijo.</summary>
+    [Parameter, EditorRequired]
+    public string Id { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<EntradaLista> Entradas { get; set; } = [];
+
+    /// <summary>El valor elegido; vacío, ninguno.</summary>
+    [Parameter]
+    public string Valor { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> ValorChanged { get; set; }
+
+    /// <summary>Lo que dice el botón sin valor elegido, y la fila vacía si la hay: «Todas», «Elegí a una persona…».</summary>
+    [Parameter]
+    public string TextoVacio { get; set; } = string.Empty;
+
+    /// <summary>Si la lista ofrece una fila vacía, que vuelve al valor vacío: la de «Todas» en los filtros.</summary>
+    [Parameter]
+    public bool OpcionVacia { get; set; }
+
+    /// <summary>El id del texto que nombra la lista, cuando no hay un label con for: el botón se nombra con él y su valor.</summary>
+    [Parameter]
+    public string? Etiqueta { get; set; }
+
+    /// <summary>Una clase más para el contenedor, que fija las medidas según dónde va.</summary>
+    [Parameter]
+    public string Clase { get; set; } = string.Empty;
+
+    private string IdLista => Id + "-lista";
+
+    private string? EtiquetaYValor => Etiqueta is null ? null : $"{Etiqueta} {Id}";
+
+    private string IdFila(int indice) => $"{Id}-opcion-{indice}";
+
+    private IReadOnlyList<EntradaLista> Filas => OpcionVacia ? [new EntradaLista(string.Empty, TextoVacio), .. Entradas] : Entradas;
+
+    private string TextoBoton => Entradas.FirstOrDefault(e => e.Valor == Valor && Valor.Length > 0)?.Texto ?? TextoVacio;
+
+    private void Alternar()
+    {
+        if (_abierta)
+        {
+            Cerrar();
+            return;
+        }
+
+        Abrir();
+    }
+
+    private void Abrir()
+    {
+        if (Filas.Count == 0)
+        {
+            return;
+        }
+
+        var elegida = Filas.ToList().FindIndex(f => f.Valor == Valor);
+        _activa = elegida >= 0 ? elegida : 0;
+        _abierta = true;
+        _enfocarLista = true;
+    }
+
+    private void Cerrar() => _abierta = false;
+
+    private async Task Elegir(string valor)
+    {
+        _abierta = false;
+        _enfocarBoton = true;
+        await ValorChanged.InvokeAsync(valor);
+    }
+
+    /// <summary>
+    /// Las flechas abren la lista desde el botón. Enter y espacio no: el navegador ya genera con ellas un clic sobre el
+    /// botón, que abre por Alternar; abrir también acá la cerraría con ese mismo clic.
+    /// </summary>
+    private void TeclaBoton(KeyboardEventArgs e)
+    {
+        if (!_abierta && e.Key is "ArrowDown" or "ArrowUp")
+        {
+            Abrir();
+        }
+    }
+
+    /// <summary>Si las entradas cambian con la lista abierta, la fila activa no queda fuera de la lista.</summary>
+    protected override void OnParametersSet()
+    {
+        if (Filas.Count == 0)
+        {
+            _abierta = false;
+            _activa = 0;
+        }
+        else if (_activa >= Filas.Count)
+        {
+            _activa = Filas.Count - 1;
+        }
+    }
+
+    private async Task TeclaLista(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                _activa = Math.Min(_activa + 1, Filas.Count - 1);
+                break;
+            case "ArrowUp":
+                _activa = Math.Max(_activa - 1, 0);
+                break;
+            case "Home":
+                _activa = 0;
+                break;
+            case "End":
+                _activa = Filas.Count - 1;
+                break;
+            case "Enter" or " ":
+                await Elegir(Filas[_activa].Valor);
+                break;
+            case "Escape":
+                _abierta = false;
+                _enfocarBoton = true;
+                break;
+            case "Tab":
+                _abierta = false;
+                break;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool primera)
+    {
+        if (_enfocarLista && _abierta)
+        {
+            _enfocarLista = false;
+            await _lista.FocusAsync();
+        }
+        else if (_enfocarBoton)
+        {
+            _enfocarBoton = false;
+            await _boton.FocusAsync();
+        }
+    }
+}

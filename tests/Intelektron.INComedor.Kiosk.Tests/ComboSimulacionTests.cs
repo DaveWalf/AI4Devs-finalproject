@@ -53,7 +53,7 @@ public class ComboSimulacionTests
 
         Assert.Equal(MensajesAtencion.DeMotivo("CREDENTIAL_EXPIRED"), pantalla.Find("#aviso").TextContent);
         Assert.NotEmpty(pantalla.FindAll("#codigo"));
-        Assert.Equal("", pantalla.Find("#simulacion-persona").GetAttribute("value") ?? "");
+        Assert.Equal("Elegí a una persona…", pantalla.Find("#simulacion-persona").TextContent.Trim());
         using var conexion = Abrir(puesto);
         Assert.Equal(0L, Escalar(conexion, "SELECT COUNT(*) FROM tbComedorSesionesIdentidad"));
         var rechazo = JsonDocument.Parse(Assert.Single(Contextos(conexion, "IDENTIFICATION_REJECTED"))).RootElement;
@@ -74,12 +74,12 @@ public class ComboSimulacionTests
     }
 
     [Fact(DisplayName = "atencion-puesto · El combo no muestra ni lleva códigos: las ocho personas sembradas, en orden alfabético, con textos sin códigos y valores que son GUID de credenciales y no códigos")]
-    public void El_combo_no_muestra_ni_lleva_codigos()
+    public async Task El_combo_no_muestra_ni_lleva_codigos()
     {
         using var puesto = Puesto(simulacion: true);
         var pantalla = puesto.Dibujar();
 
-        var entradas = Entradas(pantalla);
+        var entradas = await Entradas(pantalla);
 
         Assert.Equal(
             ["Administrador sintético 04", "Operador sintético 01", "Operador sintético 02", "Operador sintético 03",
@@ -87,7 +87,7 @@ public class ComboSimulacionTests
             entradas.Select(e => e.TextContent.Trim()));
         Assert.All(entradas, e =>
         {
-            var valor = e.GetAttribute("value") ?? "";
+            var valor = e.GetAttribute("data-valor") ?? "";
             Assert.True(Guid.TryParse(valor, out _), $"El valor «{valor}» no es un GUID");
             Assert.DoesNotContain(valor, CodigosSinteticos);
             Assert.DoesNotContain(CodigosSinteticos, c => e.TextContent.Contains(c, StringComparison.Ordinal));
@@ -103,7 +103,7 @@ public class ComboSimulacionTests
         using var puesto = Puesto(simulacion: true);
         var pantalla = puesto.Dibujar();
 
-        await pantalla.Find("#simulacion-persona").ChangeAsync(new ChangeEventArgs { Value = Guid.NewGuid().ToString() });
+        await LlegaDeLaPantalla(pantalla, Guid.NewGuid().ToString());
 
         Assert.Equal(MensajesAtencion.DeMotivo("IDENTITY_NOT_RESOLVED"), pantalla.Find("#aviso").TextContent);
         using var conexion = Abrir(puesto);
@@ -128,7 +128,7 @@ public class ComboSimulacionTests
         await pantalla.Find("#guardar-panel").ClickAsync(new());
         await pantalla.Find("#cancelar-configuracion").ClickAsync(new());
 
-        var nombres = Entradas(pantalla).Select(e => e.TextContent.Trim()).ToList();
+        var nombres = (await Entradas(pantalla)).Select(e => e.TextContent.Trim()).ToList();
         Assert.Equal(9, nombres.Count);
         Assert.Equal("Persona sintética 05", nombres[8]);
         Assert.Equal("Persona sintética 04", nombres[7]);
@@ -140,7 +140,7 @@ public class ComboSimulacionTests
         using var puesto = Puesto(simulacion: true);
         var pantalla = puesto.Dibujar();
 
-        await pantalla.Find("#simulacion-persona").ChangeAsync(new ChangeEventArgs { Value = "0001" });
+        await LlegaDeLaPantalla(pantalla, "0001");
 
         Assert.NotEmpty(pantalla.FindAll("#codigo"));
         Assert.Empty(pantalla.FindAll("#aviso"));
@@ -162,15 +162,35 @@ public class ComboSimulacionTests
         return puesto;
     }
 
-    /// <summary>Las entradas del combo con una persona: todas menos la primera, la opción vacía.</summary>
-    private static List<IElement> Entradas(IRenderedComponent<PantallaAtencion> pantalla) =>
-        pantalla.FindAll("#simulacion-persona option").Where(o => !string.IsNullOrEmpty(o.GetAttribute("value"))).ToList();
+    /// <summary>
+    /// Las entradas del combo, con la lista abierta: desde ordenar-configuracion el combo es una lista propia, sin fila
+    /// vacía, y cada fila lleva su valor en data-valor.
+    /// </summary>
+    private static async Task<List<IElement>> Entradas(IRenderedComponent<PantallaAtencion> pantalla)
+    {
+        if (pantalla.FindAll("#simulacion-persona-lista").Count == 0)
+        {
+            await pantalla.Find("#simulacion-persona").ClickAsync(new());
+        }
 
-    /// <summary>Elige en el combo la entrada con ese nombre, por el valor que la pantalla le dio.</summary>
+        return pantalla.FindAll("#simulacion-persona-lista [role=\"option\"]").ToList();
+    }
+
+    /// <summary>Elige en el combo la entrada con ese nombre: abre la lista y toca su fila.</summary>
     private static async Task Elegir(IRenderedComponent<PantallaAtencion> pantalla, string nombre)
     {
-        var entrada = Entradas(pantalla).Single(e => e.TextContent.Trim() == nombre);
-        await pantalla.Find("#simulacion-persona").ChangeAsync(new ChangeEventArgs { Value = entrada.GetAttribute("value") });
+        var entrada = (await Entradas(pantalla)).Single(e => e.TextContent.Trim() == nombre);
+        await entrada.ClickAsync(new());
+    }
+
+    /// <summary>
+    /// Un valor que llega desde la pantalla sin ser una fila de la lista (OWASP): el de la lista propia viaja por su
+    /// ValorChanged, el único camino entre la página y la identificación desde ordenar-configuracion.
+    /// </summary>
+    private static Task LlegaDeLaPantalla(IRenderedComponent<PantallaAtencion> pantalla, string valor)
+    {
+        var lista = pantalla.FindComponent<ListaDesplegable>();
+        return pantalla.InvokeAsync(() => lista.Instance.ValorChanged.InvokeAsync(valor));
     }
 
     private static SqliteConnection Abrir(PuestoDePrueba puesto)

@@ -1,0 +1,126 @@
+# Design
+
+## Context
+
+Configuración (`PanelConfiguracion.razor`) arma sus pestañas a partir del `enum Pestana` (`:325`), en el orden en que
+están declaradas, y abre en `Pestana.General` (`:354`), salvo con un operador, que abre en Consumos (`:533`). El pie tiene
+un solo botón, `#cancelar-configuracion` «Cancelar» (`:318`), que cierra y descarta lo no guardado. El combo de la
+simulación (`PantallaAtencion.razor:36-45`) y los filtros Persona, Servicio y Opción de Consumos
+(`PestanaConsumos.razor:19-48`) son `<select>` nativos: su lista la dibuja el WebView2 como una ventana emergente propia,
+fuera de la página, y con la ventana del puesto en un monitor que no es el principal aparece en el principal (hallazgo de
+David del 10/11). En `puesto.css:121-150` el campo del código crece con «Ingresar» hasta los 592 px de la tarjeta, con
+letra de 24 px y relleno de 16 px, y el combo mide 480 px con letra de 22 px y relleno de 12 px: sólo coincide el alto.
+
+## Goals / Non-Goals
+
+**Goals:**
+- El orden de las pestañas que piden las mejoras 4 y 8a, abriendo en la primera.
+- «Cerrar» con la conducta de hoy.
+- Listas que se abren en la ventana del puesto, para el combo y los filtros de Consumos.
+- El combo alineado con la fila del código, y la regla de prolijidad escrita para los changes que siguen.
+
+**Non-Goals:**
+- Sacar Comprobantes, buscar, reimprimir en Consumos, las 24 h y la exportación (change 1b).
+- Las listas de `PanelOpciones`, que rehace el change de Opciones.
+- Cambiar la máquina de la atención, la base o la bitácora.
+
+## Decisions
+
+### D1. El orden sale del `enum`, y la inicial es la primera visible
+
+El `enum Pestana` se reordena: Consumos, Personas, Opciones, Comprobantes, Identidad, Impresora, Pantalla, Red y General.
+La pestaña inicial pasa a ser la primera de `Visibles`, con la clave del día o con un operador, así que el caso especial
+de `OnInitialized` sobra. `DelOperador` no cambia. Las flechas, Inicio y Fin ya recorren `Visibles` en orden.
+
+- **Descartada: una lista de orden aparte del `enum`.** Dos fuentes para lo mismo; el `enum` ya es la lista cerrada.
+- **Descartada: abrir en General aunque quede última.** La mejora 4 pide «Consumos primero», y abrir en la última
+  obligaría a recorrer la fila para lo que más se consulta.
+
+### D2. «Cerrar» con el mismo id
+
+El texto pasa a «Cerrar» y el id queda `cancelar-configuracion`, con la misma conducta (cierra y descarta lo no
+guardado). El comportamiento no exige el id nuevo, y conservarlo evita cambiar las pruebas que sólo lo tocan (decisión
+13 del plan).
+
+- **Descartada: `cerrar-configuracion`.** Cambiaría catorce pruebas sólo por el nombre.
+- **Descartada: preguntar si se descarta lo no guardado.** Nadie lo pidió, y agrega un paso a cada cierre.
+
+### D3. Una lista desplegable propia: `ListaDesplegable.razor`
+
+Un componente con un botón que muestra el texto elegido (o el texto vacío, como «Elegí a una persona…» o «Todas») y, al
+tocarlo, una lista `role="listbox"` con una fila `role="option"` por entrada, dibujada en la página debajo del botón y
+con su mismo ancho, dentro de la ventana: muestra hasta ocho filas de 56 px (458 px con el relleno y el borde, que a
+1024 × 768 terminan en el píxel 738,5) y con más entradas se desplaza adentro. El botón lleva `aria-haspopup="listbox"`, `aria-expanded` y el id que tenía el `<select>`
+(`simulacion-persona`, `consumos-persona`, `consumos-servicio`, `consumos-opcion`). El valor de cada fila es el mismo que
+tenía la opción (la credencial, nunca un código; la posición en los filtros). Teclado: Enter o espacio abre; flechas,
+Inicio y Fin mueven la fila activa (`aria-activedescendant`); Enter elige. Desde el botón cerrado abren el clic (también
+el que el navegador genera con Enter o espacio) y las flechas, pero no la tecla Enter: abriría y el clic de esa misma tecla
+la volvería a cerrar; Escape cierra y devuelve el foco al botón,
+sin seguir hasta Configuración ni hasta reposo, que leerían su propio Escape. Un toque afuera cierra porque la lista
+pierde el foco (`focusout`): un fondo transparente con `position: fixed` habría quedado encerrado en la tarjeta, que
+lleva `backdrop-filter`. Cada fila lleva su valor en `data-valor`. Elegir dispara `ValorChanged` con el valor que antes
+traía `@onchange`, así que `ElegirEnSimulacion` y los filtros no cambian de conducta. Los filtros de Consumos no van
+dentro de un `label`: el label reenviaría al botón el toque en una fila y volvería a abrir la lista.
+
+- **Descartada: mover la ventana emergente del `<select>`.** La dibuja el WebView2, no la página; no hay una API de la
+  página que la ubique.
+- **Descartada: `<datalist>` o una lista siempre abierta.** El primero también es nativo; la segunda ocupa el alto de la
+  pantalla de identificación.
+
+### D4. El combo con las medidas del campo
+
+En la tarjeta de identificación, el combo ocupa el ancho de la fila (`width: 100%`), con el borde izquierdo del campo y
+el derecho de «Ingresar»; su texto usa la letra de 24 px y el relleno de 16 px del campo, y el alto de 56 px. Las reglas
+de `.atencion input` y del combo comparten las mismas variables de tamaño en `puesto.css`, para que no vuelvan a
+separarse.
+
+- **Descartada: el ancho del campo solo.** El borde derecho quedaría a mitad de la fila, que es la asimetría del hallazgo.
+
+### D5. La regla de prolijidad en `openspec/config.yaml`
+
+Se agrega, con el texto de la decisión 14, a `rules.design` y a `rules.tasks`, en un commit propio del grupo 1. La
+verificación de este change es su primera aplicación: mide el combo, el campo e «Ingresar» por CDP a 1024 × 768.
+
+- **Descartada: escribirla sólo en `AGENTS.md`.** Las reglas de `config.yaml` llegan a cada artefacto que arma OpenSpec,
+  que es donde se decide y se mide.
+
+### D6. Pruebas existentes que cambian
+
+Sólo las que el comportamiento exige (decisión 13): las que leen General sin tocarla, porque ya no abre ahí; las que
+listan el orden o recorren la fila con las flechas; las que eligen en un `<select>` (el combo y los filtros de Consumos),
+que pasan a tocar el botón y la fila; y el `DisplayName` del escenario que cambia de título. Ninguna cambia lo que afirma.
+Las que sólo tocan `#cancelar-configuracion` no cambian (D2).
+
+OpenSpec no deja renombrar un escenario dentro de un requisito modificado (el archivado lo rechazaría). Por eso «Configuración
+por pestañas», cuyo escenario «Abre en General con las nueve pestañas» quedaba falso, se quita y se agrega «Configuración
+por pestañas, con Consumos primero», con escenarios sin el número de pestañas, que el change 1b puede modificar sin el
+mismo problema. Los dos escenarios «Cancelar descarta…» de «Lo editado se conserva hasta cerrar» y de «Estilo visual
+configurable» conservan el título, que habla de cancelar lo no guardado, y su texto dice «Cerrar»; sus `DisplayName` no
+cambian.
+
+### D7. El nombre del servicio, con «IN»
+
+La cabecera dice «INComedor · tu pausa del día» (pedido de David del 10/11, a las 20:18, con el change ya aplicado).
+Se conserva el «·» de hoy: la cita de David lo escribe «-», como lo vio en la pantalla. El requisito de la cabecera
+pasa a fijar el texto, que hasta ahora decía sólo «el nombre del servicio».
+
+- **Descartada: el guion literal de la cita.** Cambiaría el separador que David no pidió cambiar.
+
+## Risks / Trade-offs
+
+- **[Las pruebas que leen General]** → Son muchas en `Kiosk.Tests` (`AccesoPuestoTests`, `ModoSimulacionTests`,
+  `AccesoOperadorTests`): el ayudante de entrada suma el toque de General donde la prueba lo lee, sin cambiar lo que
+  afirma.
+- **[Una lista propia pierde algo del control nativo]** → Se prueba con bUnit el teclado y el toque afuera, y con el E2E
+  que la lista queda entera dentro de la ventana; el monitor alternativo lo prueba David, porque la CI tiene uno solo.
+- **[La lista dentro del diálogo de Configuración]** → El panel de la pestaña tiene `overflow: auto`: dentro del diálogo la
+  lista muestra hasta cinco filas (290 px), para no salir del panel aunque los filtros ocupen dos renglones; la E2E de
+  los filtros lo mide.
+
+## Migration Plan
+
+Sin migración: no cambian la base, los archivos de la carpeta de datos ni la bitácora.
+
+## Open Questions
+
+Ninguna: el gate está dado (decisión 13).

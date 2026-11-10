@@ -7,7 +7,7 @@
     Configuración por pestañas (D1 a D3 de configurar-puesto-por-pestanas): un diálogo modal que no cambia el estado de la
     máquina, con nueve pestañas según el patrón de WAI-ARIA. Todas quedan montadas y sólo la elegida se ve, así que lo
     editado en una sobrevive al pasar a otra y los id de siempre siguen en el diálogo (D2). Cada «Guardar» guarda lo suyo y
-    deja Configuración abierta, con el aviso de lo guardado debajo de las pestañas (D3); «Cancelar» o Escape la cierran y
+    deja Configuración abierta, con el aviso de lo guardado debajo de las pestañas (D3); «Cerrar» o Escape la cierran y
     descartan lo no guardado, también con un panel de edición abierto. Sólo un panel de edición se abre a la vez: Personas y
     Opciones comparten los id de sus botones desde administrar-personas-y-opciones.
 *@
@@ -315,24 +315,25 @@
         }
 
         <div class="acciones pie-dialogo">
-            <button id="cancelar-configuracion" type="button" @onclick="Cancelar">Cancelar</button>
+            @* «Cerrar»: cada pestaña guarda lo suyo, así que el pie cierra y descarta lo no guardado; el id se conserva (D2 de ordenar-configuracion). *@
+            <button id="cancelar-configuracion" type="button" @onclick="Cancelar">Cerrar</button>
         </div>
     </div>
 </div>
 
 @code {
-    /// <summary>Las nueve pestañas, en el orden de D1.</summary>
+    /// <summary>Las pestañas en el orden en que se muestran: Consumos primero y General al final (D1 de ordenar-configuracion).</summary>
     private enum Pestana
     {
-        General,
+        Consumos,
         Personas,
         Opciones,
-        Consumos,
         Comprobantes,
         Identidad,
         Impresora,
         Pantalla,
         Red,
+        General,
     }
 
     private enum Panel
@@ -351,7 +352,7 @@
 
     private readonly ElementReference[] _botones = new ElementReference[Todas.Length];
     private ElementReference _dialogo;
-    private Pestana _elegida = Pestana.General;
+    private Pestana _elegida = Pestana.Consumos;
     private static readonly LogoPuesto[] LogosEditables = [LogoPuesto.Empresa, LogoPuesto.Concesionaria];
     private readonly LogoElegido?[] _logoPendiente = new LogoElegido?[2];
     private readonly bool[] _logoAlEjemplo = new bool[2];
@@ -528,10 +529,8 @@
 
     protected override void OnInitialized()
     {
-        if (Operador is not null)
-        {
-            _elegida = Pestana.Consumos;
-        }
+        // Abre en la primera visible, Consumos, con la clave del día o con un operador (D1 de ordenar-configuracion).
+        _elegida = Visibles[0];
 
         LeerResumen();
         _encabezado = Textos.Encabezado;
@@ -735,7 +734,7 @@
         }
     }
 
-    /// <summary>Escape cierra Configuración como «Cancelar», también con un panel de edición abierto (D3).</summary>
+    /// <summary>Escape cierra Configuración como «Cerrar», también con un panel de edición abierto (D3).</summary>
     private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar.InvokeAsync() : Task.CompletedTask;
 
     /// <summary>Abrir una edición elige su pestaña, que queda a la vista con la tabla o el panel.</summary>

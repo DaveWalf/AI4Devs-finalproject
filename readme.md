@@ -219,8 +219,9 @@ receptor, en la ventana:
    «Operador: Operador sintético 01» arriba, sin General ni «Cerrar el puesto»; `9002` dice que su permiso está
    vencido.
 8. La simulación viene encendida: desde el paso 1, la pantalla de identificación tiene, arriba del campo del código, el
-   combo «Simulación: elegí a la persona», con los nombres y sin ningún código, e «Ingresar» queda a la derecha del
-   campo. Elegir «Persona sintética 01» abre su selección sin «Ingresar»; elegir «Persona sintética 02» da el mismo
+   combo «Simulación: elegí a la persona», con los nombres y sin ningún código, de borde a borde con la fila del campo
+   e «Ingresar», que queda a la derecha del campo. Su lista no es la nativa de Windows: la dibuja la página, dentro de
+   la ventana, así que se abre en el monitor del puesto aunque no sea el principal. Elegir «Persona sintética 01» abre su selección sin «Ingresar»; elegir «Persona sintética 02» da el mismo
    aviso de credencial vencida del paso 3. Tipear `0001` y pulsar Enter hace lo mismo que «Ingresar». En General de
    Configuración dice «Simulación: encendida»: «Apagar la simulación» la apaga, el combo se va y sigue apagada al
    volver a abrir el puesto, y «Encender la simulación» la vuelve a encender. Con la simulación encendida, «Pasar a
@@ -349,10 +350,11 @@ ve sobre una cuadrícula antes de guardarlo, con las mismas reglas (lo que no si
 borra. Cada guardado queda en la general por la huella SHA-256 del archivo, su tamaño y su formato, nunca su contenido.
 
 El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre
-**Configuración por pestañas**: General (el modo y el estado de las bitácoras), Personas, Opciones, Consumos,
-Comprobantes, Identidad visual, Impresora, Pantalla y Red, en una fila de botones de 56 px que entra en 1024 × 768.
+**Configuración por pestañas**: Consumos, donde abre, Personas, Opciones, Comprobantes, Identidad visual, Impresora,
+Pantalla, Red y, al final, General (el modo y el estado de las bitácoras), en una fila de botones de 56 px que entra en
+1024 × 768.
 Todas quedan montadas, así que lo editado en una pestaña sobrevive al pasar a otra hasta cerrar. Cada «Guardar»
-guarda sólo lo de su pestaña y deja Configuración abierta con el aviso de lo guardado; «Cancelar» o Escape la cierran
+guarda sólo lo de su pestaña y deja Configuración abierta con el aviso de lo guardado; «Cerrar» o Escape la cierran
 y descartan lo no guardado, también con un panel de edición abierto. Identidad visual tiene el «Estilo visual», con la
 opacidad de las superficies (72 a 88 %, 76 % por defecto) y el desenfoque del fondo (0 a 12 px, 4 px por defecto) con
 vista previa y su «Guardar» en `estilo-visual.json` de la carpeta de datos; Impresora, con la impresora simulada, sus

@@ -50,18 +50,26 @@ public class SimulacionE2ETests : IAsyncLifetime
         Assert.All([("combo", fila.Combo), ("campo", fila.Campo), ("Ingresar", fila.Ingresar)],
             c => Assert.True(c.Item2.Alto >= 56, $"{c.Item1}: {c.Item2.Alto} px de alto"));
 
-        // Una credencial vencida: el aviso, y el combo vuelve a la opción vacía en el DOM, no sólo en el componente.
-        await combo.SelectOptionAsync(new SelectOptionValue { Label = "Persona sintética 02" });
+        // Una credencial vencida: el aviso, y el combo vuelve a «Elegí a una persona…» en el DOM, no sólo en el componente.
+        // Desde ordenar-configuracion el combo es una lista propia: se elige tocando el combo y la fila.
+        await Elegir(pagina, "Persona sintética 02");
         await Assertions.Expect(pagina.Locator("#aviso")).ToHaveTextAsync("Esta credencial está vencida. Solicitá asistencia");
-        await Assertions.Expect(pagina.Locator("#simulacion-persona")).ToHaveValueAsync("");
+        await Assertions.Expect(pagina.Locator("#simulacion-persona")).ToHaveTextAsync("Elegí a una persona…");
 
-        await pagina.Locator("#simulacion-persona").SelectOptionAsync(new SelectOptionValue { Label = "Persona sintética 01" });
+        await Elegir(pagina, "Persona sintética 01");
 
         await Assertions.Expect(pagina.GetByRole(AriaRole.Heading, new() { Name = "Elegí tu servicio de hoy" })).ToBeVisibleAsync();
         await Assertions.Expect(pagina.Locator("#saludo")).ToContainTextAsync("Persona sintética 01");
         var texto = await pagina.Locator("body").InnerTextAsync();
         Assert.DoesNotContain("0001", texto, StringComparison.Ordinal);
         _escenario.Registrar("elegida la persona de 0001 en el combo: selección con su nombre y sin su código en la página");
+    }
+
+    /// <summary>Toca el combo y, en su lista, la fila con ese nombre.</summary>
+    private static async Task Elegir(IPage pagina, string nombre)
+    {
+        await pagina.Locator("#simulacion-persona").ClickAsync();
+        await pagina.Locator("#simulacion-persona-lista [role=\"option\"]", new() { HasTextString = nombre }).ClickAsync();
     }
 
     /// <summary>Las cajas del combo, del campo del código y de «Ingresar», respecto de la ventana.</summary>

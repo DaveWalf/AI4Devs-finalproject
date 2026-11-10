@@ -29,8 +29,10 @@ rules:
     - Usar el vocabulario de docs/especificacion-sdd.md (IntentId, RB06, cupo, fecha de negocio) y citar el AT de origen de cada escenario.
   design:
     - Cada decisión nombra la alternativa descartada y el porqué.
+    - "Prolijidad visual: los controles hermanos de una misma tarjeta o fila comparten ancho o bordes alineados, tipografía y relleno, además del alto táctil. Toda decisión que toque una pantalla dice cómo quedan alineados sus controles hermanos."
   tasks:
     - Cada tarea nombra la prueba o el comando que la verifica.
     - Las pruebas de un grupo van dentro del grupo, no al final.
     - Ninguna tarea modifica un test existente sin aprobación de David.
+    - "Prolijidad visual: toda tarea que toque una pantalla mide por CDP, a 1024 × 768, los bordes izquierdo y derecho, el alto y el tamaño de letra de sus controles hermanos (tolerancia de 1 px), pega las medidas y deja una captura que la verificación mira."
     - "La última tarea del change agrega su evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` y, si deja un workflow o un ajuste humano nuevo, su entrada en `prompts.md`; se verifica con el chequeo de enlaces relativos."

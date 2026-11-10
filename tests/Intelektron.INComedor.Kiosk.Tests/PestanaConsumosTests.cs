@@ -73,9 +73,9 @@ public class PestanaConsumosTests
         await Consumir(pantalla, "0001", 0, refrigerio: true);
         await Consumir(pantalla, "0001", 0, refrigerio: true);
         await AbrirConsumos(pantalla);
-        var servicio = pantalla.FindAll("#consumos-servicio option").Single(o => o.TextContent.Trim() == "REFRIGERIO").GetAttribute("value");
+        await pantalla.Find("#consumos-servicio").ClickAsync(new());
 
-        await pantalla.Find("#consumos-servicio").ChangeAsync(new ChangeEventArgs { Value = servicio });
+        await pantalla.FindAll("#consumos-servicio-lista [role=\"option\"]").Single(o => o.TextContent.Trim() == "REFRIGERIO").ClickAsync(new());
         await pantalla.Find("#consultar-consumos").ClickAsync(new());
 
         Assert.Equal(2, pantalla.FindAll("#seccion-consumos tr.consumo").Count);

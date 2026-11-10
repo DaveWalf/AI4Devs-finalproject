@@ -14,39 +14,24 @@
         <div class="filtros-consumos">
             <label>Desde <input id="consumos-desde" type="date" value="@Fecha(_desde)" @onchange="e => _desde = LeerFecha(e, _desde)" /></label>
             <label>Hasta <input id="consumos-hasta" type="date" value="@Fecha(_hasta)" @onchange="e => _hasta = LeerFecha(e, _hasta)" /></label>
-            <label>
-                Persona
-                <select id="consumos-persona" @onchange="e => _persona = Texto(e)">
-                    <option value="" selected="@(_persona.Length == 0)">Todas</option>
-                    @for (var i = 0; i < _personas.Count; i++)
-                    {
-                        var valor = i.ToString(CultureInfo.InvariantCulture);
-                        <option value="@valor" selected="@(_persona == valor)">@_personas[i].Nombre@(_personas[i].DeBaja ? " (de baja)" : "")</option>
-                    }
-                </select>
-            </label>
-            <label>
-                Servicio
-                <select id="consumos-servicio" @onchange="e => _servicio = Texto(e)">
-                    <option value="" selected="@(_servicio.Length == 0)">Todos</option>
-                    @for (var i = 0; i < _servicios.Count; i++)
-                    {
-                        var valor = i.ToString(CultureInfo.InvariantCulture);
-                        <option value="@valor" selected="@(_servicio == valor)">@_servicios[i].Nombre</option>
-                    }
-                </select>
-            </label>
-            <label>
-                Opción
-                <select id="consumos-opcion" @onchange="e => _opcion = Texto(e)">
-                    <option value="" selected="@(_opcion.Length == 0)">Todas</option>
-                    @for (var i = 0; i < _opciones.Count; i++)
-                    {
-                        var valor = i.ToString(CultureInfo.InvariantCulture);
-                        <option value="@valor" selected="@(_opcion == valor)">@_opciones[i].Nombre</option>
-                    }
-                </select>
-            </label>
+            @* Los filtros son listas propias, dibujadas en la página, no select nativos: se abren en el monitor del puesto (D3 de *@
+            @* ordenar-configuracion). El valor es la posición en la lista, nunca un identificador ni un código, como antes. No van *@
+            @* dentro de un label: el label reenviaría al botón el toque en una fila y volvería a abrir la lista. *@
+            <div class="filtro">
+                <span id="etiqueta-consumos-persona">Persona</span>
+                <ListaDesplegable Id="consumos-persona" Etiqueta="etiqueta-consumos-persona" Entradas="_entradasPersona" Valor="@_persona" ValorChanged="v => _persona = v"
+                                  TextoVacio="Todas" OpcionVacia="true" />
+            </div>
+            <div class="filtro">
+                <span id="etiqueta-consumos-servicio">Servicio</span>
+                <ListaDesplegable Id="consumos-servicio" Etiqueta="etiqueta-consumos-servicio" Entradas="_entradasServicio" Valor="@_servicio" ValorChanged="v => _servicio = v"
+                                  TextoVacio="Todos" OpcionVacia="true" />
+            </div>
+            <div class="filtro">
+                <span id="etiqueta-consumos-opcion">Opción</span>
+                <ListaDesplegable Id="consumos-opcion" Etiqueta="etiqueta-consumos-opcion" Entradas="_entradasOpcion" Valor="@_opcion" ValorChanged="v => _opcion = v"
+                                  TextoVacio="Todas" OpcionVacia="true" />
+            </div>
             <button id="consultar-consumos" type="button" class="principal" @onclick="Consultar">Consultar</button>
         </div>
 
@@ -115,6 +100,9 @@
     private IReadOnlyList<PersonaParaFiltro> _personas = [];
     private IReadOnlyList<ElementoParaFiltro> _servicios = [];
     private IReadOnlyList<ElementoParaFiltro> _opciones = [];
+    private IReadOnlyList<EntradaLista> _entradasPersona = [];
+    private IReadOnlyList<EntradaLista> _entradasServicio = [];
+    private IReadOnlyList<EntradaLista> _entradasOpcion = [];
     private FiltroConsumos _aplicado = FiltroConsumos.DelDia(default);
     private IReadOnlyList<ConsumoConsultado> _filas = [];
     private bool _hayMas;
@@ -146,6 +134,9 @@
             _personas = Consulta.Personas();
             _servicios = Consulta.Servicios();
             _opciones = Consulta.Opciones();
+            _entradasPersona = _personas.Select((p, i) => new EntradaLista(i.ToString(CultureInfo.InvariantCulture), p.Nombre + (p.DeBaja ? " (de baja)" : ""))).ToList();
+            _entradasServicio = _servicios.Select((s, i) => new EntradaLista(i.ToString(CultureInfo.InvariantCulture), s.Nombre)).ToList();
+            _entradasOpcion = _opciones.Select((o, i) => new EntradaLista(i.ToString(CultureInfo.InvariantCulture), o.Nombre)).ToList();
             Ejecutar(FiltroConsumos.DelDia(_desde));
         }
     }
@@ -222,5 +213,4 @@
     private static DateOnly LeerFecha(ChangeEventArgs e, DateOnly anterior) =>
         DateOnly.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha) ? fecha : anterior;
 
-    private static string Texto(ChangeEventArgs e) => e.Value?.ToString() ?? string.Empty;
 }

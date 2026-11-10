@@ -16,7 +16,7 @@ namespace Intelektron.INComedor.Kiosk.Tests;
 public class PestanasConfiguracionTests : IDisposable
 {
     private static readonly string[] Pestanas =
-        ["General", "Personas", "Opciones", "Consumos", "Comprobantes", "Identidad visual", "Impresora", "Pantalla", "Red"];
+        ["Consumos", "Personas", "Opciones", "Comprobantes", "Identidad visual", "Impresora", "Pantalla", "Red", "General"];
 
     private readonly string _carpeta = Path.Combine(Path.GetTempPath(), "incomedor-tests", "pestanas-" + Guid.NewGuid().ToString("N"));
     private readonly ArchivoTemporal _archivo = new();
@@ -41,7 +41,7 @@ public class PestanasConfiguracionTests : IDisposable
         }
     }
 
-    [Fact(DisplayName = "configuracion-puesto · Abre en General con las nueve pestañas, en orden, y General muestra el modo y el estado de las bitácoras")]
+    [Fact(DisplayName = "configuracion-puesto · Abre en Consumos con todas las pestañas en orden, y General, la última, muestra el modo y el estado de las bitácoras")]
     public async Task Abre_en_general_con_las_nueve_pestanas()
     {
         var pantalla = Dibujar();
@@ -52,6 +52,8 @@ public class PestanasConfiguracionTests : IDisposable
         var pestanas = lista.QuerySelectorAll("[role=\"tab\"]");
         Assert.Equal(Pestanas, pestanas.Select(p => p.TextContent.Trim()));
         Assert.Equal(["true", "false", "false", "false", "false", "false", "false", "false", "false"], pestanas.Select(p => p.GetAttribute("aria-selected")));
+        Assert.False(pantalla.Find("#seccion-consumos").HasAttribute("hidden"));
+        await pantalla.Find("#pestana-general").ClickAsync(new());
         var general = pantalla.Find("#seccion-general");
         Assert.Equal("tabpanel", general.GetAttribute("role"));
         Assert.False(general.HasAttribute("hidden"));
@@ -74,20 +76,20 @@ public class PestanasConfiguracionTests : IDisposable
         Assert.Equal(["seccion-impresora"], visibles);
     }
 
-    [Fact(DisplayName = "configuracion-puesto · Las pestañas con el teclado: flecha derecha elige Personas e Inicio vuelve a General, con la elegida en el orden de tabulación")]
+    [Fact(DisplayName = "configuracion-puesto · Las pestañas con el teclado: flecha derecha elige Personas e Inicio vuelve a Consumos, con la elegida en el orden de tabulación")]
     public async Task Las_pestanas_con_el_teclado()
     {
         var pantalla = Dibujar();
         await EntradaConfiguracion.Entrar(pantalla);
 
-        await pantalla.Find("#pestana-general").KeyDownAsync(new KeyboardEventArgs { Key = "ArrowRight" });
+        await pantalla.Find("#pestana-consumos").KeyDownAsync(new KeyboardEventArgs { Key = "ArrowRight" });
 
         Assert.Equal("true", pantalla.Find("#pestana-personas").GetAttribute("aria-selected"));
-        Assert.Equal(("0", "-1"), (pantalla.Find("#pestana-personas").GetAttribute("tabindex"), pantalla.Find("#pestana-general").GetAttribute("tabindex")));
+        Assert.Equal(("0", "-1"), (pantalla.Find("#pestana-personas").GetAttribute("tabindex"), pantalla.Find("#pestana-consumos").GetAttribute("tabindex")));
 
         await pantalla.Find("#pestana-personas").KeyDownAsync(new KeyboardEventArgs { Key = "Home" });
 
-        Assert.Equal("true", pantalla.Find("#pestana-general").GetAttribute("aria-selected"));
+        Assert.Equal("true", pantalla.Find("#pestana-consumos").GetAttribute("aria-selected"));
         Assert.Equal("-1", pantalla.Find("#pestana-personas").GetAttribute("tabindex"));
         Assert.NotEmpty(pantalla.FindAll("[role=\"dialog\"]"));
     }
