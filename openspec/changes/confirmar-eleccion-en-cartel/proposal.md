@@ -44,7 +44,7 @@ Ninguna.
 
 | Quién | Talla | Horas | Con el colchón del 30 % |
 |---|---|---|---|
-| David | La das en el gate | | |
+| David | Sin talla propia (gate del 10/11 a las 12:08) | | |
 | La IA (Claude Code, Opus 5.5), 10/11/2026 | **S** | 2,5 a 3 h | 3,3 a 3,9 h de capacidad |
 
 **Por qué la IA da S y no M.** Son 4 requisitos modificados y 1 nuevo, con 3 escenarios nuevos y 9 que cambian, en una sola pantalla y sin tocar la máquina, la base ni el registro. Lo que lo acerca a M es el foco y Escape del cartel, la prueba E2E y las tres pruebas existentes que cambian.
@@ -64,3 +64,15 @@ Cada punto lleva una propuesta y su alternativa; lo que decidas queda escrito ac
 5. **Calendario y recorte.** Se aplica después de la ampliación del 1, apilado sobre ella, en 2,5 a 3 h. Tu prueba en el ejecutable va una sola vez, con los tres cambios juntos. Recorte propuesto: si el 11/11 a las 08:00 este change no está archivado y en verde, queda fuera de la final, y con él el 3, que va encima.
 6. **Rama.** `feature/confirmar-eleccion-en-cartel-dw`, desde `feature/simular-identificacion-por-lista-dw` en `ef63c02` y sin seguimiento remoto. Su PR apunta a esa rama y se integra después de ella, como la pila del 09/11.
 7. **Tallas.** La de la IA es S; la tuya la das acá.
+
+### Decisión del gate
+
+El 10/11/2026, a las 12:08, David respondió «Todo aprobado.» al gate de las tres propuestas del día, con las recomendadas y sin talla propia. Queda así:
+
+- Punto 1 con la propuesta: «Cancelar» va en el bloque del título (`.titulo`), junto al saludo.
+- Punto 2 con la propuesta: al abrirse el cartel, el foco va a «Confirmar», el resto de la pantalla queda `inert` y Escape es «Elegir otra».
+- Punto 3 como está: cambian sólo las tres pruebas existentes de su lista. Si `PresentacionTactilTests.Nueve_opciones_en_1024_por_768_y_una_columna_en_600` falla, se para.
+- Punto 4 con la propuesta: el título del cartel «¿Confirmás tu elección?».
+- Punto 5 con la propuesta: el recorte del 11/11 a las 08:00.
+- Punto 6 como está, con la base nueva: la rama se rebasó sobre la punta de la ampliación del 1, `d0da333`, en lugar de `ef63c02`. Esa punta es el `<base>` del encabezado de `tasks.md`.
+- Punto 7 sin talla propia, así que la tabla de tallas queda con la de la IA.
