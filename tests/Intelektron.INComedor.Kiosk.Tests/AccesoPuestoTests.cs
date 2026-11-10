@@ -14,18 +14,18 @@ namespace Intelektron.INComedor.Kiosk.Tests;
 /// </summary>
 public class AccesoPuestoTests
 {
-    [Fact(DisplayName = "acceso-puesto · Mantenimiento entra directo: el engranaje abre Configuración sin clave y CONFIGURATION_OPENED lleva MAINTENANCE_MODE")]
-    public async Task Mantenimiento_entra_directo()
+    [Fact(DisplayName = "acceso-puesto · Mantenimiento también pide la clave: con la clave del día, el engranaje abre Configuración en mantenimiento y CONFIGURATION_OPENED lleva DAILY_KEY")]
+    public async Task Mantenimiento_tambien_pide_la_clave()
     {
         using var puesto = new PuestoDePrueba();
         var pantalla = puesto.Dibujar();
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         Assert.Empty(pantalla.FindAll("#dialogo-clave"));
         Assert.Contains("Modo: mantenimiento", pantalla.Find("#seccion-general").TextContent);
         var abierta = ContextoDe(Assert.Single(puesto.General(), l => Tipo(l) == "CONFIGURATION_OPENED"));
-        Assert.Equal("MAINTENANCE_MODE", abierta.GetProperty("Access").GetString());
+        Assert.Equal("DAILY_KEY", abierta.GetProperty("Access").GetString());
         Assert.True(SinActor(abierta));
     }
 
@@ -56,7 +56,7 @@ public class AccesoPuestoTests
     {
         using var puesto = new PuestoDePrueba();
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#pasar-operativo").ClickAsync(new());
         await pantalla.Find("#cancelar-clave").ClickAsync(new());
@@ -195,11 +195,7 @@ public class AccesoPuestoTests
     {
         using var puesto = new PuestoDePrueba(operativo ? ModoPuesto.Operativo : null);
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
-        if (operativo)
-        {
-            await Aceptar(pantalla, "4711");
-        }
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#cerrar-puesto").ClickAsync(new());
 

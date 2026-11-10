@@ -15,10 +15,22 @@
     @* Escape no sigue hasta la pantalla de atrás, que lo leería como un pedido de cierre en reposo (D7). *@
     <div class="dialogo superficie ancho" role="dialog" aria-modal="true" aria-labelledby="titulo-configuracion" tabindex="-1"
          @ref="_dialogo" @onkeydown="Tecla" @onkeydown:stopPropagation="true">
-        <h2 id="titulo-configuracion">Configuración</h2>
+        @* Con un operador, su nombre arriba; con la clave del día, el aviso de que no se validó (D4 y D6 de entrar-a-configuracion-con-teclado). *@
+        @* Van en la fila del título, que tiene lugar: así no le quitan alto a las tablas de Personas y Consumos. *@
+        <div class="encabezado-configuracion">
+            <h2 id="titulo-configuracion">Configuración</h2>
+            @if (Operador is not null)
+            {
+                <p id="operador-configuracion" class="operador-configuracion">Operador: @Operador</p>
+            }
+            @if (ClaveSinValidar)
+            {
+                <p id="aviso-clave-sin-validar" class="aviso" role="status">@MensajesAtencion.ClaveSinValidar</p>
+            }
+        </div>
 
         <div class="pestanas" role="tablist" aria-label="Secciones de Configuración">
-            @foreach (var pestana in Todas)
+            @foreach (var pestana in Visibles)
             {
                 var elegida = pestana == _elegida;
                 var indice = (int)pestana;
@@ -33,6 +45,9 @@
             <p id="aviso-guardado" class="aviso" role="status">@_avisoGuardado</p>
         }
 
+        @* Con un operador, General, Opciones, Comprobantes, Identidad visual, Pantalla y Red no existen en el DOM (D6). *@
+        @if (Operador is null)
+        {
         <section role="tabpanel" id="seccion-general" class="seccion" aria-labelledby="pestana-general" hidden="@Oculta(Pestana.General)">
             <p id="modo-puesto" class="modo-puesto">Modo: @(Modo == ModoPuesto.Operativo ? "operativo" : "mantenimiento")</p>
             @if (OfreceSimulacion)
@@ -87,6 +102,7 @@
                 </section>
             }
         </section>
+        }
 
         <section role="tabpanel" id="seccion-personas" class="seccion" aria-labelledby="pestana-personas" hidden="@Oculta(Pestana.Personas)">
             @if (Administracion is not null)
@@ -97,7 +113,7 @@
                 @if (_panel == Panel.Personas || _elegida == Pestana.Personas)
                 {
                     <PanelPersonas Administracion="Administracion" Editando="@(_panel == Panel.Personas)" Cerrar="CerrarPanel"
-                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" />
+                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" Actor="Actor" />
                 }
                 else
                 {
@@ -107,12 +123,14 @@
             }
         </section>
 
+        @if (Operador is null)
+        {
         <section role="tabpanel" id="seccion-opciones" class="seccion" aria-labelledby="pestana-opciones" hidden="@Oculta(Pestana.Opciones)">
             @if (Administracion is not null)
             {
                 @if (_panel == Panel.Opciones)
                 {
-                    <PanelOpciones Administracion="Administracion" Cerrar="CerrarPanel" />
+                    <PanelOpciones Administracion="Administracion" Cerrar="CerrarPanel" Actor="Actor" />
                 }
                 else
                 {
@@ -127,6 +145,7 @@
                 }
             }
         </section>
+        }
 
         <section role="tabpanel" id="seccion-consumos" class="seccion" aria-labelledby="pestana-consumos" hidden="@Oculta(Pestana.Consumos)">
             @if (Consumos is not null)
@@ -135,6 +154,8 @@
             }
         </section>
 
+        @if (Operador is null)
+        {
         <section role="tabpanel" id="seccion-comprobantes" class="seccion" aria-labelledby="pestana-comprobantes" hidden="@Oculta(Pestana.Comprobantes)">
             @if (SesionOperador is not null)
             {
@@ -204,6 +225,7 @@
                 </section>
             }
         </section>
+        }
 
         <section role="tabpanel" id="seccion-impresora" class="seccion" aria-labelledby="pestana-impresora" hidden="@Oculta(Pestana.Impresora)">
             @if (Impresora is not null)
@@ -249,6 +271,8 @@
             }
         </section>
 
+        @if (Operador is null)
+        {
         <section role="tabpanel" id="seccion-pantalla" class="seccion" aria-labelledby="pestana-pantalla" hidden="@Oculta(Pestana.Pantalla)">
             @* El monitor del puesto, recordado al volver a abrir; si el guardado no está, el principal y el aviso (D10). *@
             @if (AvisoMonitor is not null)
@@ -288,6 +312,7 @@
                 <PestanaRed Aplicar="AplicarRed" DireccionReceptor="DireccionReceptor" TieneCertificados="TieneCertificados" ProbarConexion="ProbarConexion" />
             }
         </section>
+        }
 
         <div class="acciones pie-dialogo">
             <button id="cancelar-configuracion" type="button" @onclick="Cancelar">Cancelar</button>
@@ -317,6 +342,12 @@
     }
 
     private static readonly Pestana[] Todas = Enum.GetValues<Pestana>();
+
+    /// <summary>Las tres de un operador, en este orden (D6 de entrar-a-configuracion-con-teclado).</summary>
+    private static readonly Pestana[] DelOperador = [Pestana.Consumos, Pestana.Personas, Pestana.Impresora];
+
+    /// <summary>Las nueve con la clave del día; con un operador, sólo las suyas.</summary>
+    private Pestana[] Visibles => Operador is null ? Todas : DelOperador;
 
     private readonly ElementReference[] _botones = new ElementReference[Todas.Length];
     private ElementReference _dialogo;
@@ -474,6 +505,21 @@
     [Parameter]
     public bool Inerte { get; set; }
 
+    /// <summary>
+    /// El nombre visible del operador que entró con su código, o null si se entró con la clave del día: con él, Configuración
+    /// abre en Consumos y sólo con Consumos, Personas e Impresora (D6 de entrar-a-configuracion-con-teclado).
+    /// </summary>
+    [Parameter]
+    public string? Operador { get; set; }
+
+    /// <summary>La persona del operador, actor de lo que se guarde en Personas y Opciones; null con la clave del día (D7).</summary>
+    [Parameter]
+    public Guid? Actor { get; set; }
+
+    /// <summary>Se entró con la clave del día de desarrollo, que no se valida: el aviso queda arriba hasta cerrar (D4).</summary>
+    [Parameter]
+    public bool ClaveSinValidar { get; set; }
+
     private string Editar => _resumen?.SoloLectura == true ? "Ver" : "Editar";
 
     private string ResumenOpciones => _resumen is { } vista
@@ -482,6 +528,11 @@
 
     protected override void OnInitialized()
     {
+        if (Operador is not null)
+        {
+            _elegida = Pestana.Consumos;
+        }
+
         LeerResumen();
         _encabezado = Textos.Encabezado;
         _pie = Textos.Pie;
@@ -640,18 +691,20 @@
     /// <summary>Flechas, Inicio y Fin mueven la pestaña elegida y el foco con ella (patrón de pestañas de WAI-ARIA, D1).</summary>
     private void TeclaPestana(KeyboardEventArgs e, Pestana actual)
     {
-        var indice = (int)actual;
+        // Las flechas, Inicio y Fin recorren sólo las pestañas visibles: con un operador, las tres suyas (D6).
+        var visibles = Visibles;
+        var indice = Array.IndexOf(visibles, actual);
         int? destino = e.Key switch
         {
-            "ArrowRight" => (indice + 1) % Todas.Length,
-            "ArrowLeft" => (indice + Todas.Length - 1) % Todas.Length,
+            "ArrowRight" => (indice + 1) % visibles.Length,
+            "ArrowLeft" => (indice + visibles.Length - 1) % visibles.Length,
             "Home" => 0,
-            "End" => Todas.Length - 1,
+            "End" => visibles.Length - 1,
             _ => null,
         };
         if (destino is { } nueva)
         {
-            Elegir(Todas[nueva]);
+            Elegir(visibles[nueva]);
             _enfocarPestana = true;
         }
     }

@@ -118,7 +118,7 @@ public class PanelOpcionesTests : IDisposable
     {
         var pantalla = Dibujar();
         Ejecutar("INSERT INTO tbComedorOrigenesVersiones (comvcCodigo, comvoOrigen) SELECT comvcCodigoActiva, 'INWEB' FROM tbComedorConfiguracionPuestos");
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#abrir-opciones").ClickAsync(new());
 
         var panel = pantalla.Find("#panel-opciones");
@@ -134,7 +134,7 @@ public class PanelOpcionesTests : IDisposable
         var pantalla = Dibujar();
         Ejecutar("INSERT INTO tbComedorOrigenesVersiones (comvcCodigo, comvoOrigen) SELECT comvcCodigoActiva, 'INWEB' FROM tbComedorConfiguracionPuestos");
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         Assert.NotNull(pantalla.Find("#opacidad"));
         Assert.NotNull(pantalla.Find("#guardar-configuracion"));
@@ -143,7 +143,7 @@ public class PanelOpcionesTests : IDisposable
     private async Task<IRenderedComponent<PantallaAtencion>> AbrirOpciones()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#abrir-opciones").ClickAsync(new());
         return pantalla;
     }

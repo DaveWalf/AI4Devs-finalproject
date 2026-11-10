@@ -7,12 +7,12 @@ Organizar Configuración en pestañas, una por función del puesto, con un guard
 
 ### Requirement: Configuración por pestañas
 
-Configuración SHALL organizarse en las pestañas General, Personas, Opciones, Consumos, Comprobantes, Identidad visual, Impresora, Pantalla y Red, con General elegida al abrir y una sola pestaña visible a la vez. Cada pestaña MUST ser un control de al menos 56 px de alto, operable por toque y por teclado, con su nombre visible y la marca de elegida. General MUST mostrar el modo, el estado de las bitácoras y «Cerrar el puesto».
+Configuración SHALL organizarse en las pestañas General, Personas, Opciones, Consumos, Comprobantes, Identidad visual, Impresora, Pantalla y Red, una visible a la vez y con General elegida al entrar con la clave del día; con el código de un operador, sólo Consumos, Personas e Impresora (`acceso-puesto`). Cada pestaña MUST medir al menos 56 px de alto, operable por toque y teclado, con su nombre y la marca de elegida. General MUST mostrar el modo, las bitácoras y «Cerrar el puesto».
 
 #### Scenario: Abre en General con las nueve pestañas
 Origen: decisión de David del 03/11/2026 («en diferentes pestañas siguiendo el estilo del INWeb») y su pedido del 06/11/2026 (punto 2).
 - **GIVEN** el puesto en mantenimiento y en reposo
-- **WHEN** se toca el engranaje
+- **WHEN** se toca el engranaje y se entra con la clave del día
 - **THEN** Configuración muestra las nueve pestañas, en ese orden, con General elegida
 - **AND** General muestra el modo, el estado de las dos bitácoras y «Cerrar el puesto»
 
@@ -33,6 +33,12 @@ Origen: decisión de David del 03/11/2026 (UX táctil, criterio 1: objetivos amp
 - **GIVEN** un área de 1024 × 768
 - **WHEN** se abre Configuración
 - **THEN** las nueve pestañas se ven en una fila, cada una de al menos 56 px de alto, sin desplazar la pantalla
+
+#### Scenario: Las tres pestañas de un operador
+Origen: mejora 13 de David del 10/11/2026 («sólo debe habilitarle las secciones de Consumos, Personas e Impresora»), borde: las flechas no llegan a una pestaña oculta.
+- **GIVEN** Configuración abierta con el código de un operador, con el foco en Consumos
+- **WHEN** se pulsa la flecha derecha dos veces y, después, Inicio
+- **THEN** quedan elegidas Personas, Impresora y otra vez Consumos, y ninguna otra pestaña existe en la pantalla
 
 ### Requirement: Lo editado se conserva hasta cerrar
 

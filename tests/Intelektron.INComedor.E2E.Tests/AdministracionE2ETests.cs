@@ -41,7 +41,7 @@ public class AdministracionE2ETests : IAsyncLifetime
         await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
 
         // Personas habilitadas: la persona nueva con su código y ALMUERZO límite 1.
-        await pagina.Locator(".engranaje").ClickAsync();
+        await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await pagina.Locator("#pestana-personas").ClickAsync();
         await pagina.Locator("#abrir-personas").ClickAsync();
         await pagina.Locator("#agregar-persona").ClickAsync();
@@ -88,7 +88,7 @@ public class AdministracionE2ETests : IAsyncLifetime
         await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
 
         // Opciones del comedor: «Almuerzo común» con la franja de 11:00 a 14:00, para la captura 14.
-        await pagina.Locator(".engranaje").ClickAsync();
+        await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await pagina.Locator("#pestana-opciones").ClickAsync();
         await pagina.Locator("#abrir-opciones").ClickAsync();
         var almuerzo = pagina.Locator("article.opcion-admin").First;

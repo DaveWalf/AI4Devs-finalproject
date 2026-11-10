@@ -64,14 +64,14 @@ public class MonitorPuestoTests
         Assert.Equal(new LecturaPantalla(null, true), new AlmacenPantalla(puesto.Carpeta).Leer());
     }
 
-    [Fact(DisplayName = "presentacion-puesto · La pestaña Pantalla lista los monitores reales del equipo con su resolución y el principal, guarda el elegido, mueve la ventana y deja CONFIGURATION_CHANGED con DISPLAY_MONITOR y MAINTENANCE_MODE")]
+    [Fact(DisplayName = "presentacion-puesto · La pestaña Pantalla lista los monitores reales del equipo con su resolución y el principal, guarda el elegido, mueve la ventana y deja CONFIGURATION_CHANGED con DISPLAY_MONITOR y DAILY_KEY")]
     public async Task La_pestana_pantalla()
     {
         using var puesto = new PuestoDePrueba();
         var reales = Monitores.Leer();
         Assert.NotEmpty(reales);
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-pantalla").ClickAsync(new());
 
         var items = pantalla.FindAll("#seccion-pantalla .monitor");
@@ -87,18 +87,18 @@ public class MonitorPuestoTests
         Assert.Equal([principal], puesto.Movimientos);
         Assert.Equal(MensajesAtencion.MonitorGuardado, pantalla.Find("#aviso-guardado").TextContent.Trim());
         var cambio = ContextoDe(Assert.Single(puesto.General(), l => Tipo(l) == "CONFIGURATION_CHANGED"));
-        Assert.Equal(("DISPLAY_MONITOR", "APPLIED", "MAINTENANCE_MODE"), (cambio.GetProperty("Setting").GetString(), cambio.GetProperty("Result").GetString(), cambio.GetProperty("Access").GetString()));
+        Assert.Equal(("DISPLAY_MONITOR", "APPLIED", "DAILY_KEY"), (cambio.GetProperty("Setting").GetString(), cambio.GetProperty("Result").GetString(), cambio.GetProperty("Access").GetString()));
         Assert.True(SinActor(cambio));
     }
 
-    [Fact(DisplayName = "configuracion-puesto · El monitor guardado: con otro monitor guardado antes, elegir el principal real y guardarlo deja CONFIGURATION_CHANGED con el monitor de antes y el de después, APPLIED y MAINTENANCE_MODE")]
+    [Fact(DisplayName = "configuracion-puesto · El monitor guardado: con otro monitor guardado antes, elegir el principal real y guardarlo deja CONFIGURATION_CHANGED con el monitor de antes y el de después, APPLIED y DAILY_KEY")]
     public async Task El_monitor_guardado_en_la_bitacora()
     {
         using var puesto = new PuestoDePrueba();
         new AlmacenPantalla(puesto.Carpeta).Guardar(Segundo);
         var principal = Monitores.Leer().Single(m => m.Principal);
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-pantalla").ClickAsync(new());
 
         await pantalla.Find("#guardar-monitor").ClickAsync(new());
@@ -107,7 +107,7 @@ public class MonitorPuestoTests
         Assert.Equal("DISPLAY_MONITOR", cambio.GetProperty("Setting").GetString());
         Assert.Equal(Segundo.Dispositivo, cambio.GetProperty("Before").GetProperty("Device").GetString());
         Assert.Equal(principal.Dispositivo, cambio.GetProperty("After").GetProperty("Device").GetString());
-        Assert.Equal(("APPLIED", "MAINTENANCE_MODE"), (cambio.GetProperty("Result").GetString(), cambio.GetProperty("Access").GetString()));
+        Assert.Equal(("APPLIED", "DAILY_KEY"), (cambio.GetProperty("Result").GetString(), cambio.GetProperty("Access").GetString()));
         Assert.True(SinActor(cambio));
     }
 
@@ -117,7 +117,7 @@ public class MonitorPuestoTests
         using var puesto = new PuestoDePrueba();
         puesto.Pantalla.Aviso = MensajesAtencion.MonitorAusente;
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#pestana-pantalla").ClickAsync(new());
 

@@ -1,9 +1,11 @@
 @using Microsoft.AspNetCore.Components.Web
 
 @*
-    La clave del día (D6 de configurar-puesto-por-pestanas): un campo numérico enmascarado que no vuelve a dibujar lo
-    tipeado, «Aceptar», «Cancelar» y el aviso de desarrollo. Lo tipeado sólo va al validador: nunca se guarda ni se
-    registra. Escape cancela sin que la tecla siga hasta la pantalla de atrás.
+    La clave del día (D6 de configurar-puesto-por-pestanas y D3 de entrar-a-configuracion-con-teclado): un campo enmascarado,
+    un teclado numérico en pantalla con la disposición del teclado extendido, «ENTER», «Cancelar» y el aviso de desarrollo.
+    El campo dibuja lo tipeado sólo como puntos y mientras el diálogo está abierto; lo tipeado sólo va al validador, nunca se
+    guarda ni se registra, y se vacía al aceptar, al rechazar y al cancelar. Escape cancela sin que la tecla siga hasta la
+    pantalla de atrás.
 *@
 <div class="fondo-dialogo fondo-clave">
     <div id="dialogo-clave" class="dialogo superficie" role="dialog" aria-modal="true" aria-labelledby="titulo-clave" tabindex="-1"
@@ -11,25 +13,46 @@
         <h2 id="titulo-clave">Clave del día</h2>
         <p id="motivo-clave">@Motivo</p>
         <p id="aviso-desarrollo" class="aviso">@MensajesAtencion.ClaveDeDesarrollo</p>
-        @* Sin value: lo tipeado no vuelve a dibujarse, y un intento rechazado deja el campo vacío con un elemento nuevo. *@
-        <input @key="_intento" id="clave-del-dia" class="campo-clave" type="password" inputmode="numeric" autocomplete="off"
-               maxlength="@ClaveDelDiaDeDesarrollo.LargoMaximo" aria-label="Clave del día" @oninput="e => _clave = e.Value?.ToString() ?? string.Empty" />
+        @* inputmode="none": el teclado en pantalla reemplaza al teclado táctil de Windows, y el físico sigue tipeando (D3). *@
+        <input @ref="_campo" id="clave-del-dia" class="campo-clave" type="password" inputmode="none" autocomplete="off"
+               maxlength="@ClaveDelDiaDeDesarrollo.LargoMaximo" aria-label="Clave del día" value="@_clave"
+               @oninput="e => _clave = e.Value?.ToString() ?? string.Empty" @onkeydown="TeclaCampo" />
         @if (_invalida)
         {
             <p id="clave-invalida" class="aviso" role="alert">@MensajesAtencion.ClaveInvalida</p>
         }
+        @if (_rechazo is not null)
+        {
+            @* El código de una persona: el motivo del rechazo de Asistencia, o que no vale como clave (D5 de entrar-a-configuracion-con-teclado). *@
+            <p id="acceso-rechazado" class="aviso" role="alert">@_rechazo</p>
+        }
+        @* La disposición del teclado numérico extendido (punto 4 del gate): «Limpiar» en el lugar del «+», «Borrar» en el del «.». *@
+        <div class="teclado-numerico" role="group" aria-label="Teclado numérico">
+            @foreach (var digito in "789")
+            {
+                <button id="tecla-@digito" type="button" class="tecla" @onclick="() => Agregar(digito)">@digito</button>
+            }
+            <button id="tecla-limpiar" type="button" class="tecla tecla-alta" @onclick="Limpiar">Limpiar</button>
+            @foreach (var digito in "456123")
+            {
+                <button id="tecla-@digito" type="button" class="tecla" @onclick="() => Agregar(digito)">@digito</button>
+            }
+            <button id="aceptar-clave" type="button" class="tecla tecla-alta principal" @onclick="Aceptar">ENTER</button>
+            <button id="tecla-0" type="button" class="tecla tecla-ancha" @onclick="() => Agregar('0')">0</button>
+            <button id="tecla-borrar" type="button" class="tecla" aria-label="Borrar" @onclick="Borrar">&#9003;</button>
+        </div>
         <div class="acciones">
-            <button id="cancelar-clave" type="button" @onclick="() => Cancelada.InvokeAsync()">Cancelar</button>
-            <button id="aceptar-clave" type="button" class="principal" @onclick="Aceptar">Aceptar</button>
+            <button id="cancelar-clave" type="button" @onclick="Cancelar">Cancelar</button>
         </div>
     </div>
 </div>
 
 @code {
     private ElementReference _dialogo;
+    private ElementReference _campo;
     private string _clave = string.Empty;
     private bool _invalida;
-    private int _intento;
+    private string? _rechazo;
 
     [Parameter, EditorRequired]
     public IValidadorClaveDelDia Validador { get; set; } = null!;
@@ -42,33 +65,71 @@
     [Parameter]
     public string Motivo { get; set; } = string.Empty;
 
-    /// <summary>El resultado de cada «Aceptar»: true si la clave vale, false si se rechazó por su forma.</summary>
+    /// <summary>El resultado de cada «ENTER»: true si la clave vale, false si se rechazó por su forma.</summary>
     [Parameter]
     public EventCallback<bool> Resultado { get; set; }
 
     [Parameter]
     public EventCallback Cancelada { get; set; }
 
+    /// <summary>
+    /// Lo que la pantalla hace con lo tipeado antes de tomarlo como clave del día (D5 de entrar-a-configuracion-con-teclado): null
+    /// si no es un código del snapshot activo, y entonces es la clave; si es un código, la pantalla ya actuó, y el resultado
+    /// trae el rechazo que el diálogo muestra, o ninguno si el código abrió lo pedido.
+    /// </summary>
+    [Parameter]
+    public Func<string, ResultadoCodigo?>? ProbarCodigo { get; set; }
+
+    /// <summary>Un código tipeado en el diálogo: sin <see cref="Rechazo"/>, abrió lo pedido.</summary>
+    public sealed record ResultadoCodigo(string? Rechazo);
+
     protected override async Task OnAfterRenderAsync(bool primera)
     {
         if (primera)
         {
-            await _dialogo.FocusAsync();
+            // El campo recibe el foco al abrirse: el teclado físico tipea ahí y Enter es «ENTER» (D3).
+            await _campo.FocusAsync();
         }
     }
+
+    /// <summary>Un dígito del teclado en pantalla; el que pasaría de 12 no se agrega (D3).</summary>
+    private void Agregar(char digito)
+    {
+        if (_clave.Length < ClaveDelDiaDeDesarrollo.LargoMaximo)
+        {
+            _clave += digito;
+        }
+    }
+
+    private void Borrar() => _clave = _clave.Length > 0 ? _clave[..^1] : _clave;
+
+    private void Limpiar() => _clave = string.Empty;
 
     private Task Aceptar()
     {
-        var valida = Validador.Validar(_clave, Fecha);
+        var valor = _clave;
         _clave = string.Empty;
-        _invalida = !valida;
-        if (!valida)
+        _invalida = false;
+        _rechazo = null;
+        // Un código de una persona nunca vale como clave del día: lo resuelve la pantalla (D5).
+        if (ProbarCodigo?.Invoke(valor) is { } codigo)
         {
-            _intento++;
+            _rechazo = codigo.Rechazo;
+            return Task.CompletedTask;
         }
 
+        var valida = Validador.Validar(valor, Fecha);
+        _invalida = !valida;
         return Resultado.InvokeAsync(valida);
     }
 
-    private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelada.InvokeAsync() : Task.CompletedTask;
+    private Task Cancelar()
+    {
+        _clave = string.Empty;
+        return Cancelada.InvokeAsync();
+    }
+
+    private Task TeclaCampo(KeyboardEventArgs e) => e.Key == "Enter" ? Aceptar() : Task.CompletedTask;
+
+    private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar() : Task.CompletedTask;
 }

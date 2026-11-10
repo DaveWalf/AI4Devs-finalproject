@@ -93,7 +93,7 @@ public class PruebaConexionTests(ReceptorDeDemostracion receptor) : IClassFixtur
         Assert.Equal(eventosAntes, await receptor.EscalarAsync<int>("SELECT COUNT(*) FROM tbComedorEventosEntrada"));
     }
 
-    [Fact(DisplayName = "conectividad-puesto · La prueba en la bitácora: «Probar conexión» muestra la dirección y las cuatro etapas, y la general tiene CONNECTIVITY_TESTED con la dirección, las etapas, el actor nulo y MAINTENANCE_MODE, sin certificados")]
+    [Fact(DisplayName = "conectividad-puesto · La prueba en la bitácora: «Probar conexión» muestra la dirección y las cuatro etapas, y la general tiene CONNECTIVITY_TESTED con la dirección, las etapas, el actor nulo y DAILY_KEY, sin certificados")]
     public async Task La_prueba_en_la_bitacora()
     {
         using var puesto = new PuestoDePrueba { Conexion = new PruebaConexion(receptor.Direccion, receptor.Carpeta) };
@@ -109,7 +109,7 @@ public class PruebaConexionTests(ReceptorDeDemostracion receptor) : IClassFixtur
         Assert.Equal("PASSED", prueba.GetProperty("Result").GetString());
         Assert.Equal(["NAME", "CONNECTION", "MUTUAL_TLS", "RECEPTOR"], prueba.GetProperty("Stages").EnumerateArray().Select(e => e.GetProperty("Stage").GetString()));
         Assert.All(prueba.GetProperty("Stages").EnumerateArray(), e => Assert.Equal("PASSED", e.GetProperty("Result").GetString()));
-        Assert.Equal("MAINTENANCE_MODE", prueba.GetProperty("Access").GetString());
+        Assert.Equal("DAILY_KEY", prueba.GetProperty("Access").GetString());
         Assert.True(SinActor(prueba));
 
         using var certificado = X509CertificateLoader.LoadPkcs12FromFile(Path.Combine(receptor.Carpeta, "puesto.pfx"), null);

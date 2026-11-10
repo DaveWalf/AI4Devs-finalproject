@@ -116,7 +116,7 @@ public class TablaPersonasTests : IDisposable
         var almuerzo = administracion.Leer().Personas.Single(p => p.Nombre == "Persona sintética 01").Cupos.Select(c => new CupoEditado(c.ServicioId, c.CategoriaId, c.Limite)).ToList();
         Assert.Equal(TipoGuardado.Aplicado, administracion.GuardarPersonas(
             [new EdicionPersona(null, "Ana", almuerzo, "0201"), new EdicionPersona(null, "Álvaro", almuerzo, "0202"), new EdicionPersona(null, "Beatriz", almuerzo, "0203")]).Tipo);
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-personas").ClickAsync(new());
 
         await pantalla.Find("#tabla-personas th[data-columna=\"Nombre\"] button.ordenar").ClickAsync(new());
@@ -149,7 +149,7 @@ public class TablaPersonasTests : IDisposable
     private async Task<IRenderedComponent<PantallaAtencion>> AbrirTabla()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-personas").ClickAsync(new());
         return pantalla;
     }

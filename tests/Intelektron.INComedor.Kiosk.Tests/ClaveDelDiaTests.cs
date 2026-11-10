@@ -40,7 +40,7 @@ public class ClaveDelDiaTests : IDisposable
         Assert.Equal(MensajesAtencion.ClaveDeDesarrollo, pantalla.Find("#aviso-desarrollo").TextContent.Trim());
         Assert.Empty(pantalla.FindAll("[role=\"tablist\"]"));
         var campo = pantalla.Find("#clave-del-dia");
-        Assert.Equal(("password", "numeric", "off"), (campo.GetAttribute("type"), campo.GetAttribute("inputmode"), campo.GetAttribute("autocomplete")));
+        Assert.Equal(("password", "none", "off"), (campo.GetAttribute("type"), campo.GetAttribute("inputmode"), campo.GetAttribute("autocomplete")));
 
         await campo.InputAsync(new ChangeEventArgs { Value = "4711" });
         await pantalla.Find("#aceptar-clave").ClickAsync(new());

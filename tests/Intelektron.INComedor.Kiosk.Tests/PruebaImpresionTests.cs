@@ -31,7 +31,7 @@ public class PruebaImpresionTests
         Assert.Equal(MensajesAtencion.PruebaSalio, pantalla.Find("#resultado-prueba").TextContent.Trim());
         var prueba = ContextoDe(Assert.Single(puesto.General(), l => Tipo(l) == "PRINTER_TESTED"));
         Assert.Equal("PRINTED", prueba.GetProperty("Result").GetString());
-        Assert.Equal("MAINTENANCE_MODE", prueba.GetProperty("Access").GetString());
+        Assert.Equal("DAILY_KEY", prueba.GetProperty("Access").GetString());
         Assert.True(SinActor(prueba));
     }
 
@@ -91,7 +91,7 @@ public class PruebaImpresionTests
     {
         if (pantalla.FindAll("[role=\"tablist\"]").Count == 0)
         {
-            await pantalla.Find(".engranaje").ClickAsync(new());
+            await EntradaConfiguracion.Entrar(pantalla);
         }
 
         await pantalla.Find("#pestana-impresora").ClickAsync(new());

@@ -116,7 +116,7 @@ public class PestanaRedTests
     internal static async Task<IRenderedComponent<PantallaAtencion>> AbrirRed(PuestoDePrueba puesto)
     {
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-red").ClickAsync(new());
         return pantalla;
     }

@@ -21,7 +21,7 @@ public class ModoSimulacionTests
         var pantalla = puesto.Dibujar();
 
         Assert.NotEmpty(pantalla.FindAll("#simulacion-persona"));
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         Assert.Equal("Simulación: encendida", pantalla.Find("#modo-simulacion").TextContent.Trim());
         Assert.NotEmpty(pantalla.FindAll("#apagar-simulacion"));
@@ -33,7 +33,7 @@ public class ModoSimulacionTests
     {
         using var primero = Puesto();
         var pantalla = primero.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#apagar-simulacion").ClickAsync(new());
 
@@ -47,7 +47,7 @@ public class ModoSimulacionTests
         var reabierta = segundo.Dibujar();
 
         Assert.Empty(reabierta.FindAll("#simulacion-persona"));
-        await reabierta.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(reabierta);
         Assert.Equal("Simulación: apagada", reabierta.Find("#modo-simulacion").TextContent.Trim());
     }
 
@@ -57,7 +57,7 @@ public class ModoSimulacionTests
         using var puesto = Puesto(simulacion: true);
         var pantalla = puesto.Dibujar();
         Assert.NotEmpty(pantalla.FindAll("#simulacion-persona"));
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#pasar-operativo").ClickAsync(new());
         await Aceptar(pantalla, "4711");
@@ -100,7 +100,7 @@ public class ModoSimulacionTests
         var pantalla = puesto.Dibujar();
 
         Assert.NotEmpty(pantalla.FindAll("#simulacion-persona"));
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         Assert.Equal("Simulación: encendida", pantalla.Find("#modo-simulacion").TextContent.Trim());
         await pantalla.Find("#cancelar-configuracion").ClickAsync(new());
 
@@ -109,12 +109,12 @@ public class ModoSimulacionTests
         Assert.Contains("Persona sintética 01", pantalla.Find("#saludo").TextContent);
     }
 
-    [Fact(DisplayName = "acceso-puesto · Apagar la simulación: la general tiene CONFIGURATION_CHANGED con SIMULATION_MODE, de ON a OFF, APPLIED, MAINTENANCE_MODE, el actor nulo y NO_AUTHENTICATION")]
+    [Fact(DisplayName = "acceso-puesto · Apagar la simulación: la general tiene CONFIGURATION_CHANGED con SIMULATION_MODE, de ON a OFF, APPLIED, DAILY_KEY, el actor nulo y NO_AUTHENTICATION")]
     public async Task Apagar_la_simulacion_queda_en_la_general()
     {
         using var puesto = Puesto();
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#apagar-simulacion").ClickAsync(new());
 
@@ -122,7 +122,7 @@ public class ModoSimulacionTests
         Assert.Equal("SIMULATION_MODE", cambio.GetProperty("Setting").GetString());
         Assert.Equal(("ON", "OFF", "APPLIED", "OFF"),
             (cambio.GetProperty("Before").GetString(), cambio.GetProperty("After").GetString(), cambio.GetProperty("Result").GetString(), cambio.GetProperty("Effective").GetString()));
-        Assert.Equal("MAINTENANCE_MODE", cambio.GetProperty("Access").GetString());
+        Assert.Equal("DAILY_KEY", cambio.GetProperty("Access").GetString());
         Assert.True(SinActor(cambio));
     }
 
@@ -131,7 +131,7 @@ public class ModoSimulacionTests
     {
         using var puesto = Puesto(simulacion: true);
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#pasar-operativo").ClickAsync(new());
         await Aceptar(pantalla, "4711");
@@ -147,7 +147,7 @@ public class ModoSimulacionTests
         using var puesto = Puesto(simulacion: true);
         File.SetAttributes(Path.Combine(puesto.Carpeta, "simulacion.json"), FileAttributes.ReadOnly);
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#apagar-simulacion").ClickAsync(new());
 

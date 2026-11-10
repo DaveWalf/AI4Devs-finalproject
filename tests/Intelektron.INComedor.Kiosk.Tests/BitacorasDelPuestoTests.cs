@@ -114,7 +114,7 @@ public class BitacorasDelPuestoTests : IDisposable
     public async Task Guardar_el_estilo()
     {
         var pantalla = Dibujar(new ImpresoraDePrueba(), _carpeta);
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "81" });
 
         await pantalla.Find("#guardar-configuracion").ClickAsync(new());
@@ -135,7 +135,7 @@ public class BitacorasDelPuestoTests : IDisposable
         var datos = Path.Combine(_carpeta, "datos-estilo");
         File.WriteAllText(datos, "no es una carpeta");
         var pantalla = Dibujar(new ImpresoraDePrueba(), datos);
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "81" });
 
         await pantalla.Find("#guardar-configuracion").ClickAsync(new());
@@ -151,7 +151,7 @@ public class BitacorasDelPuestoTests : IDisposable
     public async Task Modo_de_la_impresora()
     {
         var pantalla = Dibujar(new ImpresoraSimulada(Path.Combine(_carpeta, "comprobantes")), _carpeta);
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#impresora-sinpapel").ClickAsync(new());
         await pantalla.Find("#cancelar-configuracion").ClickAsync(new());
@@ -209,7 +209,7 @@ public class BitacorasDelPuestoTests : IDisposable
         var pantalla = Dibujar(new ImpresoraDePrueba(), _carpeta);
         Entregar(DestinoBitacora.General);
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         Assert.Equal("Bitácora general: al día", pantalla.Find("#bitacora-general").TextContent.Trim());
         Assert.Equal("Bitácora de interacciones: al día", pantalla.Find("#bitacora-interacciones").TextContent.Trim());
@@ -231,7 +231,7 @@ public class BitacorasDelPuestoTests : IDisposable
 
         _servicio.Bitacoras!.Entregar();
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         var texto = pantalla.Find("#bitacora-general").TextContent.Trim();
         Assert.Equal("Bitácora general: degradada, 4 pendientes desde las 12:01", texto);

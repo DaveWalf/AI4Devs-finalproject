@@ -14,7 +14,7 @@ public class PestanaConsumosTests
 {
     private static readonly string[] Codigos = ["0001", "0002", "0003", "0004", "9001", "9002", "9003", "9004"];
 
-    [Fact(DisplayName = "consulta-consumos · En mantenimiento, sin ningún código: la pestaña Consumos muestra los consumos de hoy de 0001")]
+    [Fact(DisplayName = "consulta-consumos · En mantenimiento, con la clave del día: la pestaña Consumos muestra los consumos de hoy de 0001 sin pedir otro código")]
     public async Task En_mantenimiento_sin_ningun_codigo()
     {
         using var puesto = new PuestoDePrueba();
@@ -64,7 +64,7 @@ public class PestanaConsumosTests
         Assert.Empty(pantalla.FindAll("#seccion-comprobantes .reimprimir"));
     }
 
-    [Fact(DisplayName = "consulta-consumos · La consulta en la bitácora: filtrar por REFRIGERIO con dos refrigerios deja CONSUMPTIONS_QUERIED con el actor nulo, NO_AUTHENTICATION, MAINTENANCE_MODE, el servicio filtrado y 2 filas, sin nombres ni códigos")]
+    [Fact(DisplayName = "consulta-consumos · La consulta en la bitácora: filtrar por REFRIGERIO con dos refrigerios deja CONSUMPTIONS_QUERIED con el actor nulo, NO_AUTHENTICATION, DAILY_KEY, el servicio filtrado y 2 filas, sin nombres ni códigos")]
     public async Task La_consulta_en_la_bitacora()
     {
         using var puesto = new PuestoDePrueba();
@@ -82,7 +82,7 @@ public class PestanaConsumosTests
         var linea = Assert.Single(puesto.General(), l => Tipo(l) == "CONSUMPTIONS_QUERIED" && ContextoDe(l).GetProperty("ServiceId").ValueKind != System.Text.Json.JsonValueKind.Null);
         var contexto = ContextoDe(linea);
         Assert.True(SinActor(contexto));
-        Assert.Equal("MAINTENANCE_MODE", contexto.GetProperty("Access").GetString());
+        Assert.Equal("DAILY_KEY", contexto.GetProperty("Access").GetString());
         Assert.Equal(2, contexto.GetProperty("Rows").GetInt32());
         var crudo = linea.GetRawText();
         Assert.DoesNotContain("Persona sintética", crudo);
@@ -143,7 +143,7 @@ public class PestanaConsumosTests
 
     private static async Task AbrirConsumos(IRenderedComponent<PantallaAtencion> pantalla)
     {
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-consumos").ClickAsync(new());
     }
 

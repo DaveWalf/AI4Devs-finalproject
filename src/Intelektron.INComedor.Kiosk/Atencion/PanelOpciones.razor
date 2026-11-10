@@ -167,6 +167,10 @@
     public AdministracionLocal Administracion { get; set; } = null!;
 
     /// <summary>Se cierra el panel: con el aviso de la versión guardada, o null si se canceló.</summary>
+    /// <summary>El operador que entró con su código, actor de lo guardado; null con la clave del día (D7 de entrar-a-configuracion-con-teclado).</summary>
+    [Parameter]
+    public Guid? Actor { get; set; }
+
     [Parameter]
     public EventCallback<string?> Cerrar { get; set; }
 
@@ -231,7 +235,7 @@
         ResultadoGuardado resultado;
         try
         {
-            resultado = Administracion.GuardarOpciones(ediciones);
+            resultado = Administracion.GuardarOpciones(ediciones, Actor);
         }
         catch (Microsoft.Data.Sqlite.SqliteException)
         {

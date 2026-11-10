@@ -54,6 +54,24 @@ public sealed class IdentificacionPorCodigo
             OrigenListaSimulacion);
 
     /// <summary>
+    /// Si lo tipeado es un código de identificación del snapshot activo, vigente o no, normalizado como al identificar (RB01:
+    /// sólo Trim(), con los ceros iniciales), sin abrir sesión ni registrar nada (D5 de entrar-a-configuracion-con-teclado).
+    /// El diálogo de la clave lo usa para tratar un código como el de un operador y nunca como clave del día.
+    /// </summary>
+    public bool EsCodigoConocido(string codigo)
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        var puesto = PuestoLocal.Leer(conexion, null);
+        using var comando = ComandosSqlite.Crear(conexion, null,
+            """
+            SELECT 1 FROM tbComedorCredencialesPersonas
+            WHERE comvcCodigo = $vc AND comcreTipo = 'SERIAL_CODE' AND comcreValorNormalizado = $valor
+            """,
+            ("$vc", puesto.SnapshotId), ("$valor", codigo.Trim()));
+        return comando.ExecuteScalar() is not null;
+    }
+
+    /// <summary>
     /// Una entrada por credencial de código del snapshot activo, vigente o no, con el nombre visible de su persona y en orden
     /// alfabético es-AR (D3 de simular-identificacion-por-lista): el rechazo lo decide la identificación, no la lista.
     /// </summary>

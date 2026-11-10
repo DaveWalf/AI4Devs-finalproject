@@ -29,7 +29,7 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         await FijarArea(pagina, 1024, 768);
         await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
 
-        await pagina.Locator(".engranaje").ClickAsync();
+        await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await Assertions.Expect(pagina.Locator("[role=\"tablist\"]")).ToBeVisibleAsync();
 
         var medida = await pagina.EvaluateAsync<JsonElement>(
@@ -87,7 +87,7 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         await FijarArea(pagina, 1024, 768);
         await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
         SumarPersonas(200);
-        await pagina.Locator(".engranaje").ClickAsync();
+        await EntradaConfiguracionE2E.EntrarAsync(pagina);
 
         var reloj = Stopwatch.StartNew();
         await pagina.Locator("#pestana-personas").ClickAsync();
@@ -137,7 +137,7 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         await pagina.Locator("#listo").ClickAsync();
         await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
 
-        await pagina.Locator(".engranaje").ClickAsync();
+        await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await pagina.Locator("#pestana-consumos").ClickAsync();
 
         await Assertions.Expect(pagina.Locator("#seccion-consumos tr.consumo")).ToHaveCountAsync(1);
@@ -160,7 +160,7 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         await Assertions.Expect(pagina.Locator(".opcion").First).ToBeVisibleAsync();
         var seleccion = await Desborde(pagina, "html", "body", ".lista");
         await pagina.Locator("#cancelar").ClickAsync();
-        await pagina.Locator(".engranaje").ClickAsync();
+        await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await pagina.Locator("#pestana-personas").ClickAsync();
         await Assertions.Expect(pagina.Locator("#tabla-personas .caja-tabla")).ToBeVisibleAsync();
         var personas = await Desborde(pagina, "html", "body", ".dialogo", "#tabla-personas .caja-tabla");

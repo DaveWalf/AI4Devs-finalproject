@@ -119,7 +119,7 @@ public class ComboSimulacionTests
     {
         using var puesto = Puesto(simulacion: true);
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#abrir-personas").ClickAsync(new());
         await pantalla.Find("#agregar-persona").ClickAsync(new());
         await pantalla.FindAll("tr.persona").Last().QuerySelector("input.nombre-persona")!.InputAsync(new ChangeEventArgs { Value = "Persona sintética 05" });

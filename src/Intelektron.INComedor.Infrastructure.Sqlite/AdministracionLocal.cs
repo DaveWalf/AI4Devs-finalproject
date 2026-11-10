@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Intelektron.INComedor.Contracts;
 using Intelektron.INComedor.Domain;
 using Microsoft.Data.Sqlite;
@@ -67,16 +68,22 @@ public sealed class AdministracionLocal
         return vista;
     }
 
-    public ResultadoGuardado GuardarPersonas(IReadOnlyList<EdicionPersona> ediciones) =>
-        Guardar("PERSON", (c, vista) => ValidarPersonas(c, vista, ediciones), (c, vista, cambios) => AplicarPersonas(c, vista, ediciones, cambios));
+    /// <summary>
+    /// Guarda las personas. Con <paramref name="actor"/>, el operador que entró a Configuración con su código, cada registro lo
+    /// lleva como actor; sin él, el nulo con NO_AUTHENTICATION (D7 de entrar-a-configuracion-con-teclado).
+    /// </summary>
+    public ResultadoGuardado GuardarPersonas(IReadOnlyList<EdicionPersona> ediciones, Guid? actor = null) =>
+        Guardar("PERSON", (c, vista) => ValidarPersonas(c, vista, ediciones), (c, vista, cambios) => AplicarPersonas(c, vista, ediciones, cambios), actor);
 
-    public ResultadoGuardado GuardarOpciones(IReadOnlyList<EdicionOpcion> ediciones) =>
-        Guardar("MENU_OPTION", (_, vista) => ValidarOpciones(vista, ediciones), (c, vista, cambios) => AplicarOpciones(c, vista, ediciones, cambios));
+    /// <summary>Guarda las opciones, con el actor como en <see cref="GuardarPersonas"/>.</summary>
+    public ResultadoGuardado GuardarOpciones(IReadOnlyList<EdicionOpcion> ediciones, Guid? actor = null) =>
+        Guardar("MENU_OPTION", (_, vista) => ValidarOpciones(vista, ediciones), (c, vista, cambios) => AplicarOpciones(c, vista, ediciones, cambios), actor);
 
     private ResultadoGuardado Guardar(
         string ajuste,
         Func<Contexto, VistaAdministracion, List<CampoRechazado>> validar,
-        Action<Contexto, VistaAdministracion, Cambios> aplicar)
+        Action<Contexto, VistaAdministracion, Cambios> aplicar,
+        Guid? actor)
     {
         using var conexion = _baseComedor.AbrirConexion();
         using var transaccion = BaseComedor.IniciarTransaccionEscritura(conexion);
@@ -87,7 +94,7 @@ public sealed class AdministracionLocal
 
         if (vista.SoloLectura)
         {
-            RegistrarSinCambio(contexto, ajuste, "DENIED", INWebAdministra, []);
+            RegistrarSinCambio(contexto, ajuste, "DENIED", INWebAdministra, [], actor);
             transaccion.Commit();
             return new ResultadoGuardado(TipoGuardado.Denegado, vista.VersionConfiguracion, INWebAdministra, []);
         }
@@ -96,7 +103,7 @@ public sealed class AdministracionLocal
         if (campos.Count > 0)
         {
             var motivo = campos.All(c => c.Codigo == CodigoDuplicado) ? CodigoDuplicado : CampoInvalido;
-            RegistrarSinCambio(contexto, ajuste, "REJECTED", motivo, campos);
+            RegistrarSinCambio(contexto, ajuste, "REJECTED", motivo, campos, actor);
             transaccion.Commit();
             return new ResultadoGuardado(TipoGuardado.Rechazado, vista.VersionConfiguracion, motivo, campos);
         }
@@ -108,7 +115,7 @@ public sealed class AdministracionLocal
 
         foreach (var registro in cambios.Registros)
         {
-            _bitacora.Insertar(conexion, transaccion, puesto, ahora, "CONFIGURATION_CHANGED", registro(vista.VersionConfiguracion, numero));
+            _bitacora.Insertar(conexion, transaccion, puesto, ahora, "CONFIGURATION_CHANGED", ConActor(registro(vista.VersionConfiguracion, numero), actor));
         }
 
         transaccion.Commit();
@@ -813,8 +820,8 @@ public sealed class AdministracionLocal
 
     // ── Bitácora de lo que no cambió nada (D13) ──────────────────────────────────────────────────────────────
 
-    private void RegistrarSinCambio(Contexto c, string ajuste, string resultado, string motivo, IReadOnlyList<CampoRechazado> campos) =>
-        _bitacora.Insertar(c.Conexion, c.Transaccion, c.Puesto, c.Ahora, "CONFIGURATION_CHANGED", new
+    private void RegistrarSinCambio(Contexto c, string ajuste, string resultado, string motivo, IReadOnlyList<CampoRechazado> campos, Guid? actor) =>
+        _bitacora.Insertar(c.Conexion, c.Transaccion, c.Puesto, c.Ahora, "CONFIGURATION_CHANGED", ConActor(new
         {
             Setting = ajuste,
             Result = resultado,
@@ -824,7 +831,24 @@ public sealed class AdministracionLocal
             ConfigurationVersionAfter = c.Puesto.VersionConfiguracion,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,
-        }, SeveridadBitacora.Warning);
+        }, actor), SeveridadBitacora.Warning);
+
+    /// <summary>
+    /// Con un operador, su persona en ActorPersonId y sin ActorReason, en el mismo lugar del registro; sin actor, el registro
+    /// queda igual, con el nulo y NO_AUTHENTICATION (D7 de entrar-a-configuracion-con-teclado).
+    /// </summary>
+    private static object ConActor(object registro, Guid? actor)
+    {
+        if (actor is not { } persona)
+        {
+            return registro;
+        }
+
+        var nodo = JsonSerializer.SerializeToNode(registro)!.AsObject();
+        nodo["ActorPersonId"] = persona;
+        nodo.Remove("ActorReason");
+        return nodo;
+    }
 
     // ── Ayudantes ────────────────────────────────────────────────────────────────────────────────────────────
 
