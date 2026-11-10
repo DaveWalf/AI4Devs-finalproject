@@ -46,7 +46,7 @@ public class PestanasConfiguracionTests : IDisposable
     {
         var pantalla = Dibujar();
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         var lista = pantalla.Find("[role=\"tablist\"]");
         var pestanas = lista.QuerySelectorAll("[role=\"tab\"]");
@@ -64,7 +64,7 @@ public class PestanasConfiguracionTests : IDisposable
     public async Task Elegir_otra_pestana()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#pestana-impresora").ClickAsync(new());
 
@@ -78,7 +78,7 @@ public class PestanasConfiguracionTests : IDisposable
     public async Task Las_pestanas_con_el_teclado()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#pestana-general").KeyDownAsync(new KeyboardEventArgs { Key = "ArrowRight" });
 
@@ -96,7 +96,7 @@ public class PestanasConfiguracionTests : IDisposable
     public async Task Pasar_de_pestana_no_pierde_lo_editado()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-identidad").ClickAsync(new());
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "84" });
 
@@ -114,7 +114,7 @@ public class PestanasConfiguracionTests : IDisposable
     public async Task Cancelar_descarta_lo_no_guardado_y_conserva_lo_guardado(bool conEscape)
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         Assert.Equal(TipoGuardado.Aplicado, GuardarRefrigerioEnUno().Tipo);
         await pantalla.Find("#pestana-identidad").ClickAsync(new());
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "88" });
@@ -137,7 +137,7 @@ public class PestanasConfiguracionTests : IDisposable
     public async Task Escape_con_un_panel_abierto_cierra_configuracion()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#abrir-opciones").ClickAsync(new());
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "88" });
 
@@ -152,7 +152,7 @@ public class PestanasConfiguracionTests : IDisposable
     public async Task La_atencion_sale_de_reposo_con_configuracion_abierta()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-identidad").ClickAsync(new());
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "88" });
 
@@ -170,7 +170,7 @@ public class PestanasConfiguracionTests : IDisposable
     public async Task Guardar_el_estilo_deja_configuracion_abierta()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-identidad").ClickAsync(new());
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "84" });
 
@@ -186,7 +186,7 @@ public class PestanasConfiguracionTests : IDisposable
     public async Task Guardar_personas_no_guarda_la_vista_previa_del_estilo()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-identidad").ClickAsync(new());
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "84" });
         await pantalla.Find("#pestana-personas").ClickAsync(new());
@@ -209,7 +209,7 @@ public class PestanasConfiguracionTests : IDisposable
         var carpeta = Path.Combine(_carpeta, "datos");
         File.WriteAllText(carpeta, "no es una carpeta");
         var pantalla = Dibujar(carpeta);
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-identidad").ClickAsync(new());
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "84" });
 

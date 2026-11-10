@@ -21,6 +21,11 @@
         {
             <p id="clave-invalida" class="aviso" role="alert">@MensajesAtencion.ClaveInvalida</p>
         }
+        @if (_rechazo is not null)
+        {
+            @* El código de una persona: el motivo del rechazo de Asistencia, o que no vale como clave (D5 de entrar-a-configuracion-con-teclado). *@
+            <p id="acceso-rechazado" class="aviso" role="alert">@_rechazo</p>
+        }
         @* La disposición del teclado numérico extendido (punto 4 del gate): «Limpiar» en el lugar del «+», «Borrar» en el del «.». *@
         <div class="teclado-numerico" role="group" aria-label="Teclado numérico">
             @foreach (var digito in "789")
@@ -47,6 +52,7 @@
     private ElementReference _campo;
     private string _clave = string.Empty;
     private bool _invalida;
+    private string? _rechazo;
 
     [Parameter, EditorRequired]
     public IValidadorClaveDelDia Validador { get; set; } = null!;
@@ -65,6 +71,17 @@
 
     [Parameter]
     public EventCallback Cancelada { get; set; }
+
+    /// <summary>
+    /// Lo que la pantalla hace con lo tipeado antes de tomarlo como clave del día (D5 de entrar-a-configuracion-con-teclado): null
+    /// si no es un código del snapshot activo, y entonces es la clave; si es un código, la pantalla ya actuó, y el resultado
+    /// trae el rechazo que el diálogo muestra, o ninguno si el código abrió lo pedido.
+    /// </summary>
+    [Parameter]
+    public Func<string, ResultadoCodigo?>? ProbarCodigo { get; set; }
+
+    /// <summary>Un código tipeado en el diálogo: sin <see cref="Rechazo"/>, abrió lo pedido.</summary>
+    public sealed record ResultadoCodigo(string? Rechazo);
 
     protected override async Task OnAfterRenderAsync(bool primera)
     {
@@ -90,8 +107,18 @@
 
     private Task Aceptar()
     {
-        var valida = Validador.Validar(_clave, Fecha);
+        var valor = _clave;
         _clave = string.Empty;
+        _invalida = false;
+        _rechazo = null;
+        // Un código de una persona nunca vale como clave del día: lo resuelve la pantalla (D5).
+        if (ProbarCodigo?.Invoke(valor) is { } codigo)
+        {
+            _rechazo = codigo.Rechazo;
+            return Task.CompletedTask;
+        }
+
+        var valida = Validador.Validar(valor, Fecha);
         _invalida = !valida;
         return Resultado.InvokeAsync(valida);
     }

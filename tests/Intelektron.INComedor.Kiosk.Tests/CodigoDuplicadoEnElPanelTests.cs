@@ -27,7 +27,7 @@ public class CodigoDuplicadoEnElPanelTests : IDisposable
     public async Task Codigo_ya_usado_aunque_este_revocado()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#abrir-personas").ClickAsync(new());
         await pantalla.Find("#agregar-persona").ClickAsync(new());
         await pantalla.FindAll("#panel-personas input.nombre-persona").Last().InputAsync(new ChangeEventArgs { Value = "Persona sintética 06" });

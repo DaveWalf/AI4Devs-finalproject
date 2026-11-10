@@ -43,7 +43,7 @@ public class GuardarEstiloSinEscrituraTests : IDisposable
         var carpeta = PrepararCarpeta(caso, out var archivoEstilo);
         var antes = File.Exists(archivoEstilo) ? File.ReadAllText(archivoEstilo) : null;
         var pantalla = Dibujar(carpeta);
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "84" });
         await pantalla.Find("#desenfoque").InputAsync(new ChangeEventArgs { Value = "8" });
 

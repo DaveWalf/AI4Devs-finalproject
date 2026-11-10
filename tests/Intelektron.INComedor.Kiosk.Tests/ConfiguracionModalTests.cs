@@ -36,7 +36,7 @@ public class ConfiguracionModalTests : IDisposable
         var pantalla = Dibujar();
         Assert.All(new[] { ".cabecera", ".atencion", ".pie" }, selector => Assert.False(pantalla.Find(selector).HasAttribute("inert")));
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         Assert.All(new[] { ".cabecera", ".atencion", ".pie" }, selector => Assert.True(pantalla.Find(selector).HasAttribute("inert"), selector));
         Assert.Null(pantalla.Find("[role=\"dialog\"]").Closest("[inert]"));
@@ -50,7 +50,7 @@ public class ConfiguracionModalTests : IDisposable
     public async Task Salir_de_reposo_cancela_la_configuracion()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "88" });
         await pantalla.Find("#desenfoque").InputAsync(new ChangeEventArgs { Value = "12" });
 

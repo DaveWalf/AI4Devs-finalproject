@@ -47,6 +47,12 @@ public static class MensajesAtencion
 
     public const string ClaveInvalida = "La clave no es válida";
 
+    /// <summary>Arriba de Configuración, mientras se entró con la clave del día sin validar (D4 de entrar-a-configuracion-con-teclado).</summary>
+    public const string ClaveSinValidar = "Entraste con una clave del día sin validar: esta versión acepta cualquier número";
+
+    /// <summary>El código de una persona tipeado para cerrar el puesto o pasar a operativo (D5 de entrar-a-configuracion-con-teclado).</summary>
+    public const string CodigoNoEsClave = "El código de un operador no cierra el puesto";
+
     /// <summary>El modo no se pudo escribir en la carpeta de datos: sigue el de antes.</summary>
     public const string ModoNoGuardado = "No se pudo guardar el modo: sigue el de antes";
 

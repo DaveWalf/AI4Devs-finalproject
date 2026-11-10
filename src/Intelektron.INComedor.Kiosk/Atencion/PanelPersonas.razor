@@ -150,6 +150,10 @@
     public AdministracionLocal Administracion { get; set; } = null!;
 
     /// <summary>Con «Editar», la tabla pasa a edición en el mismo lugar; sin él, sólo se lee.</summary>
+    /// <summary>El operador que entró con su código, actor de lo guardado; null con la clave del día (D7 de entrar-a-configuracion-con-teclado).</summary>
+    [Parameter]
+    public Guid? Actor { get; set; }
+
     [Parameter]
     public bool Editando { get; set; }
 
@@ -314,7 +318,7 @@
         ResultadoGuardado resultado;
         try
         {
-            resultado = Administracion.GuardarPersonas(ediciones);
+            resultado = Administracion.GuardarPersonas(ediciones, Actor);
         }
         catch (Microsoft.Data.Sqlite.SqliteException)
         {

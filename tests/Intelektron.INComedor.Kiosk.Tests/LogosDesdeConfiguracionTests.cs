@@ -103,7 +103,7 @@ public class LogosDesdeConfiguracionTests
         Assert.Equal("PNG", cambio.GetProperty("Before").GetProperty("Format").GetString());
     }
 
-    [Fact(DisplayName = "configuracion-puesto · Un logo guardado: la general tiene CONFIGURATION_CHANGED con COMPANY_LOGO, su SHA-256, 40 KB y PNG, el actor nulo y MAINTENANCE_MODE, sin el contenido del archivo")]
+    [Fact(DisplayName = "configuracion-puesto · Un logo guardado: la general tiene CONFIGURATION_CHANGED con COMPANY_LOGO, su SHA-256, 40 KB y PNG, el actor nulo y DAILY_KEY, sin el contenido del archivo")]
     public async Task Un_logo_guardado_en_la_bitacora()
     {
         using var puesto = new PuestoDePrueba();
@@ -115,7 +115,7 @@ public class LogosDesdeConfiguracionTests
 
         var linea = Assert.Single(puesto.General(), l => Tipo(l) == "CONFIGURATION_CHANGED");
         var cambio = ContextoDe(linea);
-        Assert.Equal(("COMPANY_LOGO", "APPLIED", "MAINTENANCE_MODE"),
+        Assert.Equal(("COMPANY_LOGO", "APPLIED", "DAILY_KEY"),
             (cambio.GetProperty("Setting").GetString(), cambio.GetProperty("Result").GetString(), cambio.GetProperty("Access").GetString()));
         var despues = cambio.GetProperty("After");
         Assert.Equal(Convert.ToHexString(SHA256.HashData(png)), despues.GetProperty("Sha256").GetString());
@@ -128,7 +128,7 @@ public class LogosDesdeConfiguracionTests
     private static async Task<IRenderedComponent<PantallaAtencion>> AbrirIdentidad(PuestoDePrueba puesto)
     {
         var pantalla = puesto.Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-identidad").ClickAsync(new());
         return pantalla;
     }

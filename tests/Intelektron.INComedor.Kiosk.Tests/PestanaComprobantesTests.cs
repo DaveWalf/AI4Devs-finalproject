@@ -54,7 +54,7 @@ public class PestanaComprobantesTests
         Assert.Equal(0L, SesionesAbiertas(puesto));
         var cierre = ContextoDe(Assert.Single(puesto.General(), l => Tipo(l) == "PRIVILEGED_SESSION_CLOSED"));
         Assert.Equal("CONFIGURATION_CLOSED", cierre.GetProperty("Cause").GetString());
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
         Assert.NotNull(pantalla.Find("#codigo-operador"));
         Assert.DoesNotContain(Operador, pantalla.Find("#seccion-comprobantes").TextContent);
@@ -124,7 +124,7 @@ public class PestanaComprobantesTests
     {
         if (pantalla.FindAll("[role=\"tablist\"]").Count == 0)
         {
-            await pantalla.Find(".engranaje").ClickAsync(new());
+            await EntradaConfiguracion.Entrar(pantalla);
         }
 
         await pantalla.Find("#pestana-comprobantes").ClickAsync(new());

@@ -76,7 +76,7 @@ public class PanelPersonasTests : IDisposable
     {
         var pantalla = Dibujar();
         MarcarINWeb();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#abrir-personas").ClickAsync(new());
 
         var panel = pantalla.Find("#panel-personas");
@@ -162,7 +162,7 @@ public class PanelPersonasTests : IDisposable
     private async Task<IRenderedComponent<PantallaAtencion>> AbrirPersonas()
     {
         var pantalla = Dibujar();
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#abrir-personas").ClickAsync(new());
         return pantalla;
     }

@@ -120,7 +120,7 @@ public class TextosComprobanteTests
 
     private static async Task AbrirImpresora(IRenderedComponent<PantallaAtencion> pantalla)
     {
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-impresora").ClickAsync(new());
     }
 

@@ -235,6 +235,7 @@
                             Simulacion="SimulacionActiva" CambiarSimulacion="CambiarSimulacion" AvisoSimulacion="@_avisoSimulacion"
                             PuedeCerrar="@(_cierre is not null)" CerrarPuesto="@(() => SolicitarCierre("CLOSE_BUTTON"))"
                             Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador"
+                            Operador="@_operador" Actor="_actor" ClaveSinValidar="@(_acceso == AccesoClave)"
                             Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
@@ -247,7 +248,7 @@
     @if (_pedidoClave is { } pedido)
     {
         <DialogoClaveDelDia Validador="_validador" Fecha="FechaLocal" Motivo="@MotivoClave(pedido)" Resultado="ResultadoClave"
-                            Cancelada="() => _pedidoClave = null" />
+                            Cancelada="() => _pedidoClave = null" ProbarCodigo="ProbarCodigo" />
     }
 </div>
 
@@ -291,6 +292,14 @@
     private string _fuenteCierre = "ESCAPE";
     private string _acceso = AccesoMantenimiento;
 
+    /// <summary>
+    /// El operador que entró a Configuración con su código: su persona, actor de lo que se registre mientras está abierta, su
+    /// nombre visible y su sesión privilegiada; null con la clave del día (D5 a D7 de entrar-a-configuracion-con-teclado).
+    /// </summary>
+    private Guid? _actor;
+    private string? _operador;
+    private Guid? _sesionDelOperador;
+
     /// <summary>Para qué se pidió la clave del día; su código va a DAILY_KEY_ACCEPTED o DAILY_KEY_REJECTED (D17).</summary>
     private enum AccionClave
     {
@@ -301,6 +310,10 @@
 
     private const string AccesoMantenimiento = "MAINTENANCE_MODE";
     private const string AccesoClave = "DAILY_KEY";
+    private const string AccesoOperador = "OPERATOR";
+
+    /// <summary>Con un operador no hay General: el modo, la simulación y el cierre vuelven sin hacer nada (D6).</summary>
+    private bool EsOperador => _actor is not null;
 
     /// <summary>
     /// La simulación activa: guardada encendida y en mantenimiento (D5 de simular-identificacion-por-lista). No depende sólo
@@ -495,7 +508,10 @@
         }
     }
 
-    /// <summary>El engranaje: directo en mantenimiento, con la clave del día en operativo (acceso-puesto).</summary>
+    /// <summary>
+    /// El engranaje pide la clave del día o el código de un operador en los dos modos (D1 de entrar-a-configuracion-con-teclado).
+    /// Cerrar con Escape en mantenimiento sigue directo.
+    /// </summary>
     private void AbrirConfiguracion()
     {
         if (Maquina.Estado != EstadoAtencion.Reposo)
@@ -503,13 +519,87 @@
             return;
         }
 
-        if (_modo == ModoPuesto.Operativo)
+        // El estado de las bitácoras es el de este toque, antes de registrar la clave o el operador y la apertura.
+        _estadoBitacoras = LeerEstadoBitacoras();
+        _pedidoClave = AccionClave.AbrirConfiguracion;
+    }
+
+    /// <summary>
+    /// Lo tipeado en el diálogo, antes de tomarlo como clave del día (D5): si no es un código del snapshot activo, null, y es la
+    /// clave. Un código abre Configuración como operador si Asistencia lo concede (RB25, RB26), y para cerrar o pasar a operativo
+    /// se rechaza sin llamarla, con DAILY_KEY_REJECTED y PERSON_CODE. Ningún registro lleva lo tipeado.
+    /// </summary>
+    private DialogoClaveDelDia.ResultadoCodigo? ProbarCodigo(string valor)
+    {
+        if (_pedidoClave is not { } accion)
         {
-            _pedidoClave = AccionClave.AbrirConfiguracion;
-            return;
+            return null;
         }
 
-        AbrirConfiguracionCon(AccesoMantenimiento);
+        ResultadoAsistencia resultado;
+        try
+        {
+            if (!Servicio.Identificacion.EsCodigoConocido(valor))
+            {
+                return null;
+            }
+
+            if (accion != AccionClave.AbrirConfiguracion)
+            {
+                RegistrarConfiguracion("DAILY_KEY_REJECTED", new
+                {
+                    Action = CodigoDe(accion), Cause = "PERSON_CODE", ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion,
+                }, SeveridadBitacora.Warning);
+                return new(MensajesAtencion.CodigoNoEsClave);
+            }
+
+            resultado = Servicio.Asistencia.Entrar(valor);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            return new(MensajesAtencion.ErrorAlmacenamiento);
+        }
+
+        if (!resultado.Concedida)
+        {
+            return new(MensajesAtencion.DeMotivo(resultado.ReasonCode));
+        }
+
+        _pedidoClave = null;
+        _actor = resultado.PersonId;
+        _operador = resultado.NombreVisible;
+        _sesionDelOperador = resultado.SesionId;
+        if (Maquina.Estado == EstadoAtencion.Reposo)
+        {
+            AbrirConfiguracionCon(AccesoOperador);
+        }
+        else
+        {
+            SalirDelOperador();
+        }
+
+        StateHasChanged();
+        return new(null);
+    }
+
+    /// <summary>Termina la sesión privilegiada del operador de Configuración y olvida su acceso.</summary>
+    private void SalirDelOperador()
+    {
+        if (_sesionDelOperador is { } sesion)
+        {
+            try
+            {
+                Servicio.Asistencia.Salir(sesion, "CONFIGURATION_CLOSED");
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException)
+            {
+                // La sesión vence sola a los dos minutos; cerrar Configuración no depende de la base.
+            }
+        }
+
+        _actor = null;
+        _operador = null;
+        _sesionDelOperador = null;
     }
 
     private void AbrirConfiguracionCon(string acceso)
@@ -518,8 +608,7 @@
         _acceso = acceso;
         _avisoModo = null;
         _avisoSimulacion = null;
-        // El estado se lee antes de registrar la apertura: muestra lo que había al tocar el engranaje.
-        _estadoBitacoras = LeerEstadoBitacoras();
+        // El estado se leyó al tocar el engranaje (AbrirConfiguracion): muestra lo que había entonces, sin la clave ni la apertura.
         RegistrarConfiguracion("CONFIGURATION_OPENED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
         _sesionOperador = Servicio.Asistencia is { } asistencia ? new SesionOperador(asistencia, Servicio.Reloj) : null;
         _configuracion = true;
@@ -547,7 +636,8 @@
     /// <summary>El cierre ordenado: directo en mantenimiento y, en operativo, después de la clave del día (D7).</summary>
     private void SolicitarCierre(string fuente)
     {
-        if (_cierre is null)
+        // El cierre desde General no existe para un operador; si un evento llegara igual, no hace nada (D6).
+        if (_cierre is null || (EsOperador && _configuracion))
         {
             return;
         }
@@ -614,6 +704,8 @@
             case AccionClave.AbrirConfiguracion:
                 if (Maquina.Estado == EstadoAtencion.Reposo)
                 {
+                    // Con la clave del día no hay operador: actor nulo con NO_AUTHENTICATION (D7).
+                    SalirDelOperador();
                     AbrirConfiguracionCon(AccesoClave);
                 }
 
@@ -627,13 +719,24 @@
         }
     }
 
-    private void PasarAOperativo() => _pedidoClave = AccionClave.ActivarOperativo;
+    private void PasarAOperativo()
+    {
+        if (!EsOperador)
+        {
+            _pedidoClave = AccionClave.ActivarOperativo;
+        }
+    }
 
     /// <summary>Volver a mantenimiento no pide la clave otra vez: ya se entró con ella (acceso-puesto).</summary>
     private void PasarAMantenimiento() => CambiarModo(ModoPuesto.Mantenimiento, _acceso);
 
     private void CambiarModo(ModoPuesto nuevo, string acceso)
     {
+        if (EsOperador)
+        {
+            return;
+        }
+
         var antes = _modo;
         var resultado = "APPLIED";
         try
@@ -668,7 +771,7 @@
     /// <summary>El interruptor de General: sólo en mantenimiento, y con el acceso con que se entró a Configuración (D6).</summary>
     private void CambiarSimulacion(bool encendida)
     {
-        if (_modo == ModoPuesto.Mantenimiento)
+        if (_modo == ModoPuesto.Mantenimiento && !EsOperador)
         {
             GuardarSimulacion(encendida, _acceso);
             LeerPersonasSimulacion();
@@ -974,6 +1077,7 @@
         _vista = _guardado;
         _configuracion = false;
         RegistrarConfiguracion("CONFIGURATION_CANCELLED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
+        SalirDelOperador();
         // Personas se edita en Configuración: al cerrarla, el combo lee la versión activa (D10 de simular-identificacion-por-lista).
         LeerPersonasSimulacion();
     }
@@ -1021,12 +1125,35 @@
     {
         try
         {
-            Servicio.RegistroConfiguracion?.Registrar(tipo, contexto, severidad);
+            Servicio.RegistroConfiguracion?.Registrar(tipo, ConActor(contexto), severidad);
         }
         catch (Microsoft.Data.Sqlite.SqliteException)
         {
             // Ver el resumen: el ajuste no depende de la bitácora.
         }
+    }
+
+    /// <summary>
+    /// Con un operador en Configuración, su persona en ActorPersonId y sin ActorReason, en el mismo lugar del registro; con la
+    /// clave del día o sin Configuración, el registro queda igual, con el nulo y NO_AUTHENTICATION (D7 de
+    /// entrar-a-configuracion-con-teclado).
+    /// </summary>
+    private object ConActor(object contexto)
+    {
+        if (_actor is not { } persona)
+        {
+            return contexto;
+        }
+
+        var nodo = System.Text.Json.JsonSerializer.SerializeToNode(contexto)!.AsObject();
+        if (!nodo.ContainsKey("ActorPersonId"))
+        {
+            return contexto;
+        }
+
+        nodo["ActorPersonId"] = persona;
+        nodo.Remove("ActorReason");
+        return nodo;
     }
 
     private IReadOnlyList<EstadoBitacora>? LeerEstadoBitacoras()

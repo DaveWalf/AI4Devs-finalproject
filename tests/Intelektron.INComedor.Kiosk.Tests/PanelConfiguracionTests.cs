@@ -42,7 +42,7 @@ public class PanelConfiguracionTests : IDisposable
         var pantalla = Dibujar(new ImpresoraDePrueba());
         Assert.Empty(pantalla.FindAll("[role=\"dialog\"]"));
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         var dialogo = pantalla.Find("[role=\"dialog\"]");
         Assert.Equal("true", dialogo.GetAttribute("aria-modal"));
@@ -63,7 +63,7 @@ public class PanelConfiguracionTests : IDisposable
         var pantalla = Dibujar(new ImpresoraDePrueba());
         Assert.Contains("--opacidad-superficie: 0.76", Estilo(pantalla));
         Assert.Contains("--desenfoque-fondo: 4px", Estilo(pantalla));
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "84" });
         await pantalla.Find("#desenfoque").InputAsync(new ChangeEventArgs { Value = "8" });
@@ -78,7 +78,7 @@ public class PanelConfiguracionTests : IDisposable
     public async Task Guardar_y_volver_a_abrir()
     {
         var pantalla = Dibujar(new ImpresoraDePrueba());
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "84" });
         await pantalla.Find("#desenfoque").InputAsync(new ChangeEventArgs { Value = "8" });
 
@@ -100,7 +100,7 @@ public class PanelConfiguracionTests : IDisposable
         new AlmacenEstiloVisual(_carpeta).Guardar(new EstiloVisual(76, 4));
         var antes = File.ReadAllText(ArchivoEstilo);
         var pantalla = Dibujar(new ImpresoraDePrueba());
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#opacidad").InputAsync(new ChangeEventArgs { Value = "88" });
         await pantalla.Find("#desenfoque").InputAsync(new ChangeEventArgs { Value = "12" });
 
@@ -124,7 +124,7 @@ public class PanelConfiguracionTests : IDisposable
     {
         var pantalla = Dibujar(new ImpresoraDePrueba());
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         Assert.DoesNotContain("Impresora simulada", pantalla.Find("[role=\"dialog\"]").TextContent);
         Assert.Empty(pantalla.FindAll("#impresora-sinpapel"));
@@ -138,7 +138,7 @@ public class PanelConfiguracionTests : IDisposable
         Assert.Empty(pantalla.FindAll("#impresora-sinpapel"));
         Assert.Empty(pantalla.FindAll("#impresora-incierta"));
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
 
         var dialogo = pantalla.Find("[role=\"dialog\"]");
         Assert.Contains("Impresora simulada", dialogo.TextContent);
@@ -149,7 +149,7 @@ public class PanelConfiguracionTests : IDisposable
     public async Task Sin_papel_desde_configuracion()
     {
         var pantalla = Dibujar(Simulada());
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#impresora-sinpapel").ClickAsync(new());
         await pantalla.Find("#guardar-configuracion").ClickAsync(new());
 

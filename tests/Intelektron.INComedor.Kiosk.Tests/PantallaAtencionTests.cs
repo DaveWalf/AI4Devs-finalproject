@@ -177,7 +177,7 @@ public class PantallaAtencionTests : IDisposable
     {
         var pantalla = Dibujar();
 
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
         await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "0001" });
         await pantalla.Find("#entrar-operador").ClickAsync(new());
@@ -268,7 +268,7 @@ public class PantallaAtencionTests : IDisposable
 
     private static async Task EntrarAsistencia(IRenderedComponent<PantallaAtencion> pantalla, string codigo)
     {
-        await pantalla.Find(".engranaje").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
         await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = codigo });
         await pantalla.Find("#entrar-operador").ClickAsync(new());
