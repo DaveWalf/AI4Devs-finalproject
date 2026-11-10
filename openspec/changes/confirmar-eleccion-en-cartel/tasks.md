@@ -30,8 +30,14 @@ Sólo cambian las tres pruebas existentes del punto 3 del gate, con la aprobaci�
 
 ## 3. Documentos y evidencia
 
-- [ ] 3.1 Actualizar el paso 1 del recorrido de `readme.md` («Almuerzo común» y «Confirmar» en el cartel) y sumar la evidencia a la fila que corresponda de `docs/aplicacion-del-curso.md`, sin enlace propio a la carpeta del change. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso`, con su control negativo, que hay 0 rotos.
-- [ ] 3.2 Desde la raíz del repo, correr y pegar las salidas: `dotnet build INComedor.sln -warnaserror` con 0 advertencias, `dotnet test INComedor.sln` con 0 fallas, `openspec validate --all --strict` sin errores y el `git diff` de pruebas modificadas del encabezado, con sólo los tres archivos.
+- [x] 3.1 Actualizar el paso 1 del recorrido de `readme.md` («Almuerzo común» y «Confirmar» en el cartel) y sumar la evidencia a la fila que corresponda de `docs/aplicacion-del-curso.md`, sin enlace propio a la carpeta del change. Verificar con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso`, con su control negativo, que hay 0 rotos.
+  - El paso 1 del recorrido abre el cartel al tocar «Almuerzo común» y confirma en él; la evidencia va en la fila de componentes, estados de UI y accesibilidad, con el enlace a `CartelEleccionE2ETests` y sin enlace a la carpeta del change.
+  - Chequeo de enlaces a las 13:58: el control negativo da `ROTO`, `ANCLA` y `enlaces rotos: 2`; `readme.md`, `AGENTS.md` y `docs/aplicacion-del-curso.md`, `enlaces rotos: 0`.
+- [x] 3.2 Desde la raíz del repo, correr y pegar las salidas: `dotnet build INComedor.sln -warnaserror` con 0 advertencias, `dotnet test INComedor.sln` con 0 fallas, `openspec validate --all --strict` sin errores y el `git diff` de pruebas modificadas del encabezado, con sólo los tres archivos.
+  - `dotnet build INComedor.sln -warnaserror`, a las 13:59: `0 Advertencia(s)`, `0 Errores`.
+  - `dotnet test INComedor.sln -c Release`, con `INCOMEDOR_SQLSERVER=INMO-DW-AR` e `INCOMEDOR_E2E_KIOSK_EXE` en el EXE que publicó 2.2 (`git diff --stat b712702 HEAD -- src/` vacío: es el código de la punta), de 13:59 a 14:02: `total: 773`, `error: 0` (Contracts 23, Domain 91, Sync.Api 62, Sqlite 206, Kiosk 364 y E2E 27). Son las 767 de la base más las cinco de `CartelEleccionTests` y la de `CartelEleccionE2ETests`.
+  - `openspec validate --all --strict`: `Totals: 17 passed, 0 failed (17 items)`.
+  - `git diff --diff-filter=M --name-only d0da333 -- tests/`: `ConfiguracionPorPestanasE2ETests.cs`, `PantallaAtencionTests.cs` y `PantallaDistribucionTests.cs`, los tres del punto 3 del gate, y lo mismo contra `07a2329`.
 
 ## Workflow follow-up
 

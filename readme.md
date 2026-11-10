@@ -199,8 +199,10 @@ de SQL Server del equipo. Docker quedó fuera del corte ([lo que no se aplica](d
 **Recorrido de verificación.** Con el puesto abierto por el camino 1 o el 2 y la base recién creada, sin el
 receptor, en la ventana:
 
-1. `0001` e «Ingresar», «Almuerzo común» y «Confirmar»: «Consumo registrado. Retirá tu comprobante», y el
-   comprobante queda como archivo de texto en `%LOCALAPPDATA%\INComedor\demo\comprobantes\`.
+1. `0001` e «Ingresar», y tocar «Almuerzo común»: se abre el cartel «¿Confirmás tu elección?» con la opción y su
+   cargo («Elegir otra» o Escape lo cierran sin escribir nada). «Confirmar» en el cartel: «Consumo registrado.
+   Retirá tu comprobante», y el comprobante queda como archivo de texto en
+   `%LOCALAPPDATA%\INComedor\demo\comprobantes\`.
 2. «Listo», y otra vez `0001`: la selección ya no ofrece ningún almuerzo, sólo los refrigerios, y dice «Hoy ya
    usaste: almuerzo 1 de 1». El cupo de ALMUERZO es 1 y no hay cómo registrar otro consumo.
 3. `0002` e «Ingresar»: «Esta credencial está vencida. Solicitá asistencia».
