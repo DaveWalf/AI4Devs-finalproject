@@ -14,7 +14,7 @@ public class PestanaConsumosTests
 {
     private static readonly string[] Codigos = ["0001", "0002", "0003", "0004", "9001", "9002", "9003", "9004"];
 
-    [Fact(DisplayName = "consulta-consumos · En mantenimiento, sin ningún código: la pestaña Consumos muestra los consumos de hoy de 0001")]
+    [Fact(DisplayName = "consulta-consumos · En mantenimiento, con la clave del día: la pestaña Consumos muestra los consumos de hoy de 0001 sin pedir otro código")]
     public async Task En_mantenimiento_sin_ningun_codigo()
     {
         using var puesto = new PuestoDePrueba();

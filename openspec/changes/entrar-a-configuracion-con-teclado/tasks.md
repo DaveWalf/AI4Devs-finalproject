@@ -85,6 +85,16 @@ Las pruebas existentes cambian sólo como dice el punto 8 del gate, con la aprob
   - `openspec validate --all --strict`: `Totals: 18 passed, 0 failed (18 items)`.
   - `git diff --diff-filter=M --name-only cf1b137 -- tests/`: los 22 archivos de componentes de 3.3 y los tres E2E de 4.2, revisados en cada grupo: sólo D8 y las dos aprobadas por David.
 
+## 6. Correcciones de la verificación
+
+La verificación del 10/11 a las 15:48, sobre `6657f78` y sin críticos, dejó dos advertencias y cuatro sugerencias; David eligió a las 15:50 «Corregir y archivar».
+
+- [x] 6.1 El `if (operativo) { Aceptar }` que salió de `AccesoPuestoTests.Cerrar_el_puesto_en_general` en 3.3, fuera de la letra de D8 (la primera advertencia): David le dio su visto bueno al elegir «Corregir y archivar», que lo nombraba. No cambia nada más.
+- [x] 6.2 Cubrir el `DAILY_KEY_ACCEPTED` de la entrada con la clave en mantenimiento (la segunda advertencia): `AccesoOperadorTests.Entrada_con_la_clave_del_dia_en_mantenimiento`, nueva. La conducta ya existía, así que se la vio fallar con una afirmación imposible revertida (`Expected: "CLOSE_KIOSK"`, `Actual: "OPEN_CONFIGURATION"`).
+- [x] 6.3 Cambiar el `DisplayName` de `PestanaConsumosTests.En_mantenimiento_sin_ningun_codigo` del escenario retirado al vigente, «En mantenimiento, con la clave del día», con la aprobación de David de las 15:50; sólo el nombre. Con el filtro `FullyQualifiedName~AccesoOperador|FullyQualifiedName~PestanaConsumos`: `total: 20`, `error: 0`.
+- [x] 6.4 Escribir en D1 y D4 de `design.md` las dos decisiones del apply: el estado de las bitácoras leído al tocar el engranaje, y el aviso y el operador en la fila del título.
+- Quedan abiertas en el borrador del PR: el código de una persona al pasar a operativo y las guardas de D6 en el modo y la simulación, sin prueba; y la sesión privilegiada del operador, que vence a los dos minutos aunque Configuración siga abierta y entonces no deja `PRIVILEGED_SESSION_CLOSED`.
+
 ## Workflow follow-up
 
 - La revisión de David (el gate de `proposal.md`) va antes del apply, y lo que decida queda escrito en `proposal.md`.

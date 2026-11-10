@@ -53,6 +53,23 @@ public class AccesoOperadorTests
         Assert.Equal(9, pantalla.FindAll("[role=\"tab\"]").Count);
     }
 
+    [Fact(DisplayName = "acceso-puesto · Entrada con la clave del día (mantenimiento): la general tiene DAILY_KEY_ACCEPTED para abrir Configuración y CONFIGURATION_OPENED con DAILY_KEY, los dos con el actor nulo y NO_AUTHENTICATION")]
+    public async Task Entrada_con_la_clave_del_dia_en_mantenimiento()
+    {
+        using var puesto = new PuestoDePrueba();
+        var pantalla = puesto.Dibujar();
+
+        await EntradaConfiguracion.Entrar(pantalla);
+
+        var general = puesto.General();
+        var clave = ContextoDe(Assert.Single(general, l => Tipo(l) == "DAILY_KEY_ACCEPTED"));
+        Assert.Equal("OPEN_CONFIGURATION", clave.GetProperty("Action").GetString());
+        Assert.True(SinActor(clave));
+        var abierta = ContextoDe(Assert.Single(general, l => Tipo(l) == "CONFIGURATION_OPENED"));
+        Assert.Equal("DAILY_KEY", abierta.GetProperty("Access").GetString());
+        Assert.True(SinActor(abierta));
+    }
+
     [Fact(DisplayName = "acceso-puesto · Entrada de un operador: con 9001, la general tiene CONFIGURATION_OPENED con OPERATOR y su persona como actor, y ningún registro de las dos bitácoras contiene 9001")]
     public async Task Entrada_de_un_operador()
     {

@@ -28,6 +28,8 @@ Ver `proposal.md` («Why») para los pedidos de David. El estado de `8a57ef0` qu
 
 `AbrirConfiguracion` pide la clave siempre. `AccesoMantenimiento` queda sólo para cerrar con Escape en mantenimiento, que sigue directo.
 
+El estado de las bitácoras que muestra General se lee al tocar el engranaje, antes de pedir la clave: así muestra lo que había al tocarlo, como ya decía el código, y la clave aceptada no aparece como un pendiente más («Configuración al día» de `bitacoras-externas`). Decidido en el apply, a la vista en la tarea 3.3.
+
 - **Descartada: pedirla también para cerrar en mantenimiento.** El pedido nombra el menú de configuración, y cerrar en mantenimiento es la salida del técnico.
 
 ### D2. Qué acepta la clave
@@ -52,7 +54,7 @@ Ver `proposal.md` («Why») para los pedidos de David. El estado de `8a57ef0` qu
 
 ### D4. El aviso de clave sin validar
 
-Con `Access = "DAILY_KEY"`, Configuración muestra arriba `#aviso-clave-sin-validar` (`role="status"`), con `MensajesAtencion.ClaveSinValidar`: «Entraste con una clave del día sin validar: esta versión acepta cualquier número». El aviso queda hasta cerrar Configuración. Con un operador no aparece, porque su código sí se valida.
+Con `Access = "DAILY_KEY"`, Configuración muestra arriba `#aviso-clave-sin-validar` (`role="status"`), con `MensajesAtencion.ClaveSinValidar`: «Entraste con una clave del día sin validar: esta versión acepta cualquier número». El aviso queda hasta cerrar Configuración. Con un operador no aparece, porque su código sí se valida. El aviso y «Operador: …» (D6) van en la fila del título de Configuración, para no quitarle alto a las tablas: con una línea propia, la de personas mostraba nueve filas en 1024 × 768 y no las diez de `administracion-local`. Decidido en el apply, a la vista en la tarea 4.2.
 
 - **Descartada: un cartel de 2 s antes de entrar.** Suma una espera en cada entrada y un temporizador más que probar.
 
