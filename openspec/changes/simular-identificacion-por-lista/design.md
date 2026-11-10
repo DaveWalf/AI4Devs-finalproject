@@ -19,12 +19,12 @@ Ver `proposal.md` («Why») para la motivación y las decisiones de David. El es
 - Que el combo identifique por el mismo camino que el código, sin una segunda copia de la clasificación de RB25.
 - Que el código nunca llegue a la pantalla: ni en el texto ni en los valores del combo.
 - Que la seguridad de «un puesto operativo nunca muestra la lista» no dependa de que un archivo esté bien escrito.
-- Que ninguna prueba existente cambie.
+- Que ninguna prueba existente cambie. La ampliación del 10/11 cambió, con la aprobación de David (A4), cuatro pruebas de este mismo change; ninguna de `07a2329`.
 
 **Non-Goals:**
 
 - Generalizar `AlmacenModoPuesto` y el almacén nuevo en una clase común: son dos archivos chicos y el refactor tocaría pruebas existentes del modo.
-- Reordenar la pantalla de identificación o cambiar sus textos actuales.
+- Reordenar la pantalla de identificación o cambiar sus textos actuales. Lo superó la ampliación del 10/11: el título y la fila del código cambian por D12 y D13.
 
 ## Decisions
 
@@ -130,4 +130,4 @@ El 10/11 a las 10:36, después de probar el puesto publicado, David pidió la me
 
 ## Migration Plan
 
-Sin migración de base: la versión de esquema sigue en 4. Un puesto existente arranca sin `simulacion.json`, es decir con la simulación apagada, y se comporta como hoy. Para volver atrás alcanza con revertir el merge: `simulacion.json` queda en la carpeta de datos sin que nadie lo lea.
+Sin migración de base: la versión de esquema sigue en 4. Un puesto existente arranca sin `simulacion.json`, y desde la ampliación del 10/11 eso es la simulación encendida (D4, D12): en mantenimiento, la pantalla de identificación muestra el combo con todas las personas hasta que se la apague en General; en operativo no se ve. Para volver atrás alcanza con revertir el merge: `simulacion.json` queda en la carpeta de datos sin que nadie lo lea.

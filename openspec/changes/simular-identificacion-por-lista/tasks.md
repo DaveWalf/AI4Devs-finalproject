@@ -1,6 +1,6 @@
 # Tasks
 
-Ninguna prueba existente cambia (punto 6 del gate). Al cerrar cada grupo, `git diff --diff-filter=M --name-only 07a2329 -- tests/` sale vacío; si una prueba existente falla, se para y se le pregunta a David. Cada prueba nueva se ve fallar antes de implementar lo que la hace pasar, y su `DisplayName` empieza con la capability y el nombre del escenario («atencion-puesto · Enter envía el código»). Las de `Kiosk.Tests` y la E2E corren con `INCOMEDOR_SQLSERVER` apuntando a la instancia del equipo, como pide `AGENTS.md`.
+Ninguna prueba existente cambia (punto 6 del gate); la ampliación del grupo 9 cambia cuatro de este mismo change, con la aprobación de David (A4), como dice su encabezado. Al cerrar cada grupo, `git diff --diff-filter=M --name-only 07a2329 -- tests/` sale vacío; si una prueba existente falla, se para y se le pregunta a David. Cada prueba nueva se ve fallar antes de implementar lo que la hace pasar, y su `DisplayName` empieza con la capability y el nombre del escenario («atencion-puesto · Enter envía el código»). Las de `Kiosk.Tests` y la E2E corren con `INCOMEDOR_SQLSERVER` apuntando a la instancia del equipo, como pide `AGENTS.md`.
 
 ## 1. Enter en el campo del código
 
@@ -103,6 +103,14 @@ Sólo después del gate de la ampliación (`proposal.md`, puntos A1 a A8). Cada 
   - `dotnet test INComedor.sln -c Release`, con `INCOMEDOR_SQLSERVER=INMO-DW-AR` e `INCOMEDOR_E2E_KIOSK_EXE` en el EXE publicado, de 13:40 a 13:45: `total: 767`, `error: 0` (Contracts 23, Domain 91, Sync.Api 62, Sqlite 206, Kiosk 359 y E2E 26). Son las 764 de `f9cd6c0` más las tres de `PantallaIdentificacionTests`.
   - `openspec validate --all --strict`: `Totals: 16 passed, 0 failed (16 items)`.
   - `git diff --diff-filter=M --name-only f9cd6c0 -- tests/`: `SimulacionE2ETests.cs`, `AlmacenSimulacionTests.cs`, `ComboSimulacionTests.cs` y `ModoSimulacionTests.cs`, los cuatro de A4. `git diff --diff-filter=M --name-only 07a2329 -- tests/`: vacío.
+
+## 10. Correcciones de la verificación
+
+La verificación del 10/11 a las 15:48, sobre `6657f78` y sin críticos, dejó una advertencia y tres sugerencias; David eligió a las 15:50 «Corregir y archivar».
+
+- [x] 10.1 Corregir el «Migration Plan» de `design.md`: un puesto sin `simulacion.json` arranca con la simulación encendida desde D12, no apagada (la advertencia).
+- [x] 10.2 Marcar en `design.md` el objetivo «Que ninguna prueba existente cambie» y el no-objetivo «Reordenar la pantalla…» como superados por la ampliación, y remitir el encabezado de este archivo al grupo 9.
+- [x] 10.3 Cambiar el `DisplayName` de `AlmacenSimulacionTests.Guardar_y_leer` del escenario reemplazado «Encenderla se conserva al volver a abrir» a «Apagarla se conserva al volver a abrir», con la aprobación de David de las 15:50; sólo el nombre. Con el filtro `FullyQualifiedName~AlmacenSimulacion`: `total: 7`, `error: 0`; `openspec validate --all --strict`: 16 de 16.
 
 ## Workflow follow-up
 

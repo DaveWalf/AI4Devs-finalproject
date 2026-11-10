@@ -42,7 +42,7 @@ public class AlmacenSimulacionTests : IDisposable
         Assert.True(new AlmacenSimulacion(_carpeta).Leer());
     }
 
-    [Fact(DisplayName = "acceso-puesto · Encenderla se conserva al volver a abrir (almacén): guardada encendida se lee encendida desde otro almacén, y apagada, apagada")]
+    [Fact(DisplayName = "acceso-puesto · Apagarla se conserva al volver a abrir (almacén): guardada encendida se lee encendida desde otro almacén, y apagada, apagada")]
     public void Guardar_y_leer()
     {
         new AlmacenSimulacion(_carpeta).Guardar(true);
