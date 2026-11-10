@@ -121,7 +121,17 @@ public sealed class MaquinaAtencion
         Tocar();
     }
 
-    public ResultadoToque Identificar(string codigo)
+    public ResultadoToque Identificar(string codigo) =>
+        Identificar(() => _servicio.Identificacion.Identificar(codigo, PropositoSesion.Consumption));
+
+    /// <summary>
+    /// La persona elegida en el combo del modo simulación, por su credencial (D2 de simular-identificacion-por-lista): las
+    /// mismas guardas y el mismo después que el código tipeado.
+    /// </summary>
+    public ResultadoToque IdentificarPorCredencial(Guid credencialId) =>
+        Identificar(() => _servicio.Identificacion.IdentificarPorCredencial(credencialId, PropositoSesion.Consumption));
+
+    private ResultadoToque Identificar(Func<ResultadoIdentificacionCodigo> identificar)
     {
         if (Estado == EstadoAtencion.ErrorAlmacenamiento)
         {
@@ -135,7 +145,7 @@ public sealed class MaquinaAtencion
             return ResultadoToque.Ocupado;
         }
 
-        var resultado = Proteger(() => _servicio.Identificacion.Identificar(codigo, PropositoSesion.Consumption));
+        var resultado = Proteger(identificar);
         if (resultado is null)
         {
             return ResultadoToque.NoDisponible;

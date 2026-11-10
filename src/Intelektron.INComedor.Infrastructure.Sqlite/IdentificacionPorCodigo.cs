@@ -36,14 +36,59 @@ public sealed class IdentificacionPorCodigo
         _reloj = reloj;
     }
 
-    public ResultadoIdentificacionCodigo Identificar(string codigo, PropositoSesion proposito)
+    /// <summary>La marca del registro de una identificación que vino del combo del modo simulación (D7 de simular-identificacion-por-lista).</summary>
+    public const string OrigenListaSimulacion = "SIMULATION_LIST";
+
+    private static readonly System.Globalization.CultureInfo CulturaDelPuesto = System.Globalization.CultureInfo.GetCultureInfo("es-AR");
+
+    public ResultadoIdentificacionCodigo Identificar(string codigo, PropositoSesion proposito) =>
+        Identificar((conexion, transaccion, puesto) => Resolver(conexion, transaccion, puesto, codigo), proposito, origen: null);
+
+    /// <summary>
+    /// La credencial elegida en el combo del modo simulación (D2 de simular-identificacion-por-lista): la misma clasificación
+    /// (RB25), la misma sesión con método CODE y el mismo registro que el código tipeado, más la clave Origin. Una credencial
+    /// que no está en el snapshot activo se rechaza como un código desconocido.
+    /// </summary>
+    public ResultadoIdentificacionCodigo IdentificarPorCredencial(Guid credencialId, PropositoSesion proposito) =>
+        Identificar((conexion, transaccion, puesto) => ResolverCredencial(conexion, transaccion, puesto, credencialId), proposito,
+            OrigenListaSimulacion);
+
+    /// <summary>
+    /// Una entrada por credencial de código del snapshot activo, vigente o no, con el nombre visible de su persona y en orden
+    /// alfabético es-AR (D3 de simular-identificacion-por-lista): el rechazo lo decide la identificación, no la lista.
+    /// </summary>
+    public IReadOnlyList<EntradaSimulacion> ListarParaSimulacion()
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        var puesto = PuestoLocal.Leer(conexion, null);
+        using var comando = ComandosSqlite.Crear(conexion, null,
+            """
+            SELECT cre.comcreCodigo, per.comperNombreVisible
+            FROM tbComedorCredencialesPersonas cre
+            JOIN tbComedorPersonas per ON per.comvcCodigo = cre.comvcCodigo AND per.comperCodigo = cre.comperCodigo
+            WHERE cre.comvcCodigo = $vc AND cre.comcreTipo = 'SERIAL_CODE'
+            """,
+            ("$vc", puesto.SnapshotId));
+        using var lector = comando.ExecuteReader();
+        var entradas = new List<EntradaSimulacion>();
+        while (lector.Read())
+        {
+            entradas.Add(new EntradaSimulacion(lector.GetGuid(0), lector.GetString(1)));
+        }
+
+        var comparador = StringComparer.Create(CulturaDelPuesto, ignoreCase: true);
+        return entradas.OrderBy(e => e.NombreVisible, comparador).ThenBy(e => e.CredencialId).ToList();
+    }
+
+    private ResultadoIdentificacionCodigo Identificar(
+        Func<SqliteConnection, SqliteTransaction, PuestoLocal, CredencialResuelta?> resolver, PropositoSesion proposito, string? origen)
     {
         using var conexion = _baseComedor.AbrirConexion();
         using var transaccion = BaseComedor.IniciarTransaccionEscritura(conexion);
         var ahora = _reloj.GetUtcNow();
         var puesto = PuestoLocal.Leer(conexion, transaccion);
 
-        var credencial = Resolver(conexion, transaccion, puesto, codigo);
+        var credencial = resolver(conexion, transaccion, puesto);
         var clasificacion = ClasificadorCredencial.Clasificar(credencial?.Credencial, ahora);
 
         ResultadoIdentificacionCodigo resultado;
@@ -51,13 +96,13 @@ public sealed class IdentificacionPorCodigo
         {
             var sesion = AbrirSesion(conexion, transaccion, puesto, credencial!, proposito, ahora);
             // La identificación aceptada, en la transacción que abre la sesión y sin el código (D8 de escribir-bitacoras-externas).
-            _bitacora.Insertar(conexion, transaccion, puesto, ahora, "SESSION_OPENED", new
-            {
-                IdentitySessionId = sesion,
-                Purpose = CodigoDe(proposito),
-                PersonId = credencial!.PersonaId,
-                Method = "CODE",
-            });
+            _bitacora.Insertar(conexion, transaccion, puesto, ahora, "SESSION_OPENED",
+                ContextoSinNulos(
+                    ("IdentitySessionId", sesion),
+                    ("Purpose", CodigoDe(proposito)),
+                    ("PersonId", credencial!.PersonaId),
+                    ("Method", "CODE"),
+                    ("Origin", origen)));
             resultado = new(sesion, credencial.PersonaId, credencial.NombreVisible, null);
         }
         else
@@ -68,12 +113,31 @@ public sealed class IdentificacionPorCodigo
                     ("Purpose", CodigoDe(proposito)),
                     ("ReasonCode", motivo),
                     ("InternalCause", clasificacion.Causa is { } causa ? CodigoDe(causa) : null),
-                    ("PersonId", credencial?.PersonaId)));
+                    ("PersonId", credencial?.PersonaId),
+                    ("Origin", origen)));
             resultado = new(null, null, null, motivo);
         }
 
         transaccion.Commit();
         return resultado;
+    }
+
+    /// <summary>
+    /// Busca la credencial de código por su GUID en el snapshot activo. El GUID se compara sin distinguir mayúsculas: la
+    /// semilla lo escribe en minúsculas y el enlace de parámetros de Microsoft.Data.Sqlite, en mayúsculas.
+    /// </summary>
+    private static CredencialResuelta? ResolverCredencial(SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, Guid credencialId)
+    {
+        using var comando = ComandosSqlite.Crear(conexion, transaccion,
+            """
+            SELECT cre.comcreCodigo, cre.comperCodigo, per.comperNombreVisible,
+                   cre.comcreFechaVigenciaDesdeUtc, cre.comcreFechaVigenciaHastaUtc, cre.comcreFechaRevocacionUtc
+            FROM tbComedorCredencialesPersonas cre
+            JOIN tbComedorPersonas per ON per.comvcCodigo = cre.comvcCodigo AND per.comperCodigo = cre.comperCodigo
+            WHERE cre.comvcCodigo = $vc AND cre.comcreTipo = 'SERIAL_CODE' AND cre.comcreCodigo = $cre COLLATE NOCASE
+            """,
+            ("$vc", puesto.SnapshotId), ("$cre", credencialId.ToString("D")));
+        return LeerCredencial(comando);
     }
 
     /// <summary>Normaliza sólo con Trim(), conservando los ceros iniciales (RB01), y busca en el snapshot activo.</summary>
@@ -88,6 +152,11 @@ public sealed class IdentificacionPorCodigo
             WHERE cre.comvcCodigo = $vc AND cre.comcreTipo = 'SERIAL_CODE' AND cre.comcreValorNormalizado = $valor
             """,
             ("$vc", puesto.SnapshotId), ("$valor", codigo.Trim()));
+        return LeerCredencial(comando);
+    }
+
+    private static CredencialResuelta? LeerCredencial(SqliteCommand comando)
+    {
         using var lector = comando.ExecuteReader();
         if (!lector.Read())
         {
@@ -148,6 +217,12 @@ public sealed class IdentificacionPorCodigo
     private static DateTimeOffset? InstanteOpcional(SqliteDataReader lector, int columna) =>
         lector.IsDBNull(columna) ? null : FormatoInstante.Leer(lector.GetString(columna));
 }
+
+/// <summary>
+/// Una entrada del combo del modo simulación (D1 y D3 de simular-identificacion-por-lista): la credencial y el nombre visible
+/// de su persona, nunca el código.
+/// </summary>
+public sealed record EntradaSimulacion(Guid CredencialId, string NombreVisible);
 
 /// <summary>La credencial que resolvió un código, con su persona y su nombre visible.</summary>
 internal sealed record CredencialResuelta(Guid CredencialId, Guid PersonaId, string NombreVisible, CredencialIdentificacion Credencial);

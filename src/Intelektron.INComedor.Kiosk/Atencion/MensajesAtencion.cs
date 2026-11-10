@@ -47,6 +47,9 @@ public static class MensajesAtencion
     /// <summary>El modo no se pudo escribir en la carpeta de datos: sigue el de antes.</summary>
     public const string ModoNoGuardado = "No se pudo guardar el modo: sigue el de antes";
 
+    /// <summary>El modo simulación no se pudo escribir en la carpeta de datos: sigue como estaba (D6 de simular-identificacion-por-lista).</summary>
+    public const string SimulacionNoGuardada = "No se pudo guardar la simulación: sigue como estaba";
+
     // La pestaña Impresora (comprobante-local de configurar-puesto-por-pestanas, D13).
     public const string PruebaSalio = "La prueba salió";
     public const string PruebaSinPapel = "La impresora no tiene papel";
