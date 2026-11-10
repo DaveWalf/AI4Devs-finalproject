@@ -138,12 +138,12 @@ Expand-Archive $zip -DestinationPath .\INComedor-Puesto
 Requisito: Windows 11 x64 con el WebView2 Runtime, que Windows 11 ya trae. El paquete lleva el runtime de .NET
 al lado del EXE y no trae datos: la base se crea y se siembra al abrirlo. El EXE no está firmado, así que
 SmartScreen puede pedir «Más información» y «Ejecutar de todas formas». El Release trae sólo el puesto: el
-receptor necesita SQL Server y se revisa desde el código. El primer Release real sale con la rc.3 de .NET 11
-desde `final-project-dw` (D-C27). Hasta entonces, el mismo zip se arma en local con
+receptor necesita SQL Server y se revisa desde el código. El primer Release real sale con .NET 11 estable, del 10/11/2026,
+desde `final-project-dw` (D-C28). Hasta entonces, el mismo zip se arma en local con
 `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
 el EXE publicado y lo deja en `artifacts/`.
 
-**2. El código.** Con el SDK que fija `global.json` (11.0.100-rc.3) o uno posterior de .NET 11, que
+**2. El código.** Con el SDK que fija `global.json` (11.0.100) o uno posterior de .NET 11, que
 `global.json` acepta con `rollForward: latestFeature`, desde la raíz de un clon de la rama
 `final-project-dw` (la rama por defecto, `main`, tiene sólo las plantillas del curso):
 
@@ -261,7 +261,7 @@ también el rechazo por cupo de la tercera. Desde ofrecer-solo-opciones-disponib
 
 Para consultar el diseño, abrir este README y sus anexos. Las instrucciones ejecutables
 están en «Cómo ver la demostración», más abajo: SDK fijado en `global.json`
-(11.0.100-rc.3), paquetes con versión exacta en `Directory.Packages.props`, comandos
+(11.0.100), paquetes con versión exacta en `Directory.Packages.props`, comandos
 de build, test y run, y base creada y sembrada con datos sintéticos al abrir el puesto.
 
 La demostración corre en Windows 11, .NET 11, WebView2 y almacenamiento local
@@ -279,7 +279,7 @@ verificación del entorno, el provisionamiento por sincronización o paquete loc
 #### Cómo ver la demostración
 
 Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.json`
-(11.0.100-rc.3, o uno posterior de .NET 11). Los comandos se corren desde la raíz del repositorio, porque
+(11.0.100, o uno posterior de .NET 11). Los comandos se corren desde la raíz del repositorio, porque
 `global.json` se lee del directorio actual.
 
 **Puesto: la atención.**
@@ -617,7 +617,7 @@ La integración física y el despliegue productivo requieren homologación.
   E2E contra ese EXE y recién entonces arma el zip y su suma; otro job, el único con escritura, comprueba la suma y
   deja el Release en borrador. Se ensayó con un tag descartable, en verde en la
   [corrida 41141226298](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41141226298), y el tag y su
-  borrador se borraron. El primer Release real sale con la rc.3 de .NET 11 desde `final-project-dw` (D-C27).
+  borrador se borraron. El primer Release real sale con .NET 11 estable desde `final-project-dw` (D-C28).
 
 El receptor no se despliega: se corre desde el código, como dice «Receptor de lotes y puesto conectados».
 
