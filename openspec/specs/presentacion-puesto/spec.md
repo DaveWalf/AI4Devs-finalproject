@@ -7,7 +7,7 @@ Cómo se ve y se adapta el puesto en una pantalla táctil: el aspecto, la cabece
 
 ### Requirement: Aspecto táctil del puesto
 
-Las pantallas del puesto SHALL mostrarse sobre el fondo ilustrado de cocina, con las opciones y las acciones como superficies translúcidas cuyo texto MUST quedar opaco. La fila entera de una opción MUST ser tocable, la opción elegida MUST indicarse también con el texto «Elegida» y no sólo con el color, y ninguna función MUST depender de pasar el puntero por encima. «Cancelar», «Confirmar» y cada opción MUST medir al menos 56 px CSS de alto.
+Las pantallas del puesto SHALL mostrarse sobre el fondo ilustrado de cocina, con las opciones y las acciones como superficies translúcidas cuyo texto MUST quedar opaco. La fila entera de una opción MUST ser tocable, la opción elegida MUST indicarse también con el texto «Elegida» y no sólo con el color, y ninguna función MUST depender de pasar el puntero por encima. «Cancelar», «Confirmar», «Elegir otra» y cada opción MUST medir al menos 56 px CSS de alto.
 
 #### Scenario: La opción elegida se marca con texto
 Origen: decisión de David del 03/11/2026 (UX táctil, criterios 2 y 3) y TK02.1.
@@ -17,16 +17,16 @@ Origen: decisión de David del 03/11/2026 (UX táctil, criterios 2 y 3) y TK02.1
 - **AND** ninguna otra opción muestra «Elegida»
 
 #### Scenario: Elegir otra opción mueve la marca
-Origen: decisión de David del 03/11/2026 (UX táctil, criterio 3: «selección separada de confirmación»).
-- **GIVEN** una persona con una opción elegida y sin confirmar
+Origen: decisión de David del 03/11/2026 (UX táctil, criterio 3: «selección separada de confirmación») y mejora 2 de David del 10/11/2026 («volver a seleccionar otra opción»).
+- **GIVEN** una persona con una opción elegida, el cartel cerrado con «Elegir otra» y sin confirmar
 - **WHEN** toca otra opción
-- **THEN** sólo la nueva muestra «Elegida» y no se escribió ninguna intención
+- **THEN** sólo la nueva muestra «Elegida», el cartel se abre con ella y no se escribió ninguna intención
 
 #### Scenario: Nueve opciones y las acciones entran en 1024 × 768
-Origen: decisión de David del 02/11/2026 (una misma pantalla, regla 4) y del 03/11/2026 (UX táctil, criterio 1).
+Origen: decisión de David del 02/11/2026 (una misma pantalla, regla 4), del 03/11/2026 (UX táctil, criterio 1) y mejora 2 de David del 10/11/2026 («así tenemos más lugar para selecciones»).
 - **GIVEN** el catálogo de nueve opciones y la ventana con un área de 1024 × 768
-- **WHEN** se muestra la selección
-- **THEN** las nueve opciones, «Cancelar» y «Confirmar» se ven sin desplazar la pantalla
+- **WHEN** se muestra la selección y, después, se toca una opción
+- **THEN** las nueve opciones y «Cancelar» se ven sin desplazar la pantalla, y con el cartel abierto se ven «Confirmar» y «Elegir otra»
 - **AND** cada una mide al menos 56 px de alto
 
 ### Requirement: Logos locales de la empresa y la concesionaria
@@ -128,14 +128,14 @@ Origen: pedido de David del 04/11/2026 («que el botón de configuración esté 
 Origen: AT16 («siguiente persona inicia limpia») y RB05: Configuración no se abre con una persona en curso.
 - **GIVEN** una persona identificada en la selección
 - **WHEN** se revisan la cabecera y el pie
-- **THEN** no hay ningún botón «Configuración»
+- **THEN** no hay ningún botón «Configuración», y la cabecera sigue sin botones aunque «Cancelar» esté en la selección
 
 #### Scenario: El pie no cambia de alto al salir de reposo
 Origen: «zonas de acción estables» de los criterios táctiles de David del 03/11/2026.
 - **GIVEN** el puesto en reposo, con el catálogo de nueve opciones y un área de 1024 × 768
 - **WHEN** una persona se identifica y se muestra la selección
 - **THEN** el pie mide lo mismo que en reposo
-- **AND** las nueve opciones, «Cancelar» y «Confirmar» se siguen viendo sin desplazar la pantalla
+- **AND** las nueve opciones y «Cancelar» se siguen viendo sin desplazar la pantalla
 
 ### Requirement: Monitor asignado y recordado
 
@@ -183,10 +183,10 @@ Origen: decisión de David del 06/11/2026 (gate de D, punto 9: «Rebote: CSS y e
 - **AND** el proceso del navegador del puesto abierto arrancó con ese argumento
 
 #### Scenario: La ventana angosta sigue desplazándose
-Origen: «Ventana angosta» de este mismo spec, borde: quitar el rebote no quita el desplazamiento.
+Origen: «Ventana angosta» de este mismo spec, borde: quitar el rebote no quita el desplazamiento, y mejora 2 de David del 10/11/2026 (el cartel de la elección).
 - **GIVEN** el catálogo de nueve opciones y un área de 600 px de ancho
-- **WHEN** se desplaza la selección
-- **THEN** se llega a la última opción y a «Confirmar»
+- **WHEN** se desplaza la selección y se toca la última opción
+- **THEN** se llega a la última opción, y el cartel muestra «Confirmar» dentro de la ventana sin desplazar más
 
 ### Requirement: Ícono propio del puesto
 
