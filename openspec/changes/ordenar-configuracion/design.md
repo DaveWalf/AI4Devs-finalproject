@@ -89,6 +89,14 @@ listan el orden o recorren la fila con las flechas; las que eligen en un `<selec
 que pasan a tocar el botón y la fila; y los `DisplayName` de los dos escenarios renombrados («Cerrar descarta…»). Ninguna
 cambia lo que afirma. Las que sólo tocan `#cancelar-configuracion` no cambian (D2).
 
+### D7. El nombre del servicio, con «IN»
+
+La cabecera dice «INComedor · tu pausa del día» (pedido de David del 10/11, a las 20:18, con el change ya aplicado).
+Se conserva el «·» de hoy: la cita de David lo escribe «-», como lo vio en la pantalla. El requisito de la cabecera
+pasa a fijar el texto, que hasta ahora decía sólo «el nombre del servicio».
+
+- **Descartada: el guion literal de la cita.** Cambiaría el separador que David no pidió cambiar.
+
 ## Risks / Trade-offs
 
 - **[Las pruebas que leen General]** → Son muchas en `Kiosk.Tests` (`AccesoPuestoTests`, `ModoSimulacionTests`,

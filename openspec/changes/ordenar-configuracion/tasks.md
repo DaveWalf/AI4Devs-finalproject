@@ -82,6 +82,12 @@ Las pruebas de base y receptor corren con `INCOMEDOR_SQLSERVER=INMO-DW-AR`.
     `total: 14`, `error: 0`. E2E: `SimulacionE2ETests` elige tocando el combo y la fila, y comprueba el texto del botón;
     con `ListaPropiaE2ETests`, `total: 2`, `error: 0`.
 
+- [x] 3.6 El nombre del servicio en la cabecera (D7, pedido de David del 10/11 a las 20:18): «INComedor · tu pausa del
+  día». Prueba nueva `NombreDelServicioTests`, en reposo y con una persona en la selección. Verifica: rojo antes y verde
+  después.
+  - Antes: `Expected: "INComedor · tu pausa del día"` / `Actual: "Comedor · tu pausa del día"`, `error: 1`. Después:
+    `total: 1`, `error: 0`.
+
 ## 4. El puesto compilado, documentos y verificación integral
 
 - [ ] 4.1 Las pruebas E2E existentes del orden de las pestañas y del operador contra el puesto compilado de la rama.

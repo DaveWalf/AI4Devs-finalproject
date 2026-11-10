@@ -32,6 +32,9 @@ de `simular-identificacion-por-lista`); ticket TK03.1, la configuración del pue
 - **El combo alineado con la fila del código**: el mismo ancho que el campo con «Ingresar», la misma letra y el mismo
   relleno, además del alto de 56 px.
 - **La regla de prolijidad visual** en `openspec/config.yaml` (decisión 14), para este change y los siguientes.
+- **El nombre del servicio en la cabecera**: «INComedor · tu pausa del día» en lugar de «Comedor · tu pausa del día»,
+  pedido de David del 10/11 a las 20:18 («La frase que dice "Comedor - tu pausa del día", debe hacer referencia a
+  "INComedor - tu pausa del día"»), que llegó con el change aplicado y entra en él.
 
 ## Non-goals
 
@@ -52,7 +55,8 @@ Ninguna.
 - `configuracion-puesto`: «Configuración por pestañas» cambia el orden y la pestaña inicial; «Lo editado se conserva hasta
   cerrar» nombra «Cerrar».
 - `presentacion-puesto`: «Estilo visual configurable» nombra «Cerrar»; «Pantalla de identificación que invita a comer»
-  alinea el combo con la fila del código; un requisito nuevo, las listas desplegables dentro de la ventana del puesto.
+  alinea el combo con la fila del código; «Cabecera con logos y el engranaje en el pie» fija el nombre del servicio; un
+  requisito nuevo, las listas desplegables dentro de la ventana del puesto.
 
 ## Impact
 
