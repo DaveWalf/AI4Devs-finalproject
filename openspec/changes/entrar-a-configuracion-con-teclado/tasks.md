@@ -18,12 +18,19 @@ Las pruebas existentes cambian sólo como dice el punto 8 del gate, con la aprob
 
 ## 2. El teclado del diálogo
 
-- [ ] 2.1 Agregar a `Kiosk.Tests` el archivo nuevo `TecladoClaveTests.cs`, con estos escenarios de `acceso-puesto`, y verlas fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~TecladoClave"`:
+- [x] 2.1 Agregar a `Kiosk.Tests` el archivo nuevo `TecladoClaveTests.cs`, con estos escenarios de `acceso-puesto`, y verlas fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~TecladoClave"`:
   - «El teclado en pantalla»: el orden de las teclas, los puntos y que «Borrar» y «Limpiar» hacen lo suyo;
   - «El teclado físico también tipea», con `inputmode="none"`;
   - «Clave vacía o con letras», con «ENTER»;
   - el borde de los 12 dígitos.
+  - Salida del 10/11 a las 14:08, contra el código de `49cb93c`: `total: 5`, `error: 4` (el orden de las teclas, `Collections differ`, `Actual: []`; el teclado que abre Configuración y el borde de 12, sin `#tecla-4` ni `#tecla-1`; el teclado físico, `Expected: "none"`, `Actual: "numeric"`).
+  - «Clave vacía o con letras (con «ENTER»)» pasó, porque `#aceptar-clave` ya existía; se le sumó que la tecla dice «ENTER», como nombra el escenario, y falló: `Expected: "ENTER"`, `Actual: "Aceptar"`.
+  - Con D3 implementado, a las 14:09: `total: 5`, `error: 0`.
 - [ ] 2.2 Implementar el teclado y el campo de D3 en `DialogoClaveDelDia.razor` y su CSS en `wwwroot/css/puesto.css`. Verificar con el filtro de 2.1 que pasan, y con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~ClaveDelDia|FullyQualifiedName~AccesoPuesto"` qué pruebas existentes fallan y por qué, antes de tocar ninguna.
+  - **Parado el 10/11 a las 14:09: una prueba existente falla por otra razón que D8.** D3 está implementado y el filtro de 2.1 pasa. El filtro de esta tarea da `total: 27`, `error: 1`: `ClaveDelDiaTests.Cualquier_numero_en_desarrollo` (`ClaveDelDiaTests.cs:43`), `Expected: Tuple ("password", "numeric", "off")`, `Actual: Tuple ("password", "none", "off")`.
+  - Esa prueba entra en operativo, que ya pedía la clave, y no mide cómo se entró: falla porque D3 cambia `inputmode="numeric"` por `inputmode="none"`. Los dos cambios de D8 no la cubren, así que no se tocó, y el change se detiene acá por el punto 8 del gate.
+  - `Kiosk.Tests` entero a las 14:11: `total: 369`, `error: 1`, la misma; `git diff --diff-filter=M --name-only cf1b137 -- tests/`, vacío.
+  - Para seguir, David decide si esa línea pasa a esperar `"none"`. Visto sin correr, para la misma decisión: `AccesoPuestoTests.Mantenimiento_entra_directo` pasaría con D8, pero su nombre y su `DisplayName` seguirían diciendo «entra directo … sin clave», que es el escenario que el change retira.
 
 ## 3. La clave en los dos modos y el operador
 
