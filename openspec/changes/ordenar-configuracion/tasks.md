@@ -17,15 +17,27 @@ Las pruebas de base y receptor corren con `INCOMEDOR_SQLSERVER=INMO-DW-AR`.
 
 ## 2. El orden de las pestañas y «Cerrar»
 
-- [ ] 2.1 Pruebas nuevas, vistas fallar antes: `OrdenConfiguracionTests` en `Kiosk.Tests`: abre en Consumos con las nueve
+- [x] 2.1 Pruebas nuevas, vistas fallar antes: `OrdenConfiguracionTests` en `Kiosk.Tests`: abre en Consumos con las nueve
   en el orden de D1; con la flecha derecha, Fin e Inicio; al tocar General, el modo, las bitácoras y «Cerrar el puesto»;
   el pie dice «Cerrar» y ningún botón dice «Cancelar», y «Cerrar» descarta la opacidad no guardada. Verifica:
   `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter-class *OrdenConfiguracionTests`, rojo antes y verde después.
-- [ ] 2.2 Reordenar el `enum Pestana`, abrir en la primera visible y cambiar el texto del pie (D1 y D2). Verifica: 2.1 en
+  - Antes de 2.2, cuatro casos: tres rojos (`Expected: "Consumos"` / `Actual: "General"`; `Expected: "true"` /
+    `Actual: "false"` con Fin; `Expected: "Cerrar"` / `Actual: "Cancelar"`) y uno verde, el de General con su contenido,
+    que ya pasaba y se reforzó con la afirmación de que General es la última pestaña. Después de 2.3 quedaron en la clase
+    los dos que no repite la prueba existente ajustada: el teclado con Fin y «Cerrar»; el orden y la apertura en Consumos
+    los afirma `PestanasConfiguracionTests.Abre_en_general_con_las_nueve_pestanas`.
+- [x] 2.2 Reordenar el `enum Pestana`, abrir en la primera visible y cambiar el texto del pie (D1 y D2). Verifica: 2.1 en
   verde.
-- [ ] 2.3 Ajustar las pruebas existentes de D6 que leen General sin tocarla o listan el orden, y los `DisplayName` de
+- [x] 2.3 Ajustar las pruebas existentes de D6 que leen General sin tocarla o listan el orden, y los `DisplayName` de
   los escenarios renombrados, cada una vista fallar antes del ajuste. Verifica: `dotnet test
   tests/Intelektron.INComedor.Kiosk.Tests` en verde y la lista de archivos de pruebas existentes cambiados, pegada.
+  - `Kiosk.Tests` entero después de 2.2: `total: 387`, `error: 2`, `correcto: 385`. Las dos rojas, las únicas de D6 en
+    este grupo: `PestanasConfiguracionTests.Abre_en_general_con_las_nueve_pestanas` (el orden viejo) y
+    `Las_pestanas_con_el_teclado` (desde General). Las demás que leen General pasan, porque todas las pestañas quedan
+    montadas. Ajustadas: el orden nuevo, Consumos elegida y visible, y el toque de General antes de leerla; el teclado
+    desde Consumos, con el `DisplayName` «… e Inicio vuelve a Consumos …». Después: las dos clases, `total: 13`,
+    `error: 0`. `git diff --diff-filter=M --name-only 86ae3b3 -- tests/` →
+    `tests/Intelektron.INComedor.Kiosk.Tests/PestanasConfiguracionTests.cs` (7 inserciones y 5 borrados).
 
 ## 3. La lista desplegable propia y el combo alineado
 
