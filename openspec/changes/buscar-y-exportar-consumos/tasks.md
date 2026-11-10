@@ -20,7 +20,7 @@ pegado, para ver que sólo cambian las pruebas existentes de la propuesta. Las p
   existentes de la consulta sin cambios.
   - `FiltroConsumos` suma `DesdeUtc`, `HastaUtc`, `Texto` y `Codigo` al final, con `UltimasHoras` y `PorInstante`;
     `ConsumoConsultado` suma `TicketId`, `TrabajoOriginalId` y `EstadoOriginal` al final, y `Numero`; la conexión registra
-    `normalizar` (NFD sin marcas, minúsculas) y el patrón escapa `\`, `%` y `_` con `ESCAPE ''`. Las 14 de
+    `normalizar` (NFD sin marcas, minúsculas) y el patrón escapa `\`, `%` y `_` con `ESCAPE '\'`. Las 14 de
     `ConsultaConsumosTests` pasan sin cambios.
 - [x] 1.3 Resolver un código a su persona sin abrir sesión (D3), con su prueba vista fallar antes. Verifica: la prueba en
   verde.
