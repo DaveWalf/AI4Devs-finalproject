@@ -72,6 +72,18 @@ Nota del apply: la semilla de la atención, con los ocho códigos, es un recurso
 - [x] 8.2 Publicar el puesto con `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que corre la E2E contra el EXE, para que David lo pruebe desde `artifacts\publicacion\puesto`.
   - A las 03:54: build Release `-warnaserror` con 0 advertencias, «publicación revisada: 482 entradas, ninguna con datos ni secretos», el E2E del flujo principal contra el EXE 1 de 1 y el zip de 77.496.728 bytes (sha256 `a7a7b278…0f8373`).
 
+## 9. Ampliación del 10/11: encendida por omisión y la fila del código
+
+Sólo después del gate de la ampliación (`proposal.md`, puntos A1 a A8). Cada prueba que cambia está en la lista del punto A4, y ninguna otra; al cerrar cada tarea, `git diff --diff-filter=M --name-only f9cd6c0 -- tests/` lista sólo `AlmacenSimulacionTests.cs`, `ModoSimulacionTests.cs`, `ComboSimulacionTests.cs` y `SimulacionE2ETests.cs`, y `git diff --diff-filter=M --name-only 07a2329 -- tests/` sigue vacío.
+
+- [ ] 9.1 Cambiar en `AlmacenSimulacionTests.cs` la teoría del ajuste ausente o ilegible a «encendida», y en `ModoSimulacionTests.cs` las ocho pruebas del punto A4, con los `DisplayName` de los escenarios nuevos de `acceso-puesto`. Verlas fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~AlmacenSimulacion|FullyQualifiedName~ModoSimulacion"`.
+- [ ] 9.2 En `AlmacenSimulacion.Leer`, sólo `"APAGADA"` da apagada (D4). En `PantallaAtencion.razor`, sacar el apagado al pasar a operativo y el del arranque con `STARTUP` (D5, D12). Verificar con el filtro de 9.1 que pasan, y con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` que no hay ninguna falla.
+- [ ] 9.3 Agregar a `Kiosk.Tests` el archivo nuevo `PantallaIdentificacionTests.cs`, con «El título invita a disfrutar la comida» y el orden de la fila en el DOM: el combo antes del campo, y el campo e «Ingresar» juntos en `.ingreso`, con y sin simulación. Cambiar en `ComboSimulacionTests.cs` «Sin el modo simulación no hay combo» para que guarde la simulación apagada. Verlas fallar con `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter "FullyQualifiedName~PantallaIdentificacion|FullyQualifiedName~ComboSimulacion"`.
+- [ ] 9.4 Implementar `MensajesAtencion.TituloReposo` (D13) y la fila `.ingreso` en `PantallaAtencion.razor`, con el combo arriba, y su CSS en `wwwroot/css/puesto.css` (D12). Verificar con el filtro de 9.3 que pasan.
+- [ ] 9.5 Cambiar `SimulacionE2ETests.cs`: sin el toque de «Encender la simulación», y con la medida de las cajas en 1024 × 768 (el combo entero por encima del campo, «Ingresar» a la derecha del campo y en su fila, los tres de al menos 56 px). Verla fallar contra el EXE publicado a las 03:52 y pasar contra el que publique 9.7.
+- [ ] 9.6 Actualizar el paso 8 del recorrido de `readme.md`: la simulación viene encendida, «Apagar la simulación» la apaga, y en operativo no se ve, pero vuelve en mantenimiento. Si el gate aprueba el punto A6, sumar la decisión 7 a `IDSerialSim/AGENTS.md`, en su repo y sin push. Verificar con el chequeo de enlaces de 7.3 que `readme.md` sigue con 0 rotos.
+- [ ] 9.7 Repetir la verificación integral de 8.1 y la publicación de 8.2, y pegar las salidas, con los dos `git diff` de pruebas del encabezado de este grupo.
+
 ## Workflow follow-up
 
 - La revisión de David (el gate de `proposal.md`) va antes del apply, y lo que decida queda escrito en `proposal.md`.

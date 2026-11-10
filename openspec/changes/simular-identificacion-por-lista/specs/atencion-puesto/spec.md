@@ -35,7 +35,7 @@ Origen: AT52 y RB25 (causa interna `UNKNOWN_CODE`), borde: una tecla no envía d
 
 ### Requirement: Identificación eligiendo a la persona en modo simulación
 
-Con el modo simulación activo (`acceso-puesto`), la pantalla de identificación SHALL mostrar, junto al código, un combo con el nombre visible de cada credencial de código del snapshot activo, en orden alfabético. Elegir una entrada MUST identificar a esa persona en el acto, sin «Ingresar», con las reglas, los rechazos y los mensajes del código tipeado (RB25). El combo MUST NOT mostrar ni llevar ningún código. Sin el modo activo, MUST NOT existir.
+Con el modo simulación activo (`acceso-puesto`), la pantalla de identificación SHALL mostrar, arriba del campo del código, un combo con el nombre visible de cada credencial de código del snapshot activo, en orden alfabético. Elegir una entrada MUST identificar a esa persona en el acto, sin «Ingresar», con las reglas, los rechazos y los mensajes del código tipeado (RB25). El combo MUST NOT mostrar ni llevar ningún código. Sin el modo activo, MUST NOT existir.
 
 #### Scenario: Elegir a una persona abre la selección
 Origen: decisión 5 de David del 09/11/2026 («un combo con todas las personas cargadas que identifica al elegir, sin otro paso») y AT01.
@@ -53,7 +53,7 @@ Origen: AT52 («vencido: CREDENTIAL_EXPIRED») y la decisión 5 de David del 09/
 
 #### Scenario: Sin el modo simulación no hay combo
 Origen: decisión 6 de David del 09/11/2026 («con el modo apagado queda sólo el código tipeado»), borde.
-- **GIVEN** una carpeta de datos nueva, con el puesto en mantenimiento
+- **GIVEN** el puesto en mantenimiento con la simulación apagada en General
 - **WHEN** se muestra la pantalla de identificación
 - **THEN** tiene el campo del código y «Ingresar», y ningún combo
 

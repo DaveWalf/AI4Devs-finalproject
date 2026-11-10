@@ -6,14 +6,22 @@ El 09/11/2026, en el repo hermano `IDSerialSim`, David postergó la identificaci
 
 El 10/11/2026, a las 00:25, David dejó para después el change `identificar-por-puerto-serie` (propuesto en su rama, sin aplicar) y decidió dos cosas sobre éste. Primero, que entra en la final, por PR a `final-project-dw` antes del 11/11 a las 12:00, y que si no llega en verde se descarta y la entrega queda como está. Segundo, que el modo simulación funciona sólo en mantenimiento: se enciende en General, se conserva al reiniciar y pasar a operativo lo apaga, así un puesto operativo nunca muestra la lista.
 
+El 10/11/2026, a las 10:36, después de probar el puesto publicado, David amplió este change con la mejora 1 de su lista de ese día, que el arnés `AI4DEVS-PROGRESS.md` guarda entera:
+- la simulación encendida por omisión, hasta que se la apague en General;
+- el combo arriba del ingreso manual, y «Ingresar» a la derecha del campo;
+- un título que invite a disfrutar la comida, en lugar de «Identificate para comenzar».
+
+Ante la pregunta de cómo convive eso con su decisión 6, eligió que en operativo siga sin verse nunca, pero que pasar a operativo no la apague: al volver a mantenimiento reaparece. Así la decisión 6 queda reemplazada en el valor por omisión, no en el operativo. Eligió también que el 1, el 2 y el 3 de esa lista entren en la final, y que el 2 y el 3 vayan como changes propios.
+
 Origen: historia HU01.2, que el corte redujo al código (escenario J); funcionalidad F01; tickets TK01 (la identificación por credencial en el backend) y TK02 (la pantalla de identificación y el interruptor de General).
 
 ## What Changes
 
 - **Enter envía el código**: en la pantalla de identificación, Enter en el campo del código hace lo mismo que «Ingresar», con las mismas reglas y los mismos rechazos. «Ingresar» se queda, porque el toque lo necesita.
-- **Un combo de personas en modo simulación**: con el modo simulación activo, junto al código aparece un combo con el nombre visible de cada persona cargada en la versión activa. Elegir una la identifica en el acto, sin «Ingresar», por el mismo camino que el código tipeado (RB25), con los mismos rechazos y mensajes. El combo nunca muestra ni lleva un código: lleva la credencial.
-- **El modo simulación**: está apagado por omisión. Se enciende y se apaga desde General sólo en mantenimiento, y se conserva en la carpeta de datos. Pasar a operativo lo apaga, y en operativo nunca está activo, aunque el archivo diga lo contrario.
-- **Lo que queda registrado**: cada encendido y apagado va a la bitácora general como `CONFIGURATION_CHANGED`. Una identificación por el combo deja sus `SESSION_OPENED` o `IDENTIFICATION_REJECTED` de siempre, con una marca de que vino de la lista; ninguno lleva el código.
+- **Un combo de personas en modo simulación**: con el modo simulación activo, arriba del campo del código aparece un combo con el nombre visible de cada persona cargada en la versión activa. Elegir una la identifica en el acto, sin «Ingresar», por el mismo camino que el código tipeado (RB25), con los mismos rechazos y mensajes. El combo nunca muestra ni lleva un código: lleva la credencial.
+- **El modo simulación**: está encendido por omisión desde la ampliación del 10/11. Se apaga y se vuelve a encender desde General sólo en mantenimiento, y se conserva en la carpeta de datos. En operativo nunca está activo, aunque el archivo diga lo contrario, y pasar a operativo no cambia lo guardado.
+- **La pantalla de identificación** (ampliación del 10/11): el título «¡Hola! Identificate y disfrutá tu comida», el combo arriba del campo y «Ingresar» a la derecha del campo, en su misma fila.
+- **Lo que queda registrado**: cada apagado y encendido desde General va a la bitácora general como `CONFIGURATION_CHANGED`. Una identificación por el combo deja sus `SESSION_OPENED` o `IDENTIFICATION_REJECTED` de siempre, con una marca de que vino de la lista; ninguno lleva el código.
 
 ## Non-goals
 
@@ -32,7 +40,8 @@ Ninguna.
 ### Modified Capabilities
 
 - `atencion-puesto`: «Identificación simulada por código» suma Enter como forma de enviar el código, y un requisito nuevo describe la identificación eligiendo a la persona en el combo del modo simulación.
-- `acceso-puesto`: dos requisitos nuevos, el modo simulación sólo en mantenimiento y su registro en la bitácora general. Los modos de mantenimiento y operativo no cambian.
+- `acceso-puesto`: dos requisitos nuevos, el modo simulación encendido por omisión y sólo en mantenimiento, y su registro en la bitácora general. Los modos de mantenimiento y operativo no cambian.
+- `presentacion-puesto` (ampliación del 10/11): un requisito nuevo, la pantalla de identificación que invita a comer, con el combo arriba y «Ingresar» a la derecha del campo.
 
 `configuracion-puesto` no cambia: General ya debe mostrar el modo, las bitácoras y «Cerrar el puesto», y el interruptor se suma sin quitar nada ni agregar pestañas.
 
@@ -42,7 +51,7 @@ Ninguna.
   - `Infrastructure.Sqlite`: identificar por la credencial elegida, compartiendo con el código tipeado la clasificación, la sesión y la bitácora, y la lista de personas para el combo.
   - `Kiosk`: el almacén del modo simulación, el interruptor en General, el combo y Enter en la pantalla de identificación, la entrada nueva de `MaquinaAtencion` y el registro del almacén en `MainWindow`.
   - `Domain` no cambia. Sin migración: la versión de esquema sigue en 4.
-- **Pruebas**: nuevas en `Infrastructure.Sqlite.Tests`, `Kiosk.Tests` y una en `E2E.Tests`. **Ninguna prueba existente cambia** (punto 6 del gate).
+- **Pruebas**: nuevas en `Infrastructure.Sqlite.Tests`, `Kiosk.Tests` y una en `E2E.Tests`. **Ninguna prueba de `07a2329` cambia** (punto 6 del gate). La ampliación cambia pruebas de este mismo change, con la aprobación de David (punto A4).
 - **Documentos**: `AGENTS.md`, `openspec/config.yaml`, `readme.md` (cómo encender la simulación) y `docs/aplicacion-del-curso.md`.
 - Sin dependencias nuevas, sin cambios en la CI ni en el receptor.
 
@@ -73,3 +82,33 @@ Cada punto lleva una propuesta y su alternativa; lo que decidas queda escrito ac
 ### Decisión del gate
 
 El 10/11/2026, a las 03:29, David respondió «aprobado. Avancemos.»: los puntos 1 a 5 y 7 quedan con la propuesta de cada uno, incluido el recorte de respaldo del punto 1, y los puntos 6, 8 y 9 como están. No dio una talla propia (punto 10), así que la tabla de tallas queda con la de la IA.
+
+## Ampliación del 10/11: para el gate de David
+
+Cada punto lleva una propuesta y su alternativa, salvo el A1, que ya decidiste. Lo que decidas queda escrito acá antes de aplicar la ampliación.
+
+1. **A1. Lo decidido a las 10:36.** La simulación arranca encendida sin ajuste guardado, sólo «Apagar la simulación» en General la apaga, en operativo nunca se ve, y pasar a operativo no cambia lo guardado (D5, D12). Salen las dos escrituras de antes: la del pase a operativo y la del arranque en operativo con `Access = "STARTUP"`.
+2. **A2. Un ajuste ilegible** (D4). Propuesta: encendida, igual que sin ajuste, como un modo ilegible arranca en mantenimiento, el modo por omisión. Alternativa: apagada, que deja dos casos de la teoría del almacén y una prueba de `ModoSimulacionTests` como están.
+3. **A3. El título** (D13). Propuesta: «¡Hola! Identificate y disfrutá tu comida». Alternativas: «Tu comida te espera. Identificate y disfrutá», «¡Buen provecho! Identificate y elegí lo tuyo», o una frase tuya.
+4. **A4. Pruebas de este mismo change que cambian, con tu aprobación.** Son de `b5ee4d3`, todavía sin integrar, y cada una se ve fallar contra el código de hoy antes de implementar:
+   - `AlmacenSimulacionTests`: la teoría «sin archivo, ilegible o con otro valor, está apagada» pasa a «encendida», en sus cinco casos.
+   - `ModoSimulacionTests`, las ocho:
+     - la carpeta nueva arranca encendida;
+     - «Apagarla se conserva» reemplaza a «Encenderla se conserva»;
+     - «En operativo nunca se ve» reemplaza a «Pasar a operativo la apaga»;
+     - el arranque en operativo deja el ajuste encendido y sin registro;
+     - el ilegible queda encendido;
+     - «Apagar la simulación» reemplaza a «Encender la simulación» en la bitácora;
+     - «Pasar a operativo no la registra» reemplaza a «Apagada al pasar a operativo»;
+     - la escritura que falla es la del apagado y la simulación sigue encendida.
+   - `ComboSimulacionTests`: «Sin el modo simulación no hay combo» guarda la simulación apagada en lugar de usar una carpeta nueva.
+   - `SimulacionE2ETests`: deja de tocar «Encender la simulación», que en una carpeta nueva ya no está, y suma la medida de la fila: el combo arriba del campo e «Ingresar» a su derecha.
+   - De `07a2329` no cambia ninguna. Las pruebas de componentes no registran el almacén y siguen sin combo (A5). Las E2E de antes arrancan ahora con el combo en reposo. Si alguna falla por eso, se para y se te pregunta.
+5. **A5. Sin almacén registrado** (D4). Propuesta: la simulación sigue apagada en memoria, así las pruebas de componentes de `07a2329` no ven el combo. Alternativa: encendida también sin almacén, que pone el combo en todas las pruebas de componentes de reposo y obliga a revisarlas una por una.
+6. **A6. La decisión 6 en `IDSerialSim/AGENTS.md`.** Propuesta: sumar ahí la decisión 7, del 10/11 a las 10:36, que reemplaza el «apagado por omisión» de la 6 y conserva el «nunca en operativo». Va en un commit de ese repo, sin push. Alternativa: dejarla como está, y entonces la 6 contradice al puesto.
+7. **A7. Calendario y recorte.** La ampliación se aplica apenas apruebes, en 1 a 1,5 h, y después va tu prueba en el ejecutable publicado de nuevo. Recorte propuesto: si a las 22:00 la ampliación no está en verde, se revierten sus commits y el change sale como lo probaste a las 09:46. El recorte del punto 1 sigue debajo, como último respaldo.
+8. **A8. Talla de la ampliación.** La de la IA es S: 3 escenarios nuevos y 9 modificados sobre el mismo código, sin consulta nueva ni dependencias. La tuya la das acá.
+
+### Decisión del gate de la ampliación
+
+Pendiente.
