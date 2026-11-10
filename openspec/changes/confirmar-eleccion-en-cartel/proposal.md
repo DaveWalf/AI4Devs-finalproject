@@ -55,12 +55,12 @@ Cada punto lleva una propuesta y su alternativa; lo que decidas queda escrito ac
 
 1. **Dónde va «Cancelar»** (D2). Propuesta: en el bloque del título, junto al «Hola, …», dentro de la pantalla y no en la cabecera, que sigue sin controles. Alternativa: un tercer botón en el cartel, «Cancelar», que obliga a elegir algo para poder irse.
 2. **Escape y el foco** (D3). Propuesta: al abrirse el cartel, el foco va a «Confirmar», el resto de la pantalla queda inerte, y Escape es «Elegir otra». Alternativa: Escape no hace nada, como hoy durante una atención.
-3. **Pruebas existentes que cambian, con tu aprobación.** Medido por un agente sobre `7d772c3`, leyendo cada método entero:
+3. **Pruebas existentes que cambian, con tu aprobación.** Medido por un agente sobre `7d772c3`, con la misma pantalla que `ef63c02`, leyendo cada método entero:
    - `PantallaAtencionTests.Controles_de_la_seleccion_son_botones` y `PantallaDistribucionTests.Con_nueve_los_controles_son_botones`, de componentes: buscan «Confirmar» sin opción elegida. Suman el toque de una opción.
    - `ConfiguracionPorPestanasE2ETests.La_ventana_angosta_sigue_desplazandose`, E2E: desplaza hasta el «Confirmar» del pie. Llega a la última opción, la toca y mide «Confirmar» en el cartel.
    - En riesgo, sin cambio previsto: `PresentacionTactilTests.Nueve_opciones_en_1024_por_768_y_una_columna_en_600` mide «Cancelar» y «Confirmar» con una opción tocada, y a 600 px espera que la página se desplace. Sin la barra, las nueve opciones podrían entrar sin desplazar. Si falla, se para y se te pregunta.
    - Las demás que tocan la selección siguen pasando: el cartel conserva `id="confirmar"`, `id="eleccion"` y `id="ocupado"`.
 4. **El texto del cartel** (D1). Propuesta: el título «¿Confirmás tu elección?», el nombre de la opción en grande y «Cargo informado: …» sólo si hay cargo. Alternativa: «Elegiste …» como título.
 5. **Calendario y recorte.** Se aplica después de la ampliación del 1, apilado sobre ella, en 2,5 a 3 h. Tu prueba en el ejecutable va una sola vez, con los tres cambios juntos. Recorte propuesto: si el 11/11 a las 08:00 este change no está archivado y en verde, queda fuera de la final, y con él el 3, que va encima.
-6. **Rama.** `feature/confirmar-eleccion-en-cartel-dw`, desde `feature/simular-identificacion-por-lista-dw` en `7d772c3` y sin seguimiento remoto. Su PR apunta a esa rama y se integra después de ella, como la pila del 09/11.
+6. **Rama.** `feature/confirmar-eleccion-en-cartel-dw`, desde `feature/simular-identificacion-por-lista-dw` en `ef63c02` y sin seguimiento remoto. Su PR apunta a esa rama y se integra después de ella, como la pila del 09/11.
 7. **Tallas.** La de la IA es S; la tuya la das acá.
