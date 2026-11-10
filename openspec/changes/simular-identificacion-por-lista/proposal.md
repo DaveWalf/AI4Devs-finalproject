@@ -59,7 +59,7 @@ Ninguna.
 
 | Quién | Talla | Horas | Con el colchón del 30 % |
 |---|---|---|---|
-| David | La das en el gate | | |
+| David | Sin talla propia (gate del 10/11 a las 12:08) | | |
 | La IA (Claude Code, Opus 5.5), 10/11/2026 | **S** | 2 a 3 h | 2,6 a 3,9 h de capacidad |
 
 **Por qué la IA da S y no M.** Son 3 requisitos nuevos y 1 modificado, con 16 escenarios nuevos, sobre un camino de identificación que ya existe y se reutiliza entero. Lo nuevo es una consulta, un archivo de ajuste como el del modo y un control en dos pantallas que ya tienen su patrón. Lo que lo acerca a M es la prueba E2E y el cuidado de que el código no llegue a la pantalla. Como referencia de reloj, `mover-engranaje-al-pie` (S) se aplicó en menos de una hora; éste se estima en 1 a 1,5 h de reloj de la IA, más tu prueba en el ejecutable.
@@ -111,4 +111,13 @@ Cada punto lleva una propuesta y su alternativa, salvo el A1, que ya decidiste. 
 
 ### Decisión del gate de la ampliación
 
-Pendiente.
+El 10/11/2026, a las 12:08, David respondió «Todo aprobado.» al gate de las tres propuestas del día, con las recomendadas y sin talla propia. Queda así:
+
+- A1 como está, decidido a las 10:36.
+- A2 con la propuesta: un ajuste ilegible deja la simulación encendida.
+- A3 con la propuesta: el título «¡Hola! Identificate y disfrutá tu comida».
+- A4 con la propuesta: cambian sólo las pruebas de su lista, cada una vista fallar antes.
+- A5 con la propuesta: sin almacén registrado, la simulación sigue apagada en memoria.
+- A6 con la propuesta: la decisión 7 va en `IDSerialSim/AGENTS.md`, en un commit de ese repo y sin push.
+- A7 con la propuesta: el recorte a las 22:00.
+- A8 sin talla propia, así que la tabla de tallas queda con la de la IA.
