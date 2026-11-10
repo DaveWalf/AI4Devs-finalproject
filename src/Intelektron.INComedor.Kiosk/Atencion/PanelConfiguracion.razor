@@ -35,6 +35,11 @@
 
         <section role="tabpanel" id="seccion-general" class="seccion" aria-labelledby="pestana-general" hidden="@Oculta(Pestana.General)">
             <p id="modo-puesto" class="modo-puesto">Modo: @(Modo == ModoPuesto.Operativo ? "operativo" : "mantenimiento")</p>
+            @if (OfreceSimulacion)
+            {
+                @* El modo simulación, sólo en mantenimiento; se aplica en el acto, como el modo (D6 de simular-identificacion-por-lista). *@
+                <p id="modo-simulacion" class="modo-puesto">Simulación: @(Simulacion ? "encendida" : "apagada")</p>
+            }
             <div class="acciones abrir-paneles">
                 @if (Modo == ModoPuesto.Mantenimiento)
                 {
@@ -44,6 +49,17 @@
                 {
                     <button id="pasar-mantenimiento" type="button" @onclick="() => PasarAMantenimiento.InvokeAsync()">Pasar a mantenimiento</button>
                 }
+                @if (OfreceSimulacion)
+                {
+                    @if (Simulacion)
+                    {
+                        <button id="apagar-simulacion" type="button" @onclick="() => CambiarSimulacion.InvokeAsync(false)">Apagar la simulación</button>
+                    }
+                    else
+                    {
+                        <button id="encender-simulacion" type="button" @onclick="() => CambiarSimulacion.InvokeAsync(true)">Encender la simulación</button>
+                    }
+                }
                 @if (PuedeCerrar)
                 {
                     <button id="cerrar-puesto" type="button" @onclick="() => CerrarPuesto.InvokeAsync()">Cerrar el puesto</button>
@@ -52,6 +68,10 @@
             @if (AvisoModo is not null)
             {
                 <p id="aviso-modo" class="aviso" role="alert">@AvisoModo</p>
+            }
+            @if (OfreceSimulacion && AvisoSimulacion is not null)
+            {
+                <p id="aviso-simulacion" class="aviso" role="alert">@AvisoSimulacion</p>
             }
             @if (Bitacoras is not null)
             {
@@ -375,6 +395,21 @@
     /// <summary>El aviso de que no se pudo guardar el modo; null sin aviso.</summary>
     [Parameter]
     public string? AvisoModo { get; set; }
+
+    /// <summary>El modo simulación guardado, que General muestra en mantenimiento (D6 de simular-identificacion-por-lista).</summary>
+    [Parameter]
+    public bool Simulacion { get; set; }
+
+    /// <summary>Encender (true) o apagar (false) la simulación; sin quien la cambie, General no la ofrece.</summary>
+    [Parameter]
+    public EventCallback<bool> CambiarSimulacion { get; set; }
+
+    /// <summary>El aviso de que no se pudo guardar la simulación; null sin aviso.</summary>
+    [Parameter]
+    public string? AvisoSimulacion { get; set; }
+
+    /// <summary>La simulación se ofrece sólo en mantenimiento y con quien la cambie: en operativo, General no la muestra (D5).</summary>
+    private bool OfreceSimulacion => Modo == ModoPuesto.Mantenimiento && CambiarSimulacion.HasDelegate;
 
     /// <summary>Los logos vigentes de la cabecera, para la vista previa (D14).</summary>
     [Parameter]

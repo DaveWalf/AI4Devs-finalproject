@@ -45,6 +45,7 @@ public partial class MainWindow : Window
             Closed += (_, _) => atencion.Dispose();
             servicios.AddSingleton(atencion);
             servicios.AddSingleton(new AlmacenModoPuesto(entorno.Carpeta));
+            servicios.AddSingleton(new AlmacenSimulacion(entorno.Carpeta));
             servicios.AddSingleton(new AlmacenImpresora(entorno.Carpeta));
             servicios.AddSingleton(PrepararCierre());
             var almacenPantalla = new AlmacenPantalla(entorno.Carpeta);

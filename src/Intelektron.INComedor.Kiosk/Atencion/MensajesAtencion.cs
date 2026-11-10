@@ -14,6 +14,9 @@ public static class MensajesAtencion
 {
     private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-AR");
 
+    /// <summary>El título de reposo, que saluda e invita a disfrutar la comida (D13 de simular-identificacion-por-lista).</summary>
+    public const string TituloReposo = "¡Hola! Identificate y disfrutá tu comida";
+
     public const string Exito = "Consumo registrado. Retirá tu comprobante";
     public const string ComprobantePendiente = "Tu consumo está registrado. El comprobante queda pendiente";
     public const string Ocupado = "Puesto ocupado: hay una confirmación en curso";
@@ -46,6 +49,9 @@ public static class MensajesAtencion
 
     /// <summary>El modo no se pudo escribir en la carpeta de datos: sigue el de antes.</summary>
     public const string ModoNoGuardado = "No se pudo guardar el modo: sigue el de antes";
+
+    /// <summary>El modo simulación no se pudo escribir en la carpeta de datos: sigue como estaba (D6 de simular-identificacion-por-lista).</summary>
+    public const string SimulacionNoGuardada = "No se pudo guardar la simulación: sigue como estaba";
 
     // La pestaña Impresora (comprobante-local de configurar-puesto-por-pestanas, D13).
     public const string PruebaSalio = "La prueba salió";

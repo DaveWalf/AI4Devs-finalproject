@@ -26,11 +26,27 @@
 
             case EstadoAtencion.Reposo:
                 <section class="tarjeta superficie">
-                    <h2>Identificate para comenzar</h2>
+                    <h2>@MensajesAtencion.TituloReposo</h2>
                     <p>Identificación simulada por código (demostración)</p>
-                    <input id="codigo" type="text" inputmode="numeric" autocomplete="off" aria-label="Código"
-                           value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" />
-                    <div class="acciones">
+                    @* El combo va arriba del campo del código, y el campo e «Ingresar» en su fila (D12 de simular-identificacion-por-lista). *@
+                    @if (SimulacionActiva)
+                    {
+                        @* El combo del modo simulación: el valor es la credencial, nunca el código; elegir identifica en el acto (D1 y D9). *@
+                        @* La clave cambia con cada elección: el select se vuelve a crear y queda en la opción vacía también en el DOM. *@
+                        <div class="simulacion">
+                            <label for="simulacion-persona">Simulación: elegí a la persona</label>
+                            <select id="simulacion-persona" @key="_eleccionesSimulacion" value="" @onchange="ElegirEnSimulacion">
+                                <option value="">Elegí a una persona…</option>
+                                @foreach (var entrada in _personasSimulacion)
+                                {
+                                    <option value="@entrada.CredencialId.ToString("D")">@entrada.NombreVisible</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <div class="ingreso">
+                        <input id="codigo" type="text" inputmode="numeric" autocomplete="off" aria-label="Código"
+                               value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" @onkeydown="TeclaCodigo" />
                         <button id="ingresar" type="button" class="principal" @onclick="Ingresar">Ingresar</button>
                     </div>
                     @if (Maquina.Aviso is not null)
@@ -212,6 +228,7 @@
                             Administracion="Servicio.Administracion"
                             VistaPrevia="estilo => _vista = estilo" GuardarEstilo="GuardarConfiguracion" Cancelar="CancelarConfiguracion"
                             Modo="_modo" AvisoModo="@_avisoModo" PasarAOperativo="PasarAOperativo" PasarAMantenimiento="PasarAMantenimiento"
+                            Simulacion="SimulacionActiva" CambiarSimulacion="CambiarSimulacion" AvisoSimulacion="@_avisoSimulacion"
                             PuedeCerrar="@(_cierre is not null)" CerrarPuesto="@(() => SolicitarCierre("CLOSE_BUTTON"))"
                             Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador"
                             Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
@@ -245,6 +262,11 @@
     private AlmacenModoPuesto? _almacenModo;
     private ModoPuesto _modo = ModoPuesto.Mantenimiento;
     private string? _avisoModo;
+    private AlmacenSimulacion? _almacenSimulacion;
+    private bool _simulacionGuardada;
+    private string? _avisoSimulacion;
+    private IReadOnlyList<EntradaSimulacion> _personasSimulacion = [];
+    private int _eleccionesSimulacion;
     private CierrePuesto? _cierre;
     private SesionOperador? _sesionOperador;
     private AlmacenImpresora? _almacenImpresora;
@@ -268,6 +290,13 @@
 
     private const string AccesoMantenimiento = "MAINTENANCE_MODE";
     private const string AccesoClave = "DAILY_KEY";
+
+    /// <summary>
+    /// La simulación activa: guardada encendida y en mantenimiento (D5 de simular-identificacion-por-lista). No depende sólo
+    /// del archivo: un puesto operativo nunca muestra la lista, aunque lo guardado diga lo contrario, y el operativo no
+    /// cambia lo guardado: al volver a mantenimiento está como se la dejó (D12).
+    /// </summary>
+    private bool SimulacionActiva => _simulacionGuardada && _modo == ModoPuesto.Mantenimiento;
 
     private static readonly TimeZoneInfo ZonaDelPuesto = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
 
@@ -298,6 +327,10 @@
         // Sin almacén del modo registrado (las pruebas que no lo usan), mantenimiento en memoria, como el estilo (D5).
         _almacenModo = Proveedor.GetService(typeof(AlmacenModoPuesto)) as AlmacenModoPuesto;
         _modo = _almacenModo?.Leer() ?? ModoPuesto.Mantenimiento;
+
+        // Sin almacén de la simulación registrado (las pruebas que no lo usan), apagada y en memoria, como el modo (D4).
+        _almacenSimulacion = Proveedor.GetService(typeof(AlmacenSimulacion)) as AlmacenSimulacion;
+        _simulacionGuardada = _almacenSimulacion?.Leer() ?? false;
         if (Proveedor.GetService(typeof(IValidadorClaveDelDia)) is IValidadorClaveDelDia validador)
         {
             _validador = validador;
@@ -323,6 +356,7 @@
         }
 
         Maquina.Iniciar();
+        LeerPersonasSimulacion();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
 
@@ -347,6 +381,58 @@
         _codigo = string.Empty;
         Maquina.Identificar(codigo);
         CancelarConfiguracionFueraDeReposo();
+    }
+
+    /// <summary>
+    /// Una persona elegida en el combo del modo simulación (D9): identifica por su credencial, con las guardas del código
+    /// tipeado. El valor llega del DOM (OWASP): sólo un GUID llega a la identificación, y una credencial que no está en la
+    /// versión activa la rechaza la identificación (D2). Cada elección vuelve a crear el combo en la opción vacía.
+    /// </summary>
+    private void ElegirEnSimulacion(ChangeEventArgs e)
+    {
+        _eleccionesSimulacion++;
+        if (!SimulacionActiva || !Guid.TryParseExact(e.Value?.ToString(), "D", out var credencial))
+        {
+            return;
+        }
+
+        Maquina.IdentificarPorCredencial(credencial);
+        CancelarConfiguracionFueraDeReposo();
+    }
+
+    /// <summary>
+    /// La lista del combo, leída sólo al quedar en reposo, al encender la simulación y al cerrar Configuración, no en cada
+    /// dibujado: el temporizador redibuja cada segundo (D10). Sin la simulación activa o sin base, queda vacía.
+    /// </summary>
+    private void LeerPersonasSimulacion()
+    {
+        if (!SimulacionActiva || Maquina.Estado == EstadoAtencion.ErrorAlmacenamiento)
+        {
+            _personasSimulacion = [];
+            return;
+        }
+
+        try
+        {
+            _personasSimulacion = Servicio.Identificacion.ListarParaSimulacion();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            // Sin la lista, el combo queda sólo con la opción vacía; la atención muestra el error en su próxima escritura.
+            _personasSimulacion = [];
+        }
+    }
+
+    /// <summary>
+    /// Enter en el campo envía lo tipeado, como «Ingresar» (D8 de simular-identificacion-por-lista): el campo ya se
+    /// actualizó con cada tecla, y sin un form no hay un segundo envío.
+    /// </summary>
+    private void TeclaCodigo(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            Ingresar();
+        }
     }
 
     /// <summary>
@@ -385,6 +471,7 @@
         _vista = _guardado;
         _acceso = acceso;
         _avisoModo = null;
+        _avisoSimulacion = null;
         // El estado se lee antes de registrar la apertura: muestra lo que había al tocar el engranaje.
         _estadoBitacoras = LeerEstadoBitacoras();
         RegistrarConfiguracion("CONFIGURATION_OPENED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
@@ -524,6 +611,51 @@
             ActorReason = SinAutenticacion,
         });
     }
+
+    /// <summary>El interruptor de General: sólo en mantenimiento, y con el acceso con que se entró a Configuración (D6).</summary>
+    private void CambiarSimulacion(bool encendida)
+    {
+        if (_modo == ModoPuesto.Mantenimiento)
+        {
+            GuardarSimulacion(encendida, _acceso);
+            LeerPersonasSimulacion();
+        }
+    }
+
+    /// <summary>
+    /// Guarda el modo simulación y lo registra en la general con el antes, el después, el resultado, lo vigente y el acceso,
+    /// nunca con un código ni un nombre (D7). Si no se puede guardar, sigue como estaba y General lo avisa.
+    /// </summary>
+    private void GuardarSimulacion(bool encendida, string acceso)
+    {
+        var antes = _simulacionGuardada;
+        var resultado = "APPLIED";
+        try
+        {
+            _almacenSimulacion?.Guardar(encendida);
+            _simulacionGuardada = encendida;
+            _avisoSimulacion = null;
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            resultado = "FAILED";
+            _avisoSimulacion = MensajesAtencion.SimulacionNoGuardada;
+        }
+
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "SIMULATION_MODE",
+            Before = EncendidaOApagada(antes),
+            After = EncendidaOApagada(encendida),
+            Result = resultado,
+            Effective = EncendidaOApagada(SimulacionActiva),
+            Access = acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+    }
+
+    private static string EncendidaOApagada(bool encendida) => encendida ? "ON" : "OFF";
 
     /// <summary>
     /// Cada consulta de consumos queda en la general con los filtros, el orden y las filas, sin nombres ni códigos, con el actor
@@ -789,6 +921,8 @@
         _vista = _guardado;
         _configuracion = false;
         RegistrarConfiguracion("CONFIGURATION_CANCELLED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
+        // Personas se edita en Configuración: al cerrarla, el combo lee la versión activa (D10 de simular-identificacion-por-lista).
+        LeerPersonasSimulacion();
     }
 
     /// <summary>Sin clave, Configuración no tiene actor: va nulo con este motivo, sin inventar a nadie (D9).</summary>
@@ -867,12 +1001,20 @@
     {
         var enReposo = Maquina.Estado == EstadoAtencion.Reposo && !HayDialogo;
         var estado = HayDialogo ? (EstadoAtencion?)null : Maquina.Estado;
+        var volvioAReposo = enReposo && !primera && _estadoDibujado != EstadoAtencion.Reposo;
         if (enReposo && (primera || _estadoDibujado != EstadoAtencion.Reposo))
         {
             await _raiz.FocusAsync();
         }
 
         _estadoDibujado = estado;
+
+        // Al volver a reposo con la simulación activa, el combo relee la lista (D10); el primer dibujado ya la tiene.
+        if (volvioAReposo && SimulacionActiva)
+        {
+            LeerPersonasSimulacion();
+            StateHasChanged();
+        }
     }
 
     public void Dispose()
