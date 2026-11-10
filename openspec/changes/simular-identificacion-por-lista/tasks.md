@@ -87,16 +87,22 @@ Sólo después del gate de la ampliación (`proposal.md`, puntos A1 a A8). Cada 
   - «Sin el modo simulación no hay combo», ya cambiada, pasa: una simulación guardada apagada no tiene combo desde `b5ee4d3`. Su rojo es el de 9.2, cuando la versión de antes, con una carpeta nueva, vio el combo.
 - [x] 9.4 Implementar `MensajesAtencion.TituloReposo` (D13) y la fila `.ingreso` en `PantallaAtencion.razor`, con el combo arriba, y su CSS en `wwwroot/css/puesto.css` (D12). Verificar con el filtro de 9.3 que pasan.
   - `Kiosk.Tests` entero a las 13:33: `total: 359`, `error: 0` (las 356 de 9.2 más las tres nuevas).
-- [ ] 9.5 Cambiar `SimulacionE2ETests.cs`: sin el toque de «Encender la simulación», y con la medida de las cajas en 1024 × 768 (el combo entero por encima del campo, «Ingresar» a la derecha del campo y en su fila, los tres de al menos 56 px). Verla fallar contra el EXE publicado a las 03:52 y pasar contra el que publique 9.7.
+- [x] 9.5 Cambiar `SimulacionE2ETests.cs`: sin el toque de «Encender la simulación», y con la medida de las cajas en 1024 × 768 (el combo entero por encima del campo, «Ingresar» a la derecha del campo y en su fila, los tres de al menos 56 px). Verla fallar contra el EXE publicado a las 03:52 y pasar contra el que publique 9.7.
   - El área de 1024 × 768 se fija por CDP como en `PresentacionTactilTests`, y las medidas y la captura `reposo-simulacion-1024x768` quedan en el `registro.txt` de la corrida.
   - A las 13:34, contra el EXE publicado a las 03:52 (`INCOMEDOR_E2E_KIOSK_EXE`): `error: 1`, `Locator expected to be visible` en `Locator("#simulacion-persona")`, porque una carpeta nueva arrancaba sin combo.
   - A las 13:35, contra el puesto compilado en Debug con 9.4: `error: 0`; el registro dice «combo de 217,0 a 697,0 px y de 220,5 a 276,5 px, 56,0 px de alto; campo de 217,0 a 673,6 px y de 292,5 a 348,5 px, 56,0 px de alto; «Ingresar» de 685,6 a 807,0 px y de 292,5 a 348,5 px, 56,0 px de alto». La captura, mirada: el título nuevo, el combo arriba y la fila del código entera.
   - Mutante de la medida, revertido: `.ingreso` en columna da `«Ingresar» empieza en 217 px y el campo termina en 807 px`, `error: 1`.
+  - A las 13:42, dentro de la corrida de 9.7, contra el EXE que publicó 9.7: en verde, con las mismas medidas, y su `registro.txt` nombra `artifacts\publicacion\puesto\Intelektron.INComedor.Kiosk.exe`.
 - [x] 9.6 Actualizar el paso 8 del recorrido de `readme.md`: la simulación viene encendida, «Apagar la simulación» la apaga, y en operativo no se ve, pero vuelve en mantenimiento. Si el gate aprueba el punto A6, sumar la decisión 7 a `IDSerialSim/AGENTS.md`, en su repo y sin push. Verificar con el chequeo de enlaces de 7.3 que `readme.md` sigue con 0 rotos.
   - El paso 9 nombraba «el encendido del paso 8»: dice ahora «el apagado y el encendido del paso 8».
   - La decisión 7, en `6755e97` de `IDSerialSim` («Decisión 7: la simulación por lista, encendida por omisión»), sin push.
   - Chequeo de enlaces del 10/11 a las 13:37: el control negativo da `ROTO`, `ANCLA` y `enlaces rotos: 2`; `readme.md`, `AGENTS.md` y `docs/aplicacion-del-curso.md`, `enlaces rotos: 0`.
-- [ ] 9.7 Repetir la verificación integral de 8.1 y la publicación de 8.2, y pegar las salidas, con los dos `git diff` de pruebas del encabezado de este grupo.
+- [x] 9.7 Repetir la verificación integral de 8.1 y la publicación de 8.2, y pegar las salidas, con los dos `git diff` de pruebas del encabezado de este grupo.
+  - Publicación, de 13:38 a 13:40, sobre `718d8ed`: `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local` salió 0, con el build Release `-warnaserror` en `0 Advertencia(s)` y `0 Errores`, «publicación revisada: 482 entradas, ninguna con datos ni secretos» dos veces, el E2E del flujo principal contra el EXE en `total: 1`, `error: 0`, y el zip de 77.496.526 bytes (sha256 `8aec2bb5…91c56bb8`).
+  - `dotnet build INComedor.sln -warnaserror`: `0 Advertencia(s)`, `0 Errores`.
+  - `dotnet test INComedor.sln -c Release`, con `INCOMEDOR_SQLSERVER=INMO-DW-AR` e `INCOMEDOR_E2E_KIOSK_EXE` en el EXE publicado, de 13:40 a 13:45: `total: 767`, `error: 0` (Contracts 23, Domain 91, Sync.Api 62, Sqlite 206, Kiosk 359 y E2E 26). Son las 764 de `f9cd6c0` más las tres de `PantallaIdentificacionTests`.
+  - `openspec validate --all --strict`: `Totals: 16 passed, 0 failed (16 items)`.
+  - `git diff --diff-filter=M --name-only f9cd6c0 -- tests/`: `SimulacionE2ETests.cs`, `AlmacenSimulacionTests.cs`, `ComboSimulacionTests.cs` y `ModoSimulacionTests.cs`, los cuatro de A4. `git diff --diff-filter=M --name-only 07a2329 -- tests/`: vacío.
 
 ## Workflow follow-up
 
