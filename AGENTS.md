@@ -17,7 +17,7 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
   reloj. Si una tarea la necesita, parar y preguntar.
 - La administración de personas, códigos, cupos, opciones y franjas sale de la segunda ola por el
   change `administrar-personas-y-opciones`, sólo mientras no haya INWeb (cada guardado es una versión
-  local; con una versión de INWeb activa, se bloquea). Siguen en la segunda ola los permisos de
+  local; con una versión de INWeb activa, se bloquea). Siguen en la segunda ola los demás permisos de
   operador, la importación de INWeb y lo que deja su recorte: cambiar el código de una persona, crear
   servicios, categorías o ámbitos, vigencias y prioridades editables, días de la semana en las franjas
   y ver o volver a una versión anterior.
@@ -29,6 +29,10 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
   dígitos, detrás de `IValidadorClaveDelDia`), salen de la segunda ola por el change
   `configurar-puesto-por-pestanas`. Siguen ahí la cuenta individual de mantenimiento y la clave del día real
   de INWeb, que entra por esa misma interfaz sin copiar su biblioteca a este repo.
+- Desde el change `entrar-a-configuracion-con-teclado`, el engranaje pide la clave del día de desarrollo en los dos
+  modos, con un teclado en pantalla, y el código de un operador con `OPERATOR` vigente abre Configuración sólo con
+  Consumos, Personas e Impresora, como actor de lo que hace: ese acceso sale de la segunda ola. Siguen ahí los demás
+  permisos de operador.
 - La prueba de impresión de Configuración (sin consumo ni fila en la base) y los textos del comprobante salen
   de la segunda ola por el mismo change; sigue ahí el resto del diagnóstico y la impresora física, que espera
   el dispositivo elegido.

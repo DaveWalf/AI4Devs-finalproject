@@ -199,23 +199,25 @@ de SQL Server del equipo. Docker quedó fuera del corte ([lo que no se aplica](d
 **Recorrido de verificación.** Con el puesto abierto por el camino 1 o el 2 y la base recién creada, sin el
 receptor, en la ventana:
 
-1. `0001` e «Ingresar», y tocar «Almuerzo común»: se abre el cartel «¿Confirmás tu elección?» con la opción y su
-   cargo («Elegir otra» o Escape lo cierran sin escribir nada). «Confirmar» en el cartel: «Consumo registrado.
-   Retirá tu comprobante», y el comprobante queda como archivo de texto en
-   `%LOCALAPPDATA%\INComedor\demo\comprobantes\`.
+1. `0001` e «Ingresar», y tocar «Almuerzo común»: se abre el cartel «¿Confirmás tu elección?» con la opción y su cargo
+   («Elegir otra» o Escape lo cierran sin escribir nada). «Confirmar» en el cartel: «Consumo registrado. Retirá tu
+   comprobante», y el comprobante queda como archivo de texto en `%LOCALAPPDATA%\INComedor\demo\comprobantes\`.
 2. «Listo», y otra vez `0001`: la selección ya no ofrece ningún almuerzo, sólo los refrigerios, y dice «Hoy ya
    usaste: almuerzo 1 de 1». El cupo de ALMUERZO es 1 y no hay cómo registrar otro consumo.
 3. `0002` e «Ingresar»: «Esta credencial está vencida. Solicitá asistencia».
-4. En la pestaña Impresora de Configuración, «Sin papel»; `0001` con «Café con leche», un REFRIGERIO: «Tu consumo
-   está registrado. El comprobante queda pendiente».
+4. El engranaje pide la clave del día: cualquier número de 1 a 12 dígitos en el teclado en pantalla y «ENTER», y
+   Configuración avisa arriba que no se validó. En su pestaña Impresora, «Sin papel»; `0001` con «Café con leche», un
+   REFRIGERIO: «Tu consumo está registrado. El comprobante queda pendiente».
 5. La impresora en «Disponible» y, en la pestaña Comprobantes, `9001` e «Ingresar»: los comprobantes del día.
    «Recuperar» saca el pendiente del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con
    la leyenda DUPLICADO. «Salir», cerrar Configuración o 30 s sin tocar la pestaña terminan la sesión del operador.
 6. En la pestaña Comprobantes, `9002` e «Ingresar»: «Tu permiso de operador está vencido».
 7. En reposo, el engranaje y «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
-   `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión 2
-   de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
-   no se reconoce.
+   `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión
+   2 de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
+   no se reconoce. Con `9001` en lugar de la clave, Configuración abre sólo con Consumos, Personas e Impresora y
+   «Operador: Operador sintético 01» arriba, sin General ni «Cerrar el puesto»; `9002` dice que su permiso está
+   vencido.
 8. La simulación viene encendida: desde el paso 1, la pantalla de identificación tiene, arriba del campo del código, el
    combo «Simulación: elegí a la persona», con los nombres y sin ningún código, e «Ingresar» queda a la derecha del
    campo. Elegir «Persona sintética 01» abre su selección sin «Ingresar»; elegir «Persona sintética 02» da el mismo
@@ -357,16 +359,19 @@ vista previa y su «Guardar» en `estilo-visual.json` de la carpeta de datos; Im
 modos. En mantenimiento, cualquiera que toque el puesto en reposo puede cambiar el estilo o simular una impresora sin
 papel.
 
-**Modos, clave del día y cierre.** El puesto tiene dos modos, que atienden igual y sólo cambian la entrada a
-Configuración y el cierre. En **mantenimiento**, el de una carpeta nueva, el engranaje abre Configuración directo y
-Escape en reposo (o «Cerrar el puesto» en General) cierra el puesto en orden. En **operativo** las dos cosas piden la
-**clave del día**; en este corte es la de desarrollo, que acepta cualquier número de 1 a 12 dígitos y lo dice en el
-diálogo, y nunca se guarda ni se registra. Pasar a operativo, desde General, también la pide; volver a mantenimiento,
-no. El modo queda en `modo-puesto.json` de la carpeta de datos. La ventana ocupa la **pantalla completa sin bordes**
-en los dos modos, sin barra de título ni botón de cierre y tapando la barra de tareas; en operativo, Alt+F4 o el
-pedido de cierre de otro programa muestran la clave en lugar de cerrar, y el apagado de Windows nunca se frena. Cada
-clave pedida, cada entrada, cada cambio de modo y cada cierre quedan en la general con el actor nulo,
-`NO_AUTHENTICATION` y cómo se entró (`MAINTENANCE_MODE` o `DAILY_KEY`). Un piloto tiene que arrancar en operativo.
+**Modos, clave del día y cierre.** El puesto tiene dos modos, que atienden igual y sólo cambian el cierre. En los dos,
+el engranaje pide la **clave del día**, con un teclado numérico en pantalla y «ENTER»; en este corte es la de
+desarrollo, que acepta cualquier número de 1 a 12 dígitos, lo dice en el diálogo y, al entrar, Configuración avisa que
+no se validó; nunca se guarda ni se registra. En **mantenimiento**, el de una carpeta nueva, Escape en reposo (o
+«Cerrar el puesto» en General) cierra el puesto en orden; en **operativo**, el cierre también pide la clave. En el
+mismo diálogo, el código de un operador con `OPERATOR` vigente abre Configuración sólo con Consumos, Personas e
+Impresora, sin General ni cierre, y un código nunca vale como clave. Pasar a operativo, desde General, también la
+pide; volver a mantenimiento, no. El modo queda en `modo-puesto.json` de la carpeta de datos. La ventana ocupa la
+**pantalla completa sin bordes** en los dos modos, sin barra de título ni botón de cierre y tapando la barra de
+tareas; en operativo, Alt+F4 o el pedido de cierre de otro programa muestran la clave en lugar de cerrar, y el apagado
+de Windows nunca se frena. Cada clave pedida, cada entrada, cada cambio de modo y cada cierre quedan en la general con
+cómo se entró (`MAINTENANCE_MODE` para el cierre directo, `DAILY_KEY` u `OPERATOR`) y el actor: nulo con
+`NO_AUTHENTICATION`, o la persona del operador. Un piloto tiene que arrancar en operativo.
 
 **Personas y opciones en Configuración.** Mientras no haya INWeb, el puesto es el dueño de sus datos: las pestañas
 Personas y Opciones abren, con «Editar», «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y
@@ -389,9 +394,9 @@ las anteriores; los consumos siguen apuntando a la versión en que se registraro
 queda señalado en el panel. Cada persona u opción cambiada queda en la bitácora general como `CONFIGURATION_CHANGED`,
 con el antes, el después y las dos versiones, y un guardado rechazado también. Si la versión activa viniera de INWeb,
 los dos paneles sólo muestran «Estos datos los administra INWeb» y el guardado se deniega; en este corte nada crea
-esas versiones. Igual que el estilo, **sin clave**: la clave del día llega con el próximo change. Lo que el recorte
-deja fuera está en [`AGENTS.md`](AGENTS.md). La base pasa a la versión de esquema 4 al abrirse, y un puesto anterior
-ya no la abre.
+esas versiones. Se entra con la clave del día o con el código de un operador, que queda como actor de lo que guarda.
+Lo que el recorte deja fuera está en [`AGENTS.md`](AGENTS.md). La base pasa a la versión de esquema 4 al abrirse, y un
+puesto anterior ya no la abre.
 
 | Reposo | Nueve opciones: 5 + 4 | Quince: primera página de diez |
 |---|---|---|
@@ -432,11 +437,12 @@ en la impresora y en pantalla, también a una copia. Cada prueba (`PRINTER_TESTE
 quedan en la general.
 
 **Consumos en Configuración.** La pestaña Consumos muestra los consumos registrados en el puesto en la fecha de
-negocio actual, del más reciente al más antiguo, con la hora, la persona y la opción como eran al consumir, el servicio,
-el cargo y el estado del comprobante. Filtra por un rango de hasta 366 días, por persona (también las dadas de baja),
-por servicio y por opción, y cada encabezado ordena la consulta antes del tope de 500 filas, que avisa si hay más. La ve
-quien entra a Configuración, sin el código de un operador (decisión de David del 06/11); los rechazos no son consumos y
-no aparecen, y ningún código se muestra. Cada consulta queda en la general como `CONSUMPTIONS_QUERIED`.
+negocio actual, del más reciente al más antiguo, con la hora, la persona y la opción como eran al consumir, el
+servicio, el cargo y el estado del comprobante. Filtra por un rango de hasta 366 días, por persona (también las dadas
+de baja), por servicio y por opción, y cada encabezado ordena la consulta antes del tope de 500 filas, que avisa si
+hay más. La ve quien entra a Configuración con la clave del día o con el código de un operador, que abre en ella; los
+rechazos no son consumos y no aparecen, y ningún código se muestra. Cada consulta queda en la general como
+`CONSUMPTIONS_QUERIED`.
 
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|
