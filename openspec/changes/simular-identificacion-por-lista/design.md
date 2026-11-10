@@ -57,7 +57,7 @@ Cada entrada del combo tiene como valor el `comcreCodigo` (un GUID) de una crede
 
 ### D5. La regla efectiva: guardada y en mantenimiento
 
-La página calcula `SimulacionActiva = guardada && _modo == Mantenimiento`. El combo y el interruptor dependen de ese valor, no del archivo. Al pasar a operativo, después de guardar el modo, la página guarda la simulación apagada y registra el cambio, sólo si estaba encendida. Al arrancar en operativo con la simulación guardada encendida, la guarda apagada y registra el cambio. Si esa escritura falla, la regla efectiva igual la mantiene inactiva.
+La página calcula `SimulacionActiva = guardada && _modo == Mantenimiento`. El combo y el interruptor dependen de ese valor, no del archivo. Al pasar a operativo, después de guardar el modo, la página guarda la simulación apagada y registra el cambio, sólo si estaba encendida. Al arrancar en operativo con la simulación guardada encendida, la guarda apagada y registra el cambio con `Access = "STARTUP"`, porque nadie entró a Configuración (precisión del apply). Si esa escritura falla, la regla efectiva igual la mantiene inactiva.
 
 - **Descartada: ignorar el archivo en operativo sin reescribirlo.** Al volver a mantenimiento, la simulación reaparecería encendida sin que nadie la haya encendido.
 - **Descartada: confiar en el archivo.** Un archivo editado a mano o una escritura cortada dejarían la lista a la vista en operativo.

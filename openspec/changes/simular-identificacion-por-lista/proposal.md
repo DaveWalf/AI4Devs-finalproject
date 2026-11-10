@@ -69,3 +69,7 @@ Cada punto lleva una propuesta y su alternativa; lo que decidas queda escrito ac
 8. **`AGENTS.md` y `openspec/config.yaml`**: en el alcance del corte, la identificación simulada suma «y, en modo simulación y sólo en mantenimiento, eligiendo a la persona en un combo (change `simular-identificacion-por-lista`)».
 9. **Rama.** `feature/simular-identificacion-por-lista-dw`, desde `origin/final-project-dw` en `07a2329` y sin seguimiento remoto, para que un `git push` sin argumentos no vaya a `final-project-dw`. El PR #15 (D-C27, sólo documentación) no la toca; si se integra antes, la rama se rebasa sobre la punta nueva antes del PR.
 10. **Tallas.** La de la IA es S; la tuya la das acá.
+
+### Decisión del gate
+
+El 10/11/2026, a las 03:29, David respondió «aprobado. Avancemos.»: los puntos 1 a 5 y 7 quedan con la propuesta de cada uno, incluido el recorte de respaldo del punto 1, y los puntos 6, 8 y 9 como están. No dio una talla propia (punto 10), así que la tabla de tallas queda con la de la IA.

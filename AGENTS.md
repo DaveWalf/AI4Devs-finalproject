@@ -7,9 +7,10 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 
 ## Alcance: primer corte (D-C24)
 
-- Se construye: un puesto, identificación simulada por código, selección, cupo y fecha de negocio,
-  confirmación atómica (RB06) con replay por `IntentId`, comprobante con reimpresión, outbox y
-  receptor idempotente de lotes.
+- Se construye: un puesto, identificación simulada por código (y, en modo simulación y sólo en mantenimiento,
+  eligiendo a la persona en un combo, por el change `simular-identificacion-por-lista`), selección, cupo y fecha de
+  negocio, confirmación atómica (RB06) con replay por `IntentId`, comprobante con reimpresión, outbox y receptor
+  idempotente de lotes.
 - Historias must: HU01.1, HU01.3, HU02.1, HU02.2 (sin el escenario F) y HU03.1; should: HU01.2-J.
 - No se construye (segunda ola, diseñada y no demostrada): multipuesto y feed, configuración por
   snapshot, diagnóstico, cuenta de mantenimiento, biometría 1:N y 1:1 y auditoría de saltos del

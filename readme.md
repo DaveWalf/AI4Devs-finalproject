@@ -214,11 +214,17 @@ receptor, en la ventana:
    `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión 2
    de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
    no se reconoce.
-8. Cerrar la ventana y abrir `%LOCALAPPDATA%\INComedor\demo\bitacoras\<KioskId>\INComedor-interacciones-AAAAMM.log`
-   con cualquier editor de texto: cada atención de los pasos 1 a 7 se lee, en orden y con la misma sesión, de
-   `SESSION_OPENED` a `SESSION_CLOSED`, con la opción elegida, su importe y el mensaje que se mostró, y sin el código.
-   En `INComedor-general-AAAAMM.log` están el arranque y el cierre del puesto, lo hecho en Configuración (el alta del
-   paso 7 como `CONFIGURATION_CHANGED`, con el antes y el después y sin el código) y la impresión.
+8. En General de Configuración, «Encender la simulación»: dice «Simulación: encendida», y al cerrar Configuración la
+   pantalla de identificación suma el combo «Simulación: elegí a la persona», con los nombres y sin ningún código.
+   Elegir «Persona sintética 01» abre su selección sin «Ingresar»; elegir «Persona sintética 02» da el mismo aviso de
+   credencial vencida del paso 3. Tipear `0001` y pulsar Enter hace lo mismo que «Ingresar». «Pasar a operativo»
+   apaga la simulación, y en operativo el combo no aparece.
+9. Cerrar la ventana y abrir `%LOCALAPPDATA%\INComedor\demo\bitacoras\<KioskId>\INComedor-interacciones-AAAAMM.log`
+   con cualquier editor de texto: cada atención de los pasos 1 a 8 se lee, en orden y con la misma sesión, de
+   `SESSION_OPENED` a `SESSION_CLOSED`, con la opción elegida, su importe y el mensaje que se mostró, y sin el código;
+   las del combo dicen `"Origin":"SIMULATION_LIST"`. En `INComedor-general-AAAAMM.log` están el arranque y el cierre
+   del puesto, lo hecho en Configuración (el alta del paso 7 y el encendido del paso 8 como `CONFIGURATION_CHANGED`,
+   con el antes y el después y sin el código) y la impresión.
 
 La sincronización con el receptor se ve en «Receptor de lotes y puesto conectados», más abajo, y el E2E la recorre
 sola.

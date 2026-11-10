@@ -5,7 +5,8 @@ context: |
   All artifacts must be written in es.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
   INComedor: puesto autónomo de autoservicio de comedor; proyecto final del máster AI4Devs (LIDR).
-  Primer corte (D-C24): un puesto, identificación simulada por código, selección, cupo y fecha de negocio,
+  Primer corte (D-C24): un puesto, identificación simulada por código (y, en modo simulación y sólo en mantenimiento,
+  eligiendo a la persona en un combo, por simular-identificacion-por-lista), selección, cupo y fecha de negocio,
   confirmación atómica (RB06) con replay por IntentId, comprobante con reimpresión, outbox y receptor idempotente.
   Entran recortados: las bitácoras mensuales (escribir-bitacoras-externas) y la administración local de personas,
   cupos, opciones y franjas mientras no haya INWeb (administrar-personas-y-opciones).
