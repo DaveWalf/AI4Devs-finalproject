@@ -75,11 +75,15 @@ Las pruebas existentes cambian sólo como dice el punto 8 del gate, con la aprob
 - [x] 5.1 Sumar a `AGENTS.md` y a `openspec/config.yaml` el alcance de D9, al `readme.md` la clave en el recorrido y `9001` en Configuración, y a `docs/aplicacion-del-curso.md` la evidencia del change. Verificar con `openspec validate --all --strict` que no hay errores, y con el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso`, con su control negativo, que hay 0 rotos.
   - `AGENTS.md` y `openspec/config.yaml`: la clave en los dos modos y el acceso del operador a Consumos, Personas e Impresora salen de la segunda ola por este change; siguen ahí los demás permisos de operador. `readme.md`: la clave en el paso 4 del recorrido y `9001` (y `9002`) en el 7, el párrafo de modos, el de Personas (que todavía decía «sin clave») y el de Consumos. `docs/aplicacion-del-curso.md`: el teclado en la fila de accesibilidad y el acceso del operador en la de OWASP (A01 y A09).
   - A las 14:58: `openspec validate --all --strict`, `Totals: 18 passed, 0 failed (18 items)`; el control negativo de enlaces, `ROTO`, `ANCLA` y `enlaces rotos: 2`; `readme.md`, `AGENTS.md` y `docs/aplicacion-del-curso.md`, `enlaces rotos: 0`.
-- [ ] 5.2 Desde la raíz del repo, correr y pegar las salidas:
+- [x] 5.2 Desde la raíz del repo, correr y pegar las salidas:
   - `dotnet build INComedor.sln -warnaserror`, con 0 advertencias;
   - `dotnet test INComedor.sln`, con 0 fallas;
   - `openspec validate --all --strict`, sin errores;
   - el `git diff --diff-filter=M -- tests/` del encabezado, revisado entero.
+  - Sobre `25fbd36`, a las 15:00: `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local` salió 0 (build Release `-warnaserror` con `0 Advertencia(s)` y `0 Errores`, «publicación revisada: 482 entradas, ninguna con datos ni secretos», E2E del flujo principal contra el EXE `total: 1`, `error: 0`, zip de 77.506.297 bytes, sha256 `fe14a14d…7d1e395c`). `dotnet build INComedor.sln -warnaserror`: `0 Advertencia(s)`, `0 Errores`.
+  - `dotnet test INComedor.sln -c Release`, con `INCOMEDOR_SQLSERVER=INMO-DW-AR` e `INCOMEDOR_E2E_KIOSK_EXE` en el EXE publicado, de 15:01 a 15:04: `total: 796`, `error: 0` (Contracts 23, Domain 91, Sync.Api 62, Sqlite 211, Kiosk 381 y E2E 28). Son las 773 de `cf1b137` más 5 de SQLite, 17 de componentes y 1 E2E.
+  - `openspec validate --all --strict`: `Totals: 18 passed, 0 failed (18 items)`.
+  - `git diff --diff-filter=M --name-only cf1b137 -- tests/`: los 22 archivos de componentes de 3.3 y los tres E2E de 4.2, revisados en cada grupo: sólo D8 y las dos aprobadas por David.
 
 ## Workflow follow-up
 
