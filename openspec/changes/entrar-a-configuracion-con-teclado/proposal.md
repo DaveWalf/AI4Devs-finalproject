@@ -112,3 +112,10 @@ El 10/11/2026, a las 12:08, David respondió «Todo aprobado.» al gate de las t
 - Punto 10 con la propuesta: el recorte del 11/11 a las 08:00.
 - Punto 11 como está, con la base nueva: la rama se rebasó sobre la punta de `confirmar-eleccion-en-cartel`, `cf1b137`, en lugar de `8a57ef0`. Esa punta es la base del `git diff` de pruebas del encabezado de `tasks.md`.
 - Punto 12 sin talla propia, así que la tabla de tallas queda con la de la IA.
+
+### Decisión durante el apply: dos pruebas fuera de D8
+
+El 10/11/2026, a las 14:24, el apply paró en la tarea 2.2: `ClaveDelDiaTests.Cualquier_numero_en_desarrollo` afirma `inputmode="numeric"`, y D3 lo cambia a `"none"`; esa prueba entra en operativo y no mide el acceso, así que D8 no la cubre. Se le preguntó a David por AskUserQuestion (sin piloto: la respuesta es suya), y eligió «Aprobar las dos», la recomendada:
+
+- en `ClaveDelDiaTests.Cualquier_numero_en_desarrollo`, la línea del `inputmode` espera `"none"`, y nada más;
+- `AccesoPuestoTests.Mantenimiento_entra_directo`, que con D8 pasaría pero seguiría titulándose «entra directo … sin clave», pasa a llamarse `Mantenimiento_tambien_pide_la_clave`, con el `DisplayName` del escenario «Mantenimiento también pide la clave», además de su cambio de D8.
