@@ -48,7 +48,7 @@ Sale la barra `.barra` del pie de la selección. «Cancelar» (`#cancelar`, el m
 
 ### D3. Foco, inercia y Escape
 
-Al abrirse el cartel, el foco va a «Confirmar» (`ElementReference.FocusAsync` en `OnAfterRenderAsync`), y el título, la lista y las páginas quedan `inert`, igual que la cabecera y el pie con `HayDialogo`. Escape con el cartel abierto es «Elegir otra»: cierra el cartel y deja a la persona y la marca. Mientras confirma, Escape no hace nada. Sin cartel, Escape durante una atención sigue sin hacer nada.
+Al abrirse el cartel, el foco va a «Confirmar» (`ElementReference.FocusAsync` en `OnAfterRenderAsync`), y el resto de la pantalla queda `inert`, como pide el escenario del teclado: el título, el aviso, la lista y las páginas, y también la cabecera y el pie, como con `HayDialogo`. Escape con el cartel abierto es «Elegir otra»: cierra el cartel y deja a la persona y la marca. Mientras confirma, Escape no hace nada. Sin cartel, Escape durante una atención sigue sin hacer nada.
 
 - **Descartada: Escape no hace nada con el cartel.** Un diálogo modal que no se cierra con Escape contradice la convención que ya siguen Configuración y la clave.
 

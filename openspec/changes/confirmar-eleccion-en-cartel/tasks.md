@@ -39,6 +39,14 @@ Sólo cambian las tres pruebas existentes del punto 3 del gate, con la aprobaci�
   - `openspec validate --all --strict`: `Totals: 17 passed, 0 failed (17 items)`.
   - `git diff --diff-filter=M --name-only d0da333 -- tests/`: `ConfiguracionPorPestanasE2ETests.cs`, `PantallaAtencionTests.cs` y `PantallaDistribucionTests.cs`, los tres del punto 3 del gate, y lo mismo contra `07a2329`.
 
+## 4. Correcciones de la verificación
+
+La verificación del 10/11 a las 15:48, sobre `6657f78` y sin críticos, dejó una advertencia y dos sugerencias; David eligió a las 15:50 «Corregir y archivar».
+
+- [x] 4.1 Cubrir «Cancelar antes de confirmar» con el cartel cerrado por «Elegir otra» (la advertencia): `CartelEleccionTests.Cancelar_antes_de_confirmar_con_el_cartel_cerrado`, nueva. La conducta ya existía, así que se la vio fallar con una afirmación imposible revertida (`Expected: 1`, `Actual: 0` en las intenciones); con el filtro `FullyQualifiedName~CartelEleccion`, `total: 6`, `error: 0`.
+- [x] 4.2 Decir en D3 de `design.md` que con el cartel abierto queda inerte todo el resto de la pantalla, cabecera, aviso y pie incluidos, como hace el código.
+- La otra sugerencia, devolver el foco a la opción elegida al cerrar el cartel con «Elegir otra» o Escape, queda abierta en el borrador del PR.
+
 ## Workflow follow-up
 
 - La revisión de David (el gate de `proposal.md`) va antes del apply, y lo que decida queda escrito en `proposal.md`.

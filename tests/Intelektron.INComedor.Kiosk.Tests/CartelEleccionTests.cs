@@ -77,6 +77,23 @@ public class CartelEleccionTests : IDisposable
         Assert.Equal(0L, Intenciones());
     }
 
+    [Fact(DisplayName = "atencion-puesto · Cancelar antes de confirmar: con una opción elegida y el cartel cerrado con «Elegir otra», «Cancelar» vuelve a reposo sin ninguna intención ni consumo")]
+    public async Task Cancelar_antes_de_confirmar_con_el_cartel_cerrado()
+    {
+        var pantalla = Dibujar();
+        await Ingresar(pantalla, "0001");
+        await Opcion(pantalla, Almuerzo).ClickAsync(new());
+        await pantalla.Find("#elegir-otra").ClickAsync(new());
+        Assert.Empty(pantalla.FindAll("#cartel-eleccion"));
+
+        await pantalla.Find("#cancelar").ClickAsync(new());
+
+        Assert.NotEmpty(pantalla.FindAll("#codigo"));
+        Assert.DoesNotContain("Persona sintética 01", pantalla.Markup);
+        Assert.Equal(0L, Intenciones());
+        Assert.Equal(0L, Escalar("SELECT COUNT(*) FROM tbComedorConsumos"));
+    }
+
     [Fact(DisplayName = "atencion-puesto · Escape en el cartel: lo cierra como «Elegir otra», con la misma persona y la misma elección, el puesto abierto y sin ninguna intención")]
     public async Task Escape_en_el_cartel()
     {
