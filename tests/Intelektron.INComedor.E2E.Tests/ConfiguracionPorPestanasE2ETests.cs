@@ -191,7 +191,7 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         Assert.Contains(navegadores, l => System.Text.RegularExpressions.Regex.IsMatch(l, "--disable-features=[^ \"]*ElasticOverscroll"));
     }
 
-    [Fact(DisplayName = "presentacion-puesto · La ventana angosta sigue desplazándose: a 600 px de ancho, la página se desplaza en vertical hasta «Confirmar»")]
+    [Fact(DisplayName = "presentacion-puesto · La ventana angosta sigue desplazándose: a 600 px de ancho, la página se desplaza en vertical hasta la última opción, y al tocarla el cartel muestra «Confirmar» dentro de la ventana sin desplazar más")]
     public async Task La_ventana_angosta_sigue_desplazandose()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -201,12 +201,20 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
         await pagina.Locator("#ingresar").ClickAsync();
         await Assertions.Expect(pagina.Locator(".opcion").First).ToBeVisibleAsync();
 
-        await pagina.Locator("#confirmar").ScrollIntoViewIfNeededAsync();
+        var ultima = pagina.Locator(".opcion").Last;
+        await ultima.ScrollIntoViewIfNeededAsync();
 
-        await Assertions.Expect(pagina.Locator("#confirmar")).ToBeInViewportAsync();
+        await Assertions.Expect(ultima).ToBeInViewportAsync();
         var desplazada = await pagina.EvaluateAsync<double>("() => document.scrollingElement.scrollTop");
-        _escenario.Registrar($"ventana angosta: la página se desplazó {desplazada} px hasta «Confirmar»");
-        Assert.True(desplazada > 0, "La página no se desplazó para llegar a «Confirmar».");
+        _escenario.Registrar($"ventana angosta: la página se desplazó {desplazada} px hasta la última opción");
+        Assert.True(desplazada > 0, "La página no se desplazó para llegar a la última opción.");
+
+        await ultima.ClickAsync();
+
+        await Assertions.Expect(pagina.Locator("#cartel-eleccion #confirmar")).ToBeInViewportAsync(new() { Ratio = 1 });
+        var despues = await pagina.EvaluateAsync<double>("() => document.scrollingElement.scrollTop");
+        _escenario.Registrar($"ventana angosta: «Confirmar» del cartel entero en la ventana, con la página en {despues} px");
+        Assert.Equal(desplazada, despues);
     }
 
     /// <summary>El overscroll-behavior-y calculado de cada selector, en orden.</summary>
