@@ -90,12 +90,24 @@ Las pruebas de base y receptor corren con `INCOMEDOR_SQLSERVER=INMO-DW-AR`.
 
 ## 4. El puesto compilado, documentos y verificación integral
 
-- [ ] 4.1 Las pruebas E2E existentes del orden de las pestañas y del operador contra el puesto compilado de la rama.
+- [x] 4.1 Las pruebas E2E existentes del orden de las pestañas y del operador contra el puesto compilado de la rama.
   Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde.
-- [ ] 4.2 `readme.md` donde nombra «Cancelar» de Configuración o el orden de las pestañas; la fila de la regla de
+  - Sobre `49e1d4d`, de 20:09 a 20:13: `total: 29`, `error: 0` (las 28 de antes y `ListaPropiaE2ETests`).
+- [x] 4.2 `readme.md` donde nombra «Cancelar» de Configuración o el orden de las pestañas; la fila de la regla de
   prolijidad en `docs/aplicacion-del-curso.md` y el ajuste humano en `prompts.md` (§5). Verifica: el chequeo de enlaces de
   D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
-- [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el
+  - `readme.md`: el orden de las pestañas con Consumos primero y General al final, «Cerrar», y el combo de borde a borde
+    con su lista dentro de la ventana. `prompts.md` §5, el criterio humano 15 (la regla de prolijidad). La fila «Contexto
+    y reglas por artefacto» del mapa nombra la regla. Control negativo: `ROTO`, `ANCLA` y `enlaces rotos: 2`; sobre
+    `readme.md`, `prompts.md`, `docs/aplicacion-del-curso.md` y `docs/cobertura-entrega.md`: `enlaces rotos: 0`; el
+    mapa: `filas del mapa: 82 · defectuosas: 0`.
+- [x] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el
   puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese
   EXE, con los totales por proyecto pegados; `git diff --stat 86ae3b3 -- tests/` y la lista de pruebas existentes
   cambiadas, contra D6.
+  - Sobre `74788d6`, de 20:20 a 20:25: `openspec validate --all --strict` → `Totals: 16 passed, 0 failed (16 items)`;
+    build → `0 Advertencia(s)`, `0 Errores`; el paquete, con su E2E contra el EXE `total: 1`, `error: 0`, zip de
+    77.563.235 bytes; `dotnet test INComedor.sln -c Release` contra ese EXE → `total: 813`, `error: 0` (Contracts 23,
+    Domain 91, Sqlite 211, Kiosk 397, Sync.Api 62, E2E 29). Pruebas existentes cambiadas contra `86ae3b3`
+    (`git diff --diff-filter=M --name-only`): `SimulacionE2ETests.cs`, `ComboSimulacionTests.cs`,
+    `PestanaConsumosTests.cs` y `PestanasConfiguracionTests.cs`, las cuatro de D6.
