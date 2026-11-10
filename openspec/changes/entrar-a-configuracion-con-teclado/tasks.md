@@ -4,12 +4,17 @@ Las pruebas existentes cambian sólo como dice el punto 8 del gate, con la aprob
 
 ## 1. Saber si un valor es un código, y el actor al guardar
 
-- [ ] 1.1 Agregar a `Infrastructure.Sqlite.Tests` el archivo nuevo `CodigoConocidoTests.cs`, sobre el fixture sintético:
+- [x] 1.1 Agregar a `Infrastructure.Sqlite.Tests` el archivo nuevo `CodigoConocidoTests.cs`, sobre el fixture sintético:
   - un código vigente y uno vencido son conocidos, y `4711` no;
   - ninguno de los tres escribe en la bitácora ni abre una sesión.
   
   Sumar a `AdministracionActorTests.cs`, también nuevo, que guardar personas con un actor registra su `PersonId` sin `ActorReason`, y sin actor, el nulo con `NO_AUTHENTICATION` de hoy. Verlas fallar con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter "FullyQualifiedName~CodigoConocido|FullyQualifiedName~AdministracionActor"`.
-- [ ] 1.2 Implementar `IdentificacionPorCodigo.EsCodigoConocido` (D5) y el `actor` opcional de `GuardarPersonas` y `GuardarOpciones` (D7). Verificar con el filtro de 1.1 que pasan, y con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` que no hay ninguna otra falla ni prueba cambiada.
+  - Contra esqueletos (`EsCodigoConocido` con `NotImplementedException` y el `actor` opcional sin usar), a las 14:05: `total: 5`, `error: 4`. Las dos de `CodigoConocidoTests` con `NotImplementedException`; en `AdministracionActorTests`, la de personas con actor (su `ActorPersonId` era nulo) y la del rechazo y las opciones (`Assert.All() Failure: 2 out of 2 items`).
+  - Pasó «Lo guardado sin operador», que es la conducta de hoy y queda como guarda de que el camino sin actor no cambia.
+  - Suman un borde (el valor se normaliza como al identificar: espacios del borde sí, ceros iniciales no, vacío no) y que el rechazo y las opciones también llevan el actor.
+- [x] 1.2 Implementar `IdentificacionPorCodigo.EsCodigoConocido` (D5) y el `actor` opcional de `GuardarPersonas` y `GuardarOpciones` (D7). Verificar con el filtro de 1.1 que pasan, y con `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` que no hay ninguna otra falla ni prueba cambiada.
+  - `Infrastructure.Sqlite.Tests` entero a las 14:06: `total: 211`, `error: 0` (las 206 de la base más las cinco nuevas). `git diff --diff-filter=M --name-only cf1b137 -- tests/`: vacío.
+  - El actor se pone en el registro ya armado (`ConActor`): sin actor, el registro de cada guardado queda byte a byte como antes.
 
 ## 2. El teclado del diálogo
 
