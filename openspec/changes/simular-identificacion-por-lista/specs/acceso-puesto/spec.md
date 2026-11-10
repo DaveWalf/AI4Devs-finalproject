@@ -43,7 +43,7 @@ Cada apagado y encendido del modo simulación desde General SHALL quedar en la b
 Origen: RB21 («todo cambio/prueba tiene permiso, actor y resultado») y AT41.
 - **GIVEN** Configuración abierta en mantenimiento, en General, con la simulación encendida
 - **WHEN** se toca «Apagar la simulación»
-- **THEN** la general tiene `CONFIGURATION_CHANGED` con el modo simulación, antes encendido y después apagado, el resultado aplicado, `MAINTENANCE_MODE`, el actor nulo y `NO_AUTHENTICATION`
+- **THEN** la general tiene `CONFIGURATION_CHANGED` con el modo simulación, antes encendido y después apagado, el resultado aplicado, el acceso con que se entró a Configuración, el actor nulo y `NO_AUTHENTICATION`
 
 #### Scenario: Pasar a operativo no la registra
 Origen: RB21 y la decisión de David del 10/11/2026 a las 10:36 (pasar a operativo no cambia lo guardado).
