@@ -21,10 +21,10 @@
   ilegible; la impresora simulada y el comprobante en pantalla con el puesto, el número, el comensal, «Habilitó:» en una
   copia y la frase antes del pie; la prueba de impresión con el puesto y una frase, sin persona ni número (D3, D4 y D6).
   Cambian, por la decisión 13, «DUPLICADO» en `PantallaAtencionTests` y `TextosComprobanteTests` y la ausencia del nombre
-  en `ComprobanteEnPantallaTests` y `AccionesEnConsumosTests` («Ver»), que siguen exigiendo que no esté el código. Verifica: rojo antes y verde después.
-  Hecho: 9 nuevas (7 en `ComprobanteDelPuestoTests`, 1 en `ComprobanteEnPantallaTests` y 1 en `PruebaImpresionTests`),
-  las 9 vistas fallar contra los esqueletos; las de «DUPLICADO» de pantalla y textos fallaron con la leyenda del grupo 1, y
-  la de «Ver», con el comensal nuevo. Verifica: rojo antes y verde después.
+  en `ComprobanteEnPantallaTests` y `AccionesEnConsumosTests` («Ver»), que siguen exigiendo que no esté el código.
+  Verifica: rojo antes y verde después. Hecho: 9 nuevas (7 en `ComprobanteDelPuestoTests`, 1 en
+  `ComprobanteEnPantallaTests` y 1 en `PruebaImpresionTests`), las 9 vistas fallar contra los esqueletos; las de
+  «DUPLICADO» de pantalla y textos fallaron con la leyenda del grupo 1, y la de «Ver», con el comensal nuevo.
 - [x] 2.2 `FrasesComprobante`, `AlmacenDatosPuesto`, `ImpresoraSimulada`, `ComprobanteEnPantalla` y su dibujo, y la prueba
   de impresión. Verifica: 2.1 en verde. Hecho: Kiosk 520 de 520.
 
