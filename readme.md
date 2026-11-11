@@ -176,8 +176,7 @@ del WebView2):
 - la franja cuenta 1 pendiente;
 - al volver el receptor, queda al día, con el consumo consolidado una sola vez.
 
-Suma cinco pruebas de las costuras del puesto. Tarda cerca de 1 min 45 s, porque espera el ciclo real de envío,
-de 30 s, y mientras corre abre la ventana del puesto. Necesita el WebView2 Runtime, SQL Server y una sesión con
+Suma las cinco pruebas de las costuras del puesto y las E2E de los changes que tocan la pantalla: 44 en total, que en la CI tardan cerca de 10 min (10 min 10 s en la [corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063)), porque cada una abre la ventana del puesto y el flujo principal espera el ciclo real de envío, de 30 s. Necesita el WebView2 Runtime, SQL Server y una sesión con
 escritorio: si falta algo, falla nombrándolo. Cada prueba usa su carpeta temporal, sus puertos y su base, y no
 toca `%LOCALAPPDATA%\INComedor\demo\`. Las capturas de cada paso quedan en
 `tests/Intelektron.INComedor.E2E.Tests/bin/Debug/net11.0-windows10.0.17763.0/TestResults/e2e/`.
@@ -792,7 +791,7 @@ El E2E (`tests/Intelektron.INComedor.E2E.Tests`) recorre el escenario E2E del pl
 apagado y luego recuperado (AT01, AT02 y AT27), sobre los EXE compilados del puesto y del receptor. Lo maneja
 Playwright por CDP, sin bajar navegadores: el navegador es el WebView2 del equipo. Suma las costuras del puesto
 (`INCOMEDOR_DEMO_DIR`, `INCOMEDOR_RECEPTOR_URL` e `INCOMEDOR_CDP_PORT`): el puerto de depuración sólo abre con un
-valor válido y sólo en loopback. Además de SQL Server, necesita el WebView2 Runtime y una sesión con escritorio,
+valor válido y sólo en loopback. Con las de los changes que tocan la pantalla, medidas en la ventana real, son 44. Además de SQL Server, necesita el WebView2 Runtime y una sesión con escritorio,
 y si falta algo falla con un mensaje que lo nombra, nunca con un salto. Con `INCOMEDOR_E2E_KIOSK_EXE`, corre
 contra el EXE del paquete publicado, sin .NET a la vista: es lo que hace el script del Release antes de armar
 el zip. El resto de los casos del plan sigue especificado, no ejecutado.
