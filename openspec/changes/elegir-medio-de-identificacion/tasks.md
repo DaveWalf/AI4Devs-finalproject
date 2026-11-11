@@ -47,3 +47,20 @@
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
   --no-incremental`, el puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c
   Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+
+## 5. Correcciones de la verificación
+
+- [x] 5.1 Lo que encontró la verificación por un agente de sólo lectura (10:52 a ~11:07; 1 crítico, 7 advertencias y 11
+  sugerencias), corregido con el gate dado (decisión 13) y primero con las pruebas que lo muestran, vistas fallar: un
+  lector USB que se desenchufa no levanta ningún evento de `SerialPort`, así que el servicio pregunta cada 5 segundos si
+  el puerto sigue abierto y en la lista del equipo, y si no, lo da por caído y reintenta (el crítico); un puerto que no
+  se deja cerrar se suelta igual y no tira la pantalla; un equipo sin puertos serie queda como «sin acceso»; el lector
+  no libera el puerto del contenedor, se desuscribe y un reintento tardío no abre nada; el simulador manda un byte por
+  carácter (una ñ se descarta como lo haría un lector); un CR o LF que sobra no ensucia la trama siguiente; los
+  descartes registran los acumulados y la pestaña se redibuja sólo cuando algo cambió. Pruebas nuevas: el lector que
+  se desenchufa, el cierre que falla, sin soporte y después de cerrar, los bytes crudos, el terminador que no coincide,
+  el error de almacenamiento y la clave pedida (estas dos, conducta que ya estaba bien), y los controles positivos de
+  operativo y del operador. La E2E toca «Actualizar», que carga `System.IO.Ports` en el puesto compilado. Los deltas
+  suman los escenarios de borde que faltaban; el diseño describe la vigilancia, el armado a 96 bytes, el byte por
+  carácter y la grilla del reposo; los documentos citan las pruebas correctas. Verifica: Kiosk en verde. Hecho: Kiosk
+  593 de 593 y `LectorE2ETests` en verde.

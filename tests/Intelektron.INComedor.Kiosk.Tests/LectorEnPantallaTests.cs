@@ -32,11 +32,13 @@ public class LectorEnPantallaTests
     public void En_operativo_no_hay_lector_simulado()
     {
         using var puesto = Preparar(ConfiguracionLector.PorDefecto with { Medio = MedioIdentificacion.Simulador }, ModoPuesto.Operativo);
+        using var enMantenimiento = Preparar(ConfiguracionLector.PorDefecto with { Medio = MedioIdentificacion.Simulador });
 
         var pantalla = puesto.Dibujar();
 
         Assert.Empty(pantalla.FindAll("#lector-simulado"));
         Assert.Empty(pantalla.FindAll("#pasar-por-lector"));
+        Assert.Single(enMantenimiento.Dibujar().FindAll("#lector-simulado"));
     }
 
     [Fact(DisplayName = "lector-identificacion · La tarjeta de 0001: por el puerto serie con el terminador CR y el relleno 4, 1 y CR identifican a la persona de 0001")]
@@ -49,6 +51,21 @@ public class LectorEnPantallaTests
         puerto.Escribir(Bytes("1\r"));
 
         pantalla.WaitForAssertion(() => Assert.NotEmpty(pantalla.FindAll(".opcion")));
+        Assert.Contains("Persona sintética 01", pantalla.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact(DisplayName = "lector-identificacion · Fuera de la identificación la lectura se descarta: con la clave del día pedida, una lectura no identifica a nadie y la general registra DIALOG_OPEN")]
+    public async Task Con_la_clave_pedida()
+    {
+        var puerto = new PuertoSimulado();
+        using var puesto = Preparar(Serie(TerminadorLector.CrLf, 0), puerto: puerto);
+        var pantalla = puesto.Dibujar();
+        await pantalla.Find(".engranaje").ClickAsync(new());
+
+        puerto.Escribir(Bytes("0001\r\n"));
+
+        pantalla.WaitForAssertion(() => Assert.Contains(puesto.General(), l => Tipo(l) == "READER_READING_DISCARDED" && ContextoDe(l).GetProperty("Reason").GetString() == "DIALOG_OPEN"));
+        Assert.Empty(pantalla.FindAll(".opcion"));
     }
 
     [Fact(DisplayName = "lector-identificacion · Una credencial vencida por el lector: 0002 dice «Esta credencial está vencida», como con el código tipeado")]

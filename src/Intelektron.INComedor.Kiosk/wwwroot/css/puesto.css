@@ -479,6 +479,8 @@ html, body { overscroll-behavior: none; }
    (D8 de enriquecer-comprobante): entra «Número del comprobante». */
 .textos-comprobante { display: grid; grid-template-columns: 12.5em 1fr; align-items: center; gap: 8px 12px; font-size: 17px; }
 .textos-comprobante h3, .textos-comprobante p, .textos-comprobante .acciones { grid-column: 1 / -1; }
+/* Un dato que acompaña a un campo, en la columna de los campos (la lista de puertos de Lector). */
+.textos-comprobante p.en-columna-de-campos { grid-column: 2; }
 .textos-comprobante input { min-height: 56px; padding: 0 12px; font: inherit; font-size: 18px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel)); }
 .textos-comprobante input[aria-invalid="true"] { outline: 3px solid #b3261e; outline-offset: 2px; }
 /* Los datos del comprobante (D7 y D8 de enriquecer-comprobante): la grilla de los textos; la numeración, sus dos botones

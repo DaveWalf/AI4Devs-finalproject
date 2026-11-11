@@ -85,6 +85,12 @@ public sealed class ArmadorTramas
                 continue;
             }
 
+            // Un espacio, CR o LF antes del primer carácter no empieza una trama: un LF que sobra no queda como resto viejo.
+            if (_resto.Count == 0 && b is 0x20 or 0x0D or 0x0A)
+            {
+                continue;
+            }
+
             _resto.Add(b);
             if (_resto.Count > LargoMaximo + 64)
             {
@@ -116,12 +122,14 @@ public sealed class ArmadorTramas
 
             var inicio = 0;
             var fin = _resto.Count;
-            while (inicio < fin && _resto[inicio] == 0x20)
+            // Los espacios y un CR o LF que sobra en los bordes no son parte del código: con el terminador CR, un lector que
+            // manda CR LF deja un LF al comienzo de la trama siguiente.
+            while (inicio < fin && _resto[inicio] is 0x20 or 0x0D or 0x0A)
             {
                 inicio++;
             }
 
-            while (fin > inicio && _resto[fin - 1] == 0x20)
+            while (fin > inicio && _resto[fin - 1] is 0x20 or 0x0D or 0x0A)
             {
                 fin--;
             }

@@ -70,6 +70,11 @@ public class LectorE2ETests : IAsyncLifetime
         Assert.All(botones.Where(c => c.Id is "medio-teclado" or "bits-7" or "paridad-ninguna" or "parada-1" or "terminador-crlf"),
             c => Assert.True(Math.Abs(c.Izquierda - impresora.Izquierda) <= Tolerancia, $"{c.Id} desde x {c.Izquierda}"));
 
+        // «Actualizar» carga System.IO.Ports en el EXE publicado: lista los puertos del registro de Windows sin abrir ninguno.
+        await pagina.Locator("#actualizar-puertos").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#puertos-lector")).ToContainTextAsync(new System.Text.RegularExpressions.Regex("^(Puertos del equipo: COM|Este equipo no tiene puertos serie)"));
+        _escenario.Registrar("puertos: " + await pagina.Locator("#puertos-lector").TextContentAsync());
+
         await pagina.Locator("#guardar-lector").ClickAsync();
         await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToContainTextAsync("Se guardó el medio de identificación");
         await Assertions.Expect(pagina.Locator("#estado-lector")).ToHaveTextAsync("Lector: escuchando el simulador interno");

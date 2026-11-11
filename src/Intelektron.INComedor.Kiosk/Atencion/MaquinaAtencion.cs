@@ -24,13 +24,13 @@ public enum ResultadoToque
     NoDisponible,
 }
 
+/// <summary>Lo que pasó con una lectura del lector: IDENTIFIED, REJECTED o DISCARDED, con el motivo de un descarte.</summary>
+public sealed record ResultadoLectura(string Resultado, string? Motivo);
+
 /// <summary>
 /// El modelo de estados de la atención, sin interfaz (D5 de atender-seleccion-y-confirmacion). Las pantallas Razor
 /// sólo lo dibujan y le reenvían los toques; los plazos se cuentan con el reloj inyectado.
 /// </summary>
-/// <summary>Lo que pasó con una lectura del lector: IDENTIFIED, REJECTED o DISCARDED, con el motivo de un descarte.</summary>
-public sealed record ResultadoLectura(string Resultado, string? Motivo);
-
 public sealed class MaquinaAtencion
 {
     /// <summary>Hasta diez opciones van juntas; desde once, en páginas de diez (D1 de presentar-atencion-tactil).</summary>

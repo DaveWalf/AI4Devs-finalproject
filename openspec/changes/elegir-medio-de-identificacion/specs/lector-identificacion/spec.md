@@ -58,6 +58,18 @@ Origen: decisión de David del 09/11/2026 («en cualquier otra pantalla se desca
 - **WHEN** el lector manda otro código
 - **THEN** la selección sigue igual, nadie más queda identificado y la general registra `READER_READING_DISCARDED` con `NOT_IDLE`
 
+#### Scenario: Con un diálogo abierto
+Origen: D5 de este change, borde: quien está en Configuración no es quien pasó la tarjeta.
+- **GIVEN** Configuración abierta, o la clave del día pedida
+- **WHEN** el lector manda un código
+- **THEN** nadie queda identificado y la general registra `READER_READING_DISCARDED` con `DIALOG_OPEN`
+
+#### Scenario: Varios descartes en un minuto
+Origen: D7 de este change, borde: un lector con ruido no llena la bitácora.
+- **GIVEN** un descarte por `NOT_IDLE` ya registrado
+- **WHEN** llegan dos más con el mismo motivo antes del minuto y otro después
+- **THEN** la general tiene dos registros, y el segundo dice que se acumularon los anteriores
+
 ### Requirement: El simulador interno
 
 Con el medio «Simulador interno» y el puesto en mantenimiento, la pantalla de reposo SHALL mostrar «Lector simulado», que manda lo tipeado y el terminador como bytes al mismo armado que el puerto real. En operativo MUST NOT mostrarse.
@@ -68,12 +80,18 @@ Origen: mejora 9a de David del 10/11/2026 («simulador interno») y decisión 16
 - **WHEN** se tipea `1` en «Lector simulado» y se toca «Pasar por el lector»
 - **THEN** el puesto identifica a la persona de `0001`, y la última lectura de la pestaña dice que identificó, sin el código
 
+#### Scenario: En operativo no hay lector simulado
+Origen: gate, opción 5, borde: un comensal no puede inventarse una lectura.
+- **GIVEN** el medio «Simulador interno» y el puesto en operativo
+- **WHEN** se muestra la pantalla de reposo
+- **THEN** no hay «Lector simulado»
+
 ### Requirement: El puerto que falta o se cae
 
 Un puerto que no existe, está ocupado o se desconecta SHALL dejar la atención por el teclado como siempre; el lector MUST reintentar solo cada 5 segundos, la pestaña decir su estado y la general registrar `READER_STATE_CHANGED` en cada cambio, sin el código.
 
 #### Scenario: El puerto vuelve
 Origen: RF23, borde: un lector USB que se desenchufa.
-- **GIVEN** el medio «Puerto serie» en un puerto que se cae
-- **WHEN** pasan 5 segundos y el puerto vuelve
-- **THEN** el estado pasa de «se cayó» a «escuchando» y la general tiene los dos cambios
+- **GIVEN** el medio «Puerto serie» escuchando en `COM3`
+- **WHEN** el lector se desenchufa y `COM3` sale de la lista del equipo, y después se vuelve a enchufar
+- **THEN** a los 5 segundos el estado pasa a «se desconectó», y al volver a «escuchando»; la general tiene los dos cambios

@@ -499,8 +499,7 @@
                     </div>
                     @if (_puertosLector is not null)
                     {
-                        <span class="rotulo"></span>
-                        <p id="puertos-lector">@_puertosLector</p>
+                        <p id="puertos-lector" class="en-columna-de-campos" role="status">@_puertosLector</p>
                     }
                     <label for="velocidad-lector">Velocidad (baudios)</label>
                     <input id="velocidad-lector" type="text" inputmode="numeric" maxlength="6" value="@_velocidadLector"
@@ -541,8 +540,8 @@
                 </section>
                 <section aria-labelledby="titulo-estado-lector" class="estado-exportacion">
                     <h3 id="titulo-estado-lector">Estado del lector</h3>
-                    <p id="estado-lector">@MensajesAtencion.EstadoLector(LectorDelPuesto.Estado, LectorDelPuesto.Configuracion)</p>
-                    <p id="ultima-lectura">@MensajesAtencion.UltimaLectura(LectorDelPuesto.Ultima, Zona)</p>
+                    <p id="estado-lector" role="status">@MensajesAtencion.EstadoLector(LectorDelPuesto.Estado, LectorDelPuesto.Configuracion)</p>
+                    <p id="ultima-lectura" role="status">@MensajesAtencion.UltimaLectura(LectorDelPuesto.Ultima, Zona)</p>
                 </section>
             }
         </section>

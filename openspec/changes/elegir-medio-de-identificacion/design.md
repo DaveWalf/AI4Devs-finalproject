@@ -37,7 +37,7 @@ por el armado, que dejaría sin probar justo lo que el lector real necesita.
 ### D3. El medio de identificación
 
 `lector.json` de la carpeta de datos guarda el medio («Teclado», «Simulador interno» o «Puerto serie»), el puerto
-(`COM1` a `COM999`), la velocidad (1200 a 115200), los bits de datos (7 u 8), la paridad (ninguna, par o impar), los
+(`COM1` a `COM999`), la velocidad (una de 1200, 2400, 4800, 9600, 19200, 38400, 57600 o 115200), los bits de datos (7 u 8), la paridad (ninguna, par o impar), los
 bits de parada (1 o 2), el terminador (CR, LF, CR LF o TAB) y el relleno (0 a 20). Se valida al leer y al guardar; fuera
 de forma, lo de fábrica: «Teclado», 9600 8N1, CR LF y sin relleno. Con «Puerto serie», el puerto es obligatorio.
 **Descartada**: guardarlo en la base, que lo haría viajar en un resguardo a otro puesto con otro hardware.
@@ -46,8 +46,10 @@ de forma, lo de fábrica: «Teclado», 9600 8N1, CR LF y sin relleno. Con «Puer
 
 Sobre bytes: se acumula hasta el terminador elegido (con CR LF, también basta un CR o un LF solo, y la línea vacía entre
 los dos no es una lectura). Una lectura válida tiene de 1 a 32 bytes de `0x21` a `0x7E` después de quitar los espacios de
-alrededor; con un byte de control, fuera de ASCII o con espacios internos se descarta entera (`INVALID_CHARACTERS`), y al
-pasar de 32 sin terminador deja de acumular hasta el próximo terminador (`TOO_LONG`). Si pasan más de 2 segundos sin
+alrededor (y de un CR o LF que sobra: con el terminador CR, un lector que manda CR LF deja un LF al comienzo de la trama
+siguiente, que no se acumula); con un byte de control, fuera de ASCII o con espacios internos se descarta entera
+(`INVALID_CHARACTERS`), una de más de 32 se descarta como `TOO_LONG`, y al pasar de 96 bytes sin terminador deja de
+acumular hasta el próximo, para no crecer sin tope. Si pasan más de 2 segundos sin
 bytes en medio de una trama, el resto se descarta antes del byte siguiente (`STALE_FRAGMENT`). El relleno completa con
 ceros a la izquierda una lectura de sólo dígitos más corta que N. **Descartada**: no vencer los restos, que reproduce
 la concatenación de identidades que AT07 prohíbe.
@@ -64,7 +66,10 @@ con el error de almacenamiento (`STORAGE_ERROR`) sin poner ningún aviso, y en r
 
 Con el medio «Simulador interno» y el puesto en mantenimiento, la pantalla de reposo muestra «Lector simulado»: un campo
 y «Pasar por el lector», que escribe lo tipeado y el terminador en el `PuertoSimulado`. La lectura recorre el mismo
-armado, el mismo relleno y la misma decisión que una del puerto real. En operativo no se muestra. **Descartada**: un
+armado, el mismo relleno y la misma decisión que una del puerto real, con un byte por carácter (una ñ llega como 0xF1 y
+se descarta, como la descartaría un lector). En operativo no se muestra. Su fila comparte la grilla de la del código:
+los dos campos en la primera columna y los dos botones en la segunda, del mismo ancho, con el rótulo encima ocupando
+las dos (la regla de prolijidad). **Descartada**: un
 campo del simulador dentro de Configuración, que con el diálogo abierto descartaría cada lectura.
 
 ### D7. Lo que queda registrado
@@ -89,14 +94,18 @@ la pestaña, que no entra; y el lector como una sección de Red, que mezcla la r
 ### D9. Reintentos del puerto
 
 Un puerto que falta (`PORT_NOT_FOUND`), ocupado (`PORT_BUSY`) o que se cae (`PORT_LOST`) se reintenta cada 5 segundos
-con un reloj del servicio; la atención sigue por el teclado. **Descartada**: pedir que se toque «Guardar» otra vez, que
+con un reloj del servicio; la atención sigue por el teclado. Un lector USB que se desenchufa no levanta ningún evento de
+`SerialPort`, así que mientras escucha el servicio pregunta cada 5 segundos si el puerto sigue abierto y en la lista del
+equipo; si no, lo da por caído. Cerrar un puerto que ya no está puede fallar: se suelta igual. Un equipo sin puertos
+serie (`PlatformNotSupportedException`) queda como «sin acceso a puertos serie». **Descartada**: pedir que se toque «Guardar» otra vez, que
 dejaría un puesto sin lector hasta que alguien entre a Configuración.
 
 ## Risks / Trade-offs
 
 - [La undécima pestaña no entra en una fila] → D8 baja el relleno lateral, medido en la E2E.
 - [Una lectura y un toque en el mismo instante] → los dos pasan por el hilo de la pantalla, en orden.
-- [El paquete nuevo en la publicación autocontenida] → `publicar-puesto.ps1` y su E2E contra el EXE lo cubren.
+- [El paquete nuevo en la publicación autocontenida] → la E2E contra el EXE toca «Actualizar», que carga
+  `System.IO.Ports` y lee los puertos del registro de Windows sin abrir ninguno.
 - [Un equipo real con otro formato] → fuera de este corte; el contrato queda escrito.
 
 ## Migration Plan

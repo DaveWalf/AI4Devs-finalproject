@@ -356,7 +356,7 @@ borra. Cada guardado queda en la general por la huella SHA-256 del archivo, su t
 
 El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre
 **Configuración por pestañas**: Consumos, donde abre, Personas, Opciones, Identidad visual, Impresora,
-Pantalla, Red y, al final, General (el modo, el estado de las bitácoras y el resguardo), en una fila de botones de 56 px que entra en
+Mails, Pantalla, Red, Lector, Exportación y, al final, General (el modo, el estado de las bitácoras y el resguardo), en una fila de botones de 56 px que entra en
 1024 × 768.
 Todas quedan montadas, así que lo editado en una pestaña sobrevive al pasar a otra hasta cerrar. Cada «Guardar»
 guarda sólo lo de su pestaña y deja Configuración abierta con el aviso de lo guardado; «Cerrar» o Escape la cierran
@@ -553,8 +553,8 @@ tiene. La configuración vive en `correo.json` y la fecha de la última señal e
 viajan en un resguardo.
 
 **Medio de identificación.** La pestaña Lector, después de Red y sólo con la clave del día, elige cómo llega el código:
-«Teclado» (como siempre, por defecto), «Simulador interno» o «Puerto serie», con el puerto de los que el equipo tiene
-(«Actualizar»), la velocidad, los bits de datos, la paridad y los bits de parada, el terminador de cada lectura (CR LF,
+«Teclado» (como siempre, por defecto), «Simulador interno» o «Puerto serie», con el puerto (`COM3`; «Actualizar» lista los
+que el equipo tiene), la velocidad, los bits de datos, la paridad y los bits de parada, el terminador de cada lectura (CR LF,
 CR, LF o TAB) y el relleno de dígitos (un código de sólo dígitos más corto se completa con ceros a la izquierda: con el
 relleno 4, una tarjeta que manda `1` identifica a `0001`). En la pantalla de identificación una lectura identifica igual
 que tipear el código y tocar «Ingresar», con los mismos rechazos y mensajes; durante una atención o con un diálogo

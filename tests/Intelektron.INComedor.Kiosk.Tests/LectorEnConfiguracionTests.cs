@@ -96,6 +96,10 @@ public class LectorEnConfiguracionTests
     [Fact(DisplayName = "lector-identificacion · El medio de identificación: con el código de un operador no existe la pestaña Lector")]
     public async Task Con_un_operador()
     {
+        using var conClave = Preparar();
+        var conLaClave = conClave.Dibujar();
+        await EntradaConfiguracion.Entrar(conLaClave);
+        Assert.Single(conLaClave.FindAll("#pestana-lector"));
         using var puesto = Preparar();
         var pantalla = puesto.Dibujar();
 

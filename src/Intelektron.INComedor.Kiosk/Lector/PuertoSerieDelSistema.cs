@@ -58,23 +58,47 @@ public sealed class PuertoSerieDelSistema : IPuertoSerie
                 return;
             }
 
-            _puerto.DataReceived -= Recibido;
+            var puerto = _puerto;
+            _puerto = null;
+            puerto.DataReceived -= Recibido;
             try
             {
-                _puerto.Close();
+                puerto.Close();
+                puerto.Dispose();
             }
-            catch (IOException)
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or ObjectDisposedException or InvalidOperationException)
             {
-                // Un puerto que ya se desconectó no se puede cerrar: alcanza con soltarlo.
-                System.Diagnostics.Debug.WriteLine("INComedor: el puerto del lector ya no estaba al cerrarlo.");
+                // Un puerto que ya se desenchufó no se deja cerrar: alcanza con soltarlo.
+                System.Diagnostics.Debug.WriteLine($"INComedor: el puerto del lector ya no estaba al cerrarlo ({e.GetType().Name}).");
             }
-
-            _puerto.Dispose();
-            _puerto = null;
         }
     }
 
     public IReadOnlyList<string> Nombres() => SerialPort.GetPortNames().Order(StringComparer.OrdinalIgnoreCase).ToList();
+
+    /// <summary>
+    /// Abierto, todavía en la lista del equipo y respondiendo: un lector USB que se desenchufa no levanta ningún evento de
+    /// <see cref="SerialPort"/>, así que el servicio lo pregunta (D9).
+    /// </summary>
+    public bool Vivo
+    {
+        get
+        {
+            lock (_cerrojo)
+            {
+                try
+                {
+                    return _puerto is { IsOpen: true } puerto
+                           && SerialPort.GetPortNames().Contains(puerto.PortName, StringComparer.OrdinalIgnoreCase)
+                           && puerto.BytesToRead >= 0;
+                }
+                catch (Exception e) when (e is IOException or InvalidOperationException or UnauthorizedAccessException or ObjectDisposedException)
+                {
+                    return false;
+                }
+            }
+        }
+    }
 
     public void Dispose() => Cerrar();
 

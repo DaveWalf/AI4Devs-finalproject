@@ -165,8 +165,115 @@ public sealed class LectorTests : IDisposable
 
         var descartes = Registros("READER_READING_DISCARDED");
         Assert.Equal(3, descartes.Count);
-        Assert.Contains("\"Since\":1", descartes[^1], StringComparison.Ordinal);
+        Assert.Contains("\"Accumulated\":1", descartes[^1], StringComparison.Ordinal);
         Assert.Equal(new UltimaLectura(_reloj.GetUtcNow(), "DISCARDED", "NOT_IDLE"), lector.Ultima);
+    }
+
+    [Fact(DisplayName = "lector-identificacion · El puerto vuelve: un lector que se desenchufa mientras escucha se ve a los 5 segundos, cae, y al volver a enchufarlo escucha otra vez")]
+    public void Un_lector_que_se_desenchufa()
+    {
+        var real = new PuertoSimulado();
+        new AlmacenLector(_carpeta).Guardar(ConfiguracionLector.PorDefecto with { Medio = MedioIdentificacion.PuertoSerie, Puerto = "COM3" });
+        var reloj = new RelojConTemporizadores(_reloj);
+        using var lector = new LectorIdentificacion(real, new AlmacenLector(_carpeta), _servicio.RegistroConfiguracion!, reloj);
+
+        lector.Aplicar();
+        Assert.Equal(EstadoLector.Escuchando, lector.Estado);
+        var vigilancia = Assert.Single(reloj.Temporizadores);
+        Assert.Equal(LectorIdentificacion.Reintento, vigilancia.Primero);
+
+        real.Puertos.Remove("COM3");
+        vigilancia.Disparar();
+        Assert.Equal(EstadoLector.PuertoCaido, lector.Estado);
+        Assert.False(real.Abierto);
+
+        real.Puertos.Add("COM3");
+        reloj.Temporizadores[^1].Disparar();
+        Assert.Equal(EstadoLector.Escuchando, lector.Estado);
+        Assert.Contains(Registros("READER_STATE_CHANGED"), r => r.Contains("\"PORT_LOST\"", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "lector-identificacion · El puerto vuelve: un puerto que no se deja cerrar no frena el cambio de medio ni el cierre del puesto")]
+    public void Un_cierre_que_falla()
+    {
+        var real = new PuertoSimulado { FallaAlCerrar = true };
+        new AlmacenLector(_carpeta).Guardar(ConfiguracionLector.PorDefecto with { Medio = MedioIdentificacion.PuertoSerie, Puerto = "COM3" });
+        var lector = Lector(real);
+        lector.Aplicar();
+
+        new AlmacenLector(_carpeta).Guardar(ConfiguracionLector.PorDefecto);
+        lector.Aplicar();
+        Assert.Equal(EstadoLector.Apagado, lector.Estado);
+
+        lector.Dispose();
+    }
+
+    [Fact(DisplayName = "lector-identificacion · El puerto que falta o se cae: un puesto sin acceso a puertos serie lo dice, sin tirar la pantalla; un reintento después de cerrar no abre nada")]
+    public void Sin_soporte_y_despues_de_cerrar()
+    {
+        var real = new PuertoSimulado { Falla = "UNSUPPORTED" };
+        new AlmacenLector(_carpeta).Guardar(ConfiguracionLector.PorDefecto with { Medio = MedioIdentificacion.PuertoSerie, Puerto = "COM3" });
+        var reloj = new RelojConTemporizadores(_reloj);
+        var lector = new LectorIdentificacion(real, new AlmacenLector(_carpeta), _servicio.RegistroConfiguracion!, reloj);
+
+        lector.Aplicar();
+        Assert.Equal(EstadoLector.SinPuerto, lector.Estado);
+
+        real.Falla = null;
+        lector.Dispose();
+        foreach (var temporizador in reloj.Temporizadores.ToList())
+        {
+            temporizador.Disparar();
+        }
+
+        Assert.False(real.Abierto);
+    }
+
+    [Fact(DisplayName = "lector-identificacion · El armado de las tramas: el simulador manda los bytes que mandaría un lector, así una ñ se descarta como un carácter que no es de un código")]
+    public void El_simulador_manda_bytes_crudos()
+    {
+        new AlmacenLector(_carpeta).Guardar(ConfiguracionLector.PorDefecto with { Medio = MedioIdentificacion.Simulador });
+        using var lector = Lector(real: null);
+        var lecturas = new List<string>();
+        lector.Lectura += (codigo, _) => lecturas.Add(codigo);
+        lector.Aplicar();
+
+        lector.Simulado.Pasar("ñ1", lector.Configuracion);
+
+        Assert.Empty(lecturas);
+        Assert.Equal("INVALID_CHARACTERS", lector.Ultima!.Motivo);
+    }
+
+    [Fact(DisplayName = "lector-identificacion · El armado de las tramas: con el terminador CR y un lector que manda CR LF, el LF que sobra no ensucia la lectura siguiente")]
+    public void Un_terminador_que_no_coincide()
+    {
+        var armador = new ArmadorTramas(TerminadorLector.Cr, 0);
+
+        var lecturas = armador.Agregar(Bytes("0001\r\n0002\r\n"), Ahora);
+
+        Assert.Equal(["0001", "0002"], lecturas.Select(l => l.Codigo));
+    }
+
+    [Fact(DisplayName = "lector-identificacion · Fuera de la identificación la lectura se descarta: con el error de almacenamiento, una lectura se descarta como STORAGE_ERROR sin poner ningún aviso")]
+    public void Con_el_error_de_almacenamiento()
+    {
+        var carpeta = Directory.CreateDirectory(Path.Combine(_carpeta, "rota")).FullName;
+        var ruta = Path.Combine(carpeta, "incomedor.db");
+        using (var conexion = new SqliteConnection($"Data Source={ruta};Pooling=False"))
+        {
+            conexion.Open();
+            using var comando = conexion.CreateCommand();
+            comando.CommandText = "PRAGMA user_version = 99; CREATE TABLE futura (id INTEGER)";
+            comando.ExecuteNonQuery();
+        }
+
+        using var servicio = new ServicioAtencion(ruta, _reloj, new ImpresoraDePrueba());
+        var maquina = new MaquinaAtencion(servicio);
+        maquina.Iniciar();
+
+        Assert.Equal(EstadoAtencion.ErrorAlmacenamiento, maquina.Estado);
+        Assert.Equal(new ResultadoLectura("DISCARDED", "STORAGE_ERROR"), maquina.IdentificarPorLector("0001", "SERIAL_PORT"));
+        Assert.Null(maquina.Aviso);
     }
 
     private LectorIdentificacion Lector(IPuertoSerie? real) =>
@@ -199,7 +306,7 @@ public sealed class LectorTests : IDisposable
 
         public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
         {
-            var temporizador = new TemporizadorDePrueba(() => callback(state));
+            var temporizador = new TemporizadorDePrueba(() => callback(state)) { Primero = dueTime };
             Temporizadores.Add(temporizador);
             return temporizador;
         }
@@ -207,6 +314,8 @@ public sealed class LectorTests : IDisposable
 
     private sealed class TemporizadorDePrueba(Action disparar) : ITimer
     {
+        public TimeSpan Primero { get; init; }
+
         public void Disparar() => disparar();
 
         public bool Change(TimeSpan dueTime, TimeSpan period) => true;
