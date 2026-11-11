@@ -82,17 +82,30 @@ public class ExportacionEnPantallaTests
         await pantalla.Find("#sftp-caido").ClickAsync(new());
         await pantalla.Find("#exportar-ahora").ClickAsync(new());
 
-        Assert.Contains("No se pudo exportar al SFTP simulado: el servidor no responde.", pantalla.Find("#mensaje-exportacion").TextContent);
-        Assert.Contains("al día", pantalla.Find("#estado-exportacion-carpeta").TextContent);
+        Assert.Contains("No se pudo exportar al SFTP simulado: el servidor no responde.", pantalla.Find("#mensaje-exportacion-automatica").TextContent);
+        Assert.Contains("último envío", pantalla.Find("#estado-exportacion-carpeta").TextContent);
         Assert.Contains("falló", pantalla.Find("#estado-exportacion-sftp").TextContent);
         Assert.Single(Directory.GetFiles(destino));
 
         await pantalla.Find("#sftp-disponible").ClickAsync(new());
         await pantalla.Find("#exportar-ahora").ClickAsync(new());
 
-        Assert.Equal("Se exportó 1 consumo.", pantalla.Find("#mensaje-exportacion").TextContent.Trim());
-        Assert.Contains("al día", pantalla.Find("#estado-exportacion-sftp").TextContent);
+        Assert.Equal("Se exportó 1 consumo.", pantalla.Find("#mensaje-exportacion-automatica").TextContent.Trim());
+        Assert.Contains("último envío", pantalla.Find("#estado-exportacion-sftp").TextContent);
         Assert.True(File.Exists(Path.Combine(puesto.Carpeta, "sftp-simulado", "sftp.ejemplo.local", "entrada", "INComedor-consumos.csv")));
+    }
+
+    [Fact(DisplayName = "exportacion-consumos · Guardar la exportación: sin ningún destino guardado, «Exportar ahora» lo dice en lugar de decir que no había consumos")]
+    public async Task Exportar_ahora_sin_destinos()
+    {
+        using var puesto = Preparar();
+        var pantalla = puesto.Dibujar();
+        await Consumir(pantalla);
+        await AbrirExportacion(pantalla);
+
+        await pantalla.Find("#exportar-ahora").ClickAsync(new());
+
+        Assert.Equal(MensajesAtencion.ExportacionSinDestinos, pantalla.Find("#mensaje-exportacion-automatica").TextContent.Trim());
     }
 
     [Fact(DisplayName = "exportacion-consumos · Guardar la exportación: con el código de un operador no existe la pestaña Exportación")]

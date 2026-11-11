@@ -176,10 +176,17 @@ public sealed class ConsultaConsumos
         var consumos = new List<ConsumoConSecuencia>();
         while (lector.Read())
         {
-            consumos.Add(new ConsumoConSecuencia(lector.GetInt64(15), Fila(lector)));
+            consumos.Add(new ConsumoConSecuencia(lector.GetInt64(lector.GetOrdinal("comconSecuenciaCliente")), Fila(lector)));
         }
 
         return consumos;
+    }
+
+    /// <summary>La última secuencia de la base, o cero sin consumos: una marca mayor es de una base anterior.</summary>
+    public long UltimaSecuencia()
+    {
+        using var conexion = Abrir();
+        return ComandosSqlite.EscalarLong(conexion, null, "SELECT COALESCE(MAX(comconSecuenciaCliente), 0) FROM tbComedorConsumos");
     }
 
     /// <summary>Las columnas de un consumo, en el orden que lee <see cref="Fila"/>.</summary>

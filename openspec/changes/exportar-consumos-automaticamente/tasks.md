@@ -48,3 +48,22 @@
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
   --no-incremental`, el puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c
   Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+
+## 5. Correcciones de la verificación
+
+- [x] 5.1 Lo que encontró la verificación por un agente de sólo lectura (08:07 a ~08:20), corregido con el gate dado
+  (decisión 13) y primero con las pruebas que lo muestran, vistas fallar: un nulo donde va un texto y una ruta de
+  dispositivo (`\\.\`, `\\?\`) vuelven a lo de fábrica; la primera pasada corre al minuto, o cuando le toca por el
+  último intento; un archivo abierto por otro programa falla como `FILE_IN_USE`, sin temporales; una carpeta que no existe
+  conserva la marca; cada destino guarda su identidad y otra carpeta, otro servidor u otro tipo de archivo recibe toda la
+  historia, como una marca de una base anterior (`ConsultaConsumos.UltimaSecuencia`); las marcas viven en memoria y un
+  estado que no se guarda no es una falla ni repite; un estado abierto por otro programa no escribe
+  (`STATE_UNREADABLE`, vista fallar contra un mutante); la pasada del reloj registra cualquier falla como
+  `UNEXPECTED_ERROR` sin cerrar el puesto; `Dispose` espera la pasada en curso; el temporal es propio y se fuerza a disco.
+  En la pantalla: «Exportar ahora» fuera del hilo de la pantalla con «Exportando…», sin destinos lo dice, una base ocupada
+  lo dice, el mensaje tiene su propio id (`#mensaje-exportacion-automatica`, que Consumos ya usaba), el estado dice «último
+  envío a las HH:mm» en lugar de «al día», «Elegir» limpia el aviso y `CONSUMPTION_EXPORT` dice si cambió la carpeta o el
+  servidor. La E2E mide la columna contra Impresora y «Elegir» al borde de los campos. Verifica: `dotnet test --project
+  tests/Intelektron.INComedor.Kiosk.Tests` y la E2E de la exportación en verde. Hecho: Sqlite 3 de 3 en la clase, Kiosk
+  543 de 543, `ExportacionE2ETests` en verde con los campos desde x 273,5 como `#numero-puesto` y «Elegir» hasta x 960,0;
+  capturas miradas.

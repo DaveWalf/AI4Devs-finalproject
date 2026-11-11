@@ -36,8 +36,9 @@ public sealed partial record ConfiguracionExportacion(
     private static partial Regex CarpetaRemotaValida();
 
     /// <summary>
-    /// Los campos que no tienen forma, en el orden de la pestaña: Minutos (5 a 1.440), Carpeta (absoluta, o ninguna si el
-    /// SFTP está activo), y con el SFTP activo, Servidor, Puerto (1 a 65.535), Usuario y CarpetaRemota (sin «..» ni «.»).
+    /// Los campos que no tienen forma, en el orden de la pestaña: Minutos (5 a 1.440), Carpeta (absoluta y no una ruta de
+    /// dispositivo, o ninguna si el SFTP está activo), y con el SFTP activo, Servidor, Puerto (1 a 65.535), Usuario y
+    /// CarpetaRemota (sin «..» ni «.»).
     /// </summary>
     public static IReadOnlyList<string> Validar(ConfiguracionExportacion configuracion)
     {
@@ -49,6 +50,7 @@ public sealed partial record ConfiguracionExportacion(
 
         if (configuracion.Carpeta is { } carpeta
                 ? carpeta.Length > 240 || carpeta.IndexOfAny(Path.GetInvalidPathChars()) >= 0 || !Path.IsPathFullyQualified(carpeta)
+                  || carpeta.StartsWith(@"\\.\", StringComparison.Ordinal) || carpeta.StartsWith(@"\\?\", StringComparison.Ordinal)
                 : configuracion.Activa && !configuracion.SftpActivo)
         {
             campos.Add("Carpeta");
@@ -99,7 +101,7 @@ public sealed class AlmacenConfiguracionExportacion
     /// <summary>La carpeta de datos del puesto, donde también viven el estado y el SFTP simulado.</summary>
     public string CarpetaDatos => _carpeta;
 
-    /// <summary>Lo guardado; sin archivo, ilegible o fuera de forma, lo de fábrica: apagada.</summary>
+    /// <summary>Lo guardado; sin archivo, ilegible o fuera de forma (un nulo donde va un texto incluido), lo de fábrica: apagada.</summary>
     public ConfiguracionExportacion Leer()
     {
         try
@@ -110,18 +112,18 @@ public sealed class AlmacenConfiguracionExportacion
             var leida = new ConfiguracionExportacion(
                 raiz.GetProperty("activa").GetBoolean(),
                 raiz.GetProperty("minutos").GetInt32(),
-                raiz.GetProperty("archivo").GetString() switch
+                Texto(raiz, "archivo") switch
                 {
                     "QUE_CRECE" => ArchivoExportacion.QueCrece,
                     "POR_DIA" => ArchivoExportacion.PorDia,
                     _ => throw new JsonException("Archivo desconocido."),
                 },
-                raiz.GetProperty("carpeta").ValueKind == JsonValueKind.Null ? null : raiz.GetProperty("carpeta").GetString(),
+                raiz.GetProperty("carpeta").ValueKind == JsonValueKind.Null ? null : Texto(raiz, "carpeta"),
                 sftp.GetProperty("activo").GetBoolean(),
-                sftp.GetProperty("servidor").GetString()!,
+                Texto(sftp, "servidor"),
                 sftp.GetProperty("puerto").GetInt32(),
-                sftp.GetProperty("usuario").GetString()!,
-                sftp.GetProperty("carpetaRemota").GetString()!);
+                Texto(sftp, "usuario"),
+                Texto(sftp, "carpetaRemota"));
             return ConfiguracionExportacion.Validar(leida).Count == 0 ? leida : ConfiguracionExportacion.PorDefecto;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or KeyNotFoundException
@@ -156,14 +158,22 @@ public sealed class AlmacenConfiguracionExportacion
             },
         }));
     }
+
+    /// <summary>Un texto, o una JsonException si el valor no lo es: un nulo no llega a la validación.</summary>
+    private static string Texto(JsonElement objeto, string nombre) =>
+        objeto.GetProperty(nombre) is { ValueKind: JsonValueKind.String } valor ? valor.GetString()! : throw new JsonException($"{nombre} no es un texto.");
 }
 
-/// <summary>Cómo está un destino: su marca, el último intento, el último éxito y el último error (D5).</summary>
-public sealed record EstadoDestino(long Marca, DateTimeOffset? UltimoIntento, DateTimeOffset? UltimoExito, string? Error);
+/// <summary>
+/// Cómo está un destino: su marca, el último intento, el último éxito, el último error y su identidad (la carpeta, o el
+/// servidor y la carpeta remota, con el tipo de archivo): otra identidad es otro destino, que empieza de cero (D5).
+/// </summary>
+public sealed record EstadoDestino(long Marca, DateTimeOffset? UltimoIntento, DateTimeOffset? UltimoExito, string? Error, string? Identidad = null);
 
 /// <summary>
-/// <c>exportacion-estado.json</c>: la marca y los intentos de cada destino (D5). Un archivo ilegible es ninguna marca: el
-/// destino recibe todo otra vez, porque repetir es preferible a perder.
+/// <c>exportacion-estado.json</c>: la marca y los intentos de cada destino (D5). Sin archivo, o uno ilegible, es ninguna
+/// marca: el destino recibe todo otra vez, porque repetir es preferible a perder. Uno que otro programa tiene abierto en
+/// ese instante no es ninguna marca: la pasada no escribe y la siguiente vuelve a leerlo.
 /// </summary>
 public sealed class AlmacenEstadoExportacion
 {
@@ -178,11 +188,30 @@ public sealed class AlmacenEstadoExportacion
 
     private string Ruta => Path.Combine(_carpeta, Nombre);
 
-    public Dictionary<string, EstadoDestino> Leer()
+    /// <summary>
+    /// Las marcas, o null si otro programa tiene el archivo abierto en ese instante: esperar es preferible a repetir. Sin
+    /// archivo, o uno que nunca se va a poder leer (una carpeta con ese nombre, sin permiso), ninguna marca.
+    /// </summary>
+    public Dictionary<string, EstadoDestino>? Leer()
     {
+        string contenido;
         try
         {
-            using var documento = JsonDocument.Parse(File.ReadAllText(Ruta));
+            contenido = File.ReadAllText(Ruta);
+        }
+        catch (IOException e) when ((e.HResult & 0xFFFF) is 32 or 33)
+        {
+            return null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            System.Diagnostics.Debug.WriteLine($"INComedor: el estado de la exportación no se puede leer ({e.GetType().Name}); los destinos reciben todo otra vez.");
+            return new Dictionary<string, EstadoDestino>(StringComparer.Ordinal);
+        }
+
+        try
+        {
+            using var documento = JsonDocument.Parse(contenido);
             var estados = new Dictionary<string, EstadoDestino>(StringComparer.Ordinal);
             foreach (var destino in documento.RootElement.EnumerateObject())
             {
@@ -191,14 +220,15 @@ public sealed class AlmacenEstadoExportacion
                     valor.GetProperty("marca").GetInt64(),
                     Instante(valor, "ultimoIntento"),
                     Instante(valor, "ultimoExito"),
-                    valor.GetProperty("error").ValueKind == JsonValueKind.Null ? null : valor.GetProperty("error").GetString());
+                    Opcional(valor, "error"),
+                    Opcional(valor, "identidad"));
             }
 
             return estados;
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or KeyNotFoundException
-                                       or InvalidOperationException or FormatException)
+        catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
         {
+            System.Diagnostics.Debug.WriteLine("INComedor: el estado de la exportación no se pudo leer; los destinos reciben todo otra vez.");
             return new Dictionary<string, EstadoDestino>(StringComparer.Ordinal);
         }
     }
@@ -212,13 +242,15 @@ public sealed class AlmacenEstadoExportacion
             ultimoIntento = e.Value.UltimoIntento?.UtcDateTime.ToString("O", CultureInfo.InvariantCulture),
             ultimoExito = e.Value.UltimoExito?.UtcDateTime.ToString("O", CultureInfo.InvariantCulture),
             error = e.Value.Error,
+            identidad = e.Value.Identidad,
         })));
     }
 
     private static DateTimeOffset? Instante(JsonElement valor, string nombre) =>
-        valor.GetProperty(nombre).ValueKind == JsonValueKind.Null
-            ? null
-            : DateTimeOffset.Parse(valor.GetProperty(nombre).GetString()!, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+        Opcional(valor, nombre) is { } texto ? DateTimeOffset.Parse(texto, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal) : null;
+
+    private static string? Opcional(JsonElement valor, string nombre) =>
+        valor.TryGetProperty(nombre, out var propiedad) && propiedad.ValueKind == JsonValueKind.String ? propiedad.GetString() : null;
 }
 
 /// <summary>El resultado de una pasada en un destino: las filas y los archivos escritos, o el motivo de la falla.</summary>
@@ -230,13 +262,18 @@ public sealed class ServidorNoResponde() : IOException("El servidor SFTP simulad
 /// <summary>
 /// La exportación automática de consumos (exportar-consumos-automaticamente, D2 a D5): en cada pasada, por cada destino
 /// configurado, los consumos desde su marca, en orden, escritos en su archivo, y la marca nueva recién después de escribir
-/// cada archivo. Un destino que falla conserva su marca y la pasada siguiente reintenta desde ahí; los otros siguen.
+/// cada archivo. Las marcas viven en memoria y se guardan después de cada escritura: si guardarlas falla, la escritura no
+/// es una falla del destino y la pasada siguiente no repite. Un destino que falla conserva su marca y la pasada siguiente
+/// reintenta desde ahí; los otros siguen.
 /// </summary>
 public sealed class ExportacionAutomatica : IDisposable
 {
     public const string Carpeta = "FOLDER";
     public const string Sftp = "SFTP";
     public const int Tope = ExportacionConsumos.Tope;
+
+    /// <summary>Sin pasadas anteriores, la primera corre al minuto de arrancar (D4).</summary>
+    public static readonly TimeSpan PrimeraPasada = TimeSpan.FromMinutes(1);
 
     private readonly ConsultaConsumos _consulta;
     private readonly RegistroDelPuesto _registro;
@@ -247,6 +284,7 @@ public sealed class ExportacionAutomatica : IDisposable
     private readonly AlmacenEstadoExportacion _estado;
     private readonly Lock _pasada = new();
     private readonly Lock _programacion = new();
+    private Dictionary<string, EstadoDestino>? _estados;
     private ITimer? _temporizador;
 
     public ExportacionAutomatica(
@@ -268,40 +306,71 @@ public sealed class ExportacionAutomatica : IDisposable
     /// <summary>Después de cada pasada, para que la pestaña vuelva a dibujar el estado; puede llegar desde el hilo del reloj.</summary>
     public event Action? PasadaTerminada;
 
-    /// <summary>El estado de cada destino, por su clave.</summary>
-    public IReadOnlyDictionary<string, EstadoDestino> Estado => _estado.Leer();
+    /// <summary>El estado de cada destino, por su clave: el de memoria, o el guardado si todavía no corrió ninguna pasada.</summary>
+    public IReadOnlyDictionary<string, EstadoDestino> Estado
+    {
+        get
+        {
+            lock (_pasada)
+            {
+                return new Dictionary<string, EstadoDestino>(_estados ?? _estado.Leer() ?? [], StringComparer.Ordinal);
+            }
+        }
+    }
 
     /// <summary>La carpeta del SFTP simulado para un servidor y una carpeta remota ya validados (D3).</summary>
     public static string CarpetaSimulada(string carpetaDatos, string servidor, string carpetaRemota) =>
         Path.Combine([carpetaDatos, "sftp-simulado", servidor, .. carpetaRemota.Split('/', StringSplitOptions.RemoveEmptyEntries)]);
 
-    /// <summary>Una pasada, de a una por vez: «Exportar ahora» o el reloj.</summary>
+    /// <summary>
+    /// Una pasada, de a una por vez: «Exportar ahora» o el reloj. Sin destinos guardados, ningún resultado; con el estado
+    /// tomado por otro programa, cada destino falla como STATE_UNREADABLE sin escribir nada.
+    /// </summary>
     public IReadOnlyList<ResultadoDestino> Exportar(bool aMano = false)
     {
-        IReadOnlyList<ResultadoDestino> resultados;
+        var resultados = new List<ResultadoDestino>();
         lock (_pasada)
         {
             var configuracion = _configuracion.Leer();
-            var estados = _estado.Leer();
-            var lista = new List<ResultadoDestino>();
+            var destinos = new List<(string Clave, string Carpeta, string Identidad)>();
             if (configuracion.Carpeta is { } carpeta)
             {
-                lista.Add(ExportarA(Carpeta, carpeta, configuracion, estados, aMano));
+                destinos.Add((Carpeta, carpeta, carpeta + "|" + configuracion.Archivo));
             }
 
             if (configuracion.SftpActivo)
             {
-                lista.Add(ExportarA(Sftp, CarpetaSimulada(_carpetaDatos, configuracion.Servidor, configuracion.CarpetaRemota), configuracion, estados, aMano));
+                destinos.Add((Sftp, CarpetaSimulada(_carpetaDatos, configuracion.Servidor, configuracion.CarpetaRemota),
+                    configuracion.Servidor + ":" + configuracion.Puerto.ToString(CultureInfo.InvariantCulture) + "/" + configuracion.CarpetaRemota + "|" + configuracion.Archivo));
             }
 
-            resultados = lista;
+            if (destinos.Count > 0)
+            {
+                _estados ??= _estado.Leer();
+                if (_estados is null)
+                {
+                    resultados.AddRange(destinos.Select(d => new ResultadoDestino(d.Clave, 0, [], "STATE_UNREADABLE")));
+                }
+                else
+                {
+                    var ultima = _consulta.UltimaSecuencia();
+                    foreach (var (clave, carpetaDestino, identidad) in destinos)
+                    {
+                        resultados.Add(ExportarA(clave, carpetaDestino, identidad, configuracion, ultima, aMano));
+                    }
+                }
+            }
         }
 
         PasadaTerminada?.Invoke();
         return resultados;
     }
 
-    /// <summary>Vuelve a programar el reloj con la configuración guardada: cada N minutos si está activa, nada si no.</summary>
+    /// <summary>
+    /// Vuelve a programar el reloj con la configuración guardada: cada N minutos si está activa, nada si no. La primera
+    /// pasada corre cuando le toca por el último intento, o al minuto si no hubo ninguno: un puesto que se reinicia antes
+    /// del período igual exporta.
+    /// </summary>
     public void Programar()
     {
         lock (_programacion)
@@ -309,14 +378,20 @@ public sealed class ExportacionAutomatica : IDisposable
             _temporizador?.Dispose();
             _temporizador = null;
             var configuracion = _configuracion.Leer();
-            if (configuracion.Activa)
+            if (!configuracion.Activa)
             {
-                var periodo = TimeSpan.FromMinutes(configuracion.Minutos);
-                _temporizador = _reloj.CreateTimer(_ => PasadaDelReloj(), null, periodo, periodo);
+                return;
             }
+
+            var periodo = TimeSpan.FromMinutes(configuracion.Minutos);
+            var primera = Estado.Values.Select(e => e.UltimoIntento).Max() is { } intento
+                ? TimeSpan.FromTicks(Math.Clamp((intento + periodo - _reloj.GetUtcNow()).Ticks, 0, periodo.Ticks))
+                : PrimeraPasada;
+            _temporizador = _reloj.CreateTimer(_ => PasadaDelReloj(), null, primera, periodo);
         }
     }
 
+    /// <summary>Libera el reloj y espera la pasada en curso, para que no quede una escritura a medias al cerrar.</summary>
     public void Dispose()
     {
         lock (_programacion)
@@ -324,11 +399,16 @@ public sealed class ExportacionAutomatica : IDisposable
             _temporizador?.Dispose();
             _temporizador = null;
         }
+
+        lock (_pasada)
+        {
+            _estados = null;
+        }
     }
 
     /// <summary>
-    /// La pasada del reloj corre fuera del hilo de la pantalla: una base ocupada en ese instante no es una falla de un
-    /// destino, y la pasada siguiente vuelve a intentar desde las mismas marcas.
+    /// La pasada del reloj corre fuera del hilo de la pantalla, donde una excepción sin atrapar cerraría el puesto: cualquier
+    /// falla queda registrada con su tipo, y la pasada siguiente vuelve a intentar desde las mismas marcas.
     /// </summary>
     private void PasadaDelReloj()
     {
@@ -336,20 +416,32 @@ public sealed class ExportacionAutomatica : IDisposable
         {
             Exportar();
         }
-        catch (Microsoft.Data.Sqlite.SqliteException)
+        catch (Exception error)
         {
-            System.Diagnostics.Debug.WriteLine("INComedor: la base no respondió a la exportación automática; reintenta en la pasada siguiente.");
+            System.Diagnostics.Debug.WriteLine($"INComedor: falló una pasada de la exportación automática ({error.GetType().Name}).");
+            Registrar("CONSUMPTIONS_AUTO_EXPORT_FAILED", new { Destination = "ALL", ReasonCode = "UNEXPECTED_ERROR", Error = error.GetType().Name, Trigger = "TIMER" },
+                SeveridadBitacora.Warning);
         }
     }
 
     private ResultadoDestino ExportarA(
-        string clave, string carpeta, ConfiguracionExportacion configuracion, Dictionary<string, EstadoDestino> estados, bool aMano)
+        string clave, string carpeta, string identidad, ConfiguracionExportacion configuracion, long ultima, bool aMano)
     {
-        var actual = estados.GetValueOrDefault(clave) ?? new EstadoDestino(0, null, null, null);
+        var estados = _estados!;
+        var actual = estados.GetValueOrDefault(clave) ?? new EstadoDestino(0, null, null, null, identidad);
+        // Otra carpeta, otro servidor u otro tipo de archivo es otro destino, que recibe toda la historia; una marca mayor
+        // que la última secuencia es de una base anterior: volver a cero repite, y repetir es preferible a perder.
+        if (actual.Identidad != identidad || actual.Marca > ultima)
+        {
+            actual = new EstadoDestino(0, actual.UltimoIntento, null, null, identidad);
+        }
+
         var consumos = _consulta.Desde(actual.Marca, Tope);
         var ahora = _reloj.GetUtcNow();
         if (consumos.Count == 0)
         {
+            estados[clave] = actual with { UltimoIntento = ahora, Error = null };
+            GuardarEstado();
             return new ResultadoDestino(clave, 0, [], null);
         }
 
@@ -377,8 +469,8 @@ public sealed class ExportacionAutomatica : IDisposable
                     archivos.Add(tramo.Archivo);
                 }
 
-                estados[clave] = new EstadoDestino(marca, ahora, exito, null);
-                _estado.Guardar(estados);
+                estados[clave] = new EstadoDestino(marca, ahora, exito, null, identidad);
+                GuardarEstado();
             }
 
             Registrar("CONSUMPTIONS_AUTO_EXPORTED", new { Destination = clave, Files = archivos, Rows = filas, UpToSequence = marca, Trigger = Disparo(aMano) });
@@ -386,27 +478,39 @@ public sealed class ExportacionAutomatica : IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            var motivo = e switch
-            {
-                ServidorNoResponde => "SERVER_UNREACHABLE",
-                DirectoryNotFoundException => "FOLDER_NOT_FOUND",
-                UnauthorizedAccessException => "ACCESS_DENIED",
-                _ => "WRITE_FAILED",
-            };
-            estados[clave] = new EstadoDestino(marca, ahora, exito, motivo);
-            try
-            {
-                _estado.Guardar(estados);
-            }
-            catch (Exception guardado) when (guardado is IOException or UnauthorizedAccessException)
-            {
-                // Sin poder guardar el estado, la marca de la última escritura buena queda en memoria hasta la pasada siguiente.
-                System.Diagnostics.Debug.WriteLine($"INComedor: no se pudo guardar el estado de la exportación ({guardado.GetType().Name}).");
-            }
+            var motivo = Motivo(e);
+            estados[clave] = new EstadoDestino(marca, ahora, exito, motivo, identidad);
+            GuardarEstado();
 
             Registrar("CONSUMPTIONS_AUTO_EXPORT_FAILED", new { Destination = clave, ReasonCode = motivo, Rows = filas, UpToSequence = marca, Trigger = Disparo(aMano) },
                 SeveridadBitacora.Warning);
             return new ResultadoDestino(clave, filas, archivos, motivo);
+        }
+    }
+
+    /// <summary>El motivo de una falla de escritura: el servidor, la carpeta, el permiso o un archivo que otro programa tiene abierto.</summary>
+    private static string Motivo(Exception error) => error switch
+    {
+        ServidorNoResponde => "SERVER_UNREACHABLE",
+        DirectoryNotFoundException => "FOLDER_NOT_FOUND",
+        UnauthorizedAccessException => "ACCESS_DENIED",
+        IOException { HResult: var resultado } when (resultado & 0xFFFF) is 32 or 33 => "FILE_IN_USE",
+        _ => "WRITE_FAILED",
+    };
+
+    /// <summary>
+    /// Guarda las marcas de memoria; si no se puede (el archivo tomado un instante), quedan en memoria y se guardan en la
+    /// próxima escritura: la escritura ya hecha no es una falla del destino.
+    /// </summary>
+    private void GuardarEstado()
+    {
+        try
+        {
+            _estado.Guardar(_estados!);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            System.Diagnostics.Debug.WriteLine($"INComedor: el estado de la exportación queda en memoria hasta la próxima escritura ({e.GetType().Name}).");
         }
     }
 
@@ -451,9 +555,10 @@ public sealed class ExportacionAutomatica : IDisposable
     }
 
     /// <summary>
-    /// Agrega las líneas al archivo copiando lo que había a un temporal y reemplazándolo: un corte deja el archivo de antes o
-    /// el completo (D2). El encabezado, con la marca de UTF-8, sólo al crearlo. La carpeta del cliente tiene que existir;
-    /// la del SFTP simulado la crea el servidor.
+    /// Agrega las líneas al archivo copiando lo que había a un temporal propio, forzándolo a disco y reemplazando: un corte
+    /// deja el archivo de antes o el completo (D2). El encabezado, con la marca de UTF-8, sólo al crearlo. El de antes se lee
+    /// aunque otro programa lo tenga abierto para leer. La carpeta del cliente tiene que existir; la del SFTP simulado la
+    /// crea el servidor.
     /// </summary>
     private static void Escribir(string carpeta, string archivo, IReadOnlyList<string> lineas, bool crear)
     {
@@ -467,14 +572,14 @@ public sealed class ExportacionAutomatica : IDisposable
         }
 
         var ruta = Path.Combine(carpeta, archivo);
-        var temporal = ruta + ".tmp";
+        var temporal = ruta + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            using (var salida = new FileStream(temporal, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var salida = new FileStream(temporal, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 if (File.Exists(ruta))
                 {
-                    using var anterior = new FileStream(ruta, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using var anterior = new FileStream(ruta, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     anterior.CopyTo(salida);
                 }
                 else
@@ -487,6 +592,8 @@ public sealed class ExportacionAutomatica : IDisposable
                 {
                     salida.Write(Encoding.UTF8.GetBytes(linea + "\r\n"));
                 }
+
+                salida.Flush(flushToDisk: true);
             }
 
             File.Move(temporal, ruta, overwrite: true);
@@ -507,7 +614,7 @@ public sealed class ExportacionAutomatica : IDisposable
     }
 }
 
-/// <summary>Escribir un archivo por un temporal y moverlo encima: nunca uno a medias.</summary>
+/// <summary>Escribir un archivo por un temporal forzado a disco y moverlo encima: nunca uno a medias.</summary>
 internal static class EscrituraAtomica
 {
     public static void Escribir(string ruta, string contenido)
@@ -515,7 +622,12 @@ internal static class EscrituraAtomica
         var temporal = ruta + ".tmp";
         try
         {
-            File.WriteAllText(temporal, contenido);
+            using (var salida = new FileStream(temporal, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                salida.Write(Encoding.UTF8.GetBytes(contenido));
+                salida.Flush(flushToDisk: true);
+            }
+
             File.Move(temporal, ruta, overwrite: true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

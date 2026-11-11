@@ -40,6 +40,18 @@ public class ExportacionDesdeMarcaTests : ConfirmacionTestBase
         Assert.Equal("\"'=1+1\";\"texto\";\"1500,50\"", EscritorPlanilla.LineaCsv(["=1+1", "texto", new NumeroPlanilla(1500.5m, 2)]));
     }
 
+    [Fact(DisplayName = "exportacion-consumos · Los errores de la exportación y su recuperación: la última secuencia de la base, para detectar una marca de una base anterior; sin consumos, cero")]
+    public void La_ultima_secuencia()
+    {
+        var consulta = new ConsultaConsumos(Base, Reloj);
+        Assert.Equal(0, consulta.UltimaSecuencia());
+
+        Confirmar(Fixture.AlmuerzoComun);
+        Confirmar(Fixture.Refrigerio);
+
+        Assert.Equal(consulta.Desde(0, 10)[^1].Secuencia, consulta.UltimaSecuencia());
+    }
+
     private Guid Confirmar(OpcionFixture opcion)
     {
         var resultado = Unidad.Confirmar(Solicitud(Fixture.Habilitada, opcion));

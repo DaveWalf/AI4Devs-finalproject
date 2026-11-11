@@ -1636,7 +1636,8 @@
 
     /// <summary>
     /// Guarda la configuración de la exportación, reprograma el reloj y lo registra como CONFIGURATION_CHANGED de
-    /// CONSUMPTION_EXPORT, con el antes, el después y el resultado, sin la carpeta ni el servidor (D6).
+    /// CONSUMPTION_EXPORT, con el antes, el después y el resultado, sin la carpeta ni el servidor: sólo si cambiaron, para
+    /// que un cambio de destino quede en la general (D6).
     /// </summary>
     private ResultadoTextos GuardarExportacion(ConfiguracionExportacion pedida)
     {
@@ -1671,6 +1672,9 @@
             After = despues is null ? null : DatosDeExportacion(despues),
             Result = resultado,
             Fields = campos,
+            FolderChanged = despues is not null && despues.Carpeta != antes.Carpeta,
+            ServerChanged = despues is not null && (despues.Servidor, despues.Puerto, despues.Usuario, despues.CarpetaRemota)
+                != (antes.Servidor, antes.Puerto, antes.Usuario, antes.CarpetaRemota),
             Access = _acceso,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,

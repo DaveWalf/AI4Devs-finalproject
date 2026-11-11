@@ -201,6 +201,9 @@ public class PuntoFinalTests
             MensajesAtencion.UsoDelDia([new CategoriaAgotada(Guid.NewGuid(), "ALMUERZO", 1, 1)])!,
             MensajesAtencion.ResumenOpciones(9, 2),
             MensajesAtencion.Cargo("ARS", 2, 150000),
+            MensajesAtencion.EstadoExportacion(ExportacionAutomatica.Carpeta, null, TimeZoneInfo.Utc),
+            MensajesAtencion.EstadoExportacion(ExportacionAutomatica.Sftp,
+                new EstadoDestino(3, DateTimeOffset.UnixEpoch, null, "SERVER_UNREACHABLE"), TimeZoneInfo.Utc),
         ];
 
         Assert.All(rotulos, r => Assert.False(r.EndsWith('.'), $"«{r}»"));

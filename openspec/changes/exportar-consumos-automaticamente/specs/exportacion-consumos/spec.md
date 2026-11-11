@@ -32,6 +32,12 @@ Origen: mejora 11 de David del 10/11/2026 («control de errores y recuperación 
 - **WHEN** corre una pasada, el SFTP vuelve a «Disponible» y corre otra
 - **THEN** después de la primera la carpeta tiene los consumos, el SFTP no y la pestaña dice su falla; después de la segunda el SFTP tiene los mismos consumos, una sola vez
 
+#### Scenario: Otro destino recibe toda la historia
+Origen: verificación de este change (D5), borde: una marca es de su destino.
+- **GIVEN** una carpeta que ya recibió todos los consumos
+- **WHEN** se guarda otra carpeta y corre una pasada
+- **THEN** la carpeta nueva recibe todos los consumos desde el primero, una sola vez
+
 #### Scenario: La bitácora de una pasada
 Origen: RB21 («todo cambio … tiene permiso, actor y resultado») y D5 de este change.
 - **GIVEN** una pasada con un destino que escribe y otro que falla

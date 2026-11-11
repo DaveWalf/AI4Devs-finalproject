@@ -23,7 +23,7 @@ public class ExportacionE2ETests : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _escenario.DisposeAsync();
 
-    [Fact(DisplayName = "exportacion-consumos · El servidor cae y vuelve (puesto compilado): a 1024 × 768 las nueve pestañas entran en una fila y la pestaña Exportación tiene sus campos y botones parejos; con el SFTP simulado caído la carpeta recibe el consumo y el SFTP no, y al levantarlo los dos quedan al día con el mismo archivo")]
+    [Fact(DisplayName = "exportacion-consumos · El servidor cae y vuelve (puesto compilado): a 1024 × 768 las nueve pestañas entran en una fila y la pestaña Exportación tiene sus campos y botones parejos, en la columna de los datos de Impresora y con «Elegir» al borde de los campos; con el SFTP simulado caído la carpeta recibe el consumo y el SFTP no, y al levantarlo los dos quedan al día con el mismo archivo")]
     public async Task Exportar_con_el_sftp_caido_y_levantado()
     {
         var destino = Directory.CreateDirectory(Path.Combine(_escenario.Carpeta, "exportaciones-automaticas")).FullName;
@@ -50,6 +50,8 @@ public class ExportacionE2ETests : IAsyncLifetime
         Assert.True(pestanas[^1].Izquierda + pestanas[^1].Ancho <= 1024, $"La última pestaña termina en {pestanas[^1].Izquierda + pestanas[^1].Ancho} px");
         Assert.Equal("pestana-exportacion", pestanas[^2].Id);
 
+        await pagina.Locator("#pestana-impresora").ClickAsync();
+        var impresora = (await MedirAsync(pagina, ["#numero-puesto"]))[0];
         await pagina.Locator("#pestana-exportacion").ClickAsync();
         await pagina.Locator("#exportacion-activa").ClickAsync();
         await pagina.Locator("#carpeta-exportacion").FillAsync(destino);
@@ -60,8 +62,17 @@ public class ExportacionE2ETests : IAsyncLifetime
         var campos = await MedirAsync(pagina, ["#minutos-exportacion", "#servidor-sftp", "#puerto-sftp", "#usuario-sftp", "#carpeta-remota-sftp"]);
         var botones = await MedirAsync(pagina, ["#exportacion-activa", "#exportacion-apagada", "#archivo-que-crece", "#archivo-por-dia", "#sftp-activo", "#sftp-apagado",
             "#sftp-disponible", "#sftp-caido", "#exportar-ahora", "#guardar-exportacion", "#cancelar-configuracion"]);
-        _escenario.Registrar("1024 × 768, Exportación: " + string.Join("; ", campos.Concat(botones).Select(c => $"{c.Id} de {c.Ancho:F1} × {c.Alto:F1} px desde x {c.Izquierda:F1}, letra {c.Letra}")));
+        var carpeta = await MedirAsync(pagina, ["#carpeta-exportacion", "#elegir-carpeta-exportacion"]);
+        _escenario.Registrar("1024 × 768, Exportación: " + string.Join("; ", campos.Concat(carpeta).Concat(botones).Append(impresora)
+            .Select(c => $"{c.Id} de {c.Ancho:F1} × {c.Alto:F1} px desde x {c.Izquierda:F1}, letra {c.Letra}")));
+        await pagina.Locator("#titulo-exportacion").ScrollIntoViewIfNeededAsync();
         await _escenario.CapturarAsync(pagina, "exportacion-pestana-1024x768");
+        Assert.True(Math.Abs(campos[0].Izquierda - impresora.Izquierda) <= Tolerancia, $"Los campos desde x {campos[0].Izquierda}, los de Impresora desde x {impresora.Izquierda}");
+        var (enCarpeta, elegir) = (carpeta[0], carpeta[1]);
+        Assert.True(Math.Abs(enCarpeta.Izquierda - campos[0].Izquierda) <= Tolerancia
+            && Math.Abs(elegir.Izquierda + elegir.Ancho - (campos[0].Izquierda + campos[0].Ancho)) <= Tolerancia
+            && Math.Abs(elegir.Arriba - enCarpeta.Arriba) <= Tolerancia && Math.Abs(elegir.Alto - enCarpeta.Alto) <= Tolerancia,
+            $"La carpeta desde x {enCarpeta.Izquierda} y «Elegir» hasta x {elegir.Izquierda + elegir.Ancho}; los campos de {campos[0].Izquierda} a {campos[0].Izquierda + campos[0].Ancho}");
         Assert.All(campos, c => Assert.True(Math.Abs(c.Izquierda - campos[0].Izquierda) <= Tolerancia && Math.Abs(c.Ancho - campos[0].Ancho) <= Tolerancia
             && Math.Abs(c.Alto - campos[0].Alto) <= Tolerancia && c.Letra == campos[0].Letra, $"{c.Id}: desde x {c.Izquierda} con {c.Ancho} × {c.Alto}, letra {c.Letra}"));
         var cerrar = botones[^1];
@@ -83,9 +94,9 @@ public class ExportacionE2ETests : IAsyncLifetime
         await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await pagina.Locator("#pestana-exportacion").ClickAsync();
         await pagina.Locator("#exportar-ahora").ClickAsync();
-        await Assertions.Expect(pagina.Locator("#mensaje-exportacion")).ToContainTextAsync("No se pudo exportar al SFTP simulado");
+        await Assertions.Expect(pagina.Locator("#mensaje-exportacion-automatica")).ToContainTextAsync("No se pudo exportar al SFTP simulado");
         await Assertions.Expect(pagina.Locator("#estado-exportacion-sftp")).ToContainTextAsync("falló");
-        await pagina.Locator("#mensaje-exportacion").ScrollIntoViewIfNeededAsync();
+        await pagina.Locator("#mensaje-exportacion-automatica").ScrollIntoViewIfNeededAsync();
         await _escenario.CapturarAsync(pagina, "exportacion-sftp-caido-1024x768");
         var remoto = Path.Combine(_escenario.Carpeta, "sftp-simulado", "sftp.ejemplo.local", "entrada", "INComedor-consumos.csv");
         Assert.True(File.Exists(Path.Combine(destino, "INComedor-consumos.csv")));
@@ -93,8 +104,8 @@ public class ExportacionE2ETests : IAsyncLifetime
 
         await pagina.Locator("#sftp-disponible").ClickAsync();
         await pagina.Locator("#exportar-ahora").ClickAsync();
-        await Assertions.Expect(pagina.Locator("#mensaje-exportacion")).ToHaveTextAsync("Se exportó 1 consumo.");
-        await Assertions.Expect(pagina.Locator("#estado-exportacion-sftp")).ToContainTextAsync("al día");
+        await Assertions.Expect(pagina.Locator("#mensaje-exportacion-automatica")).ToHaveTextAsync("Se exportó 1 consumo.");
+        await Assertions.Expect(pagina.Locator("#estado-exportacion-sftp")).ToContainTextAsync("último envío");
         await _escenario.CapturarAsync(pagina, "exportacion-al-dia-1024x768");
         var lineas = File.ReadAllLines(Path.Combine(destino, "INComedor-consumos.csv"));
         _escenario.Registrar("archivo exportado: " + string.Join("|", lineas));
