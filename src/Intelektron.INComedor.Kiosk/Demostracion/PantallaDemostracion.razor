@@ -1,3 +1,4 @@
+@using Intelektron.INComedor.Kiosk.Atencion
 @using Intelektron.INComedor.Infrastructure.Sqlite
 @inject ServicioDemostracion Servicio
 
@@ -11,11 +12,11 @@
 
 <main class="demostracion">
     <h1>INComedor · pantalla de demostración</h1>
-    <p>Datos sintéticos: no es la atención del comedor. Cada toque confirma una intención nueva sobre la base local.</p>
+    <p>@MensajesAtencion.DemostracionExplicacion</p>
 
     @if (_estado == EstadoPreparacion.ErrorAlmacenamiento)
     {
-        <p id="error-almacenamiento" class="error" role="alert">Error de almacenamiento: la base no es de una versión conocida</p>
+        <p id="error-almacenamiento" class="error" role="alert">@MensajesAtencion.ErrorAlmacenamiento</p>
     }
     else
     {

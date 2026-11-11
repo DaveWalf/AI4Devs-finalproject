@@ -10,7 +10,7 @@ namespace Intelektron.INComedor.E2E.Tests;
 public class BitacorasExternasE2ETests : IAsyncLifetime
 {
     private const string Codigo = "0001";
-    private const string Exito = "Consumo registrado. Retirá tu comprobante";
+    private const string Exito = "Consumo registrado. Retirá tu comprobante.";
 
     private EscenarioE2E _escenario = null!;
 

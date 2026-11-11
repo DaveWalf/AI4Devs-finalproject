@@ -80,7 +80,7 @@ public class PanelPersonasTests : IDisposable
         await pantalla.Find("#abrir-personas").ClickAsync(new());
 
         var panel = pantalla.Find("#panel-personas");
-        Assert.Equal("Estos datos los administra INWeb", panel.QuerySelector("#aviso-inweb")!.TextContent.Trim());
+        Assert.Equal("Estos datos los administra INWeb.", panel.QuerySelector("#aviso-inweb")!.TextContent.Trim());
         Assert.Contains("Persona sintética 01", panel.TextContent);
         Assert.Empty(panel.QuerySelectorAll("#guardar-panel"));
         Assert.Empty(panel.QuerySelectorAll("input, select, textarea"));
@@ -120,7 +120,7 @@ public class PanelPersonasTests : IDisposable
 
         var nombre = pantalla.FindAll("tr.persona").Last().QuerySelector("input.nombre-persona")!;
         Assert.Equal("true", nombre.GetAttribute("aria-invalid"));
-        Assert.Equal("Revisá los campos marcados", pantalla.Find("#aviso-panel").TextContent.Trim());
+        Assert.Equal("Revisá los campos marcados.", pantalla.Find("#aviso-panel").TextContent.Trim());
         Assert.Equal(1L, Versiones());
     }
 

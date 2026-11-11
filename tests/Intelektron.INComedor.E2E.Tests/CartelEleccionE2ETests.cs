@@ -12,7 +12,7 @@ namespace Intelektron.INComedor.E2E.Tests;
 public class CartelEleccionE2ETests : IAsyncLifetime
 {
     private const string Almuerzo = "Almuerzo común";
-    private const string Exito = "Consumo registrado. Retirá tu comprobante";
+    private const string Exito = "Consumo registrado. Retirá tu comprobante.";
 
     private EscenarioE2E _escenario = null!;
 

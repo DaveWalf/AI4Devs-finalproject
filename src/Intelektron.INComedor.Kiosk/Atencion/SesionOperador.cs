@@ -137,7 +137,7 @@ public sealed class SesionOperador
         }
 
         var resultado = _asistencia.Reimprimir(sesion, ReimpresionPedida.TicketId, motivo);
-        DespuesDeAccion(resultado, resultado.Envio is { } envio ? $"Copia {envio.NumeroCopia} enviada con la leyenda DUPLICADO" : null);
+        DespuesDeAccion(resultado, resultado.Envio is { } envio ? MensajesAtencion.CopiaEnviada(envio.NumeroCopia) : null);
     }
 
     public void Recuperar(Guid trabajoId)
@@ -148,7 +148,7 @@ public sealed class SesionOperador
         }
 
         var resultado = _asistencia.Recuperar(sesion, trabajoId);
-        DespuesDeAccion(resultado, "Comprobante original enviado otra vez");
+        DespuesDeAccion(resultado, MensajesAtencion.OriginalEnviado);
     }
 
     /// <summary>
@@ -212,7 +212,7 @@ public sealed class SesionOperador
 
         Mensaje = !resultado.Realizada
             ? MensajesAtencion.DeMotivo(resultado.ReasonCode)
-            : resultado.Envio?.Estado == EstadoTrabajoImpresion.Submitted ? exito : "El comprobante quedó pendiente: revisá la impresora";
+            : resultado.Envio?.Estado == EstadoTrabajoImpresion.Submitted ? exito : MensajesAtencion.ComprobanteQuedoPendiente;
         ReimpresionPedida = null;
         Tocar();
     }

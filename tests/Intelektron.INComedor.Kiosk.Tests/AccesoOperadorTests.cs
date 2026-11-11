@@ -115,7 +115,7 @@ public class AccesoOperadorTests
 
         await EntradaConfiguracion.Entrar(pantalla, "9002");
 
-        Assert.Equal("Tu permiso de operador está vencido", pantalla.Find("#acceso-rechazado").TextContent.Trim());
+        Assert.Equal("Tu permiso de operador está vencido.", pantalla.Find("#acceso-rechazado").TextContent.Trim());
         Assert.NotEmpty(pantalla.FindAll("#dialogo-clave"));
         Assert.Empty(pantalla.FindAll("[role=\"tablist\"]"));
         Assert.DoesNotContain(puesto.General(), l => Tipo(l) == "DAILY_KEY_ACCEPTED");

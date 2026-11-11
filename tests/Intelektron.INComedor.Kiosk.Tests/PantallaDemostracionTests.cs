@@ -68,7 +68,7 @@ public class PantallaDemostracionTests : IDisposable
 
         var pantalla = Dibujar();
 
-        Assert.Contains("Error de almacenamiento: la base no es de una versión conocida",
+        Assert.Contains("Error de almacenamiento: la base no es de una versión conocida.",
             pantalla.Find("#error-almacenamiento").TextContent);
         Assert.Empty(pantalla.FindAll("#confirmar"));
     }

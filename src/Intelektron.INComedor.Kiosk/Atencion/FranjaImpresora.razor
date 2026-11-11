@@ -1,7 +1,7 @@
 @* Los modos de la impresora simulada, dentro de Configuración (D5 de presentar-atencion-tactil); aplican desde el próximo envío. *@
 <section class="franja-impresora" aria-labelledby="titulo-impresora">
     <h3 id="titulo-impresora">Impresora simulada</h3>
-    <p>Demostración: elegí cómo responde al próximo comprobante.</p>
+    <p>@MensajesAtencion.ImpresoraDemostracion</p>
     <div class="acciones">
         @foreach (var modo in Enum.GetValues<ModoImpresoraSimulada>())
         {

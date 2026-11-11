@@ -60,7 +60,7 @@ public class AccesoOperadorE2ETests : IAsyncLifetime
 
         await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await Assertions.Expect(pagina.Locator("[role=\"tab\"]")).ToHaveCountAsync(8);
-        await Assertions.Expect(pagina.Locator("#aviso-clave-sin-validar")).ToHaveTextAsync("Entraste con una clave del día sin validar: esta versión acepta cualquier número");
+        await Assertions.Expect(pagina.Locator("#aviso-clave-sin-validar")).ToHaveTextAsync("Entraste con una clave del día sin validar: esta versión acepta cualquier número.");
         _escenario.Registrar("clave del día: Configuración con las ocho pestañas y el aviso de clave sin validar");
     }
 

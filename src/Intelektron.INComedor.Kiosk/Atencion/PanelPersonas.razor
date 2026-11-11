@@ -45,7 +45,7 @@
                         @* «Editar» (o «Ver» con INWeb) en el encabezado, sin una fila propia que le quite alto a la tabla. *@
                         <td class="accion-tabla">
                             <button id="abrir-personas" type="button" class="principal" disabled="@(!PuedeEditar)"
-                                    title="@(PuedeEditar ? null : "Terminá o cancelá la edición de Opciones")" @onclick="() => Editar.InvokeAsync()">@(_vista.SoloLectura ? "Ver" : "Editar")</button>
+                                    title="@(PuedeEditar ? null : MensajesAtencion.EdicionDeOpcionesAbierta)" @onclick="() => Editar.InvokeAsync()">@(_vista.SoloLectura ? "Ver" : "Editar")</button>
                         </td>
                     }
                 </tr>

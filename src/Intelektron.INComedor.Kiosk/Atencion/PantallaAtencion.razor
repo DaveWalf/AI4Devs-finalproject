@@ -126,7 +126,7 @@
                             </div>
                             @if (confirmando)
                             {
-                                <p id="ocupado" role="status">Confirmando: el puesto está ocupado</p>
+                                <p id="ocupado" role="status">@MensajesAtencion.Confirmando</p>
                             }
                         </section>
                     </div>
@@ -188,7 +188,7 @@
                                 {
                                     <span class="pie-comprobante">@_textos.Pie</span>
                                 }
-                                <span class="retirar">Tocá el comprobante para retirarlo</span>
+                                <span class="retirar">@MensajesAtencion.TocaParaRetirar</span>
                             </button>
                         </div>
                     }
@@ -678,9 +678,9 @@
 
     private static string MotivoClave(AccionClave accion) => accion switch
     {
-        AccionClave.AbrirConfiguracion => "Ingresá la clave del día para abrir Configuración",
-        AccionClave.CerrarPuesto => "Ingresá la clave del día para cerrar el puesto",
-        _ => "Ingresá la clave del día para pasar a operativo",
+        AccionClave.AbrirConfiguracion => MensajesAtencion.ClaveParaAbrir,
+        AccionClave.CerrarPuesto => MensajesAtencion.ClaveParaCerrar,
+        _ => MensajesAtencion.ClaveParaOperativo,
     };
 
     private static string CodigoDe(AccionClave accion) => accion switch
