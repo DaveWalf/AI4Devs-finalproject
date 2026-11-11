@@ -14,9 +14,11 @@ if [ -e .gitleaksignore ]; then
   exit 1
 fi
 
-# Commits con alguna línea agregada, con el mismo --diff-merges que usa gitleaks.
+# Commits con alguna línea agregada, con el mismo --diff-merges que usa gitleaks. NF >= 3 y no == 3: un renombre se
+# escribe «0 0 dir/{viejo => nuevo}/archivo», con espacios en la ruta, y un commit que sólo renombra y cambia líneas (el
+# archivado de un change sin spec nueva) también trae líneas agregadas que gitleaks escanea.
 esperado=$(git log --diff-merges=first-parent --numstat --format='C %H' "$rango" |
-  awk '/^C /{ if (c) n++; c = 0; next } NF == 3 && $1 != "-" && $1 > 0 { c = 1 } END { if (c) n++; print n + 0 }')
+  awk '/^C /{ if (c) n++; c = 0; next } NF >= 3 && $1 != "-" && $1 > 0 { c = 1 } END { if (c) n++; print n + 0 }')
 
 registro="$(mktemp)"
 set +e
