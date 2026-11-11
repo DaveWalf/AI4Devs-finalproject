@@ -37,7 +37,7 @@
 - [x] 4.1 E2E nueva a 1024 × 768: la fila de nueve pestañas entra; la pestaña Exportación medida contra Impresora; activar
   con una carpeta y el SFTP simulado caído, confirmar un consumo, «Exportar ahora», ver la falla, levantar el SFTP y ver
   los dos destinos al día, con capturas miradas (D7). Cambia, por la decisión 13, la cuenta de ocho pestañas de
-  `AccesoOperadorE2ETests`. Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde. Hecho:
+  `AccesoOperadorE2ETests` y de `ConfiguracionPorPestanasE2ETests` (ésta, vista en la primera integral). Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde. Hecho:
   `ExportacionE2ETests` en verde; las nueve pestañas en una fila hasta x 887; los cinco campos desde x 273,5 con
   686,5 × 56 px y los once botones de 56 px con letra de 18 px; tres capturas miradas. Los eventos de la exportación
   automática pasan a `CONSUMPTIONS_AUTO_EXPORTED` y `CONSUMPTIONS_AUTO_EXPORT_FAILED`, porque la exportación a mano ya
