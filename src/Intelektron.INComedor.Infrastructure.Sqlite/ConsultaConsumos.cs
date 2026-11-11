@@ -80,6 +80,9 @@ public sealed record ConsumoConsultado(
     public string? Numero => NumeroCorrelativo?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? TicketId?.ToString("D")[..8];
 }
 
+/// <summary>Un consumo con su secuencia del puesto, la marca de la exportación automática (D1 de exportar-consumos-automaticamente).</summary>
+public sealed record ConsumoConSecuencia(long Secuencia, ConsumoConsultado Consumo);
+
 /// <summary>Hasta 500 filas, si hay más, o el motivo por el que el filtro se rechazó sin consultar.</summary>
 public sealed record ResultadoConsumos(IReadOnlyList<ConsumoConsultado> Filas, bool HayMas, string? Rechazo);
 
@@ -153,6 +156,76 @@ public sealed class ConsultaConsumos
 
     public ResultadoConsumos Leer(FiltroConsumos filtro) => Leer(filtro, Tope);
 
+    /// <summary>
+    /// Los consumos con secuencia mayor que <paramref name="secuencia"/>, en orden de secuencia, hasta <paramref name="tope"/>:
+    /// lo que un destino de la exportación automática todavía no recibió (D1 de exportar-consumos-automaticamente).
+    /// </summary>
+    public IReadOnlyList<ConsumoConSecuencia> Desde(long secuencia, int tope)
+    {
+        using var conexion = Abrir();
+        using var comando = ComandosSqlite.Crear(conexion, null,
+            $"""
+            SELECT {Columnas}, con.comconSecuenciaCliente
+            {Origen}
+            WHERE con.comconSecuenciaCliente > $marca
+            ORDER BY con.comconSecuenciaCliente
+            LIMIT $tope
+            """,
+            ("$marca", secuencia), ("$tope", tope));
+        using var lector = comando.ExecuteReader();
+        var consumos = new List<ConsumoConSecuencia>();
+        while (lector.Read())
+        {
+            consumos.Add(new ConsumoConSecuencia(lector.GetInt64(lector.GetOrdinal("comconSecuenciaCliente")), Fila(lector)));
+        }
+
+        return consumos;
+    }
+
+    /// <summary>La última secuencia de la base, o cero sin consumos: una marca mayor es de una base anterior.</summary>
+    public long UltimaSecuencia()
+    {
+        using var conexion = Abrir();
+        return ComandosSqlite.EscalarLong(conexion, null, "SELECT COALESCE(MAX(comconSecuenciaCliente), 0) FROM tbComedorConsumos");
+    }
+
+    /// <summary>Las columnas de un consumo, en el orden que lee <see cref="Fila"/>.</summary>
+    private const string Columnas =
+        """
+        con.comconCodigo, con.comconFechaConfirmacionLocalUtc, con.comconFechaNegocio, con.comperCodigo, per.comperNombreVisible,
+                   con.commenCodigo, men.commenNombre, men.comsrvCodigo, srv.comsrvNombre, con.comconPrecioAplicado, ult.comimpEstado,
+                   cmp.comcmpCodigo, ori.comimpCodigo, ori.comimpEstado, json_extract(cmp.comcmpDatosImpresion, '$.TicketNumber')
+        """;
+
+    /// <summary>De dónde sale un consumo: la persona y la opción de su versión, su comprobante y sus trabajos.</summary>
+    private const string Origen =
+        """
+        FROM tbComedorConsumos con
+                    JOIN tbComedorPersonas per ON per.comvcCodigo = con.comvcCodigo AND per.comperCodigo = con.comperCodigo
+                    JOIN tbComedorOpcionesMenu men ON men.comvcCodigo = con.comvcCodigo AND men.commenCodigo = con.commenCodigo
+                    JOIN tbComedorTiposServicio srv ON srv.comvcCodigo = con.comvcCodigo AND srv.comsrvCodigo = men.comsrvCodigo
+                    LEFT JOIN tbComedorComprobantes cmp ON cmp.comconCodigo = con.comconCodigo
+                    LEFT JOIN tbComedorTrabajosImpresion ult ON ult.comcmpCodigo = cmp.comcmpCodigo
+                        AND ult.comimpNumeroCopia = (SELECT MAX(comimpNumeroCopia) FROM tbComedorTrabajosImpresion WHERE comcmpCodigo = cmp.comcmpCodigo)
+                    LEFT JOIN tbComedorTrabajosImpresion ori ON ori.comcmpCodigo = cmp.comcmpCodigo AND ori.comimpNumeroCopia = 0
+        """;
+
+    private static ConsumoConsultado Fila(SqliteDataReader lector)
+    {
+        using var precio = JsonDocument.Parse(lector.GetString(9));
+        return new ConsumoConsultado(
+            lector.GetGuid(0), FormatoInstante.Leer(lector.GetString(1)),
+            DateOnly.ParseExact(lector.GetString(2), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+            lector.GetGuid(3), lector.GetString(4), lector.GetGuid(5), lector.GetString(6), lector.GetGuid(7), lector.GetString(8),
+            precio.RootElement.GetProperty("Currency").GetString()!, precio.RootElement.GetProperty("Scale").GetInt32(),
+            precio.RootElement.GetProperty("EmployeeChargeMinor").GetInt64(),
+            lector.IsDBNull(10) ? null : TrabajosImpresion.Estado(lector.GetString(10)),
+            lector.IsDBNull(11) ? null : lector.GetGuid(11),
+            lector.IsDBNull(12) ? null : lector.GetGuid(12),
+            lector.IsDBNull(13) ? null : TrabajosImpresion.Estado(lector.GetString(13)),
+            lector.IsDBNull(14) ? null : lector.GetInt64(14));
+    }
+
     /// <summary>La misma consulta con otro tope: la exportación lee hasta 10 000 (D6 de buscar-y-exportar-consumos).</summary>
     public ResultadoConsumos Leer(FiltroConsumos filtro, int tope)
     {
@@ -176,17 +249,8 @@ public sealed class ConsultaConsumos
 
         using var comando = ComandosSqlite.Crear(conexion, null,
             $"""
-            SELECT con.comconCodigo, con.comconFechaConfirmacionLocalUtc, con.comconFechaNegocio, con.comperCodigo, per.comperNombreVisible,
-                   con.commenCodigo, men.commenNombre, men.comsrvCodigo, srv.comsrvNombre, con.comconPrecioAplicado, ult.comimpEstado,
-                   cmp.comcmpCodigo, ori.comimpCodigo, ori.comimpEstado, json_extract(cmp.comcmpDatosImpresion, '$.TicketNumber')
-            FROM tbComedorConsumos con
-            JOIN tbComedorPersonas per ON per.comvcCodigo = con.comvcCodigo AND per.comperCodigo = con.comperCodigo
-            JOIN tbComedorOpcionesMenu men ON men.comvcCodigo = con.comvcCodigo AND men.commenCodigo = con.commenCodigo
-            JOIN tbComedorTiposServicio srv ON srv.comvcCodigo = con.comvcCodigo AND srv.comsrvCodigo = men.comsrvCodigo
-            LEFT JOIN tbComedorComprobantes cmp ON cmp.comconCodigo = con.comconCodigo
-            LEFT JOIN tbComedorTrabajosImpresion ult ON ult.comcmpCodigo = cmp.comcmpCodigo
-                AND ult.comimpNumeroCopia = (SELECT MAX(comimpNumeroCopia) FROM tbComedorTrabajosImpresion WHERE comcmpCodigo = cmp.comcmpCodigo)
-            LEFT JOIN tbComedorTrabajosImpresion ori ON ori.comcmpCodigo = cmp.comcmpCodigo AND ori.comimpNumeroCopia = 0
+            SELECT {Columnas}
+            {Origen}
             WHERE (($ini IS NULL AND con.comconFechaNegocio BETWEEN $desde AND $hasta)
                    OR ($ini IS NOT NULL AND con.comconFechaConfirmacionLocalUtc BETWEEN $ini AND $fin))
               AND ($per IS NULL OR con.comperCodigo = $per)
@@ -210,18 +274,7 @@ public sealed class ConsultaConsumos
         var filas = new List<ConsumoConsultado>();
         while (lector.Read())
         {
-            using var precio = JsonDocument.Parse(lector.GetString(9));
-            filas.Add(new ConsumoConsultado(
-                lector.GetGuid(0), FormatoInstante.Leer(lector.GetString(1)),
-                DateOnly.ParseExact(lector.GetString(2), "yyyy-MM-dd", CultureInfo.InvariantCulture),
-                lector.GetGuid(3), lector.GetString(4), lector.GetGuid(5), lector.GetString(6), lector.GetGuid(7), lector.GetString(8),
-                precio.RootElement.GetProperty("Currency").GetString()!, precio.RootElement.GetProperty("Scale").GetInt32(),
-                precio.RootElement.GetProperty("EmployeeChargeMinor").GetInt64(),
-                lector.IsDBNull(10) ? null : TrabajosImpresion.Estado(lector.GetString(10)),
-                lector.IsDBNull(11) ? null : lector.GetGuid(11),
-                lector.IsDBNull(12) ? null : lector.GetGuid(12),
-                lector.IsDBNull(13) ? null : TrabajosImpresion.Estado(lector.GetString(13)),
-                lector.IsDBNull(14) ? null : lector.GetInt64(14)));
+            filas.Add(Fila(lector));
         }
 
         var hayMas = filas.Count > tope;

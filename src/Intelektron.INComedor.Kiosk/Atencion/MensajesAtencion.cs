@@ -318,6 +318,64 @@ public static class MensajesAtencion
     public static string ResguardoRecuperado(int version) =>
         $"Se recuperó el resguardo en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración, con sus ajustes locales.";
 
+    public const string ExportacionGuardada = "Se guardó la exportación automática: vale desde la próxima pasada.";
+    public const string ExportacionNoGuardada = "No se pudo guardar la exportación: sigue la de antes.";
+    public const string SinCarpetaExportacion = "No se eligió una carpeta: queda la de antes.";
+    public const string ExportacionSinDestinos = "No hay ningún destino guardado: elegí una carpeta o el SFTP simulado y tocá «Guardar».";
+    public const string ExportacionBaseOcupada = "La base no respondió y no se exportó nada: probá de nuevo en un momento.";
+
+    /// <summary>
+    /// Lo que hizo «Exportar ahora» (D4 de exportar-consumos-automaticamente): que no hay ningún destino guardado, los
+    /// consumos exportados, que no había nuevos, o cada destino que falló con su motivo.
+    /// </summary>
+    public static string ExportacionAhora(IReadOnlyList<ResultadoDestino> resultados)
+    {
+        if (resultados.Count == 0)
+        {
+            return ExportacionSinDestinos;
+        }
+
+        var fallas = resultados.Where(r => r.Error is not null).ToList();
+        if (fallas.Count > 0)
+        {
+            return string.Join(" ", fallas.Select(f => $"No se pudo exportar {(f.Destino == ExportacionAutomatica.Sftp ? "al SFTP simulado" : "a la carpeta")}: {MotivoExportacion(f.Error!)}."))
+                + " Reintenta en la próxima pasada.";
+        }
+
+        var filas = resultados.Max(r => r.Filas);
+        return filas == 0
+            ? "No había consumos nuevos para exportar."
+            : filas == 1 ? "Se exportó 1 consumo." : $"Se exportaron {Cantidad(filas, "consumo", "consumos")}.";
+    }
+
+    /// <summary>
+    /// El estado de un destino, sin punto, como el de una bitácora (D5): todavía sin exportar, la hora de su último envío
+    /// (que no dice «al día»: después pudo haber consumos nuevos), o la hora y el motivo de su última falla.
+    /// </summary>
+    public static string EstadoExportacion(string destino, EstadoDestino? estado, TimeZoneInfo zona)
+    {
+        var nombre = char.ToUpper(NombreDestino(destino)[0], CultureInfo.GetCultureInfo("es-AR")) + NombreDestino(destino)[1..];
+        string Hora(DateTimeOffset instante) => TimeZoneInfo.ConvertTime(instante, zona).ToString("HH:mm", CultureInfo.InvariantCulture);
+        return estado switch
+        {
+            { Error: { } error, UltimoIntento: { } intento } => $"{nombre}: falló a las {Hora(intento)}, {MotivoExportacion(error)}; reintenta en la próxima pasada",
+            { UltimoExito: { } exito } => $"{nombre}: último envío a las {Hora(exito)}",
+            _ => $"{nombre}: todavía sin exportar",
+        };
+    }
+
+    private static string NombreDestino(string destino) => destino == ExportacionAutomatica.Sftp ? "el SFTP simulado" : "la carpeta";
+
+    private static string MotivoExportacion(string motivo) => motivo switch
+    {
+        "SERVER_UNREACHABLE" => "el servidor no responde",
+        "FOLDER_NOT_FOUND" => "la carpeta no existe",
+        "ACCESS_DENIED" => "no hay permiso para escribir",
+        "FILE_IN_USE" => "el archivo está abierto en otro programa",
+        "STATE_UNREADABLE" => "no se pudo leer el estado de la exportación",
+        _ => "no se pudo escribir",
+    };
+
     private static string Cantidad(int cantidad, string uno, string varios) =>
         $"{cantidad.ToString(CultureInfo.InvariantCulture)} {(cantidad == 1 ? uno : varios)}";
 

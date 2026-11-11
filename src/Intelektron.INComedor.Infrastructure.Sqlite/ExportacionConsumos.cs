@@ -32,6 +32,12 @@ public sealed class ExportacionConsumos
 
     private readonly ConsultaConsumos _consulta;
 
+    /// <summary>Las columnas de la exportación, las de la tabla de Consumos (D1 de exportar-consumos-automaticamente).</summary>
+    public static IReadOnlyList<string> Columnas => Encabezado;
+
+    /// <summary>Una fila exportada, sin ningún código: la misma de la exportación a mano.</summary>
+    public static IReadOnlyList<object> FilaDe(ConsumoConsultado consumo, TimeZoneInfo zona) => Fila(consumo, zona);
+
     public ExportacionConsumos(ConsultaConsumos consulta)
     {
         _consulta = consulta;

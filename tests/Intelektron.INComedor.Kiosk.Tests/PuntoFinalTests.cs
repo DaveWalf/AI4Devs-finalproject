@@ -83,6 +83,9 @@ public class PuntoFinalTests
             MensajesAtencion.AjustesDelResguardo(ResguardoDeEjemplo(conAjustes: false)),
             .. MotivosDeResguardo.Select(m => MensajesAtencion.ResguardoRechazado("resguardo.zip", m)),
             MensajesAtencion.ResguardoRecuperado(3),
+            MensajesAtencion.ExportacionAhora([]),
+            MensajesAtencion.ExportacionAhora([new ResultadoDestino(ExportacionAutomatica.Carpeta, 3, ["INComedor-consumos.csv"], null)]),
+            MensajesAtencion.ExportacionAhora([new ResultadoDestino(ExportacionAutomatica.Sftp, 0, [], "SERVER_UNREACHABLE")]),
         ];
 
         var sinPunto = armados.Where(m => !m.EndsWith('.')).ToList();
@@ -109,6 +112,7 @@ public class PuntoFinalTests
         nameof(MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo), nameof(MensajesAtencion.ErrorDeImportacionOpciones),
         nameof(MensajesAtencion.ResguardoGuardado), nameof(MensajesAtencion.ResumenResguardo), nameof(MensajesAtencion.AjustesDelResguardo),
         nameof(MensajesAtencion.ResguardoRechazado), nameof(MensajesAtencion.ResguardoRecuperado),
+        nameof(MensajesAtencion.ExportacionAhora),
     ];
 
     /// <summary>Cada motivo por el que un resguardo no se recupera, y uno desconocido (D2 de resguardar-configuracion).</summary>
@@ -165,6 +169,7 @@ public class PuntoFinalTests
     [
         nameof(MensajesAtencion.Motivo), nameof(MensajesAtencion.EstadoBitacora), nameof(MensajesAtencion.UsoDelDia),
         nameof(MensajesAtencion.ResumenOpciones), nameof(MensajesAtencion.Cargo), nameof(MensajesAtencion.PedidoMotivo),
+        nameof(MensajesAtencion.EstadoExportacion),
     ];
 
     [Fact(DisplayName = "presentacion-puesto · Un mensaje nuevo sin punto: cada método de MensajesAtencion que arma un texto está clasificado, con o sin punto")]
@@ -196,6 +201,9 @@ public class PuntoFinalTests
             MensajesAtencion.UsoDelDia([new CategoriaAgotada(Guid.NewGuid(), "ALMUERZO", 1, 1)])!,
             MensajesAtencion.ResumenOpciones(9, 2),
             MensajesAtencion.Cargo("ARS", 2, 150000),
+            MensajesAtencion.EstadoExportacion(ExportacionAutomatica.Carpeta, null, TimeZoneInfo.Utc),
+            MensajesAtencion.EstadoExportacion(ExportacionAutomatica.Sftp,
+                new EstadoDestino(3, DateTimeOffset.UnixEpoch, null, "SERVER_UNREACHABLE"), TimeZoneInfo.Utc),
         ];
 
         Assert.All(rotulos, r => Assert.False(r.EndsWith('.'), $"«{r}»"));

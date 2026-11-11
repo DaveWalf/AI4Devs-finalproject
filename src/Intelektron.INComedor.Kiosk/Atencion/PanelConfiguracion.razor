@@ -403,6 +403,80 @@
                 <PestanaRed Aplicar="AplicarRed" DireccionReceptor="DireccionReceptor" TieneCertificados="TieneCertificados" ProbarConexion="ProbarConexion" />
             }
         </section>
+
+        @* La exportación automática de consumos, antes de General y sólo con la clave del día (D6 de exportar-consumos-automaticamente). *@
+        <section role="tabpanel" id="seccion-exportacion" class="seccion" aria-labelledby="pestana-exportacion" hidden="@Oculta(Pestana.Exportacion)">
+            @if (Exportacion is not null && GuardarExportacion is not null)
+            {
+                <section aria-labelledby="titulo-exportacion" class="textos-comprobante datos-comprobante">
+                    <h3 id="titulo-exportacion">Exportación automática de consumos</h3>
+                    <span id="rotulo-exportacion-activa" class="rotulo">Exportación</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-exportacion-activa">
+                        <button id="exportacion-activa" type="button" aria-pressed="@(_exportacionActiva ? "true" : "false")" @onclick="() => _exportacionActiva = true">Activa</button>
+                        <button id="exportacion-apagada" type="button" aria-pressed="@(_exportacionActiva ? "false" : "true")" @onclick="() => _exportacionActiva = false">Apagada</button>
+                    </div>
+                    <label for="minutos-exportacion">Cada cuántos minutos</label>
+                    <input id="minutos-exportacion" type="text" inputmode="numeric" maxlength="4" value="@_minutosExportacion"
+                           aria-invalid="@(_camposExportacion.Contains("Minutos") ? "true" : null)" @oninput="e => _minutosExportacion = e.Value?.ToString() ?? string.Empty" />
+                    <span id="rotulo-archivo-exportacion" class="rotulo">Archivo</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-archivo-exportacion">
+                        <button id="archivo-que-crece" type="button" aria-pressed="@(_archivoPorDia ? "false" : "true")" @onclick="() => _archivoPorDia = false">Un archivo que crece</button>
+                        <button id="archivo-por-dia" type="button" aria-pressed="@(_archivoPorDia ? "true" : "false")" @onclick="() => _archivoPorDia = true">Un archivo por día</button>
+                    </div>
+                    <label for="carpeta-exportacion">Carpeta</label>
+                    <div class="numeracion">
+                        <input id="carpeta-exportacion" type="text" maxlength="240" value="@_carpetaExportacion"
+                               aria-invalid="@(_camposExportacion.Contains("Carpeta") ? "true" : null)" @oninput="e => _carpetaExportacion = e.Value?.ToString() ?? string.Empty" />
+                        @if (ElectorCarpeta is not null)
+                        {
+                            <button id="elegir-carpeta-exportacion" type="button" @onclick="ElegirCarpetaExportacion">Elegir</button>
+                        }
+                    </div>
+                    <span id="rotulo-sftp" class="rotulo">SFTP simulado</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-sftp">
+                        <button id="sftp-activo" type="button" aria-pressed="@(_sftpActivo ? "true" : "false")" @onclick="() => _sftpActivo = true">Activo</button>
+                        <button id="sftp-apagado" type="button" aria-pressed="@(_sftpActivo ? "false" : "true")" @onclick="() => _sftpActivo = false">Apagado</button>
+                    </div>
+                    <label for="servidor-sftp">Servidor</label>
+                    <input id="servidor-sftp" type="text" maxlength="100" value="@_servidorSftp"
+                           aria-invalid="@(_camposExportacion.Contains("Servidor") ? "true" : null)" @oninput="e => _servidorSftp = e.Value?.ToString() ?? string.Empty" />
+                    <label for="puerto-sftp">Puerto</label>
+                    <input id="puerto-sftp" type="text" inputmode="numeric" maxlength="5" value="@_puertoSftp"
+                           aria-invalid="@(_camposExportacion.Contains("Puerto") ? "true" : null)" @oninput="e => _puertoSftp = e.Value?.ToString() ?? string.Empty" />
+                    <label for="usuario-sftp">Usuario</label>
+                    <input id="usuario-sftp" type="text" maxlength="50" value="@_usuarioSftp"
+                           aria-invalid="@(_camposExportacion.Contains("Usuario") ? "true" : null)" @oninput="e => _usuarioSftp = e.Value?.ToString() ?? string.Empty" />
+                    <label for="carpeta-remota-sftp">Carpeta remota</label>
+                    <input id="carpeta-remota-sftp" type="text" maxlength="200" value="@_carpetaRemotaSftp"
+                           aria-invalid="@(_camposExportacion.Contains("CarpetaRemota") ? "true" : null)" @oninput="e => _carpetaRemotaSftp = e.Value?.ToString() ?? string.Empty" />
+                    <span id="rotulo-servidor-simulado" class="rotulo">Servidor simulado</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-servidor-simulado">
+                        <button id="sftp-disponible" type="button" aria-pressed="@(Exportacion.SftpCaido ? "false" : "true")" @onclick="() => CambiarSftp(false)">Disponible</button>
+                        <button id="sftp-caido" type="button" aria-pressed="@(Exportacion.SftpCaido ? "true" : "false")" @onclick="() => CambiarSftp(true)">Caído</button>
+                    </div>
+                    @if (_avisoExportacion is not null)
+                    {
+                        <p id="aviso-exportacion" class="aviso" role="status">@_avisoExportacion</p>
+                    }
+                    <div class="acciones">
+                        <button id="exportar-ahora" type="button" disabled="@_exportando" @onclick="ExportarAhora">@(_exportando ? "Exportando…" : "Exportar ahora")</button>
+                        <button id="guardar-exportacion" type="button" class="principal" @onclick="GuardarLaExportacion">Guardar</button>
+                    </div>
+                </section>
+                <section aria-labelledby="titulo-estado-exportacion" class="estado-exportacion">
+                    <h3 id="titulo-estado-exportacion">Estado de los destinos</h3>
+                    @{ var estados = Exportacion.Estado; }
+                    <ul>
+                        <li id="estado-exportacion-carpeta">@MensajesAtencion.EstadoExportacion(ExportacionAutomatica.Carpeta, estados.GetValueOrDefault(ExportacionAutomatica.Carpeta), Zona)</li>
+                        <li id="estado-exportacion-sftp">@MensajesAtencion.EstadoExportacion(ExportacionAutomatica.Sftp, estados.GetValueOrDefault(ExportacionAutomatica.Sftp), Zona)</li>
+                    </ul>
+                    @if (_mensajeExportacion is not null)
+                    {
+                        <p id="mensaje-exportacion-automatica" class="@(_exportacionFallida ? "aviso" : "mensaje-exportacion")" role="status">@_mensajeExportacion</p>
+                    }
+                </section>
+            }
+        </section>
         }
 
         @* El resumen de una importación, en un cartel como el de «Ver» en Consumos: los totales y los tres botones, o los
@@ -654,6 +728,7 @@
         Impresora,
         Pantalla,
         Red,
+        Exportacion,
         General,
     }
 
@@ -1526,6 +1601,7 @@
         LeerResumen();
         _encabezado = Textos.Encabezado;
         _pie = Textos.Pie;
+        LeerConfiguracionExportacion();
         _numeroPuesto = DatosDelPuesto.Numero?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
         _nombrePuesto = DatosDelPuesto.Nombre;
         _correlativo = DatosDelPuesto.Correlativo;
@@ -1562,6 +1638,115 @@
         _avisoTextos = resultado.Aviso;
         _avisoGuardado = resultado.Guardado ? MensajesAtencion.TextosGuardados : null;
     }
+
+    /// <summary>La exportación automática; sin ella, la pestaña Exportación queda vacía (D6 de exportar-consumos-automaticamente).</summary>
+    [Parameter]
+    public ExportacionAutomatica? Exportacion { get; set; }
+
+    /// <summary>La configuración guardada, que la pestaña edita.</summary>
+    [Parameter]
+    public ConfiguracionExportacion ConfiguracionExportacion { get; set; } = ConfiguracionExportacion.PorDefecto;
+
+    /// <summary>Valida, guarda, reprograma el reloj y registra; devuelve los campos rechazados o el aviso.</summary>
+    [Parameter]
+    public Func<ConfiguracionExportacion, ResultadoTextos>? GuardarExportacion { get; set; }
+
+    /// <summary>Cambia el modo del SFTP simulado, en el acto y con su registro, como los modos de la impresora simulada.</summary>
+    [Parameter]
+    public Action<bool>? CambiarSftpSimulado { get; set; }
+
+    private bool _exportacionActiva;
+    private string _minutosExportacion = "15";
+    private bool _archivoPorDia;
+    private string _carpetaExportacion = string.Empty;
+    private bool _sftpActivo;
+    private string _servidorSftp = string.Empty;
+    private string _puertoSftp = "22";
+    private string _usuarioSftp = string.Empty;
+    private string _carpetaRemotaSftp = string.Empty;
+    private IReadOnlyList<string> _camposExportacion = [];
+    private string? _avisoExportacion;
+    private string? _mensajeExportacion;
+    private bool _exportacionFallida;
+    private bool _exportando;
+
+    private void LeerConfiguracionExportacion()
+    {
+        var c = ConfiguracionExportacion;
+        _exportacionActiva = c.Activa;
+        _minutosExportacion = c.Minutos.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _archivoPorDia = c.Archivo == ArchivoExportacion.PorDia;
+        _carpetaExportacion = c.Carpeta ?? string.Empty;
+        _sftpActivo = c.SftpActivo;
+        _servidorSftp = c.Servidor;
+        _puertoSftp = c.Puerto.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _usuarioSftp = c.Usuario;
+        _carpetaRemotaSftp = c.CarpetaRemota;
+    }
+
+    /// <summary>
+    /// «Guardar» de la exportación: lo tipeado, con un número que no lo es como cero para que la validación lo señale, y una
+    /// carpeta vacía como ninguna (D6 de exportar-consumos-automaticamente).
+    /// </summary>
+    private void GuardarLaExportacion()
+    {
+        static int Numero(string texto) =>
+            int.TryParse(texto.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var valor) ? valor : 0;
+
+        var pedida = new ConfiguracionExportacion(
+            _exportacionActiva, Numero(_minutosExportacion), _archivoPorDia ? ArchivoExportacion.PorDia : ArchivoExportacion.QueCrece,
+            _carpetaExportacion.Trim().Length == 0 ? null : _carpetaExportacion.Trim(), _sftpActivo, _servidorSftp.Trim(), Numero(_puertoSftp),
+            _usuarioSftp.Trim(), _carpetaRemotaSftp.Trim().Trim('/'));
+        if (GuardarExportacion?.Invoke(pedida) is not { } resultado)
+        {
+            return;
+        }
+
+        _camposExportacion = resultado.Campos;
+        _avisoExportacion = resultado.Aviso;
+        _avisoGuardado = resultado.Guardado ? MensajesAtencion.ExportacionGuardada : null;
+    }
+
+    /// <summary>«Elegir»: el diálogo de carpetas, que empieza en la elegida; cancelar deja la de antes.</summary>
+    private void ElegirCarpetaExportacion()
+    {
+        if (ElectorCarpeta!.Elegir(_carpetaExportacion.Length > 0 ? _carpetaExportacion : null) is { } carpeta)
+        {
+            _carpetaExportacion = carpeta;
+            _avisoExportacion = null;
+        }
+        else
+        {
+            _avisoExportacion = MensajesAtencion.SinCarpetaExportacion;
+        }
+    }
+
+    /// <summary>
+    /// «Exportar ahora»: una pasada en el acto, con lo que se guardó (D4), fuera del hilo de la pantalla para que una carpeta de
+    /// red lenta no la congele; mientras corre, el botón dice «Exportando…». Una base ocupada en ese instante se dice y no
+    /// cierra Configuración.
+    /// </summary>
+    private async Task ExportarAhora()
+    {
+        _exportando = true;
+        _mensajeExportacion = null;
+        try
+        {
+            var resultados = await Task.Run(() => Exportacion!.Exportar(aMano: true));
+            _mensajeExportacion = MensajesAtencion.ExportacionAhora(resultados);
+            _exportacionFallida = resultados.Count == 0 || resultados.Any(r => r.Error is not null);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeExportacion, _exportacionFallida) = (MensajesAtencion.ExportacionBaseOcupada, true);
+        }
+        finally
+        {
+            _exportando = false;
+        }
+    }
+
+    private void CambiarSftp(bool caido) => CambiarSftpSimulado?.Invoke(caido);
 
     /// <summary>Guarda sólo los datos del comprobante y deja Configuración abierta, como los textos (D7 de enriquecer-comprobante).</summary>
     private void GuardarLosDatosDelPuesto()
@@ -1669,6 +1854,7 @@
     private static string Nombre(Pestana pestana) => pestana switch
     {
         Pestana.Identidad => "Identidad visual",
+        Pestana.Exportacion => "Exportación",
         _ => pestana.ToString(),
     };
 

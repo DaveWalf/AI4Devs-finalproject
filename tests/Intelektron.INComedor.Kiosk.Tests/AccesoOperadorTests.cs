@@ -50,7 +50,7 @@ public class AccesoOperadorTests
         var aviso = pantalla.Find("#aviso-clave-sin-validar");
         Assert.Equal(MensajesAtencion.ClaveSinValidar, aviso.TextContent.Trim());
         Assert.Equal("status", aviso.GetAttribute("role"));
-        Assert.Equal(8, pantalla.FindAll("[role=\"tab\"]").Count);
+        Assert.Equal(9, pantalla.FindAll("[role=\"tab\"]").Count);
     }
 
     [Fact(DisplayName = "acceso-puesto · Entrada con la clave del día (mantenimiento): la general tiene DAILY_KEY_ACCEPTED para abrir Configuración y CONFIGURATION_OPENED con DAILY_KEY, los dos con el actor nulo y NO_AUTHENTICATION")]
