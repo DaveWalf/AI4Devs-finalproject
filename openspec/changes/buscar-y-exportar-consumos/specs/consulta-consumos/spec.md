@@ -68,6 +68,12 @@ Origen: `AGENTS.md` (OWASP A03: entrada externa en una consulta), borde.
 - **WHEN** se busca «%»
 - **THEN** la tabla está vacía, porque ningún nombre contiene ese carácter, y no muestra todos los consumos
 
+#### Scenario: El filtro por código sigue a la vista
+Origen: la verificación de este change (el filtro por código quedaba aplicado sin verse), borde.
+- **GIVEN** la tabla consultada con el código de una persona
+- **WHEN** se ordena por otra columna
+- **THEN** la pestaña dice que la tabla está filtrada por el código de una persona, sin mostrarlo, y una consulta sin código lo quita
+
 ### Requirement: La consulta es de quien entra a Configuración, y queda registrada
 
 La pestaña SHALL mostrarse a quien entró a Configuración con la clave del día o con el código de un operador, sin pedir otro código. Cada consulta MUST quedar en la bitácora general como `CONSUMPTIONS_QUERIED`, con el actor (nulo con `NO_AUTHENTICATION` si se entró con la clave), cómo se entró (`Access`), los filtros, el orden y la cantidad de filas, sin nombres ni códigos; del texto buscado y del código MUST quedar sólo que se usaron.
@@ -137,6 +143,30 @@ Origen: `AGENTS.md` (OWASP: inyección de fórmulas en una planilla exportada), 
 - **GIVEN** un consumo de una persona llamada «=1+1»
 - **WHEN** se exporta a CSV
 - **THEN** la celda de esa persona empieza con un apóstrofo, y la planilla no la toma como fórmula
+
+#### Scenario: Elegir la carpeta y cancelar
+Origen: este requisito («sin carpeta … MUST avisar»), borde.
+- **GIVEN** ninguna carpeta de exportación guardada
+- **WHEN** se toca «Exportar CSV» y se cancela la elección
+- **THEN** la pestaña avisa que no se eligió una carpeta, no se exporta nada y la general no tiene `CONSUMPTIONS_EXPORTED`
+
+#### Scenario: La carpeta elegida no se puede guardar
+Origen: AT37 («conservación del valor previo ante error»), borde.
+- **GIVEN** un `exportacion.json` que no se puede escribir
+- **WHEN** se elige una carpeta y se exporta dos veces
+- **THEN** los dos archivos quedan en esa carpeta, la pestaña avisa que se usa hasta cerrar Configuración y la carpeta se pide una sola vez
+
+#### Scenario: Dos exportaciones en el mismo segundo
+Origen: la verificación de este change (un doble toque en la pantalla táctil), borde.
+- **GIVEN** una exportación a CSV recién hecha
+- **WHEN** se vuelve a exportar a CSV en el mismo segundo
+- **THEN** quedan los dos archivos, el segundo con «-2» antes de la extensión
+
+#### Scenario: Más de 10 000 consumos
+Origen: este requisito («hasta 10 000»), borde.
+- **GIVEN** 10 001 consumos en la consulta aplicada
+- **WHEN** se exporta a CSV
+- **THEN** el archivo tiene los primeros 10 000 en el orden vigente y la pestaña avisa que hay más
 
 ## MODIFIED Requirements
 

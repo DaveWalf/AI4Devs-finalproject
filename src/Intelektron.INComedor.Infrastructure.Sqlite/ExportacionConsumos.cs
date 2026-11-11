@@ -43,9 +43,13 @@ public sealed class ExportacionConsumos
         _consulta = consulta;
     }
 
+    /// <summary>Cuántos nombres prueba en el mismo segundo: el de siempre y de <c>-2</c> a <c>-9</c>.</summary>
+    public const int NombresPorSegundo = 9;
+
     /// <summary>
-    /// Escribe el archivo y devuelve su nombre. Sin poder escribir en <paramref name="carpeta"/>, lanza la excepción de E/S
-    /// después de borrar el temporal; lo que ya estaba en la carpeta no se toca.
+    /// Escribe el archivo y devuelve su nombre. Sin poder escribir en <paramref name="carpeta"/>, o con los nueve nombres de
+    /// ese segundo ya tomados, lanza la excepción de E/S después de borrar el temporal; lo que ya estaba en la carpeta no se
+    /// toca. Un doble toque en el mismo segundo deja el segundo archivo con <c>-2</c> antes de la extensión.
     /// </summary>
     public ResultadoExportacion Exportar(FiltroConsumos filtro, FormatoExportacion formato, string carpeta, TimeZoneInfo zona)
     {
@@ -56,10 +60,10 @@ public sealed class ExportacionConsumos
         }
 
         var ahora = TimeZoneInfo.ConvertTime(_consulta.Ahora(), zona);
-        var nombre = "INComedor-consumos-" + ahora.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
-            + (formato == FormatoExportacion.Csv ? ".csv" : ".xlsx");
-        var destino = Path.Combine(carpeta, nombre);
-        var temporal = destino + ".tmp";
+        var raiz = "INComedor-consumos-" + ahora.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        var extension = formato == FormatoExportacion.Csv ? ".csv" : ".xlsx";
+        var temporal = Path.Combine(carpeta, $"{raiz}-{Guid.NewGuid():N}.tmp");
+        var renombrado = false;
         try
         {
             using (var flujo = new FileStream(temporal, FileMode.CreateNew, FileAccess.Write, FileShare.None))
@@ -75,15 +79,47 @@ public sealed class ExportacionConsumos
                 }
             }
 
-            File.Move(temporal, destino, overwrite: false);
+            var nombre = Renombrar(temporal, carpeta, raiz, extension);
+            renombrado = true;
+            return new ResultadoExportacion(nombre, resultado.Filas.Count, resultado.HayMas, null);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        finally
         {
-            BorrarTemporal(temporal);
-            throw;
+            // Cualquier error, no sólo los de E/S, deja la carpeta como estaba: el temporal no queda.
+            if (!renombrado)
+            {
+                BorrarTemporal(temporal);
+            }
+        }
+    }
+
+    /// <summary>
+    /// El primer nombre libre del segundo, sin pisar ninguno: el renombrado sin sobrescribir falla si otro lo tomó entre la
+    /// mirada y el movimiento, y entonces prueba el siguiente.
+    /// </summary>
+    private static string Renombrar(string temporal, string carpeta, string raiz, string extension)
+    {
+        for (var i = 1; i <= NombresPorSegundo; i++)
+        {
+            var nombre = i == 1 ? raiz + extension : $"{raiz}-{i}{extension}";
+            var destino = Path.Combine(carpeta, nombre);
+            if (File.Exists(destino) || Directory.Exists(destino))
+            {
+                continue;
+            }
+
+            try
+            {
+                File.Move(temporal, destino, overwrite: false);
+                return nombre;
+            }
+            catch (IOException) when (File.Exists(destino))
+            {
+                // Otro lo tomó recién: el siguiente.
+            }
         }
 
-        return new ResultadoExportacion(nombre, resultado.Filas.Count, resultado.HayMas, null);
+        throw new IOException($"Ya hay {NombresPorSegundo} exportaciones de ese segundo en la carpeta.");
     }
 
     /// <summary>El estado del comprobante como lo dice la tabla de Consumos.</summary>
@@ -211,8 +247,22 @@ public sealed class ExportacionConsumos
     }
 
     /// <summary>Sin los caracteres de control que XML no admite, que de otro modo cortarían la escritura del libro.</summary>
-    private static string SoloCaracteresXml(string texto) =>
-        texto.All(XmlConvert.IsXmlChar) ? texto : string.Concat(texto.Where(XmlConvert.IsXmlChar));
+    private static string SoloCaracteresXml(string texto)
+    {
+        // Por Rune y no por char: un carácter fuera del plano básico (un emoji) son dos char sustitutos, que XmlConvert
+        // rechaza de a uno aunque juntos sean válidos.
+        var limpio = new StringBuilder(texto.Length);
+        foreach (var caracter in texto.EnumerateRunes())
+        {
+            var valor = caracter.Value;
+            if (valor is 0x9 or 0xA or 0xD || valor is >= 0x20 and <= 0xD7FF || valor is >= 0xE000 and <= 0xFFFD || valor >= 0x10000)
+            {
+                limpio.Append(caracter.ToString());
+            }
+        }
+
+        return limpio.ToString();
+    }
 
     private static void Parte(ZipArchive libro, string nombre, string contenido)
     {

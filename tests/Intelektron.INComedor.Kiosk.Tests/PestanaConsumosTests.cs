@@ -49,7 +49,7 @@ public class PestanaConsumosTests
         Assert.Equal("DAILY_KEY", consulta.GetProperty("Access").GetString());
     }
 
-    [Fact(DisplayName = "comprobante-local · Operador con permiso vigente: con la tabla de Consumos a la vista y la clave del día, «Reimprimir» pide el código de un operador y no pide el motivo")]
+    [Fact(DisplayName = "comprobante-local · Asistencia con permiso OPERATOR: con la tabla de Consumos a la vista y la clave del día, «Reimprimir» pide el código de un operador y no pide el motivo")]
     public async Task Comprobantes_sigue_pidiendo_un_operador()
     {
         using var puesto = new PuestoDePrueba();

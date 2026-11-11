@@ -19,7 +19,10 @@ public sealed record ResultadoAsistencia(Guid? SesionId, Guid? PersonId, string?
     public bool Concedida => SesionId is not null;
 }
 
-/// <summary>Un comprobante de la fecha de negocio actual, con el estado de su último trabajo de impresión.</summary>
+/// <summary>
+/// Un comprobante con el estado de su último trabajo de impresión: los del día que listaba Comprobantes y, desde
+/// buscar-y-exportar-consumos, el de cualquier fila de Consumos que se reimprime.
+/// </summary>
 public sealed record ComprobanteDelDia(
     Guid TicketId,
     DateTimeOffset CreadoUtc,

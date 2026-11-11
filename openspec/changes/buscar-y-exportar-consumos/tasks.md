@@ -121,6 +121,48 @@ pegado, para ver que sólo cambian las pruebas existentes de la propuesta. Las p
   - El chequeo de enlaces de D8 de `mostrar-aplicacion-del-curso`: el control negativo da `ROTO`, `ANCLA` y
     `enlaces rotos: 2`; sobre `readme.md`, `prompts.md`, `docs/aplicacion-del-curso.md` y `docs/cobertura-entrega.md`,
     `enlaces rotos: 0`; el mapa, `filas del mapa: 82 · defectuosas: 0`.
-- [ ] 5.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
+- [x] 5.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+  - Sobre `2823860`, de 21:39 a 21:44: `openspec validate --all --strict` → `Totals: 16 passed, 0 failed (16 items)`;
+    build → `0 Advertencia(s)`, `0 Errores`; el paquete, con su E2E contra el EXE `total: 1`, `error: 0`, zip de
+    77.579.535 bytes; `dotnet test INComedor.sln -c Release` contra ese EXE → `total: 854`, `error: 0` (Contracts 23,
+    Domain 91, Sqlite 228, Kiosk 418, Sync.Api 62, E2E 32). Pruebas existentes cambiadas contra `b9a794f`
+    (`git diff --diff-filter=M --name-only`): `AccesoOperadorE2ETests.cs`, `ConfiguracionPorPestanasE2ETests.cs`,
+    `AccesoOperadorTests.cs`, `PantallaAtencionTests.cs`, `PestanaComprobantesTests.cs`, `PestanaConsumosTests.cs`,
+    `PestanasConfiguracionTests.cs` y `TextosComprobanteTests.cs`, las de 3.3 y 5.1.
+- [x] 5.4 Correcciones de la verificación (`/openspec-verify-change` por un agente de sólo lectura sobre `2823860`, sin
+  críticos, 9 advertencias y 14 sugerencias), con el gate dado (decisión 13).
+  - Advertencia 1: el MODIFIED de «Asistencia con permiso OPERATOR» vuelve a decir «en el snapshot activo» y que
+    `PersonId`, `GrantId` y `GrantedRole` se auditan sólo si existen (491 caracteres).
+  - Advertencias 2 y 3 y sugerencia 7: la acción que espera un código vive en `SesionOperador.Pendiente`, el pedido dice
+    qué va a hacer y con qué número, y se cierra con «Cancelar», al dejar la pestaña o a los 30 s sin un toque; la sesión
+    adoptada es prestada: «Salir» y los 30 s la olvidan sin cerrarla, y Configuración la cierra una vez. Requisito ADDED
+    «El pedido del código de un operador en Consumos», cuatro escenarios; D5.
+  - Advertencia 4: «Cancelar» descarta también el aviso de una denegación (`DescartarAviso`).
+  - Advertencia 5, en pruebas existentes (decisión 13): `PestanaComprobantesTests.Operador_con_permiso_vigente` afirma
+    los cuatro motivos en lugar de `table`, que ya no probaba nada; `PestanaConsumosTests` nombra el requisito, no un
+    escenario que no ejerce.
+  - Advertencia 6 y sugerencia 12: D3 dice por qué el campo es `text` enmascarado y no `password`, suma
+    `spellcheck="false"`, y que el código se busca en cualquier versión.
+  - Advertencia 7 y sugerencia 14: las pruebas comparan los mensajes enteros (`ExportacionHecha`, `CarpetaElegida`,
+    `CarpetaNoGuardada`, `ExportacionTopada`, `SinCarpeta`); cancelar la elección avisa; `CONSUMPTIONS_EXPORTED` suma los
+    filtros como la consulta; D8 dice «las oraciones nuevas».
+  - Advertencia 2: la carpeta que no se pudo guardar se usa hasta cerrar Configuración y su aviso va antes del resultado.
+  - Advertencia 8: la fila del pedido de código con letra de 16 px, medida en la E2E: `#codigo-operador`,
+    `#entrar-operador` y `#cancelar-operador` de 367,0 a 423,0 px, los tres de 16 px; captura
+    `consumos-pedido-operador-1024x768`, mirada.
+  - Advertencia 9: un nombre ya tomado en el mismo segundo pasa a `-2`, hasta `-9`; el temporal lleva un GUID y se borra
+    en un `finally`.
+  - Sugerencias 1 a 6, 10 y 11: comentarios al día; el libro conserva los caracteres fuera del plano básico (por `Rune`);
+    `Hoy()` dentro del `try`; la pestaña dice que la tabla está filtrada por un código, sin mostrarlo, y `FiltroConsumos`
+    no lo escribe en su `ToString`; pruebas más fuertes (el contenido de «Ver», el `PersonId` de 9001, «a_b» contra
+    «AnaXBel», el tabulador y el retorno como fórmulas, «Recuperar» por el pedido); el paso 6 del readme después de
+    «Salir»; D8 dice qué botones van a 16 px. La 9 (el propósito de la spec viva) se hace al archivar.
+  - Quedan anotadas en el PR, sin cambio: la 8 (los nombres `PestanaComprobantesTests` y los escenarios del requisito
+    retirado en `ConsultaConsumosTests`), la 13 («Ver» sin encabezado ni pie, como el comprobante en pantalla, que
+    tampoco los tiene) y la del diálogo de carpetas modal con el temporizador, que ve David en su prueba del EXE.
+  - Vistas fallar contra `2823860` (un worktree con las pruebas nuevas y sólo lo que necesitan para compilar: los textos
+    de `MensajesAtencion` y la constante `NombresPorSegundo`): Sqlite `total: 234`, `error: 3`; Kiosk `total: 428`,
+    `error: 10`. Las demás pruebas nuevas cubren comportamiento que ya andaba. Sobre las correcciones: Sqlite 234 de 234,
+    Kiosk 428 de 428 y la E2E nueva en verde.

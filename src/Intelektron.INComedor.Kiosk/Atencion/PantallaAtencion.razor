@@ -403,7 +403,8 @@
         }
         else if (ConfiguracionAbierta && _sesionOperador?.RevisarInactividad() == true)
         {
-            // Treinta segundos sin un toque en Comprobantes cierran la sesión del operador (D8).
+            // Treinta segundos sin un toque en Consumos cierran la sesión del operador o descartan la acción que esperaba un
+            // código (D8 de configurar-puesto-por-pestanas y D5 de buscar-y-exportar-consumos).
             StateHasChanged();
         }
     }
@@ -865,6 +866,11 @@
             Rows = exportacion.Filas,
             HasMore = exportacion.HayMas,
             File = exportacion.Archivo,
+            From = exportacion.Filtro.Desde.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            To = exportacion.Filtro.Hasta.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            LastHours = exportacion.Filtro.PorInstante,
+            TextSearched = !string.IsNullOrWhiteSpace(exportacion.Filtro.Texto),
+            PersonCode = !string.IsNullOrWhiteSpace(exportacion.Filtro.Codigo),
             Access = _acceso,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,
@@ -1099,7 +1105,7 @@
 
     private void CancelarConfiguracion()
     {
-        // Cerrar Configuración termina la sesión del operador de Comprobantes (D8).
+        // Cerrar Configuración termina la sesión del operador de Consumos (D8); la adoptada la cierra SalirDelOperador, una vez.
         _sesionOperador?.Salir("CONFIGURATION_CLOSED");
         _sesionOperador = null;
         _vista = _guardado;

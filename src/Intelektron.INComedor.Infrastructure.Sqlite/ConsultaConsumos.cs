@@ -45,6 +45,12 @@ public sealed record FiltroConsumos(
 
     /// <summary>Si filtra por instante de confirmación y no por fecha de negocio.</summary>
     public bool PorInstante => DesdeUtc is not null && HastaUtc is not null;
+
+    /// <summary>Sin el código: un filtro escrito en un registro o en una excepción nunca lo muestra (D3).</summary>
+    public override string ToString() =>
+        $"FiltroConsumos {{ Desde = {Desde:yyyy-MM-dd}, Hasta = {Hasta:yyyy-MM-dd}, PersonaId = {PersonaId}, ServicioId = {ServicioId}, "
+        + $"OpcionId = {OpcionId}, Orden = {Orden}, Ascendente = {Ascendente}, DesdeUtc = {DesdeUtc:O}, HastaUtc = {HastaUtc:O}, "
+        + $"Texto = {Texto}, Codigo = {(Codigo is null ? "null" : "(oculto)")} }}";
 }
 
 /// <summary>Un consumo registrado, con la persona y la opción como eran en la versión del consumo y su precio aplicado.</summary>

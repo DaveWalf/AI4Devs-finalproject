@@ -4,7 +4,7 @@ using Microsoft.Playwright;
 namespace Intelektron.INComedor.E2E.Tests;
 
 /// <summary>
-/// Consumos con la búsqueda, el número, «Ver» y la exportación, con el puesto compilado (buscar-y-exportar-consumos): por CDP y
+/// Consumos con la búsqueda, el número, «Ver», la exportación y el pedido del código de un operador, con el puesto compilado (buscar-y-exportar-consumos): por CDP y
 /// a 1024 × 768, lo que bUnit no mide, con la tolerancia de 1 px de la regla de prolijidad (D8). La carpeta de exportación se
 /// deja elegida en <c>exportacion.json</c> antes de exportar, porque el diálogo de carpetas de Windows no se maneja por CDP.
 /// </summary>
@@ -102,6 +102,27 @@ public class BuscarYExportarConsumosE2ETests : IAsyncLifetime
         Assert.Single(archivos, a => a!.EndsWith(".csv", StringComparison.Ordinal));
         Assert.Single(archivos, a => a!.EndsWith(".xlsx", StringComparison.Ordinal));
         Assert.Equal(2, File.ReadAllLines(Path.Combine(destino, archivos.Single(a => a!.EndsWith(".csv", StringComparison.Ordinal))!)).Length);
+
+        await filas.Locator(".reimprimir").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#pedido-operador")).ToContainTextAsync(numero);
+        var pedido = await MedirIds(pagina, "#codigo-operador", "#entrar-operador", "#cancelar-operador");
+        _escenario.Registrar($"1024 × 768, el pedido del código: {string.Join("; ", pedido.Select(c => c.ToString()))}");
+        await _escenario.CapturarAsync(pagina, "consumos-pedido-operador-1024x768");
+        Assert.All(pedido, c => Assert.True(Math.Abs(c.Alto - pedido[0].Alto) <= Tolerancia && c.Alto >= 56 && c.Letra == pedido[0].Letra
+            && Math.Abs(c.Arriba - pedido[0].Arriba) <= Tolerancia, $"{c.Id}: {c.Alto} px, letra {c.Letra}, arriba {c.Arriba}, contra {pedido[0]}"));
+        await pagina.Locator("#cancelar-operador").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#codigo-operador")).ToHaveCountAsync(0);
+    }
+
+    /// <summary>Las cajas de unos controles, por su id.</summary>
+    private static async Task<Caja[]> MedirIds(IPage pagina, params string[] ids)
+    {
+        var json = await pagina.EvaluateAsync<string>(
+            """
+            ids => JSON.stringify(ids.map(i => { const e = document.querySelector(i); const b = e.getBoundingClientRect();
+              return { Id: i, Arriba: b.top, Abajo: b.bottom, Izquierda: b.left, Derecha: b.right, Alto: b.height, Letra: getComputedStyle(e).fontSize }; }))
+            """, ids);
+        return JsonSerializer.Deserialize<Caja[]>(json)!;
     }
 
     /// <summary>Las cajas de los filtros, de las acciones de la fila y de la exportación, y el ancho de la tabla en su caja.</summary>

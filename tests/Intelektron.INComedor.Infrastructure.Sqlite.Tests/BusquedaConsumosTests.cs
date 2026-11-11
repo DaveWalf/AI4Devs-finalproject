@@ -104,6 +104,33 @@ public class BusquedaConsumosTests : ConfirmacionTestBase
         Assert.Empty(resultado.Filas);
     }
 
+    [Fact(DisplayName = "consulta-consumos · Comodines en el texto: un guion bajo se busca tal cual, «a_b» encuentra a «Ana_Bel» y no a «AnaXBel»")]
+    public void Un_guion_bajo_se_busca_tal_cual()
+    {
+        var buscado = Insertar(Fixture.Habilitada, Fixture.AlmuerzoComun, Hoy, new TimeOnly(11, 0));
+        Insertar(Fixture.SinDerecho, Fixture.Refrigerio, Hoy, new TimeOnly(10, 0));
+        Renombrar(Fixture.Habilitada, "Ana_Bel");
+        Renombrar(Fixture.SinDerecho, "AnaXBel");
+
+        var resultado = _consulta.Leer(FiltroConsumos.UltimasHoras(Reloj.GetUtcNow(), Hoy) with { Texto = "a_b" });
+
+        Assert.Equal([buscado], resultado.Filas.Select(f => f.ConsumoId));
+    }
+
+    [Fact(DisplayName = "consulta-consumos · El texto y el código en la bitácora: el filtro escrito como texto no muestra el código")]
+    public void El_filtro_no_escribe_el_codigo()
+    {
+        var filtro = FiltroConsumos.UltimasHoras(Reloj.GetUtcNow(), Hoy) with { Codigo = FixtureSintetico.CodigoSintetico };
+
+        Assert.DoesNotContain(FixtureSintetico.CodigoSintetico, filtro.ToString(), StringComparison.Ordinal);
+    }
+
+    private void Renombrar(PersonaFixture persona, string nombre)
+    {
+        using var conexion = Abrir();
+        Sql.Ejecutar(conexion, "UPDATE tbComedorPersonas SET comperNombreVisible = $nombre WHERE comperCodigo = $per", ("$nombre", nombre), ("$per", persona.Id));
+    }
+
     private Guid Insertar(PersonaFixture persona, OpcionFixture opcion, DateOnly fecha, TimeOnly horaLocal)
     {
         using var conexion = Abrir();

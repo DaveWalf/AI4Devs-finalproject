@@ -59,6 +59,8 @@ public class ExportacionConsumosTests : ConfirmacionTestBase
     [InlineData("+54 11 5555")]
     [InlineData("-2")]
     [InlineData("@SUMA(A1)")]
+    [InlineData("\t=1+1")]
+    [InlineData("\r=1+1")]
     public void Un_nombre_que_empieza_como_formula(string nombre)
     {
         using var carpeta = new CarpetaTemporal();
@@ -96,18 +98,50 @@ public class ExportacionConsumosTests : ConfirmacionTestBase
         Assert.Equal(500m, decimal.Parse(cargo.Element(ns + "v")!.Value, CultureInfo.InvariantCulture));
     }
 
-    [Fact(DisplayName = "consulta-consumos · Sin poder escribir: un error al escribir no deja el temporal ni toca lo que ya estaba en la carpeta")]
+    [Fact(DisplayName = "consulta-consumos · Sin poder escribir: con los nueve nombres de ese segundo ya tomados, el error no deja el temporal ni toca lo que ya estaba en la carpeta")]
     public void Un_error_no_deja_el_temporal()
     {
         using var carpeta = new CarpetaTemporal();
         Insertar(Fixture.Habilitada, Fixture.AlmuerzoComun, new TimeOnly(11, 0));
-        var existente = Path.Combine(carpeta.Ruta, NombreBase + ".csv");
-        File.WriteAllText(existente, "de antes");
+        var existentes = Enumerable.Range(1, ExportacionConsumos.NombresPorSegundo)
+            .Select(i => Path.Combine(carpeta.Ruta, i == 1 ? NombreBase + ".csv" : $"{NombreBase}-{i}.csv")).ToList();
+        existentes.ForEach(e => File.WriteAllText(e, "de antes"));
 
         Assert.ThrowsAny<IOException>(() => _exportacion.Exportar(Filtro, FormatoExportacion.Csv, carpeta.Ruta, Zona));
 
-        Assert.Equal([existente], Directory.GetFiles(carpeta.Ruta));
-        Assert.Equal("de antes", File.ReadAllText(existente));
+        Assert.Equal(existentes.Order(), Directory.GetFiles(carpeta.Ruta).Order());
+        Assert.All(existentes, e => Assert.Equal("de antes", File.ReadAllText(e)));
+    }
+
+    [Fact(DisplayName = "consulta-consumos · Dos exportaciones en el mismo segundo: quedan los dos archivos, el segundo con «-2» antes de la extensión")]
+    public void Dos_en_el_mismo_segundo()
+    {
+        using var carpeta = new CarpetaTemporal();
+        Insertar(Fixture.Habilitada, Fixture.AlmuerzoComun, new TimeOnly(11, 0));
+
+        var primera = _exportacion.Exportar(Filtro, FormatoExportacion.Csv, carpeta.Ruta, Zona);
+        var segunda = _exportacion.Exportar(Filtro, FormatoExportacion.Csv, carpeta.Ruta, Zona);
+
+        Assert.Equal(NombreBase + ".csv", primera.Archivo);
+        Assert.Equal(NombreBase + "-2.csv", segunda.Archivo);
+        Assert.Equal(new[] { primera.Archivo, segunda.Archivo }.Order(StringComparer.Ordinal), Directory.GetFiles(carpeta.Ruta).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+    }
+
+    [Fact(DisplayName = "consulta-consumos · Exportar a Excel: un carácter fuera del plano básico en un nombre queda en el libro, como en el CSV")]
+    public void Un_caracter_fuera_del_plano_basico()
+    {
+        using var carpeta = new CarpetaTemporal();
+        var nombre = "Persona " + char.ConvertFromUtf32(0x1F355);
+        Insertar(Fixture.SinDerecho, Fixture.Refrigerio, new TimeOnly(10, 0));
+        Ejecutar("UPDATE tbComedorPersonas SET comperNombreVisible = $nombre WHERE comperCodigo = $per",
+            ("$nombre", nombre), ("$per", Fixture.SinDerecho.Id));
+
+        var resultado = _exportacion.Exportar(Filtro, FormatoExportacion.Xlsx, carpeta.Ruta, Zona);
+
+        using var libro = ZipFile.OpenRead(Path.Combine(carpeta.Ruta, resultado.Archivo!));
+        var ns = XNamespace.Get("http://schemas.openxmlformats.org/spreadsheetml/2006/main");
+        var fila = Leer(libro, "xl/worksheets/sheet1.xml").Descendants(ns + "row").ElementAt(1);
+        Assert.Equal(nombre, Celda(fila, ns, "C2").Value);
     }
 
     [Fact(DisplayName = "consulta-consumos · Sin poder escribir: una carpeta que ya no existe da error y no se crea")]

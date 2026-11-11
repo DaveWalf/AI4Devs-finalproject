@@ -17,11 +17,39 @@ Origen: RB08 («copia posterior … queda marcada y auditada») y AT54, borde.
 - **WHEN** se lo ve en pantalla dos veces
 - **THEN** sigue sin copias y sin trabajos de impresión nuevos, y la impresora no recibió nada
 
+### Requirement: El pedido del código de un operador en Consumos
+
+«Reimprimir» o «Recuperar» sin una sesión de operador SHALL pedir el código diciendo qué acción y qué comprobante esperan. El pedido MUST cerrarse sin hacer nada con «Cancelar», también después de una denegación, al dejar la pestaña o a los 30 s sin un toque. La sesión del operador que entró a Configuración con su código MUST NOT cerrarse con «Salir» ni con los 30 s de Consumos: la cierra Configuración al cerrarse.
+
+#### Scenario: El pedido dice qué va a hacer
+Origen: la verificación de este change (un código tipeado minutos después hacía una acción que no se veía), borde de AT54.
+- **GIVEN** Configuración abierta con la clave del día y un consumo con su comprobante
+- **WHEN** se toca «Reimprimir» en su fila
+- **THEN** la pestaña pide el código de un operador para reimprimir el comprobante con su número, y la impresora no recibe nada
+
+#### Scenario: Un pedido que nadie atiende
+Origen: D8 de configurar-puesto-por-pestanas (30 s sin un toque), borde.
+- **GIVEN** «Recuperar» pidió el código de un operador para un original fallido
+- **WHEN** pasan 30 s sin un toque
+- **THEN** el pedido se cierra sin recuperar nada y la impresora no recibe ningún trabajo
+
+#### Scenario: Cancelar después de una denegación
+Origen: HU03-C («denegación sin generar trabajo ni alterar consumo»), borde.
+- **GIVEN** el pedido de código con el aviso de un permiso vencido
+- **WHEN** se toca «Cancelar»
+- **THEN** el pedido y el aviso se cierran, y la tabla de Consumos sigue como estaba
+
+#### Scenario: Salir no cierra la sesión de quien entró con su código
+Origen: D5 de este change (la sesión adoptada), borde.
+- **GIVEN** Configuración abierta con el código de un operador vigente, que pidió reimprimir desde Consumos
+- **WHEN** toca «Salir» en Consumos y después cierra Configuración
+- **THEN** la bitácora registra el cierre de su sesión una sola vez, con `CONFIGURATION_CLOSED`
+
 ## MODIFIED Requirements
 
 ### Requirement: Asistencia con permiso OPERATOR
 
-Reimprimir o recuperar desde una fila de Consumos SHALL pedir el código de un operador, salvo que se haya entrado a Configuración con el de un operador vigente, cuya sesión se usa. El código MUST identificar al actor como la atención y abrir una sesión de acción privilegiada sólo con un permiso `OPERATOR` no revocado y vigente en `[ValidFromUtc, ValidToUtc)` (RB26); si no, MUST denegar sin abrir sesión, y cada intento MUST auditarse con `RequestedRole` y su causa. Reposo MUST NOT ofrecer «Asistencia».
+Reimprimir o recuperar en Consumos SHALL pedir el código de un operador, salvo con la sesión del que entró a Configuración con el suyo. El código MUST identificar al actor y abrir una sesión privilegiada sólo con un permiso `OPERATOR` no revocado y vigente en `[ValidFromUtc, ValidToUtc)` en el snapshot activo (RB26); si no, MUST denegarla. Cada intento MUST auditarse con `RequestedRole`, su causa y, si existen, `PersonId`, `GrantId` y `GrantedRole`. Reposo MUST NOT ofrecer «Asistencia».
 
 #### Scenario: Operador con permiso vigente
 Origen: AT54 («sólo el operador vigente crea copia numerada») y la mejora 6 de David del 10/11/2026 (la reimpresión en Consumos).

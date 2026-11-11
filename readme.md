@@ -212,7 +212,7 @@ receptor, en la ventana:
    EN PANTALLA, sin pedir un operador ni imprimir. «Recuperar» en esa fila pide el código de un operador: `9001` e
    «Ingresar» lo saca como el mismo trabajo. «Reimprimir», con un motivo, saca una copia con la leyenda DUPLICADO.
    «Salir», cerrar Configuración o 30 s sin tocar la pestaña terminan la sesión del operador.
-6. En Consumos, «Reimprimir» en una fila y `9002` e «Ingresar»: «Tu permiso de operador está vencido». «Buscar» con el
+6. «Salir» y, en Consumos, «Reimprimir» en una fila y `9002` e «Ingresar»: «Tu permiso de operador está vencido». «Buscar» con el
    número de una fila y «Consultar» dejan sólo esa; «Exportar CSV» pide la carpeta la primera vez y deja ahí el archivo.
 7. En reposo, el engranaje y «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
    `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión

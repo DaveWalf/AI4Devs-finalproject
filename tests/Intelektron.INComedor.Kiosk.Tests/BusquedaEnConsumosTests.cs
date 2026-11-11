@@ -118,6 +118,26 @@ public class BusquedaEnConsumosTests
     }
 
     /// <summary>Una atención completa en reposo: el código, la opción por su posición entre las de su servicio y «Confirmar».</summary>
+    [Fact(DisplayName = "consulta-consumos · El filtro por código sigue a la vista: después de consultar con un código, la pestaña lo dice sin mostrarlo, también al ordenar, y una consulta sin código lo quita")]
+    public async Task El_filtro_por_codigo_sigue_a_la_vista()
+    {
+        using var puesto = new PuestoDePrueba();
+        var pantalla = puesto.Dibujar();
+        await Consumir(pantalla, "0001", 0);
+        await EntradaConfiguracion.Entrar(pantalla);
+        Assert.Empty(pantalla.FindAll("#filtro-codigo"));
+
+        await pantalla.Find("#consumos-codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#consultar-consumos").ClickAsync(new());
+        Assert.Equal(MensajesAtencion.FiltradoPorCodigo, pantalla.Find("#filtro-codigo").TextContent.Trim());
+        await pantalla.Find("th[data-columna=\"Persona\"] .ordenar").ClickAsync(new());
+        Assert.Equal(MensajesAtencion.FiltradoPorCodigo, pantalla.Find("#filtro-codigo").TextContent.Trim());
+        Assert.DoesNotContain("0001", pantalla.Find("#seccion-consumos").OuterHtml);
+        await pantalla.Find("#consultar-consumos").ClickAsync(new());
+
+        Assert.Empty(pantalla.FindAll("#filtro-codigo"));
+    }
+
     private static async Task Consumir(IRenderedComponent<PantallaAtencion> pantalla, string codigo, int posicion, bool refrigerio = false)
     {
         await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = codigo });

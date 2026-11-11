@@ -28,7 +28,7 @@ public class PestanaComprobantesTests
         Assert.DoesNotContain(pantalla.FindAll("main button"), b => b.TextContent.Contains("Asistencia", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "comprobante-local · Operador con permiso vigente: al reimprimir en Consumos, 9001 abre la sesión y la pestaña muestra su nombre, los consumos y «Salir»")]
+    [Fact(DisplayName = "comprobante-local · Operador con permiso vigente: al reimprimir en Consumos, 9001 abre la sesión y la pestaña muestra su nombre, el motivo de la reimpresión y «Salir»")]
     public async Task Operador_con_permiso_vigente()
     {
         using var puesto = new PuestoDePrueba();
@@ -38,7 +38,7 @@ public class PestanaComprobantesTests
 
         var pestana = pantalla.Find("#seccion-consumos");
         Assert.Contains(Operador, pestana.TextContent);
-        Assert.NotNull(pestana.QuerySelector("table"));
+        Assert.Equal(4, pestana.QuerySelectorAll(".motivo").Length);
         Assert.NotNull(pestana.QuerySelector("#salir"));
         Assert.Empty(pantalla.FindAll("#codigo-operador"));
     }

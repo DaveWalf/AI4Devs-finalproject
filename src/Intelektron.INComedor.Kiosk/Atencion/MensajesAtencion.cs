@@ -96,7 +96,13 @@ public static class MensajesAtencion
     // 10/11/2026); el resto de los mensajes lo sigue el change puntuar-la-interfaz.
     public const string ExportacionFallida = "No se pudo exportar: la carpeta no se puede escribir. Elegí otra con «Cambiar carpeta».";
     public const string ExportacionTopada = "Se exportaron los primeros 10 000 consumos y hay más: acotá los filtros para el resto.";
-    public const string CarpetaNoGuardada = "No se pudo guardar la carpeta elegida: se usa sólo esta vez.";
+    public const string CarpetaNoGuardada = "No se pudo guardar la carpeta elegida: se usa hasta cerrar Configuración.";
+    public const string SinCarpeta = "No se eligió una carpeta: no se exportó nada.";
+    public const string FiltradoPorCodigo = "La tabla está filtrada por el código de una persona; «Consultar» sin código lo quita.";
+    public const string PedidoOperador = "Para reimprimir o recuperar un comprobante, ingresá el código de un operador.";
+
+    public static string PedidoOperadorPara(bool recuperar, string? numero) =>
+        $"Para {(recuperar ? "recuperar" : "reimprimir")} el comprobante N.º {numero}, ingresá el código de un operador.";
 
     public static string CarpetaElegida(string carpeta) => $"Las exportaciones van a {carpeta}.";
 

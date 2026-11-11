@@ -3,11 +3,12 @@
 @using Intelektron.INComedor.Infrastructure.Sqlite
 
 @*
-    La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas, D9 y la decisión de David del 06/11): la ve
-    quien entra a Configuración, sin el código de un operador. Muestra los consumos de hoy por defecto, filtra por fechas,
-    persona, servicio y opción, y ordena por columna en la consulta, antes del tope de 500. Los filtros usan posiciones, no
-    identificadores, y la tabla nunca muestra un código. La tabla se dibuja sólo con la pestaña elegida, para que los nombres
-    no queden en la página mientras se usa otra; los filtros se conservan hasta cerrar Configuración.
+    La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas, D9, y de buscar-y-exportar-consumos): la ve
+    quien entra a Configuración, sin el código de un operador. Muestra las últimas 24 horas por defecto, filtra por fechas,
+    texto, código de una persona, persona, servicio y opción, y ordena por columna en la consulta, antes del tope de 500.
+    Cada fila deja ver, reimprimir o recuperar su comprobante, y lo consultado se exporta a CSV o Excel. Los filtros usan
+    posiciones, no identificadores, y la tabla nunca muestra un código. La tabla se dibuja sólo con la pestaña elegida, para
+    que los nombres no queden en la página mientras se usa otra; los filtros se conservan hasta cerrar Configuración.
 *@
 <div class="consumos" @onpointerdown="() => Sesion?.Tocar()">
     @if (Visible && _cargado)
@@ -21,7 +22,7 @@
             @* El texto busca en persona, opción, servicio y número; el código de una persona va enmascarado y se vacía al *@
             @* consultar, y ninguno de los dos llega a la bitácora (D2 y D3 de buscar-y-exportar-consumos). *@
             <label>Buscar <input id="consumos-texto" type="search" autocomplete="off" value="@_texto" @oninput="e => _texto = e.Value?.ToString() ?? string.Empty" /></label>
-            <label>Código <input id="consumos-codigo" class="codigo-oculto" type="text" inputmode="numeric" autocomplete="off" value="@_codigo"
+            <label>Código <input id="consumos-codigo" class="codigo-oculto" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" value="@_codigo"
                                  aria-label="Código de una persona" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" /></label>
             @* Los filtros son listas propias, dibujadas en la página, no select nativos: se abren en el monitor del puesto (D3 de *@
             @* ordenar-configuracion). El valor es la posición en la lista, nunca un identificador ni un código, como antes. No van *@
@@ -49,19 +50,25 @@
             <p id="aviso-consumos" class="aviso" role="status">@_aviso</p>
         }
 
+        @* Ordenar y exportar siguen usando el código del filtro aplicado: la pestaña lo dice, sin mostrarlo (D3). *@
+        @if (_aplicado.Codigo is not null)
+        {
+            <p id="filtro-codigo" role="status">@MensajesAtencion.FiltradoPorCodigo</p>
+        }
+
         @* Reimprimir y recuperar piden un operador con OPERATOR (RB26): la sesión adoptada del que entró con su código, o el
            código tipeado acá, que no se vuelve a mostrar (D4 y D5 de buscar-y-exportar-consumos). *@
-        @if (Sesion is not null && (Sesion.Abierta || _pendiente is not null || Sesion.Aviso is not null))
+        @if (Sesion is not null && (Sesion.Abierta || Sesion.Pendiente is not null || Sesion.Aviso is not null))
         {
             <section class="operador-consumos" aria-label="Operador">
                 @if (!Sesion.Abierta)
                 {
-                    <p>Para reimprimir o recuperar un comprobante, ingresá el código de un operador.</p>
+                    <p id="pedido-operador">@(Sesion.Pendiente is { } pendiente ? MensajesAtencion.PedidoOperadorPara(pendiente.Recuperar, pendiente.Fila.Numero) : MensajesAtencion.PedidoOperador)</p>
                     <div class="entrada-operador">
                         <input id="codigo-operador" type="text" inputmode="numeric" autocomplete="off" aria-label="Código del operador"
                                value="@_codigoOperador" @oninput="e => _codigoOperador = e.Value?.ToString() ?? string.Empty" />
                         <button id="entrar-operador" type="button" class="principal" @onclick="EntrarOperador">Ingresar</button>
-                        <button id="cancelar-operador" type="button" @onclick="() => _pendiente = null">Cancelar</button>
+                        <button id="cancelar-operador" type="button" @onclick="CancelarOperador">Cancelar</button>
                     </div>
                     @if (Sesion.Aviso is not null)
                     {
@@ -212,7 +219,7 @@
     private string _codigo = string.Empty;
     private bool _porInstante = true;
     private string _codigoOperador = string.Empty;
-    private (bool Recuperar, ConsumoConsultado Fila)? _pendiente;
+    private string? _carpetaSesion;
     private ComprobanteEnPantalla? _enPantalla;
     private IReadOnlyList<PersonaParaFiltro> _personas = [];
     private IReadOnlyList<ElementoParaFiltro> _servicios = [];
@@ -230,8 +237,11 @@
     /// <summary>Lo que queda en la bitácora de una consulta hecha: los filtros, el orden y la cantidad de filas (D9).</summary>
     public sealed record ConsultaRealizada(FiltroConsumos Filtro, int Filas, bool HayMas);
 
-    /// <summary>Lo que queda en la general de una exportación: el formato, el nombre del archivo sin su ruta y las filas (D6).</summary>
-    public sealed record ExportacionRealizada(string Formato, string Archivo, int Filas, bool HayMas);
+    /// <summary>
+    /// Lo que queda en la general de una exportación: el formato, el nombre del archivo sin su ruta, las filas y el filtro, del
+    /// que la pantalla registra sólo si hubo texto o código, nunca su valor (D6).
+    /// </summary>
+    public sealed record ExportacionRealizada(string Formato, string Archivo, int Filas, bool HayMas, FiltroConsumos Filtro);
 
     [Parameter, EditorRequired]
     public ConsultaConsumos Consulta { get; set; } = null!;
@@ -269,10 +279,16 @@
     /// </summary>
     private void Exportar(FormatoExportacion formato)
     {
-        var carpeta = Almacen!.Leer() ?? ElegirCarpeta();
+        string? avisoCarpeta = null;
+        var carpeta = _carpetaSesion ?? Almacen!.Leer();
         if (carpeta is null)
         {
-            return;
+            (carpeta, avisoCarpeta) = ElegirCarpeta();
+            if (carpeta is null)
+            {
+                (_mensajeExportacion, _exportacionFallida) = (MensajesAtencion.SinCarpeta, true);
+                return;
+            }
         }
 
         ResultadoExportacion resultado;
@@ -297,41 +313,59 @@
             return;
         }
 
-        _exportacionFallida = false;
-        _mensajeExportacion = MensajesAtencion.ExportacionHecha(archivo, resultado.Filas, carpeta)
-            + (resultado.HayMas ? " " + MensajesAtencion.ExportacionTopada : string.Empty);
-        RegistrarExportacion?.Invoke(new ExportacionRealizada(formato == FormatoExportacion.Csv ? "CSV" : "XLSX", archivo, resultado.Filas, resultado.HayMas));
+        // El aviso de la carpeta que no se pudo guardar va antes del resultado, para que no lo pise (D6).
+        _exportacionFallida = avisoCarpeta is not null;
+        _mensajeExportacion = string.Join(' ', new[]
+        {
+            avisoCarpeta, MensajesAtencion.ExportacionHecha(archivo, resultado.Filas, carpeta), resultado.HayMas ? MensajesAtencion.ExportacionTopada : null,
+        }.OfType<string>());
+        RegistrarExportacion?.Invoke(new ExportacionRealizada(formato == FormatoExportacion.Csv ? "CSV" : "XLSX", archivo, resultado.Filas, resultado.HayMas, _aplicado));
     }
 
-    /// <summary>«Cambiar carpeta»: la vuelve a pedir y, si se elige una, la próxima exportación va ahí.</summary>
+    /// <summary>«Cambiar carpeta»: la vuelve a pedir y, si se elige una, la próxima exportación va ahí; si se cancela, queda la anterior.</summary>
     private void CambiarCarpeta()
     {
-        if (ElegirCarpeta() is { } carpeta && !_exportacionFallida)
+        var (carpeta, aviso) = ElegirCarpeta();
+        if (carpeta is null)
         {
-            _mensajeExportacion = MensajesAtencion.CarpetaElegida(carpeta);
+            return;
         }
+
+        _exportacionFallida = aviso is not null;
+        _mensajeExportacion = aviso ?? MensajesAtencion.CarpetaElegida(carpeta);
     }
 
-    /// <summary>Pide la carpeta y la guarda; si no se puede guardar, avisa y la usa sólo esta vez.</summary>
-    private string? ElegirCarpeta()
+    /// <summary>
+    /// Pide la carpeta y la guarda. Si no se puede guardar, la usa hasta cerrar Configuración y devuelve el aviso; si se
+    /// cancela, ninguna (D6).
+    /// </summary>
+    private (string? Carpeta, string? Aviso) ElegirCarpeta()
     {
-        var elegida = Elector!.Elegir(Almacen!.Leer());
+        var elegida = Elector!.Elegir(_carpetaSesion ?? Almacen!.Leer());
         if (elegida is null)
         {
-            return null;
+            return (null, null);
         }
 
         try
         {
-            Almacen.Guardar(elegida);
-            _exportacionFallida = false;
+            Almacen!.Guardar(elegida);
+            _carpetaSesion = null;
+            return (elegida, null);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            (_mensajeExportacion, _exportacionFallida) = (MensajesAtencion.CarpetaNoGuardada, true);
+            _carpetaSesion = elegida;
+            return (elegida, MensajesAtencion.CarpetaNoGuardada);
         }
+    }
 
-        return elegida;
+    /// <summary>«Cancelar» en el pedido del código: se va la acción pendiente y, si lo hay, el aviso de una denegación (D5).</summary>
+    private void CancelarOperador()
+    {
+        _codigoOperador = string.Empty;
+        Sesion!.DescartarPendiente();
+        Sesion.DescartarAviso();
     }
 
     /// <summary>«Ver»: el comprobante de la fila en pantalla, sin operador, sin imprimir y sin copia (D4).</summary>
@@ -361,7 +395,7 @@
 
         if (!Sesion.Abierta)
         {
-            _pendiente = (recuperar, fila);
+            Sesion.Pedir(new AccionPendiente(recuperar, fila));
             return;
         }
 
@@ -370,7 +404,6 @@
 
     private void Hacer(bool recuperar, ConsumoConsultado fila)
     {
-        _pendiente = null;
         if (recuperar)
         {
             Sesion!.Recuperar(fila.TrabajoOriginalId!.Value);
@@ -389,7 +422,7 @@
         var codigo = _codigoOperador;
         _codigoOperador = string.Empty;
         Sesion!.Entrar(codigo);
-        if (Sesion.Abierta && _pendiente is { } pendiente)
+        if (Sesion.Abierta && Sesion.TomarPendiente() is { } pendiente)
         {
             Hacer(pendiente.Recuperar, pendiente.Fila);
         }
@@ -401,14 +434,16 @@
         Ejecutar(_aplicado);
     }
 
-    private void SalirOperador()
-    {
-        Sesion!.Salir();
-        _pendiente = null;
-    }
+    private void SalirOperador() => Sesion!.Salir();
 
     protected override void OnParametersSet()
     {
+        // Dejar la pestaña descarta la acción que esperaba un código: no queda para quien vuelva después (D5).
+        if (!Visible)
+        {
+            Sesion?.DescartarPendiente();
+        }
+
         if (Visible && !_cargado)
         {
             _cargado = true;
@@ -430,7 +465,17 @@
     /// </summary>
     private void Consultar()
     {
-        var rango = _porInstante ? FiltroConsumos.UltimasHoras(Consulta.Ahora(), Consulta.Hoy()) : new FiltroConsumos(_desde, _hasta);
+        FiltroConsumos rango;
+        try
+        {
+            rango = _porInstante ? FiltroConsumos.UltimasHoras(Consulta.Ahora(), Consulta.Hoy()) : new FiltroConsumos(_desde, _hasta);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _aviso = MensajesAtencion.ConfiguracionNoLeida;
+            return;
+        }
+
         var codigo = _codigo;
         _codigo = string.Empty;
         Ejecutar(rango with
@@ -449,8 +494,17 @@
     private void UltimasHoras()
     {
         _porInstante = true;
-        var inicial = FiltroConsumos.UltimasHoras(Consulta.Ahora(), Consulta.Hoy());
-        (_desde, _hasta) = (inicial.Desde, inicial.Hasta);
+        try
+        {
+            var inicial = FiltroConsumos.UltimasHoras(Consulta.Ahora(), Consulta.Hoy());
+            (_desde, _hasta) = (inicial.Desde, inicial.Hasta);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _aviso = MensajesAtencion.ConfiguracionNoLeida;
+            return;
+        }
+
         Consultar();
     }
 

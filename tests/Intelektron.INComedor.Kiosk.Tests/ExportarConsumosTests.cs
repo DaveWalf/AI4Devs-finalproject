@@ -31,10 +31,12 @@ public class ExportarConsumosTests
         var archivo = Assert.Single(Directory.GetFiles(destino));
         Assert.EndsWith(".csv", archivo, StringComparison.Ordinal);
         Assert.Equal(3, File.ReadAllLines(archivo).Length);
-        Assert.Contains(Path.GetFileName(archivo), pantalla.Find("#mensaje-exportacion").TextContent);
+        Assert.Equal(MensajesAtencion.ExportacionHecha(Path.GetFileName(archivo), 2, destino), pantalla.Find("#mensaje-exportacion").TextContent.Trim());
         Assert.Equal(0, elector.Pedidos);
         var linea = puesto.General().Single(l => Tipo(l) == "CONSUMPTIONS_EXPORTED");
         var contexto = ContextoDe(linea);
+        Assert.True(contexto.GetProperty("LastHours").GetBoolean());
+        Assert.False(contexto.GetProperty("PersonCode").GetBoolean());
         Assert.Equal("CSV", contexto.GetProperty("Format").GetString());
         Assert.Equal(2, contexto.GetProperty("Rows").GetInt32());
         Assert.Equal(Path.GetFileName(archivo), contexto.GetProperty("File").GetString());
@@ -91,6 +93,7 @@ public class ExportarConsumosTests
         await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#cambiar-carpeta").ClickAsync(new());
+        Assert.Equal(MensajesAtencion.CarpetaElegida(nueva), pantalla.Find("#mensaje-exportacion").TextContent.Trim());
         await pantalla.Find("#exportar-csv").ClickAsync(new());
 
         Assert.Equal(1, elector.Pedidos);
@@ -99,7 +102,7 @@ public class ExportarConsumosTests
         Assert.Empty(Directory.GetFiles(anterior));
     }
 
-    [Fact(DisplayName = "consulta-consumos · Elegir la carpeta y cancelar: sin carpeta no se exporta, no se guarda nada y la general no registra una exportación")]
+    [Fact(DisplayName = "consulta-consumos · Elegir la carpeta y cancelar: la pestaña avisa que no se eligió una carpeta, no se exporta ni se guarda nada y la general no registra una exportación")]
     public async Task Cancelar_la_eleccion()
     {
         using var puesto = new PuestoDePrueba();
@@ -112,6 +115,7 @@ public class ExportarConsumosTests
         await pantalla.Find("#exportar-csv").ClickAsync(new());
 
         Assert.Equal(1, elector.Pedidos);
+        Assert.Equal(MensajesAtencion.SinCarpeta, pantalla.Find("#mensaje-exportacion").TextContent.Trim());
         Assert.Null(new AlmacenExportacion(puesto.Carpeta).Leer());
         Assert.DoesNotContain(puesto.General(), l => Tipo(l) == "CONSUMPTIONS_EXPORTED");
     }
@@ -143,6 +147,82 @@ public class ExportarConsumosTests
             seguridad.RemoveAccessRule(regla);
             carpeta.SetAccessControl(seguridad);
         }
+    }
+
+    [Fact(DisplayName = "consulta-consumos · La carpeta elegida no se puede guardar: exporta igual dos veces a esa carpeta, la pide una sola vez y avisa que se usa hasta cerrar Configuración")]
+    public async Task La_carpeta_elegida_no_se_puede_guardar()
+    {
+        using var puesto = new PuestoDePrueba();
+        var (elector, destino) = Preparar(puesto, guardada: false);
+        Directory.CreateDirectory(Path.Combine(puesto.Carpeta, "exportacion.json"));
+        var pantalla = puesto.Dibujar();
+        await DosConsumos(pantalla);
+        await EntradaConfiguracion.Entrar(pantalla);
+
+        await pantalla.Find("#exportar-csv").ClickAsync(new());
+        var primero = Path.GetFileName(Assert.Single(Directory.GetFiles(destino)));
+        Assert.Equal(MensajesAtencion.CarpetaNoGuardada + " " + MensajesAtencion.ExportacionHecha(primero, 2, destino),
+            pantalla.Find("#mensaje-exportacion").TextContent.Trim());
+        await pantalla.Find("#exportar-xlsx").ClickAsync(new());
+
+        Assert.Equal(1, elector.Pedidos);
+        Assert.Equal(2, Directory.GetFiles(destino).Length);
+    }
+
+    [Fact(DisplayName = "consulta-consumos · Dos exportaciones en el mismo segundo: dos toques en «Exportar CSV» dejan los dos archivos")]
+    public async Task Dos_toques_en_el_mismo_segundo()
+    {
+        using var puesto = new PuestoDePrueba();
+        var (_, destino) = Preparar(puesto, guardada: true);
+        var pantalla = puesto.Dibujar();
+        await DosConsumos(pantalla);
+        await EntradaConfiguracion.Entrar(pantalla);
+
+        await pantalla.Find("#exportar-csv").ClickAsync(new());
+        await pantalla.Find("#exportar-csv").ClickAsync(new());
+
+        Assert.Equal(2, Directory.GetFiles(destino, "*.csv").Length);
+        Assert.DoesNotContain(MensajesAtencion.ExportacionFallida, pantalla.Find("#mensaje-exportacion").TextContent);
+    }
+
+    [Fact(DisplayName = "consulta-consumos · Más de 10 000 consumos: el archivo tiene los primeros 10 000 y la pestaña avisa que hay más")]
+    public async Task Mas_de_diez_mil()
+    {
+        using var puesto = new PuestoDePrueba();
+        var (_, destino) = Preparar(puesto, guardada: true);
+        var pantalla = puesto.Dibujar();
+        await DosConsumos(pantalla);
+        Clonar(puesto, 9999);
+        await EntradaConfiguracion.Entrar(pantalla);
+
+        await pantalla.Find("#exportar-csv").ClickAsync(new());
+
+        var archivo = Assert.Single(Directory.GetFiles(destino));
+        Assert.Equal(10_001, File.ReadAllLines(archivo).Length);
+        Assert.Equal(MensajesAtencion.ExportacionHecha(Path.GetFileName(archivo), 10_000, destino) + " " + MensajesAtencion.ExportacionTopada,
+            pantalla.Find("#mensaje-exportacion").TextContent.Trim());
+    }
+
+    /// <summary>Copias de un consumo ya registrado, en el mismo instante, por SQL y sin claves foráneas: sólo para el tope.</summary>
+    private static void Clonar(PuestoDePrueba puesto, int copias)
+    {
+        using var conexion = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={puesto.RutaBase};Pooling=False");
+        conexion.Open();
+        using var comando = conexion.CreateCommand();
+        comando.CommandText =
+            """
+            PRAGMA foreign_keys = OFF;
+            WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < $copias)
+            INSERT INTO tbComedorConsumos (comconCodigo, comicCodigo, comvcCodigo, comperCodigo, commenCodigo, comicmCodigo, comconFechaNegocio,
+                comconCantidad, comconVersionMenu, comconVersionPoliticas, comconVersionCatalogo, comconSecuenciaCliente,
+                comconFechaConfirmacionLocalUtc, comconPrecioAplicado)
+            SELECT printf('%08x-0000-4000-8000-%012x', i, i), printf('%08x-1111-4000-8000-%012x', i, i), c.comvcCodigo, c.comperCodigo,
+                c.commenCodigo, NULL, c.comconFechaNegocio, c.comconCantidad, c.comconVersionMenu, c.comconVersionPoliticas,
+                c.comconVersionCatalogo, 100000 + i, c.comconFechaConfirmacionLocalUtc, c.comconPrecioAplicado
+            FROM n, (SELECT * FROM tbComedorConsumos LIMIT 1) c;
+            """;
+        comando.Parameters.AddWithValue("$copias", copias);
+        comando.ExecuteNonQuery();
     }
 
     /// <summary>
