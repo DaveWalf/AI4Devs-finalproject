@@ -303,6 +303,9 @@ public sealed class ExportacionAutomatica : IDisposable
     /// <summary>El modo del SFTP simulado: «Caído» falla como un servidor que no responde (D3).</summary>
     public bool SftpCaido { get; set; }
 
+    /// <summary>Lo que se hace con la falla de un destino, con su clave y su motivo: el aviso por correo (D4 de avisar-por-correo).</summary>
+    public Action<string, string>? AlFallar { get; set; }
+
     /// <summary>Después de cada pasada, para que la pestaña vuelva a dibujar el estado; puede llegar desde el hilo del reloj.</summary>
     public event Action? PasadaTerminada;
 
@@ -482,6 +485,7 @@ public sealed class ExportacionAutomatica : IDisposable
             estados[clave] = new EstadoDestino(marca, ahora, exito, motivo, identidad);
             GuardarEstado();
 
+            AlFallar?.Invoke(clave, motivo);
             Registrar("CONSUMPTIONS_AUTO_EXPORT_FAILED", new { Destination = clave, ReasonCode = motivo, Rows = filas, UpToSequence = marca, Trigger = Disparo(aMano) },
                 SeveridadBitacora.Warning);
             return new ResultadoDestino(clave, filas, archivos, motivo);

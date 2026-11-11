@@ -11,22 +11,26 @@
 
 ## 2. Los correos en el puesto
 
-- [ ] 2.1 `ConfiguracionCorreo` con su validación y `AlmacenConfiguracionCorreo` (`correo.json`), validado al leer y al
+- [x] 2.1 `ConfiguracionCorreo` con su validación y `AlmacenConfiguracionCorreo` (`correo.json`), validado al leer y al
   guardar, sin ninguna clave (D1); `MensajeCorreo` y el asunto «Cliente · Puesto N Nombre · Situación» (D2). Pruebas
   nuevas vistas fallar primero.
-- [ ] 2.2 La cola (`correo-pendiente\`, un archivo por correo, tope de 500), `CorreoSimulado` (`.eml` en
+- [x] 2.2 La cola (`correo-pendiente\`, un archivo por correo, tope de 500), `CorreoSimulado` (`.eml` en
   `correo-simulado\`, modo «Caído») y el envío de la cola en orden, con `NOTIFICATION_QUEUED`, `NOTIFICATION_SENT` y
   `NOTIFICATION_FAILED` (D3 y D8). Pruebas nuevas vistas fallar primero.
-- [ ] 2.3 `AvisosCorreo`: los destinatarios por situación, la ventana de 15 minutos y la bitácora que avisa al
+- [x] 2.3 `AvisosCorreo`: los destinatarios por situación, la ventana de 15 minutos y la bitácora que avisa al
   degradarse (D4); la señal de vida con `correo-estado.json` (D5); el reloj de cada minuto, que no cierra el puesto ante
   una falla (D6). Pruebas nuevas vistas fallar primero. Verifica: `dotnet test --project
   tests/Intelektron.INComedor.Kiosk.Tests` en verde.
 
 ## 3. Los avisos desde la atención
 
-- [ ] 3.1 La máquina de atención avisa una persona sin consumo (rechazo con persona, consumo denegado y sin opciones) y
+- [x] 3.1 La máquina de atención avisa una persona sin consumo (rechazo con persona, consumo denegado y sin opciones) y
   un comprobante sin imprimir; la exportación automática avisa su falla; el servicio avisa una bitácora que se degrada
-  (D4). Pruebas nuevas vistas fallar primero. Verifica: Kiosk en verde.
+  (D4). Pruebas nuevas vistas fallar primero. Verifica: Kiosk en verde. Hecho (2.1 a 3.1): `AvisosCorreoTests` (10), las diez
+  vistas fallar contra un esqueleto con `NotImplementedException`; `ResultadoEnvio` suma el código de la impresora con un
+  valor por defecto, sin cambiar a nadie que lo construye; Kiosk 553 de 553 y Sqlite 296, sin cambiar ninguna prueba
+  existente. Al aplicar: la primera pasada después de la hora manda la señal del día anterior aunque sea la del primer
+  arranque (D5), así que las pruebas de los otros avisos la ponen a las 23:59.
 
 ## 4. La pestaña Mails
 

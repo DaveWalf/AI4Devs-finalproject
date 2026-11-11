@@ -93,6 +93,9 @@ public sealed class ServicioAtencion : IDisposable
     /// <summary>Lo que registra Configuración, sin actor hasta que llegue la clave (D9).</summary>
     public RegistroDelPuesto? RegistroConfiguracion { get; private set; }
 
+    /// <summary>Los avisos por correo, si la ventana los armó: la atención y las bitácoras les cuentan lo que pasa (D4 de avisar-por-correo).</summary>
+    public AvisosCorreo? Avisos { get; set; }
+
     /// <summary>Lo que muestra la franja de la sincronización; sin receptor, «Sin receptor configurado».</summary>
     public EstadoSincronizacion Sincronizacion { get; private set; } = new(false, 0, 0, null, false);
 
@@ -220,6 +223,8 @@ public sealed class ServicioAtencion : IDisposable
         try
         {
             escritor.Entregar();
+            // Una bitácora que pasa a degradada, al Administrador Principal (D4 de avisar-por-correo).
+            Avisos?.Bitacoras(escritor.Estado());
             return true;
         }
         catch (SqliteException) when (!File.Exists(RutaBase))
