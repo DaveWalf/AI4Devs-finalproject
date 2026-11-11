@@ -8,11 +8,19 @@ namespace Intelektron.INComedor.Kiosk.Atencion;
 /// Lo que muestra el comprobante en pantalla, leído de los mismos datos que la impresora simulada escribe en su archivo
 /// (D7 de presentar-atencion-tactil): la leyenda, el número (el correlativo o los primeros ocho caracteres del comprobante),
 /// la opción, la fecha de negocio, el cargo, el comensal si sus datos lo tienen, la frase del comprobante y, en una copia,
-/// quién la habilitó (D6 de enriquecer-comprobante). Nunca el código de identificación.
+/// quién la habilitó (D6 de enriquecer-comprobante) o, con la clave del día, la marca SIN VALIDEZ en su lugar (D2 de
+/// reimprimir-sin-codigo). Nunca el código de identificación.
 /// </summary>
 public sealed record ComprobanteEnPantalla(
-    string Leyenda, string Numero, string Opcion, string FechaNegocio, string Cargo, string? Comensal = null, string Frase = "", string? Habilito = null)
+    string Leyenda, string Numero, string Opcion, string FechaNegocio, string Cargo, string? Comensal = null, string Frase = "", string? Habilito = null,
+    bool SinValidez = false)
 {
+    /// <summary>
+    /// La línea de una copia hecha con la clave del día, en el lugar de «Habilitó:» (D2 de reimprimir-sin-codigo). No es una
+    /// oración sino una marca del papel, por eso no termina en punto.
+    /// </summary>
+    public const string MarcaSinValidez = "SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD";
+
     public static ComprobanteEnPantalla Desde(ComprobanteAImprimir comprobante)
     {
         using var datos = JsonDocument.Parse(comprobante.DatosImpresion);
@@ -34,7 +42,8 @@ public sealed record ComprobanteEnPantalla(
             cargo,
             comensal,
             FrasesComprobante.Para(comprobante.TicketId),
-            comprobante.Habilito);
+            comprobante.SinValidez ? null : comprobante.Habilito,
+            comprobante.SinValidez);
     }
 
     /// <summary>

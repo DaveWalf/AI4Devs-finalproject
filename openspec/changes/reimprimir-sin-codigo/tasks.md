@@ -71,12 +71,18 @@ sigue la regla de prolijidad de `config.yaml`.
 
 ## 3. El papel: la marca en lugar de «Habilitó:»
 
-- [ ] 3.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: con `SinValidez`, `ImpresoraSimulada` escribe la línea
+- [x] 3.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: con `SinValidez`, `ImpresoraSimulada` escribe la línea
   `SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD` donde iría «Habilitó:» y no escribe «Habilitó:»; `ComprobanteEnPantalla` hace
   lo mismo; con un operador, las dos siguen con «Habilitó:». Verifica: el filtro de las clases nuevas, en rojo antes y
   en verde después.
-- [ ] 3.2 La línea en `ImpresoraSimulada.cs` y `ComprobanteEnPantalla.cs`, y en `PantallaAtencion.razor` si muestra el
+  - Hecho en `MarcaSinValidezTests` (3 pruebas): con los campos agregados y sin escribir la línea, rojo 2 de 3; la del
+    operador ya pasaba. La marca es la constante `ComprobanteEnPantalla.MarcaSinValidez` y no un mensaje de
+    `MensajesAtencion`, porque no es una oración y `PuntoFinalTests` exige punto a los mensajes.
+- [x] 3.2 La línea en `ImpresoraSimulada.cs` y `ComprobanteEnPantalla.cs`, y en `PantallaAtencion.razor` si muestra el
   papel. Verifica: 3.1 en verde.
+  - Hecho en los tres: la marca va después de «Copia: N», en lugar de «Habilitó:». `MarcaSinValidezTests` y
+    `ComprobanteDelPuestoTests`, 12 de 12; el Kiosk compila con `-warnaserror`. «Ver» no cambia: arma su comprobante
+    sin `Habilito` ni marca.
 
 ## 4. Consumos sin pedido de código
 

@@ -207,7 +207,11 @@
                                 {
                                     <span>Cargo informado: @papel.Cargo</span>
                                 }
-                                @if (papel.Habilito is { } habilito)
+                                @if (papel.SinValidez)
+                                {
+                                    <span class="sin-validez">@ComprobanteEnPantalla.MarcaSinValidez</span>
+                                }
+                                else if (papel.Habilito is { } habilito)
                                 {
                                     <span>Habilitó: @habilito</span>
                                 }
