@@ -51,8 +51,11 @@ public class ExportacionE2ETests : IAsyncLifetime
         Assert.Equal("pestana-exportacion", pestanas[^2].Id);
 
         await pagina.Locator("#pestana-impresora").ClickAsync();
+        // Medir recién con Impresora a la vista: en un equipo lento, la sección oculta mide 0.
+        await Assertions.Expect(pagina.Locator("#numero-puesto")).ToBeVisibleAsync();
         var impresora = (await MedirAsync(pagina, ["#numero-puesto"]))[0];
         await pagina.Locator("#pestana-exportacion").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#minutos-exportacion")).ToBeVisibleAsync();
         await pagina.Locator("#exportacion-activa").ClickAsync();
         await pagina.Locator("#carpeta-exportacion").FillAsync(destino);
         await pagina.Locator("#sftp-activo").ClickAsync();
