@@ -381,7 +381,7 @@ public sealed class ExportacionAutomatica : IDisposable
                 _estado.Guardar(estados);
             }
 
-            Registrar("CONSUMPTIONS_EXPORTED", new { Destination = clave, Files = archivos, Rows = filas, UpToSequence = marca, Trigger = Disparo(aMano) });
+            Registrar("CONSUMPTIONS_AUTO_EXPORTED", new { Destination = clave, Files = archivos, Rows = filas, UpToSequence = marca, Trigger = Disparo(aMano) });
             return new ResultadoDestino(clave, filas, archivos, null);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -404,7 +404,7 @@ public sealed class ExportacionAutomatica : IDisposable
                 System.Diagnostics.Debug.WriteLine($"INComedor: no se pudo guardar el estado de la exportación ({guardado.GetType().Name}).");
             }
 
-            Registrar("CONSUMPTIONS_EXPORT_FAILED", new { Destination = clave, ReasonCode = motivo, Rows = filas, UpToSequence = marca, Trigger = Disparo(aMano) },
+            Registrar("CONSUMPTIONS_AUTO_EXPORT_FAILED", new { Destination = clave, ReasonCode = motivo, Rows = filas, UpToSequence = marca, Trigger = Disparo(aMano) },
                 SeveridadBitacora.Warning);
             return new ResultadoDestino(clave, filas, archivos, motivo);
         }

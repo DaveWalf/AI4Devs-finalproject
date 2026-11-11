@@ -517,6 +517,22 @@ va en UTF-8 con punto y coma, como lo abre Excel en español, y una celda que em
 delante. Cada consulta queda en la general como `CONSUMPTIONS_QUERIED` y cada exportación como `CONSUMPTIONS_EXPORTED`,
 con el nombre del archivo y sin nombres ni códigos.
 
+**Exportación automática.** La pestaña Exportación, antes de General y sólo con la clave del día, lleva los consumos
+solos a una carpeta y a un servidor SFTP simulado: «Activa», cada cuántos minutos (5 a 1.440, 15 por defecto), «Un
+archivo que crece» (`INComedor-consumos.csv`, al que cada pasada le agrega los consumos nuevos) o «Un archivo por día»
+(`INComedor-consumos-AAAAMMDD.csv` por fecha de negocio), la carpeta con «Elegir», y el SFTP simulado con su servidor,
+puerto, usuario y carpeta remota. Las columnas son las de la exportación de Consumos, en CSV, sin ningún código.
+Mientras el puesto está abierto, una pasada cada tantos minutos, o «Exportar ahora», escribe en cada destino lo que
+todavía no le llegó: cada uno lleva su marca, el último consumo que recibió, que avanza recién después de escribir, y
+cada escritura deja el archivo de antes o el completo. Si un destino falla, la pestaña dice cuándo y por qué, la
+general lo registra como `CONSUMPTIONS_AUTO_EXPORT_FAILED`, el otro destino sigue, y la pasada siguiente reintenta desde
+su marca, sin perder ni repetir consumos; cada pasada que escribe queda como `CONSUMPTIONS_AUTO_EXPORTED`. **El SFTP es
+simulado** (decisión 11 del plan del cierre): escribe en `sftp-simulado\<servidor>\<carpeta remota>` de la carpeta de
+datos, y su modo «Caído» falla como un servidor que no responde, para ver la falla y la recuperación. **Queda pendiente
+la conexión real**: un cliente SFTP con la clave guardada en el almacén de credenciales de Windows y su prueba de
+conexión, detrás del mismo destino. La configuración vive en `exportacion-automatica.json` y las marcas en
+`exportacion-estado.json`; son del equipo y no viajan en un resguardo.
+
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|
 | ![La pestaña Personas en edición: la tabla con una fila por persona, ALMUERZO y REFRIGERIO en columnas y las opciones habilitadas, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |

@@ -82,7 +82,7 @@ public class ExportacionEnPantallaTests
         await pantalla.Find("#sftp-caido").ClickAsync(new());
         await pantalla.Find("#exportar-ahora").ClickAsync(new());
 
-        Assert.Contains("No se pudo exportar a el SFTP simulado", pantalla.Find("#mensaje-exportacion").TextContent);
+        Assert.Contains("No se pudo exportar al SFTP simulado: el servidor no responde.", pantalla.Find("#mensaje-exportacion").TextContent);
         Assert.Contains("al día", pantalla.Find("#estado-exportacion-carpeta").TextContent);
         Assert.Contains("falló", pantalla.Find("#estado-exportacion-sftp").TextContent);
         Assert.Single(Directory.GetFiles(destino));
@@ -90,7 +90,7 @@ public class ExportacionEnPantallaTests
         await pantalla.Find("#sftp-disponible").ClickAsync(new());
         await pantalla.Find("#exportar-ahora").ClickAsync(new());
 
-        Assert.Equal("Se exportaron 1 consumo.", pantalla.Find("#mensaje-exportacion").TextContent.Trim());
+        Assert.Equal("Se exportó 1 consumo.", pantalla.Find("#mensaje-exportacion").TextContent.Trim());
         Assert.Contains("al día", pantalla.Find("#estado-exportacion-sftp").TextContent);
         Assert.True(File.Exists(Path.Combine(puesto.Carpeta, "sftp-simulado", "sftp.ejemplo.local", "entrada", "INComedor-consumos.csv")));
     }

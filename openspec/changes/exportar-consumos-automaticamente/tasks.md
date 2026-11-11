@@ -34,13 +34,17 @@
 
 ## 4. El puesto compilado, documentos y verificación integral
 
-- [ ] 4.1 E2E nueva a 1024 × 768: la fila de nueve pestañas entra; la pestaña Exportación medida contra Impresora; activar
+- [x] 4.1 E2E nueva a 1024 × 768: la fila de nueve pestañas entra; la pestaña Exportación medida contra Impresora; activar
   con una carpeta y el SFTP simulado caído, confirmar un consumo, «Exportar ahora», ver la falla, levantar el SFTP y ver
   los dos destinos al día, con capturas miradas (D7). Cambia, por la decisión 13, la cuenta de ocho pestañas de
-  `AccesoOperadorE2ETests`. Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde.
-- [ ] 4.2 `readme.md` (la exportación automática y el SFTP como pendiente) y la fila que corresponda de
+  `AccesoOperadorE2ETests`. Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde. Hecho:
+  `ExportacionE2ETests` en verde; las nueve pestañas en una fila hasta x 887; los cinco campos desde x 273,5 con
+  686,5 × 56 px y los once botones de 56 px con letra de 18 px; tres capturas miradas. Los eventos de la exportación
+  automática pasan a `CONSUMPTIONS_AUTO_EXPORTED` y `CONSUMPTIONS_AUTO_EXPORT_FAILED`, porque la exportación a mano ya
+  registra `CONSUMPTIONS_EXPORTED`.
+- [x] 4.2 `readme.md` (la exportación automática y el SFTP como pendiente) y la fila que corresponda de
   `docs/aplicacion-del-curso.md`. Verifica: el chequeo de enlaces de D8 de `mostrar-aplicacion-del-curso` con su control
-  negativo, `enlaces rotos: 0`.
+  negativo, `enlaces rotos: 0`. Hecho: 0.
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
   --no-incremental`, el puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c
   Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.

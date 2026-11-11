@@ -50,8 +50,8 @@ lee la base.
 
 Cada destino guarda en `exportacion-estado.json` su marca (la última secuencia que recibió), el último intento, el último
 éxito y el último error. La marca avanza recién después de escribir: si un destino falla, conserva su marca y la pasada
-siguiente reintenta desde ahí; un destino caído no frena al otro. La bitácora general registra `CONSUMPTIONS_EXPORTED`
-(destino, archivos, filas y la secuencia hasta la que llegó) y `CONSUMPTIONS_EXPORT_FAILED` (destino y motivo), sin
+siguiente reintenta desde ahí; un destino caído no frena al otro. La bitácora general registra `CONSUMPTIONS_AUTO_EXPORTED`
+(destino, archivos, filas y la secuencia hasta la que llegó) y `CONSUMPTIONS_AUTO_EXPORT_FAILED` (destino y motivo), sin
 nombres ni códigos. Una pasada sin consumos nuevos no registra nada.
 
 ### D6. La pestaña

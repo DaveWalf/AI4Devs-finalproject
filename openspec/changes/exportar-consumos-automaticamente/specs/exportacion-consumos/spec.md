@@ -24,7 +24,7 @@ Origen: D5 de este change, borde.
 
 ### Requirement: Los errores de la exportación y su recuperación
 
-Cada destino SHALL llevar su marca, el último consumo que recibió, y MUST avanzarla sólo después de escribir. Si un destino falla, MUST conservar su marca, mostrar cuándo y por qué en la pestaña, registrar `CONSUMPTIONS_EXPORT_FAILED` y reintentar en la pasada siguiente desde su marca, sin frenar a los otros destinos. Lo exportado MUST NOT perderse ni repetirse.
+Cada destino SHALL llevar su marca, el último consumo que recibió, y MUST avanzarla sólo después de escribir. Si un destino falla, MUST conservar su marca, mostrar cuándo y por qué en la pestaña, registrar `CONSUMPTIONS_AUTO_EXPORT_FAILED` y reintentar en la pasada siguiente desde su marca, sin frenar a los otros destinos. Lo exportado MUST NOT perderse ni repetirse.
 
 #### Scenario: El servidor cae y vuelve
 Origen: mejora 11 de David del 10/11/2026 («control de errores y recuperación automática ante fallas»).
@@ -36,7 +36,7 @@ Origen: mejora 11 de David del 10/11/2026 («control de errores y recuperación 
 Origen: RB21 («todo cambio … tiene permiso, actor y resultado») y D5 de este change.
 - **GIVEN** una pasada con un destino que escribe y otro que falla
 - **WHEN** se lee la general
-- **THEN** tiene `CONSUMPTIONS_EXPORTED` con el destino, los archivos, las filas y la secuencia, y `CONSUMPTIONS_EXPORT_FAILED` con el otro destino y su motivo, sin nombres ni códigos
+- **THEN** tiene `CONSUMPTIONS_AUTO_EXPORTED` con el destino, los archivos, las filas y la secuencia, y `CONSUMPTIONS_AUTO_EXPORT_FAILED` con el otro destino y su motivo, sin nombres ni códigos
 
 ### Requirement: La configuración de la exportación
 

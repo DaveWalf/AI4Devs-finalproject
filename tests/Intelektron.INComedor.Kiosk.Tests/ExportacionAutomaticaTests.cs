@@ -58,7 +58,7 @@ public sealed class ExportacionAutomaticaTests : IDisposable
         Assert.Equal(ConfiguracionExportacion.PorDefecto, new AlmacenConfiguracionExportacion(_carpeta).Leer());
     }
 
-    [Fact(DisplayName = "exportacion-consumos · Un archivo que crece: dos consumos, una pasada, un consumo más y otra pasada dejan INComedor-consumos.csv con el encabezado una vez y los tres en orden, sin el código, y dos CONSUMPTIONS_EXPORTED")]
+    [Fact(DisplayName = "exportacion-consumos · Un archivo que crece: dos consumos, una pasada, un consumo más y otra pasada dejan INComedor-consumos.csv con el encabezado una vez y los tres en orden, sin el código, y dos CONSUMPTIONS_AUTO_EXPORTED")]
     public async Task Un_archivo_que_crece()
     {
         using var exportacion = Exportacion(ConfiguracionExportacion.PorDefecto with { Activa = true, Carpeta = Destino });
@@ -79,7 +79,7 @@ public sealed class ExportacionAutomaticaTests : IDisposable
         Assert.Contains("Café con leche", lineas[2], StringComparison.Ordinal);
         Assert.Contains("2026-11-07", lineas[3], StringComparison.Ordinal);
         Assert.DoesNotContain(lineas, l => l.Contains("\"0001\"", StringComparison.Ordinal));
-        Assert.Equal(2, Registros("CONSUMPTIONS_EXPORTED").Count);
+        Assert.Equal(2, Registros("CONSUMPTIONS_AUTO_EXPORTED").Count);
     }
 
     [Fact(DisplayName = "exportacion-consumos · Un archivo por día: consumos de dos fechas de negocio quedan en un archivo por fecha, cada uno con los de su día")]
@@ -115,7 +115,7 @@ public sealed class ExportacionAutomaticaTests : IDisposable
 
         Assert.Equal(0, resultado.Filas);
         Assert.Equal(antes, File.ReadAllBytes(archivo));
-        Assert.Single(Registros("CONSUMPTIONS_EXPORTED"));
+        Assert.Single(Registros("CONSUMPTIONS_AUTO_EXPORTED"));
         Assert.True(otroArranque.Estado[ExportacionAutomatica.Carpeta].Marca > 0);
     }
 
@@ -145,9 +145,9 @@ public sealed class ExportacionAutomaticaTests : IDisposable
         Assert.Equal(2, segunda.Single(r => r.Destino == ExportacionAutomatica.Sftp).Filas);
         Assert.Equal(File.ReadAllLines(Path.Combine(Destino, "INComedor-consumos.csv")), File.ReadAllLines(remoto));
         Assert.Null(exportacion.Estado[ExportacionAutomatica.Sftp].Error);
-        var falla = Assert.Single(Registros("CONSUMPTIONS_EXPORT_FAILED"));
+        var falla = Assert.Single(Registros("CONSUMPTIONS_AUTO_EXPORT_FAILED"));
         Assert.Contains("SERVER_UNREACHABLE", falla, StringComparison.Ordinal);
-        Assert.All(Registros("CONSUMPTIONS_EXPORTED").Append(falla), r =>
+        Assert.All(Registros("CONSUMPTIONS_AUTO_EXPORTED").Append(falla), r =>
         {
             Assert.DoesNotContain("Persona sintética", r, StringComparison.Ordinal);
             Assert.DoesNotContain("0001", r, StringComparison.Ordinal);

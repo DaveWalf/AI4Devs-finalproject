@@ -331,14 +331,14 @@ public static class MensajesAtencion
         var fallas = resultados.Where(r => r.Error is not null).ToList();
         if (fallas.Count > 0)
         {
-            return string.Join(" ", fallas.Select(f => $"No se pudo exportar a {NombreDestino(f.Destino)}: {MotivoExportacion(f.Error!)}."))
+            return string.Join(" ", fallas.Select(f => $"No se pudo exportar {(f.Destino == ExportacionAutomatica.Sftp ? "al SFTP simulado" : "a la carpeta")}: {MotivoExportacion(f.Error!)}."))
                 + " Reintenta en la próxima pasada.";
         }
 
         var filas = resultados.Count == 0 ? 0 : resultados.Max(r => r.Filas);
         return filas == 0
             ? "No había consumos nuevos para exportar."
-            : $"Se exportaron {Cantidad(filas, "consumo", "consumos")}.";
+            : filas == 1 ? "Se exportó 1 consumo." : $"Se exportaron {Cantidad(filas, "consumo", "consumos")}.";
     }
 
     /// <summary>
