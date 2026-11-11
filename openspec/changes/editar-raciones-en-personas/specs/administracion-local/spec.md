@@ -13,8 +13,14 @@ Origen: mejora 5 de David del 10/11/2026 («teclado en pantalla que se muestra u
 #### Scenario: Ocultar el teclado
 Origen: mejora 5 de David del 10/11/2026 («que se muestra u oculta»).
 - **GIVEN** la pestaña Personas en edición, con el teclado a la vista
-- **WHEN** se toca «Ocultar teclado», se cancela y se vuelve a editar
+- **WHEN** se toca «Ocultar teclado», se cancela, se pasa a Consumos y se vuelve a editar Personas
 - **THEN** el teclado no se muestra hasta tocar «Mostrar teclado» o cerrar Configuración
+
+#### Scenario: El código de una persona nueva con el teclado
+Origen: D10 de administrar-personas-y-opciones («lo tipeado no vuelve a dibujarse»), borde.
+- **GIVEN** una persona nueva en edición, con su código elegido
+- **WHEN** se tocan «0», «1», «0» y «5» y se guarda
+- **THEN** la versión 2 está activa con ese código, y la página no contiene «0105»
 
 #### Scenario: Una letra en el límite
 Origen: «Modificar los cupos y el nombre de una persona» (el límite es un número de 0 a 99), borde.
@@ -38,11 +44,17 @@ Origen: mejora 5 de David del 10/11/2026 («y exportación»), borde.
 - **WHEN** se toca «Exportar Excel» en Personas
 - **THEN** la carpeta tiene un `.xlsx` que se abre como libro con una hoja, y lo usado hoy y el límite son números
 
+#### Scenario: Una carpeta que no se puede escribir
+Origen: AT37 («conservación del valor previo ante error»), borde.
+- **GIVEN** una carpeta de exportación guardada que ya no se puede escribir
+- **WHEN** se toca «Exportar CSV» en Personas
+- **THEN** el pie avisa que no se pudo exportar, la carpeta sigue vacía y la general no tiene `PEOPLE_EXPORTED`
+
 ## MODIFIED Requirements
 
 ### Requirement: Personas habilitadas con sus opciones y cupos
 
-«Personas habilitadas», en la pestaña Personas, SHALL mostrar las personas de la versión activa en una tabla, una fila por persona, con el nombre visible, si está activa o de baja, cada cupo de servicio y categoría del catálogo como lo usado hoy sobre su límite («1/2»), o «—» sin cupo, y las opciones que esos cupos habilitan. Tocar un cupo o «Editar» MUST permitir cambiar nombres y límites en la misma tabla. MUST NOT mostrar ningún código.
+«Personas habilitadas», en la pestaña Personas, SHALL mostrar las personas de la versión activa en una tabla, una fila por persona, con el nombre visible, si está activa o de baja, cada cupo de servicio y categoría del catálogo como lo usado hoy sobre su límite («1/2»), o «—» sin cupo, y la cantidad de opciones que esos cupos habilitan. Tocar un cupo o «Editar» MUST permitir cambiar nombres y límites en la misma tabla. MUST NOT mostrar ningún código.
 
 #### Scenario: La persona del código 0001
 Origen: pedido de David del 04/11/2026 («qué opciones y cupos tiene»), su pedido del 06/11/2026 («que cada columna represente sus diferentes elementos de configuración»), la mejora 5 del 10/11/2026 («raciones por tipo en x/n») y AT02.

@@ -99,7 +99,8 @@ public static class EscritorPlanilla
     {
         using var escritor = new StreamWriter(flujo, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
         escritor.NewLine = "\r\n";
-        escritor.WriteLine(string.Join(';', encabezado.Select(Comillas)));
+        // El encabezado también: en Personas lleva los nombres de los servicios y las categorías, que llegan de la configuración.
+        escritor.WriteLine(string.Join(';', encabezado.Select(t => Comillas(SinFormula(t)))));
         foreach (var fila in filas)
         {
             escritor.WriteLine(string.Join(';', fila.Select(celda => Comillas(celda switch

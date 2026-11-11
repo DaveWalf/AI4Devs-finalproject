@@ -113,7 +113,8 @@
                 @if (_panel == Panel.Personas || _elegida == Pestana.Personas)
                 {
                     <PanelPersonas Administracion="Administracion" Editando="@(_panel == Panel.Personas)" Cerrar="CerrarPanel"
-                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" Actor="Actor" />
+                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" Actor="Actor"
+                                   TecladoVisible="_tecladoPersonasVisible" TecladoVisibleChanged="v => _tecladoPersonasVisible = v" />
                 }
                 else
                 {
@@ -368,6 +369,9 @@
     private bool _enfocarPestana;
     private Panel? _panel;
     private string? _mensajeExportacionPersonas;
+
+    /// <summary>El teclado en pantalla de Personas, visible hasta que se oculte; dura lo que dura Configuración abierta (D4).</summary>
+    private bool _tecladoPersonasVisible = true;
     private bool _exportacionPersonasFallida;
 
     /// <summary>
@@ -404,7 +408,7 @@
         }
         catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
         {
-            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.ExportacionFallida, true);
+            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.ExportacionPersonasFallida, true);
             return;
         }
         catch (Microsoft.Data.Sqlite.SqliteException)

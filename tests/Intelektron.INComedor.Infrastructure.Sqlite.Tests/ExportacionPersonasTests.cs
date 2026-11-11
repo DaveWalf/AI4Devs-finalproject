@@ -85,6 +85,24 @@ public class ExportacionPersonasTests : IDisposable
         var usado = habilitada.Elements(ns + "c").ElementAt(2);
         Assert.Null(usado.Attribute("t"));
         Assert.Equal("1", usado.Element(ns + "v")!.Value);
+        var limite = habilitada.Elements(ns + "c").ElementAt(3);
+        Assert.Null(limite.Attribute("t"));
+        Assert.True(int.Parse(limite.Element(ns + "v")!.Value, System.Globalization.CultureInfo.InvariantCulture) >= 1);
+    }
+
+    [Fact(DisplayName = "administracion-local · Exportar Personas a CSV: un nombre de servicio que empieza como una fórmula lleva el apóstrofo también en el encabezado")]
+    public void Un_encabezado_que_empieza_como_formula()
+    {
+        using (var conexion = Base.AbrirConexion())
+        {
+            Sql.Ejecutar(conexion, "UPDATE tbComedorTiposServicio SET comsrvNombre = '=SUMA(1)' WHERE comsrvCodigo = $srv", ("$srv", Fixture.ServicioAlmuerzo));
+        }
+
+        var resultado = new ExportacionPersonas(Admin, Reloj).Exportar(FormatoExportacion.Csv, Destino, Zona);
+
+        var encabezado = File.ReadAllLines(Path.Combine(Destino, resultado.Archivo), Encoding.UTF8)[0];
+        Assert.Contains("\"'=SUMA(1)", encabezado, StringComparison.Ordinal);
+        Assert.DoesNotContain(";\"=SUMA(1)", encabezado, StringComparison.Ordinal);
     }
 
     /// <summary>Lo usado hoy por la persona habilitada en una categoría, por SQL, como lo deja una confirmación.</summary>

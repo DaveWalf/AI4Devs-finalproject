@@ -78,6 +78,31 @@
   - `readme.md`: Personas con el x/n, el toque, el teclado, los cupos cambiados en la general y la exportación en el pie.
     `docs/aplicacion-del-curso.md`, la fila de las reglas de `config.yaml`: los dos defectos que atrapó la regla de
     prolijidad. Control negativo `enlaces rotos: 2`; los cuatro documentos, `enlaces rotos: 0`.
-- [ ] 5.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
+- [x] 5.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+  - Sobre `1046e86`, de 00:16 a 00:22: validate 16 de 16, build sin advertencias, el paquete con su E2E contra el EXE
+    (zip de 77.599.734 bytes) y `dotnet test INComedor.sln -c Release` contra ese EXE: `total: 892`, `error: 0` (Contracts
+    23, Domain 91, Sqlite 239, Kiosk 443, Sync.Api 62, E2E 34). Pruebas existentes cambiadas contra `5bf8d14`:
+    `TablaPersonasTests.cs` y `PuntoFinalTests.cs`. Se repite después de las correcciones (5.4).
+- [x] 5.4 Correcciones de la verificación (`/openspec-verify-change` por un agente de sólo lectura sobre `1046e86`: un
+  crítico, la 5.3 que corría; 5 advertencias y 9 sugerencias), con el gate dado (decisión 13).
+  - Advertencia 1: el código de una persona nueva escrito con el teclado no se veía y un teclado físico lo pisaba. El
+    teclado le pone el valor al campo como propiedad del DOM (`incomedor.ponerValor`, `wwwroot/js/puesto.js`), sin
+    atributo ni árbol de render: `PanelPersonasTests.Campo_de_codigo_enmascarado` sigue en verde sin cambios.
+  - Advertencia 2: «Ocultar teclado» volvía al cambiar de pestaña; el estado vive en `PanelConfiguracion`.
+  - Advertencia 4: el encabezado del CSV también pasa por el apóstrofo de las fórmulas.
+  - Advertencia 5: un campo elegido y rechazado se marca en rojo.
+  - Advertencia 3 (incierta), sin cambio: si el teclado táctil de Windows aparece al tocar un campo depende del equipo;
+    cambiar `inputmode` tocaría `Campo_de_codigo_enmascarado`. Queda para la prueba de David en su monitor (D4).
+  - Sugerencias: el teclado corta el largo como el campo (80, 20 y dos dígitos); descartar una fila nueva corre el campo
+    elegido; D1 dice el límite de los ámbitos; el límite como número en el Excel y ningún código de la demostración en el
+    CSV del puesto; «Una carpeta que no se puede escribir» con su escenario y su mensaje propio
+    (`ExportacionPersonasFallida`, que dice dónde cambiar la carpeta); «la cantidad de opciones» en el requisito; D6 con su
+    alternativa descartada y la letra de las teclas especiales; la barra de acciones de la edición medida en la E2E
+    (cuatro botones de 56 px desde 611,0, letra de 18 px); `.cupo-tocable` con la especificidad que le faltaba.
+  - Pruebas nuevas vistas fallar contra `1046e86` (un worktree con ellas y el texto nuevo de `MensajesAtencion`): Sqlite
+    `total: 240`, `error: 1` (el encabezado); Kiosk `total: 450`, `error: 5` (el código con el teclado, descartar, el largo
+    del límite, ocultar entre pestañas y la carpeta sin escritura). Las demás nuevas cubren comportamiento que ya andaba
+    (cancelar la elección, el cambio de 9001, reabrir Configuración). Sobre las correcciones: Sqlite 240 de 240, Kiosk
+    450 de 450, y las E2E de Personas y de administración en verde.

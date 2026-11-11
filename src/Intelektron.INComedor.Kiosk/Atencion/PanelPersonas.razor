@@ -1,5 +1,7 @@
 @using System.Globalization
 @using Intelektron.INComedor.Infrastructure.Sqlite
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 
 @*
     Personas en una tabla (D4 de configurar-puesto-por-pestanas, sobre «Personas habilitadas» de administrar-personas-y-opciones):
@@ -13,7 +15,7 @@
 *@
 <section id="@(Editando ? "panel-personas" : "tabla-personas")" class="panel-administracion tabla-administracion" aria-label="Personas habilitadas">
     @* Con el teclado a la vista, el título cede su alto a la tabla (D6 de editar-raciones-en-personas). *@
-    @if (Editando && !(Editable && _tecladoVisible))
+    @if (Editando && !(Editable && TecladoVisible))
     {
         <h3 id="titulo-personas">Personas habilitadas</h3>
     }
@@ -109,7 +111,7 @@
                                     @* Sin value: lo tipeado no vuelve a dibujarse (D10 de administrar-personas-y-opciones). *@
                                     <input class="codigo-persona @(EsElegido(TipoCampo.Codigo, indice) ? "elegido" : null)" type="password" inputmode="numeric" pattern="[0-9]*"
                                            autocomplete="off" aria-label="Código" maxlength="@AdministracionLocal.LargoCodigo" aria-invalid="@Marca(indice, "Codigo")"
-                                           @onfocus="() => Elegir(TipoCampo.Codigo, indice)" @oninput="e => fila.Codigo = Texto(e)" />
+                                           @ref="_referenciasCodigo[indice]" @onfocus="() => Elegir(TipoCampo.Codigo, indice)" @oninput="e => fila.Codigo = Texto(e)" />
                                 }
                             </td>
                             <td>
@@ -132,7 +134,7 @@
     </div>
 
     @* El teclado en pantalla escribe en el campo elegido; se muestra al editar y se oculta hasta cerrar Configuración (D4). *@
-    @if (Editable && _tecladoVisible)
+    @if (Editable && TecladoVisible)
     {
         <TecladoEnPantalla Tecla="Teclear" />
     }
@@ -143,8 +145,8 @@
             @if (Editable)
             {
                 <button id="agregar-persona" type="button" @onclick="AgregarPersona">Agregar persona</button>
-                <button id="@(_tecladoVisible ? "ocultar-teclado" : "mostrar-teclado")" type="button" @onclick="() => _tecladoVisible = !_tecladoVisible">
-                    @(_tecladoVisible ? "Ocultar teclado" : "Mostrar teclado")
+                <button id="@(TecladoVisible ? "ocultar-teclado" : "mostrar-teclado")" type="button" @onclick="() => TecladoVisibleChanged.InvokeAsync(!TecladoVisible)">
+                    @(TecladoVisible ? "Ocultar teclado" : "Mostrar teclado")
                 </button>
             }
             <button id="cancelar-panel" type="button" @onclick="() => Cerrar.InvokeAsync(null)">Cancelar</button>
@@ -169,7 +171,7 @@
     private bool _ordenAscendente = true;
     private bool? _editandoCargado;
     private CampoElegido? _elegido;
-    private bool _tecladoVisible = true;
+    private readonly Dictionary<int, ElementReference> _referenciasCodigo = [];
     private bool _enfocarElegido;
     private readonly Dictionary<(int, int), ElementReference> _referenciasLimite = [];
 
@@ -194,6 +196,16 @@
     /// <summary>Se cierra la edición: con el aviso de la versión guardada, o null si se canceló.</summary>
     [Parameter]
     public EventCallback<string?> Cerrar { get; set; }
+
+    /// <summary>
+    /// Si el teclado en pantalla está a la vista al editar. Lo guarda Configuración, así que «Ocultar teclado» dura hasta
+    /// cerrarla aunque se cambie de pestaña (D4).
+    /// </summary>
+    [Parameter]
+    public bool TecladoVisible { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<bool> TecladoVisibleChanged { get; set; }
 
     /// <summary>Lo que queda en la general de una exportación de Personas: el formato, el nombre del archivo y las filas.</summary>
     public sealed record ExportacionPersonasRealizada(string Formato, string Archivo, int Filas);
@@ -247,7 +259,7 @@
     /// Una tecla del teclado en pantalla en el campo elegido: agrega el carácter o borra el último; en el límite y el código
     /// sólo entran dígitos (D4). Sin campo elegido, no hace nada.
     /// </summary>
-    private void Teclear(string tecla)
+    private async Task Teclear(string tecla)
     {
         if (_elegido is not { } campo || campo.Fila >= _filas.Count)
         {
@@ -274,6 +286,18 @@
                 return;
             }
 
+            // El mismo largo que el campo deja tipear: el nombre, el código y un límite de dos dígitos (0 a 99).
+            var largo = campo.Tipo switch
+            {
+                TipoCampo.Nombre => AdministracionLocal.LargoNombrePersona,
+                TipoCampo.Limite => 2,
+                _ => AdministracionLocal.LargoCodigo,
+            };
+            if (actual.Length + caracter.Length > largo)
+            {
+                return;
+            }
+
             nuevo = actual + caracter;
         }
 
@@ -287,6 +311,20 @@
                 break;
             default:
                 fila.Codigo = nuevo;
+                // El código no se dibuja (D10 de administrar-personas-y-opciones): el teclado le pone el valor al campo como
+                // propiedad del DOM, para que se vea enmascarado y lo tipeado después con un teclado físico lo continúe.
+                if (_referenciasCodigo.TryGetValue(campo.Fila, out var referencia))
+                {
+                    try
+                    {
+                        await JS.InvokeVoidAsync("incomedor.ponerValor", referencia, nuevo);
+                    }
+                    catch (JSException)
+                    {
+                        // El código ya está en la fila y se guarda igual; sólo el campo no lo muestra enmascarado.
+                    }
+                }
+
                 break;
         }
     }
@@ -377,6 +415,13 @@
     /// <summary>Descartar una fila nueva corre las posiciones: las marcas del último guardado ya no corresponden.</summary>
     private void Descartar(FilaPersona fila)
     {
+        // El campo elegido es una posición de _filas: si era de esta fila se olvida, y si venía después corre uno (D4).
+        var indice = _filas.IndexOf(fila);
+        if (_elegido is { } elegido)
+        {
+            _elegido = elegido.Fila == indice ? null : elegido.Fila > indice ? elegido with { Fila = elegido.Fila - 1 } : elegido;
+        }
+
         _filas.Remove(fila);
         _campos = [];
         _columnasEnviadas = [];

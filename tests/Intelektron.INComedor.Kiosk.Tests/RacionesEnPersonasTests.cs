@@ -74,6 +74,8 @@ public class RacionesEnPersonasTests
         var archivo = Assert.Single(Directory.GetFiles(destino));
         Assert.EndsWith(".csv", archivo, StringComparison.Ordinal);
         Assert.Equal(personas + 1, File.ReadAllLines(archivo).Length);
+        var texto = File.ReadAllText(archivo);
+        Assert.All(new[] { "\"0001\"", "\"0002\"", "\"9001\"", "\"9004\"" }, c => Assert.DoesNotContain(c, texto, StringComparison.Ordinal));
         Assert.Equal(MensajesAtencion.ExportacionPersonasHecha(Path.GetFileName(archivo), personas, destino),
             pantalla.Find("#mensaje-exportacion-personas").TextContent.Trim());
         var linea = puesto.General().Single(l => Tipo(l) == "PEOPLE_EXPORTED");
@@ -94,6 +96,75 @@ public class RacionesEnPersonasTests
 
         Assert.EndsWith(".xlsx", Assert.Single(Directory.GetFiles(destino)), StringComparison.Ordinal);
         Assert.Equal("XLSX", ContextoDe(puesto.General().Single(l => Tipo(l) == "PEOPLE_EXPORTED")).GetProperty("Format").GetString());
+    }
+
+    [Fact(DisplayName = "administracion-local · Una carpeta que no se puede escribir: exportar Personas avisa, no deja ningún archivo y la general no tiene PEOPLE_EXPORTED")]
+    public async Task Una_carpeta_que_no_se_puede_escribir()
+    {
+        using var puesto = new PuestoDePrueba();
+        var destino = Preparar(puesto);
+        var pantalla = puesto.Dibujar();
+        await AbrirPersonas(pantalla);
+        var carpeta = new DirectoryInfo(destino);
+        var regla = new System.Security.AccessControl.FileSystemAccessRule(System.Security.Principal.WindowsIdentity.GetCurrent().User!,
+            System.Security.AccessControl.FileSystemRights.CreateFiles | System.Security.AccessControl.FileSystemRights.AppendData,
+            System.Security.AccessControl.AccessControlType.Deny);
+        var seguridad = carpeta.GetAccessControl();
+        seguridad.AddAccessRule(regla);
+        carpeta.SetAccessControl(seguridad);
+        try
+        {
+            await pantalla.Find("#exportar-personas-csv").ClickAsync(new());
+
+            Assert.Equal(MensajesAtencion.ExportacionPersonasFallida, pantalla.Find("#mensaje-exportacion-personas").TextContent.Trim());
+            Assert.Empty(Directory.GetFiles(destino));
+            Assert.DoesNotContain(puesto.General(), l => Tipo(l) == "PEOPLE_EXPORTED");
+        }
+        finally
+        {
+            seguridad.RemoveAccessRule(regla);
+            carpeta.SetAccessControl(seguridad);
+        }
+    }
+
+    [Fact(DisplayName = "administracion-local · Exportar Personas a CSV: sin carpeta guardada, cancelar la elección avisa y no exporta")]
+    public async Task Cancelar_la_eleccion()
+    {
+        using var puesto = new PuestoDePrueba();
+        puesto.Contexto.Services.AddSingleton(new AlmacenExportacion(puesto.Carpeta));
+        puesto.Contexto.Services.AddSingleton<IElectorCarpeta>(new ElectorQueCancela());
+        var pantalla = puesto.Dibujar();
+        await AbrirPersonas(pantalla);
+
+        await pantalla.Find("#exportar-personas-csv").ClickAsync(new());
+
+        Assert.Equal(MensajesAtencion.SinCarpeta, pantalla.Find("#mensaje-exportacion-personas").TextContent.Trim());
+        Assert.DoesNotContain(puesto.General(), l => Tipo(l) == "PEOPLE_EXPORTED");
+    }
+
+    [Fact(DisplayName = "administracion-local · Un cupo cambiado por un operador: con 9001, REFRIGERIO de 0001 de 2 a 1 con el teclado deja QuotaChanges de 2 a 1 y la persona de 9001 como actor")]
+    public async Task Un_cupo_cambiado_por_9001()
+    {
+        using var puesto = new PuestoDePrueba();
+        var pantalla = puesto.Dibujar();
+        await EntradaConfiguracion.Entrar(pantalla, "9001");
+        await pantalla.Find("#pestana-personas").ClickAsync(new());
+
+        await Fila(pantalla, Persona).QuerySelector("td.cupo[data-cupo=\"REFRIGERIO\"] .cupo-tocable")!.ClickAsync(new());
+        await pantalla.Find(".teclado-en-pantalla .tecla[data-tecla=\"BORRAR\"]").ClickAsync(new());
+        await pantalla.Find(".teclado-en-pantalla .tecla[data-tecla=\"1\"]").ClickAsync(new());
+        await pantalla.Find("#guardar-panel").ClickAsync(new());
+
+        var registro = ContextoDe(puesto.General().Single(l => Tipo(l) == "CONFIGURATION_CHANGED" && ContextoDe(l).GetProperty("Setting").GetString() == "PERSON"));
+        var cambio = Assert.Single(registro.GetProperty("QuotaChanges").EnumerateArray());
+        Assert.Equal("REFRIGERIO", cambio.GetProperty("Category").GetString());
+        Assert.Equal(2, cambio.GetProperty("Before").GetInt32());
+        Assert.Equal(1, cambio.GetProperty("After").GetInt32());
+        using var conexion = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={puesto.RutaBase};Pooling=False");
+        conexion.Open();
+        using var comando = conexion.CreateCommand();
+        comando.CommandText = "SELECT comperCodigo FROM tbComedorPersonas WHERE comperNombreVisible = 'Operador sintético 01' LIMIT 1";
+        Assert.Equal(Guid.Parse((string)comando.ExecuteScalar()!), registro.GetProperty("ActorPersonId").GetGuid());
     }
 
     private static async Task AbrirPersonas(IRenderedComponent<PantallaAtencion> pantalla)
@@ -128,6 +199,11 @@ public class RacionesEnPersonasTests
         puesto.Contexto.Services.AddSingleton(almacen);
         puesto.Contexto.Services.AddSingleton<IElectorCarpeta>(new ElectorQueNoSeUsa());
         return destino;
+    }
+
+    private sealed class ElectorQueCancela : IElectorCarpeta
+    {
+        public string? Elegir(string? actual) => null;
     }
 
     private sealed class ElectorQueNoSeUsa : IElectorCarpeta

@@ -424,7 +424,7 @@ html, body { overscroll-behavior: none; }
 .operador-consumos .entrada-operador input { min-height: 56px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
 /* Personas: el cupo tocable se lee como la celda, «x/n», con el alto de la fila; al editar, lo usado va antes del campo
    (D1, D2 y D6 de editar-raciones-en-personas). La exportación, como la de Consumos. */
-.tabla-personas .cupo-tocable { min-height: 44px; min-width: 64px; padding: 0 8px; font: inherit; background: transparent; border: 1px dashed transparent; border-radius: 8px; color: inherit; }
+.dialogo .tabla-personas button.cupo-tocable { min-height: 44px; min-width: 64px; padding: 0 8px; font: inherit; background: transparent; border: 1px dashed transparent; border-radius: 8px; color: inherit; }
 .tabla-personas .cupo-tocable:hover, .tabla-personas .cupo-tocable:focus-visible { border-color: var(--tinta-suave); }
 .tabla-personas .usado-hoy { display: inline-block; min-width: 2.5em; margin-right: 4px; text-align: right; }
 .tabla-personas input.limite.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
@@ -437,6 +437,8 @@ html, body { overscroll-behavior: none; }
 .teclado-en-pantalla .tecla.especial { font-size: 16px; }
 .teclado-en-pantalla .tecla.activa { background: var(--acento); color: var(--sobre-acento); border-color: var(--acento); }
 .tabla-personas input.nombre-persona.elegido, .tabla-personas input.codigo-persona.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
+/* Un campo elegido que el guardado rechazó se marca como los demás rechazados, no con el acento (D6). */
+.tabla-personas input.elegido[aria-invalid="true"] { outline-color: #b3261e; }
 /* Al recibir el foco, el campo queda debajo del encabezado fijo de la tabla y no detrás (D6). */
 .tabla-personas input { scroll-margin-top: 72px; scroll-margin-bottom: 8px; }
 /* La exportación, debajo de la tabla: tres botones del alto táctil de siempre y del mismo ancho, el del más largo (D6 y D8). */

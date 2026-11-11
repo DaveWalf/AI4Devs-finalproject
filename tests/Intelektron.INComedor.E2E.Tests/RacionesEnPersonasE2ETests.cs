@@ -92,6 +92,17 @@ public class RacionesEnPersonasE2ETests : IAsyncLifetime
             $"Una tecla sale del diálogo: abajo {t.Abajo}, derecha {t.Derecha}"));
         Assert.True(medida.GuardarAbajo <= medida.AltoVentana, $"«Guardar» termina en {medida.GuardarAbajo} px, fuera de la ventana");
 
+        var acciones = JsonSerializer.Deserialize<Caja[]>(await pagina.EvaluateAsync<string>(
+            """
+            () => JSON.stringify(['#agregar-persona', '#ocultar-teclado', '#cancelar-panel', '#guardar-panel'].map(i => {
+              const e = document.querySelector(i), b = e.getBoundingClientRect();
+              return { Id: i, Arriba: b.top, Alto: b.height, Ancho: b.width, Letra: getComputedStyle(e).fontSize };
+            }))
+            """))!;
+        _escenario.Registrar("1024 × 768, las acciones de la edición: " + string.Join("; ", acciones.Select(c => $"{c.Id} de {c.Ancho:F1} × {c.Alto:F1} px desde {c.Arriba:F1}, letra {c.Letra}")));
+        Assert.All(acciones, c => Assert.True(Math.Abs(c.Alto - acciones[0].Alto) <= Tolerancia && Math.Abs(c.Arriba - acciones[0].Arriba) <= Tolerancia
+            && c.Letra == acciones[0].Letra && c.Alto >= 56 - Tolerancia, $"{c.Id}: {c.Alto} px desde {c.Arriba}, letra {c.Letra}"));
+
         await pagina.Locator(".teclado-en-pantalla .tecla[data-tecla=\"BORRAR\"]").ClickAsync();
         await pagina.Locator(".teclado-en-pantalla .tecla[data-tecla=\"1\"]").ClickAsync();
         await Assertions.Expect(pagina.Locator("input.limite.elegido")).ToHaveValueAsync("1");
