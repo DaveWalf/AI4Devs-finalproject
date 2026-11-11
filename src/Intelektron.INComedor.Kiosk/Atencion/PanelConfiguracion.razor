@@ -648,6 +648,10 @@
                     @if (revision.Valida)
                     {
                         <p id="importacion-totales">@MensajesAtencion.ResumenImportacion(_archivoImportado!, revision.Agregadas, revision.Modificadas, revision.SinCambios)</p>
+                        @if (MensajesAtencion.PermisosImportados(revision.PermisosDados, revision.PermisosQuitados) is { } permisos)
+                        {
+                            <p id="importacion-permisos">@permisos</p>
+                        }
                         @if (revision.FilasDeEjemplo > 0)
                         {
                             <p id="importacion-ejemplo" class="aviso">@MensajesAtencion.ImportacionConFilasDeEjemplo(revision.FilasDeEjemplo)</p>
@@ -1065,7 +1069,8 @@
                 System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete);
             huella = flujo.Length <= LectorPlanilla.TamanoMaximo ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(flujo)) : null;
             flujo.Position = 0;
-            revision = new ImportacionPersonas(Administracion!).Revisar(flujo);
+            // Con un operador, su propia fila no puede cambiar su permiso (D2 de marcar-operadores-en-personas).
+            revision = new ImportacionPersonas(Administracion!).Revisar(flujo, Actor);
         }
         catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
         {

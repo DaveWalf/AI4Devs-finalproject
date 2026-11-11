@@ -1223,6 +1223,9 @@
             Updated = personas.Count(p => p.Accion == AccionImportada.Modificada),
             Unchanged = personas.Count(p => p.Accion == AccionImportada.SinCambios),
             Deactivated = personas.Count(p => p.Accion == AccionImportada.DadaDeBaja),
+            // Cuántos permisos de operador dio y quitó, sin nombres ni códigos (D4 de marcar-operadores-en-personas).
+            OperatorGranted = importacion.Resultado.PermisosDados,
+            OperatorRevoked = importacion.Resultado.PermisosQuitados,
             People = personas.Select(p => new
             {
                 PersonId = p.PersonaId,

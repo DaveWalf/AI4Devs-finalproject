@@ -131,6 +131,14 @@ public static class MensajesAtencion
     public static string ResumenImportacion(string archivo, int agregadas, int modificadas, int sinCambios) =>
         $"{archivo}: {Cantidad(agregadas, "persona nueva", "personas nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")} y {Cantidad(sinCambios, "sin cambios", "sin cambios")}.";
 
+    /// <summary>
+    /// Los permisos de operador que da y quita una importación, después del resumen y sólo si hay alguno (D4 de
+    /// marcar-operadores-en-personas): «1 permiso de operador dado y 1 quitado.».
+    /// </summary>
+    public static string? PermisosImportados(int dados, int quitados) => dados + quitados == 0
+        ? null
+        : $"{Cantidad(dados, "permiso de operador dado", "permisos de operador dados")} y {quitados.ToString(CultureInfo.InvariantCulture)} {(quitados == 1 ? "quitado" : "quitados")}.";
+
     public static string ImportacionReemplazar(int deBaja) => deBaja == 0
         ? "«Reemplazar» no da de baja a nadie: todas las personas activas están en la planilla, son operadores o son el administrador."
         : $"«Reemplazar» además da de baja a {Cantidad(deBaja, "persona", "personas")} que no {(deBaja == 1 ? "está" : "están")} en la planilla y revoca sus códigos, sin vuelta atrás; los operadores y el administrador siguen activos.";

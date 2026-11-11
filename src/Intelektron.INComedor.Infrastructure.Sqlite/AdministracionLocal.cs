@@ -174,7 +174,7 @@ public sealed class AdministracionLocal
     /// lleva como actor; sin él, el nulo con NO_AUTHENTICATION (D7 de entrar-a-configuracion-con-teclado).
     /// </summary>
     public ResultadoGuardado GuardarPersonas(IReadOnlyList<EdicionPersona> ediciones, Guid? actor = null) =>
-        Guardar("PERSON", (c, vista) => ValidarPersonas(c, vista, ediciones), (c, vista, cambios) => AplicarPersonas(c, vista, ediciones, cambios), actor);
+        Guardar("PERSON", (c, vista) => ValidarPersonas(c, vista, ediciones, actor), (c, vista, cambios) => AplicarPersonas(c, vista, ediciones, cambios), actor);
 
     /// <summary>Guarda las opciones, con el actor como en <see cref="GuardarPersonas"/>.</summary>
     public ResultadoGuardado GuardarOpciones(IReadOnlyList<EdicionOpcion> ediciones, Guid? actor = null) =>
@@ -203,7 +203,10 @@ public sealed class AdministracionLocal
         var campos = validar(contexto, vista);
         if (campos.Count > 0)
         {
-            var motivo = campos.All(c => c.Codigo == CodigoDuplicado) ? CodigoDuplicado : CampoInvalido;
+            // Un solo motivo que explica todos los campos lo nombra; si no, el campo inválido de siempre.
+            var motivo = campos.All(c => c.Codigo == CodigoDuplicado) ? CodigoDuplicado
+                : campos.All(c => c.Codigo == PermisoPropio) ? PermisoPropio
+                : CampoInvalido;
             RegistrarSinCambio(contexto, ajuste, "REJECTED", motivo, campos, actor);
             transaccion.Commit();
             return new ResultadoGuardado(TipoGuardado.Rechazado, vista.VersionConfiguracion, motivo, campos);
@@ -280,6 +283,18 @@ public sealed class AdministracionLocal
                 l => (Persona: l.GetGuid(0), Categoria: l.GetGuid(1), Usado: l.GetInt32(2)))
             .ToDictionary(u => (u.Persona, u.Categoria), u => u.Usado);
 
+        // Quién es operador ahora: el permiso OPERATOR que el evaluador de RB26 da por vigente en este instante (D1 de
+        // marcar-operadores-en-personas).
+        var permisos = Leer(conexion, transaccion,
+                """
+                SELECT compopCodigo, comperCodigo, compopRol, compopFechaVigenciaDesdeUtc, compopFechaVigenciaHastaUtc, compopFechaRevocacionUtc
+                FROM tbComedorPermisosOperadores WHERE comvcCodigo = $vc
+                """, [("$vc", vc)],
+                l => (Persona: l.GetGuid(1), Permiso: new PermisoOperador(l.GetGuid(0),
+                    l.GetString(2) == "OPERATOR" ? RolOperador.Operator : RolOperador.SystemAdministrator,
+                    LecturaDecision.LeerInstanteOpcional(l, 3), LecturaDecision.LeerInstanteOpcional(l, 4), LecturaDecision.LeerInstanteOpcional(l, 5))))
+            .ToLookup(p => p.Persona, p => p.Permiso);
+
         var personas = Leer(conexion, transaccion,
                 "SELECT comperCodigo, comperNombreVisible, comperActivo FROM tbComedorPersonas WHERE comvcCodigo = $vc", [("$vc", vc)],
                 l => (Id: l.GetGuid(0), Nombre: l.GetString(1), Activa: l.GetInt64(2) == 1))
@@ -297,7 +312,8 @@ public sealed class AdministracionLocal
                     .Where(o => o.Cargas.All(carga => cupos.Any(c => c.ServicioId == o.ServicioId && c.CategoriaId == carga.CategoriaId && c.Limite > 0)))
                     .Select(o => o.Id)
                     .ToList();
-                return new PersonaAdministrada(p.Id, p.Nombre, p.Activa, cupos, habilitadas);
+                var operador = EvaluadorPermisoOperador.Evaluar(permisos[p.Id].ToList(), RolOperador.Operator, ahora).Concedido;
+                return new PersonaAdministrada(p.Id, p.Nombre, p.Activa, cupos, habilitadas, operador);
             })
             .OrderBy(p => p.Nombre, OrdenPorNombre).ThenBy(p => p.Id.ToString("D", CultureInfo.InvariantCulture), StringComparer.Ordinal)
             .ToList();
@@ -322,8 +338,9 @@ public sealed class AdministracionLocal
 
     // ── Validación (D11) ─────────────────────────────────────────────────────────────────────────────────────
 
-    private static List<CampoRechazado> ValidarPersonas(Contexto contexto, VistaAdministracion vista, IReadOnlyList<EdicionPersona> ediciones)
+    private static List<CampoRechazado> ValidarPersonas(Contexto contexto, VistaAdministracion vista, IReadOnlyList<EdicionPersona> ediciones, Guid? actor)
     {
+        var porId = vista.Personas.ToDictionary(p => p.Id);
         var campos = new List<CampoRechazado>();
         var personas = vista.Personas.Select(p => p.Id).ToHashSet();
         var servicios = vista.Servicios.Select(s => s.Id).ToHashSet();
@@ -368,6 +385,21 @@ public sealed class AdministracionLocal
             if (ValidarTexto(edicion.Nombre, LargoNombrePersona) is { } nombre)
             {
                 Rechazar("Nombre", nombre);
+            }
+
+            // El permiso de operador (D2 de marcar-operadores-en-personas): un operador no cambia el suyo, y nadie marca a una
+            // persona dada de baja, que no puede identificarse.
+            if (edicion.Operador is { } quiere)
+            {
+                var actual = edicion.PersonaId is { } existente ? porId.GetValueOrDefault(existente) : null;
+                if (actor is { } quien && edicion.PersonaId == quien && quiere != (actual?.Operador ?? false))
+                {
+                    Rechazar("Operador", PermisoPropio);
+                }
+                else if (quiere && (edicion.Quitar || actual is { Activa: false }) && actual?.Operador != true)
+                {
+                    Rechazar("Operador", NoEditable);
+                }
             }
 
             var pares = new HashSet<(Guid, Guid)>();
@@ -938,9 +970,15 @@ public sealed class AdministracionLocal
                     InsertarRegla(c, cambios.Version, id, ambito, cupo);
                 }
 
+                if (edicion.Operador == true)
+                {
+                    CambiarPermiso(c, cambios.Version, id, dar: true);
+                }
+
                 cambios.Padron = true;
-                cambios.Politicas |= edicion.Cupos.Count > 0;
-                var despuesAlta = PersonaRegistrada(edicion.Nombre, true, edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias);
+                cambios.Politicas |= edicion.Cupos.Count > 0 || edicion.Operador == true;
+                var despuesAlta = PersonaRegistrada(edicion.Nombre, true, edicion.Operador == true,
+                    edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias);
                 cambios.Registrar(RegistroPersona(id, null, despuesAlta, credencial,
                     CuposCambiados([], edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias)));
                 continue;
@@ -1005,10 +1043,21 @@ public sealed class AdministracionLocal
                 cambios.Politicas = cambio = true;
             }
 
+            // Dar o quitar el permiso sobre la fila que la versión nueva ya copió (D1 de marcar-operadores-en-personas).
+            var operador = actual.Operador;
+            if (edicion.Operador is { } quiere && quiere != actual.Operador)
+            {
+                CambiarPermiso(c, cambios.Version, id, quiere);
+                operador = quiere;
+                cambios.Politicas = cambio = true;
+            }
+
             if (cambio)
             {
-                var antes = PersonaRegistrada(actual.Nombre, actual.Activa, actual.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias);
-                var despues = PersonaRegistrada(edicion.Nombre, activa, edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias);
+                var antes = PersonaRegistrada(actual.Nombre, actual.Activa, actual.Operador,
+                    actual.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias);
+                var despues = PersonaRegistrada(edicion.Nombre, activa, operador,
+                    edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias);
                 cambios.Registrar(RegistroPersona(id, antes, despues, revocada,
                     CuposCambiados(actual.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)),
                         edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias)));
@@ -1026,12 +1075,54 @@ public sealed class AdministracionLocal
             ("$vc", version), ("$reg", Guid.NewGuid()), ("$per", persona), ("$srv", cupo.ServicioId), ("$amb", ambito),
             ("$cat", cupo.CategoriaId), ("$limite", cupo.Limite));
 
+    /// <summary>
+    /// Da el permiso OPERATOR desde ahora y sin fin, sobre la fila de la versión nueva si ya la tiene (revocada o vencida) o con
+    /// una nueva; o lo revoca en este instante, sin borrar la fila (D1 de marcar-operadores-en-personas, RB26).
+    /// </summary>
+    private static void CambiarPermiso(Contexto c, Guid version, Guid persona, bool dar)
+    {
+        var ahora = FormatoInstante.Texto(c.Ahora);
+        if (!dar)
+        {
+            ComandosSqlite.Ejecutar(c.Conexion, c.Transaccion,
+                """
+                UPDATE tbComedorPermisosOperadores SET compopFechaRevocacionUtc = $ahora
+                WHERE comvcCodigo = $vc AND comperCodigo = $per AND compopRol = 'OPERATOR' AND compopFechaRevocacionUtc IS NULL
+                """,
+                ("$ahora", ahora), ("$vc", version), ("$per", persona));
+            return;
+        }
+
+        if (Texto(c.Conexion, c.Transaccion,
+                "SELECT compopCodigo FROM tbComedorPermisosOperadores WHERE comvcCodigo = $vc AND comperCodigo = $per AND compopRol = 'OPERATOR' LIMIT 1",
+                ("$vc", version), ("$per", persona)) is { } fila)
+        {
+            ComandosSqlite.Ejecutar(c.Conexion, c.Transaccion,
+                """
+                UPDATE tbComedorPermisosOperadores
+                SET compopFechaVigenciaDesdeUtc = $ahora, compopFechaVigenciaHastaUtc = NULL, compopFechaRevocacionUtc = NULL
+                WHERE comvcCodigo = $vc AND compopCodigo = $pop
+                """,
+                ("$ahora", ahora), ("$vc", version), ("$pop", fila));
+            return;
+        }
+
+        ComandosSqlite.Ejecutar(c.Conexion, c.Transaccion,
+            """
+            INSERT INTO tbComedorPermisosOperadores (comvcCodigo, compopCodigo, comperCodigo, compopRol, compopFechaVigenciaDesdeUtc,
+                compopFechaVigenciaHastaUtc, compopFechaRevocacionUtc)
+            VALUES ($vc, $pop, $per, 'OPERATOR', $ahora, NULL, NULL)
+            """,
+            ("$vc", version), ("$pop", Guid.NewGuid()), ("$per", persona), ("$ahora", ahora));
+    }
+
     private static object PersonaRegistrada(
-        string nombre, bool activa, IEnumerable<(Guid Servicio, Guid Categoria, int Limite)> cupos,
+        string nombre, bool activa, bool operador, IEnumerable<(Guid Servicio, Guid Categoria, int Limite)> cupos,
         Dictionary<Guid, string> servicios, Dictionary<Guid, string> categorias) => new
     {
         Name = nombre,
         Active = activa,
+        Operator = operador,
         Quotas = cupos.Select(x => new
         {
             ServiceId = x.Servicio,

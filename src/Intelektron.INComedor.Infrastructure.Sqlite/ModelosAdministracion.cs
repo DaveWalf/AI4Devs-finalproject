@@ -27,7 +27,8 @@ public sealed record PersonaAdministrada(
     string Nombre,
     bool Activa,
     IReadOnlyList<CupoAdministrado> Cupos,
-    IReadOnlyList<Guid> OpcionesHabilitadas);
+    IReadOnlyList<Guid> OpcionesHabilitadas,
+    bool Operador = false);
 
 public sealed record CargaAdministrada(Guid CategoriaId, string Categoria, int Unidades);
 
@@ -99,7 +100,8 @@ public sealed record EdicionPersona(
     string Nombre,
     IReadOnlyList<CupoEditado> Cupos,
     string? Codigo = null,
-    bool Quitar = false);
+    bool Quitar = false,
+    bool? Operador = null);
 
 public sealed record CargaEditada(Guid CategoriaId, int Unidades);
 
@@ -159,6 +161,12 @@ public static class CodigosAdministracion
     public const string Desconocido = "UNKNOWN";
     public const string Repetido = "REPEATED";
     public const string NoEditable = "NOT_EDITABLE";
+
+    /// <summary>Un operador no cambia su propio permiso, ni por la tabla ni por la planilla (D2 de marcar-operadores-en-personas).</summary>
+    public const string PermisoPropio = "OWN_PERMISSION";
+
+    /// <summary>Un valor fuera de la lista cerrada de la columna, que nunca se interpreta (D4 de marcar-operadores-en-personas).</summary>
+    public const string ValorInvalido = "INVALID_VALUE";
     public const string HoraInvalida = "INVALID_TIME";
     public const string FranjaVacia = "EMPTY_RANGE";
 }

@@ -38,6 +38,8 @@ public sealed class ExportacionPersonas
         }
 
         encabezado.Add("Opciones habilitadas");
+        // «Operador» al final, para no correr las columnas que ya se leen por posición (D4 de marcar-operadores-en-personas).
+        encabezado.Add("Operador");
         var filas = vista.Personas.Select(persona =>
         {
             List<object> fila = [persona.Nombre, persona.Activa ? "Activa" : "De baja"];
@@ -56,6 +58,7 @@ public sealed class ExportacionPersonas
             }
 
             fila.Add(new NumeroPlanilla(persona.OpcionesHabilitadas.Count, 0));
+            fila.Add(persona.Operador ? ImportacionPersonas.Si : ImportacionPersonas.No);
             return (IReadOnlyList<object>)fila;
         }).ToList();
 

@@ -19,33 +19,46 @@ prolijidad de `config.yaml`. Se aplica después de `operador-desde-la-identifica
     - `Kiosk.Tests/ImportarPersonasTests`, cuya planilla propia no tiene «Operador», que entonces no cambia nada;
     - `E2E.Tests/ImportarPersonasE2ETests`, porque su resumen sigue conteniendo «1 persona nueva, 1 modificada y 0 sin
       cambios.».
+  - **Hallazgo al aplicar (11/11/2026, 20:50), pendiente de David:** la lista de arriba quedó corta. Con el delta aprobado
+    aplicado tal cual, dos pruebas existentes más se ponen rojas, y ninguna se tocó (decisión 3 del plan del goal):
+    - `Infrastructure.Sqlite.Tests/ExportacionPersonasTests.cs`, «Exportar Personas a CSV» (línea 59): exige que el
+      encabezado termine en `"Opciones habilitadas"`, y el delta pone «Operador» al final. El cambio que haría falta:
+      `Assert.EndsWith("\"Opciones habilitadas\";\"Operador\"", lineas[0], StringComparison.Ordinal);`.
+    - `Kiosk.Tests/TablaPersonasTests.cs`, «Las columnas de cupo» (línea 48): compara la lista entera de encabezados, y
+      el delta suma «Operador» después de «Estado». El cambio que haría falta:
+      `Assert.Equal(["Nombre", "Estado", "Operador", "ALMUERZO", "REFRIGERIO", "Opciones habilitadas"], encabezados);`.
+    Sin esa aprobación, la verificación completa (5.2 y las de los otros cuatro changes) no puede dar cero fallas.
 
 ## 2. La base: dar, quitar y la regla del propio permiso
 
-- [ ] 2.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests` (`OperadoresEnPersonasTests`), vistas fallar antes:
+- [x] 2.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests` (`OperadoresEnPersonasTests`), vistas fallar antes:
   - dar a `0001`: la fila nueva, vigente desde el guardado y sin fin;
   - dar a `9002`, vencido: la misma fila, actualizada;
   - quitar a `9001`: revocado en la versión nueva, y la anterior sin cambios;
   - el `CONFIGURATION_CHANGED` con el permiso antes y después, sin código;
   - con `9001` como actor, cambiar el propio permiso se deniega con `OWN_PERMISSION`, sin versión y con el rechazo en
     la bitácora, mientras que dárselo a otro se aplica.
+  Hecho el 11/11/2026: `OperadoresEnPersonasTests`, 8 pruebas (las cinco de la tarea más la vista que dice quién es operador, guardar sin tocar el permiso y la persona de baja), 8 en rojo antes y 8 en verde después. El vigente y el vencido se suman al fixture sintético, como 9001 y 9002.
 
   Verifica: el filtro de la clase, en rojo antes y en verde después.
-- [ ] 2.2 D1 y D2 en `AdministracionLocal.cs`. Verifica: 2.1 en verde y `dotnet test
+- [x] 2.2 D1 y D2 en `AdministracionLocal.cs`. Verifica: 2.1 en verde y `dotnet test
   tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` en verde, con el `git diff --diff-filter=M` del encabezado.
+  Hecho: `PersonaAdministrada.Operador` (lo que el evaluador de RB26 da por vigente), `EdicionPersona.Operador` (null no lo toca), `CambiarPermiso` sobre la fila copiada o una nueva, `Operator` antes y después en el `CONFIGURATION_CHANGED` de la persona, y `OWN_PERMISSION` en `CodigosAdministracion`. 2.1 en verde; `Infrastructure.Sqlite.Tests` 328 de 329, con la roja de `ExportacionPersonasTests` del hallazgo de 1.1, que no es de este grupo; el `git diff --diff-filter=M` lista sólo `ImportacionPersonasTests.cs`.
 
 ## 3. Los Excel
 
-- [ ] 3.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests` (`OperadorEnLosExcelTests`), vistas fallar antes:
+- [x] 3.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests` (`OperadorEnLosExcelTests`), vistas fallar antes:
   - la exportación con «Operador» al final, en «Sí» o «No», en CSV y en Excel;
   - la planilla de ejemplo con «Operador» después de «Código», la segunda fila en «Sí» y la oración de «Instrucciones»;
   - la importación: «Sí» da y «No» quita; vacía o ausente no cambia; «Tal vez» y `=1+1` son errores `INVALID_VALUE`
     sin lo escrito; con `9001` como actor, su propia fila es un error `OWN_PERMISSION`; el resumen y `PEOPLE_IMPORTED`
     cuentan los permisos dados y quitados.
+  Hecho: `OperadorEnLosExcelTests`, 10 pruebas (la exportación en CSV y en Excel, la planilla de ejemplo, «Sí» y «No» por planilla con los conteos de la revisión y del resultado, «si» y «SÍ», la celda vacía, la planilla de antes, «Tal vez» y `=1+1` con `INVALID_VALUE` sin lo escrito, y el operador que se quita a sí mismo con `OWN_PERMISSION`), 9 en rojo antes (la planilla de antes ya pasaba) y 10 en verde después.
 
   Verifica: el filtro de la clase, en rojo antes y en verde después.
-- [ ] 3.2 La reescritura aprobada en 1.1 y D4 en `ExportacionPersonas.cs` e `ImportacionPersonas.cs`. Verifica: 3.1 en
+- [x] 3.2 La reescritura aprobada en 1.1 y D4 en `ExportacionPersonas.cs` e `ImportacionPersonas.cs`. Verifica: 3.1 en
   verde, `ImportacionPersonasTests` en verde con su único cambio aprobado, y el `git diff --diff-filter=M`.
+  Hecho: la reescritura aprobada en 1.1 (una línea de «Descargar la planilla de ejemplo»: «Operador» después de «Código»); «Operador» al final de la exportación; la planilla de ejemplo con «No» y «Sí» y su oración de «Instrucciones»; la importación con la columna opcional, la lista cerrada «Sí», «Si» y «No», `INVALID_VALUE` y `OWN_PERMISSION` (con el actor que `PanelConfiguracion` le pasa a `Revisar`); el resumen suma «N permisos de operador dados y M quitados.» cuando hay alguno, y `PEOPLE_IMPORTED`, `OperatorGranted` y `OperatorRevoked`. 3.1 en verde y `ImportacionPersonasTests` en verde con su único cambio aprobado; el `git diff --diff-filter=M` lista sólo ese archivo. `ExportacionPersonasTests` «Exportar Personas a CSV» queda en rojo por «Operador» al final, sin tocar: ver el hallazgo de 1.1.
 
 ## 4. La columna en Personas
 
