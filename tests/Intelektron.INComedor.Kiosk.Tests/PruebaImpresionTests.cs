@@ -2,6 +2,7 @@ using Bunit;
 using Intelektron.INComedor.Kiosk.Atencion;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
 using static Intelektron.INComedor.Kiosk.Tests.PuestoDePrueba;
 
 namespace Intelektron.INComedor.Kiosk.Tests;
@@ -33,6 +34,24 @@ public class PruebaImpresionTests
         Assert.Equal("PRINTED", prueba.GetProperty("Result").GetString());
         Assert.Equal("DAILY_KEY", prueba.GetProperty("Access").GetString());
         Assert.True(SinActor(prueba));
+    }
+
+    [Fact(DisplayName = "comprobante-local · Prueba con la impresora disponible: con el puesto guardado, la prueba lleva su línea y una frase, sin comensal ni número")]
+    public async Task La_prueba_lleva_el_puesto_y_una_frase()
+    {
+        using var puesto = new PuestoDePrueba();
+        new AlmacenDatosPuesto(puesto.Carpeta).Guardar(new DatosPuesto(3, "Comedor Norte", true, 1000));
+        puesto.Contexto.Services.AddSingleton(new AlmacenDatosPuesto(puesto.Carpeta));
+        var papel = Path.Combine(puesto.Carpeta, "papel");
+        var pantalla = puesto.Dibujar(new ImpresoraSimulada(papel));
+
+        await ImprimirPrueba(pantalla);
+
+        var lineas = File.ReadAllLines(Assert.Single(Directory.GetFiles(papel)));
+        Assert.Contains("Puesto 3 · Comedor Norte", lineas);
+        Assert.Contains("PRUEBA", lineas);
+        Assert.Contains(lineas, FrasesComprobante.Todas.Contains);
+        Assert.DoesNotContain(lineas, l => l.StartsWith("Comensal:", StringComparison.Ordinal) || l.StartsWith("Número:", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "comprobante-local · Prueba sin papel: la pestaña dice que la impresora no tiene papel, y PRINTER_TESTED queda fallida con PAPER_OUT")]

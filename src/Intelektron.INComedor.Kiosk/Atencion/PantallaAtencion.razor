@@ -179,13 +179,26 @@
                             <div class="boca" aria-hidden="true"></div>
                             <button id="listo" type="button" class="comprobante" aria-label="Retirar el comprobante" @onclick="Maquina.Listo">
                                 <span class="encabezado-comprobante">@_textos.Encabezado</span>
+                                @if (_datosPuesto.Linea is { } lineaPuesto)
+                                {
+                                    <span class="puesto-comprobante">@lineaPuesto</span>
+                                }
                                 <span class="leyenda">@papel.Leyenda · N.º @papel.Numero</span>
+                                @if (papel.Comensal is { } comensal)
+                                {
+                                    <span class="comensal-comprobante">@comensal</span>
+                                }
                                 <span class="opcion-comprobante">@papel.Opcion</span>
                                 <span>Fecha: @papel.FechaNegocio</span>
                                 @if (papel.Cargo.Length > 0)
                                 {
                                     <span>Cargo informado: @papel.Cargo</span>
                                 }
+                                @if (papel.Habilito is { } habilito)
+                                {
+                                    <span>Habilitó: @habilito</span>
+                                }
+                                <span class="frase-comprobante">@papel.Frase</span>
                                 @if (_textos.Pie.Length > 0)
                                 {
                                     <span class="pie-comprobante">@_textos.Pie</span>
@@ -295,6 +308,8 @@
     private SesionOperador? _sesionOperador;
     private AlmacenImpresora? _almacenImpresora;
     private TextosComprobante _textos = TextosComprobante.PorDefecto;
+    private AlmacenDatosPuesto? _almacenDatosPuesto;
+    private DatosPuesto _datosPuesto = DatosPuesto.PorDefecto;
     private AlmacenPantalla? _almacenPantalla;
     private PantallaDelPuesto? _pantallaDelPuesto;
     private EjecutorNetsh? _ejecutorNetsh;
@@ -382,9 +397,13 @@
         // Sin almacén de la impresora registrado, los textos por defecto; la simulada los usa desde el próximo comprobante (D13).
         _almacenImpresora = Proveedor.GetService(typeof(AlmacenImpresora)) as AlmacenImpresora;
         _textos = _almacenImpresora?.Leer() ?? TextosComprobante.PorDefecto;
+        // Sin almacén de los datos del puesto, el comprobante sale sin puesto (D3 de enriquecer-comprobante).
+        _almacenDatosPuesto = Proveedor.GetService(typeof(AlmacenDatosPuesto)) as AlmacenDatosPuesto;
+        _datosPuesto = _almacenDatosPuesto?.Leer() ?? DatosPuesto.PorDefecto;
         if (Servicio.Impresora is ImpresoraSimulada simulada)
         {
             simulada.Textos = _textos;
+            simulada.Puesto = _datosPuesto;
         }
 
         _almacenPantalla = Proveedor.GetService(typeof(AlmacenPantalla)) as AlmacenPantalla;

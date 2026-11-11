@@ -169,7 +169,7 @@ public class PantallaAtencionTests : IDisposable
         _impresora.Modo = ModoImpresoraDePrueba.Disponible;
         await pantalla.FindAll(".motivo")[1].ClickAsync(new());
         Assert.Contains("Copia 1", pantalla.Find("#mensaje-asistencia").TextContent);
-        Assert.Equal("DUPLICADO · copia 1", _impresora.Recibidos[^1].Leyenda);
+        Assert.Equal("REIMPRESIÓN · copia 1", _impresora.Recibidos[^1].Leyenda);
     }
 
     [Fact(DisplayName = "HU03-C · Persona sin permiso (pantalla): informa que no tiene permiso y sigue en reposo")]

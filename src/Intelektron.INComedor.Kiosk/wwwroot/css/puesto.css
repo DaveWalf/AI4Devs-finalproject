@@ -605,6 +605,10 @@ html, body { overscroll-behavior: none; }
 
 .comprobante .encabezado-comprobante { font-weight: 700; }
 .comprobante .opcion-comprobante { font-size: 18px; font-weight: 700; }
+/* El puesto, el comensal y la frase del comprobante (D6 de enriquecer-comprobante): la letra de las demás líneas; el
+   comensal en negrita, como la opción, y la frase en cursiva, como el pie. */
+.comprobante .comensal-comprobante { font-weight: 700; }
+.comprobante .frase-comprobante { font-style: italic; }
 .comprobante .retirar { margin-top: 8px; font-family: "Segoe UI", sans-serif; font-size: 15px; color: var(--tinta-suave); }
 
 @keyframes salir-comprobante {

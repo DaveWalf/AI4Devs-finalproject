@@ -56,8 +56,9 @@ Ninguna.
   cambian (decisión 13), porque David pidió lo contrario de lo que afirman: las que esperan «DUPLICADO · copia N»
   (`AsistenciaTests`, `TrabajosImpresionTests`, `PantallaAtencionTests`, `TextosComprobanteTests`), la que afirma que los
   datos de impresión no tienen ninguna propiedad de la persona (`TrabajosImpresionTests`, que sigue exigiendo que no
-  tengan el código ni la credencial) y la que afirma que el comprobante en pantalla no tiene el nombre
-  (`ComprobanteEnPantallaTests`); `PuntoFinalTests`, si se suman métodos a `MensajesAtencion`.
+  tengan el código ni la credencial) y las que afirman que el comprobante en pantalla o el de «Ver» no tienen el nombre
+  (`ComprobanteEnPantallaTests` y `AccionesEnConsumosTests`, que siguen exigiendo que no esté el código);
+  `PuntoFinalTests`, si se suman métodos a `MensajesAtencion`.
 - **Documentos**: `readme.md` (el comprobante, con el algoritmo del código) y la fila que corresponda de
   `docs/aplicacion-del-curso.md`.
 

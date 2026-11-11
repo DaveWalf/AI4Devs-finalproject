@@ -98,7 +98,7 @@ public class TextosComprobanteTests
 
         var copia = File.ReadAllLines(Assert.Single(Directory.GetFiles(impresora.Carpeta, "*-1.txt")));
         Assert.StartsWith("Comedor de planta", copia[0]);
-        Assert.Contains(copia, l => l.Contains("DUPLICADO", StringComparison.Ordinal));
+        Assert.Contains(copia, l => l.Contains("REIMPRESIÓN", StringComparison.Ordinal));
         Assert.Equal(original.Skip(4).Take(1), copia.Skip(4).Take(1));
     }
 
