@@ -67,7 +67,8 @@ public class ComprobanteE2ETests : IAsyncLifetime
         await pagina.Locator("#confirmar").ClickAsync();
         var comprobante = pagina.Locator(".comprobante");
         await Assertions.Expect(comprobante).ToBeVisibleAsync(new() { Timeout = 15000 });
-        await Task.Delay(1500);
+        // La animación de salida del comprobante dura 1,2 s: se mide y se captura con el comprobante quieto.
+        await Task.Delay(1500, TestContext.Current.CancellationToken);
         var texto = await comprobante.InnerTextAsync();
         var archivo = Assert.Single(Directory.GetFiles(Path.Combine(_escenario.Carpeta, "comprobantes")));
         var lineas = File.ReadAllLines(archivo);
