@@ -198,7 +198,7 @@ public class PestanasConfiguracionTests : IDisposable
 
         Assert.NotEmpty(pantalla.FindAll("[role=\"dialog\"]"));
         Assert.Equal("true", pantalla.Find("#pestana-personas").GetAttribute("aria-selected"));
-        Assert.Equal("Se guardó la versión 2 de la configuración", pantalla.Find("#aviso-guardado").TextContent.Trim());
+        Assert.Equal("Se guardó la versión 2 de la configuración.", pantalla.Find("#aviso-guardado").TextContent.Trim());
         await pantalla.Find("#cancelar-configuracion").ClickAsync(new());
         Assert.Equal(2L, Escalar("SELECT COUNT(*) FROM tbComedorVersionesConfiguracion"));
         Assert.False(File.Exists(ArchivoEstilo));

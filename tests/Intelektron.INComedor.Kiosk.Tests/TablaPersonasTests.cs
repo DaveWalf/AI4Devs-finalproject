@@ -136,7 +136,7 @@ public class TablaPersonasTests : IDisposable
         await pantalla.Find("#agregar-persona").ClickAsync(new());
         await pantalla.Find("#panel-personas input.codigo-persona").InputAsync(new ChangeEventArgs { Value = "0105" });
         await pantalla.Find("#guardar-panel").ClickAsync(new());
-        Assert.Equal("Revisá los campos marcados", pantalla.Find("#aviso-panel").TextContent.Trim());
+        Assert.Equal("Revisá los campos marcados.", pantalla.Find("#aviso-panel").TextContent.Trim());
 
         await pantalla.Find("#panel-personas th[data-columna=\"Nombre\"] button.ordenar").ClickAsync(new());
 

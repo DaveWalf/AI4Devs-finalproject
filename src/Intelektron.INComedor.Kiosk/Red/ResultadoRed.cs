@@ -44,9 +44,9 @@ public sealed record ResultadoRed(EstadoRed Estado, int Pasos, int Aplicados, in
     {
         (EstadoRed.Aplicada, _) => MensajesAtencion.RedAplicada,
         (EstadoRed.Cancelada, 0) => MensajesAtencion.RedSinPermiso,
-        (EstadoRed.Cancelada, _) => $"No se dio el permiso de administrador del paso {PasoCortado} de {Pasos}: quedaron aplicados los anteriores",
-        (_, 0) => $"Falló el paso {PasoCortado} de {Pasos} con el código {Codigo}: la red no cambió",
-        _ => $"Falló el paso {PasoCortado} de {Pasos} con el código {Codigo}: quedaron aplicados los anteriores",
+        (EstadoRed.Cancelada, _) => MensajesAtencion.RedCanceladaEnPaso(PasoCortado, Pasos),
+        (_, 0) => MensajesAtencion.RedFallo(PasoCortado, Pasos, Codigo, conAplicados: false),
+        _ => MensajesAtencion.RedFallo(PasoCortado, Pasos, Codigo, conAplicados: true),
     };
 
     /// <summary>

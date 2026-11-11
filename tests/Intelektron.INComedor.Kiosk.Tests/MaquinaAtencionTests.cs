@@ -119,7 +119,7 @@ public class MaquinaAtencionTests : IDisposable
         await maquina.ConfirmarAsync();
 
         Assert.Equal(EstadoAtencion.Resultado, maquina.Estado);
-        Assert.Equal("Consumo registrado. Retirá tu comprobante", maquina.Mensaje);
+        Assert.Equal("Consumo registrado. Retirá tu comprobante.", maquina.Mensaje);
         Assert.True(maquina.ConsumoRegistrado);
         using var conexion = Abrir();
         Assert.Equal(1L, Escalar<long>(conexion, "SELECT COUNT(*) FROM tbComedorConsumos"));
@@ -169,7 +169,7 @@ public class MaquinaAtencionTests : IDisposable
         {
             confirmacion = maquina.ConfirmarAsync();
             toque = maquina.Identificar("9001");
-            Assert.Equal("Puesto ocupado: hay una confirmación en curso", maquina.Aviso);
+            Assert.Equal("Puesto ocupado: hay una confirmación en curso.", maquina.Aviso);
         }
 
         await confirmacion;
@@ -232,7 +232,7 @@ public class MaquinaAtencionTests : IDisposable
         await maquina.ConfirmarAsync();
 
         Assert.Equal(EstadoAtencion.Reposo, maquina.Estado);
-        Assert.Equal("Tu sesión venció. Identificate de nuevo", maquina.Aviso);
+        Assert.Equal("Tu sesión venció. Identificate de nuevo.", maquina.Aviso);
         Assert.Equal((0L, 0L), IntencionesYConsumos());
     }
 
@@ -349,7 +349,7 @@ public class MaquinaAtencionTests : IDisposable
         await maquina.ConfirmarAsync();
 
         Assert.Equal(EstadoAtencion.Seleccion, maquina.Estado);
-        Assert.Equal("La opción elegida ya no está disponible. Elegí otra", maquina.Aviso);
+        Assert.Equal("La opción elegida ya no está disponible. Elegí otra.", maquina.Aviso);
         Assert.Null(maquina.Elegida);
         var ofrecidas = new List<Guid>(maquina.PaginaActual.Select(o => o.Id));
         while (maquina.PuedeAvanzar)

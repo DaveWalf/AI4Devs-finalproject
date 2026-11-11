@@ -37,10 +37,10 @@ public class FueraDeHorarioTests : IDisposable
         await pantalla.Find("#ingresar").ClickAsync(new());
 
         Assert.Equal(EstadoAtencion.SinOpciones, maquina.Estado);
-        Assert.Equal("No hay opciones disponibles en este horario", maquina.MotivoSinOpciones);
+        Assert.Equal("No hay opciones disponibles en este horario.", maquina.MotivoSinOpciones);
         Assert.Null(maquina.UsoDelDia);
-        Assert.Equal("No tenés opciones disponibles ahora", pantalla.Find("#mensaje").TextContent.Trim());
-        Assert.Equal("No hay opciones disponibles en este horario", pantalla.Find("#motivo-sin-opciones").TextContent.Trim());
+        Assert.Equal("No tenés opciones disponibles ahora.", pantalla.Find("#mensaje").TextContent.Trim());
+        Assert.Equal("No hay opciones disponibles en este horario.", pantalla.Find("#motivo-sin-opciones").TextContent.Trim());
         Assert.Empty(pantalla.FindAll("#uso-del-dia"));
         Assert.Empty(pantalla.FindAll(".opcion"));
         Assert.Empty(pantalla.FindAll("#confirmar"));
@@ -62,7 +62,7 @@ public class FueraDeHorarioTests : IDisposable
         Assert.Equal(EstadoAtencion.Resultado, maquina.Estado);
         Assert.False(maquina.ConsumoRegistrado);
         Assert.Equal("SERVICE_NOT_ENABLED", maquina.MotivoResultado);
-        Assert.Equal("Esta opción no está disponible en este horario", maquina.Mensaje);
+        Assert.Equal("Esta opción no está disponible en este horario.", maquina.Mensaje);
         Assert.Equal(0L, Contar("tbComedorConsumos"));
     }
 

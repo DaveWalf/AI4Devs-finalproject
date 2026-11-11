@@ -109,7 +109,7 @@ public class PanelOpcionesTests : IDisposable
         await pantalla.Find("#guardar-panel").ClickAsync(new());
 
         Assert.Equal("true", OpcionAdmin(pantalla, Opcion).QuerySelector(".franja-horaria")!.GetAttribute("aria-invalid"));
-        Assert.Equal("Revisá los campos marcados", pantalla.Find("#aviso-panel").TextContent.Trim());
+        Assert.Equal("Revisá los campos marcados.", pantalla.Find("#aviso-panel").TextContent.Trim());
         Assert.Equal(1L, Escalar("SELECT COUNT(*) FROM tbComedorVersionesConfiguracion"));
     }
 
@@ -122,7 +122,7 @@ public class PanelOpcionesTests : IDisposable
         await pantalla.Find("#abrir-opciones").ClickAsync(new());
 
         var panel = pantalla.Find("#panel-opciones");
-        Assert.Equal("Estos datos los administra INWeb", panel.QuerySelector("#aviso-inweb")!.TextContent.Trim());
+        Assert.Equal("Estos datos los administra INWeb.", panel.QuerySelector("#aviso-inweb")!.TextContent.Trim());
         Assert.Contains(Opcion, panel.TextContent);
         Assert.Empty(panel.QuerySelectorAll("#guardar-panel"));
         Assert.Empty(panel.QuerySelectorAll("input, select, textarea"));

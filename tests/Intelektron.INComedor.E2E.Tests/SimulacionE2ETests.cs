@@ -53,7 +53,7 @@ public class SimulacionE2ETests : IAsyncLifetime
         // Una credencial vencida: el aviso, y el combo vuelve a «Elegí a una persona…» en el DOM, no sólo en el componente.
         // Desde ordenar-configuracion el combo es una lista propia: se elige tocando el combo y la fila.
         await Elegir(pagina, "Persona sintética 02");
-        await Assertions.Expect(pagina.Locator("#aviso")).ToHaveTextAsync("Esta credencial está vencida. Solicitá asistencia");
+        await Assertions.Expect(pagina.Locator("#aviso")).ToHaveTextAsync("Esta credencial está vencida. Solicitá asistencia.");
         await Assertions.Expect(pagina.Locator("#simulacion-persona")).ToHaveTextAsync("Elegí a una persona…");
 
         await Elegir(pagina, "Persona sintética 01");

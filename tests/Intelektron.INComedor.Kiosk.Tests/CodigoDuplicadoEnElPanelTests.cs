@@ -36,7 +36,7 @@ public class CodigoDuplicadoEnElPanelTests : IDisposable
         await pantalla.Find("#guardar-panel").ClickAsync(new());
 
         var aviso = pantalla.Find("#aviso-panel").TextContent.Trim();
-        Assert.Equal("Ese código ya existe. Usá otro", aviso);
+        Assert.Equal("Ese código ya existe. Usá otro.", aviso);
         Assert.DoesNotContain("Persona sintética 03", aviso);
         Assert.Equal("true", pantalla.Find("#panel-personas input.codigo-persona").GetAttribute("aria-invalid"));
         Assert.Equal(1L, Versiones());

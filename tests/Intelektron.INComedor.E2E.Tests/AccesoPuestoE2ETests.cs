@@ -91,7 +91,7 @@ public class AccesoPuestoE2ETests : IAsyncLifetime
 
         await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await pagina.Locator("#pestana-pantalla").ClickAsync();
-        await Assertions.Expect(pagina.Locator("#aviso-monitor")).ToHaveTextAsync("El monitor guardado no está conectado: el puesto abrió en el principal");
+        await Assertions.Expect(pagina.Locator("#aviso-monitor")).ToHaveTextAsync("El monitor guardado no está conectado: el puesto abrió en el principal.");
     }
 
     [Fact(DisplayName = "presentacion-puesto · La ventana con su ícono: la ventana del puesto compilado tiene un ícono propio, grande y chico (WM_GETICON), y el ejecutable lleva al menos un ícono (ExtractIconEx)")]

@@ -14,7 +14,7 @@ namespace Intelektron.INComedor.E2E.Tests;
 public class FlujoPrincipalTests : IAsyncLifetime
 {
     // Los textos de las specs vivas: atencion-puesto (el éxito y el cupo) y envio-lotes (la franja).
-    private const string Exito = "Consumo registrado. Retirá tu comprobante";
+    private const string Exito = "Consumo registrado. Retirá tu comprobante.";
     private const string UsoDelDia = "Hoy ya usaste: almuerzo 1 de 1";
     private const string Opcion = "Almuerzo común";
 

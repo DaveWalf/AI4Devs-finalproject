@@ -53,7 +53,7 @@ public class AdministracionE2ETests : IAsyncLifetime
         await nueva.Locator("input.codigo-persona").FillAsync(Codigo);
         await nueva.Locator("td.cupo[data-cupo=\"ALMUERZO\"] input.limite").FillAsync("1");
         await pagina.Locator("#guardar-panel").ClickAsync();
-        await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToHaveTextAsync("Se guardó la versión 2 de la configuración");
+        await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToHaveTextAsync("Se guardó la versión 2 de la configuración.");
 
         await pagina.Locator("#abrir-personas").ClickAsync();
         // La pestaña ya muestra las 10 personas en la tabla de consulta, sin campos: se espera a las 10 filas del panel, con
@@ -97,7 +97,7 @@ public class AdministracionE2ETests : IAsyncLifetime
         await almuerzo.Locator("input.inicio-franja").FillAsync("11:00");
         await almuerzo.Locator("input.fin-franja").FillAsync("14:00");
         await pagina.Locator("#guardar-panel").ClickAsync();
-        await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToHaveTextAsync("Se guardó la versión 3 de la configuración");
+        await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToHaveTextAsync("Se guardó la versión 3 de la configuración.");
         await pagina.Locator("#abrir-opciones").ClickAsync();
         await Assertions.Expect(pagina.Locator("article.opcion-admin").First.Locator(".franja-texto")).ToHaveTextAsync("11:00 a 14:00");
         await Capturar(pagina, "14-opciones-con-franja");
