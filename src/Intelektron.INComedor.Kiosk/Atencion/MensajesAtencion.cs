@@ -324,6 +324,52 @@ public static class MensajesAtencion
     public const string ExportacionSinDestinos = "No hay ningún destino guardado: elegí una carpeta o el SFTP simulado y tocá «Guardar».";
     public const string ExportacionBaseOcupada = "La base no respondió y no se exportó nada: probá de nuevo en un momento.";
 
+    // La pestaña Lector (D8 de elegir-medio-de-identificacion).
+    public const string LectorGuardado = "Se guardó el medio de identificación: vale desde ahora.";
+    public const string LectorNoGuardado = "No se pudo guardar el medio de identificación: sigue el de antes.";
+    public const string ExplicacionLector =
+        "El lector identifica como el código tipeado, sólo en la pantalla de identificación; el código leído no se guarda en ningún registro.";
+
+    /// <summary>Cómo está el lector, sin punto, como el estado de una bitácora.</summary>
+    public static string EstadoLector(Lector.EstadoLector estado, Lector.ConfiguracionLector configuracion) => estado switch
+    {
+        Lector.EstadoLector.Escuchando when configuracion.Medio == Lector.MedioIdentificacion.Simulador => "Lector: escuchando el simulador interno",
+        Lector.EstadoLector.Escuchando => $"Lector: escuchando en {configuracion.Puerto} a {configuracion.Formato}",
+        Lector.EstadoLector.PuertoNoExiste => $"Lector: {configuracion.Puerto} no está en este equipo; reintenta cada 5 segundos",
+        Lector.EstadoLector.PuertoOcupado => $"Lector: {configuracion.Puerto} está ocupado por otro programa; reintenta cada 5 segundos",
+        Lector.EstadoLector.PuertoCaido => $"Lector: {configuracion.Puerto} se desconectó; reintenta cada 5 segundos",
+        Lector.EstadoLector.SinPuerto => "Lector: este puesto no tiene acceso a puertos serie",
+        _ => "Lector: apagado, se identifica con el teclado",
+    };
+
+    /// <summary>La última lectura, sin el código ni su largo y sin punto: la hora, qué pasó y por qué se descartó.</summary>
+    public static string UltimaLectura(Lector.UltimaLectura? ultima, TimeZoneInfo zona) => ultima switch
+    {
+        null => "Última lectura: ninguna todavía",
+        { Resultado: "IDENTIFIED" } => $"Última lectura: {Hora(ultima.Hora, zona)}, identificó a la persona",
+        { Resultado: "REJECTED" } => $"Última lectura: {Hora(ultima.Hora, zona)}, se rechazó como un código tipeado",
+        _ => $"Última lectura: {Hora(ultima.Hora, zona)}, se descartó ({MotivoDescarte(ultima.Motivo)})",
+    };
+
+    /// <summary>Los puertos serie del equipo, sin punto.</summary>
+    public static string PuertosDelEquipo(IReadOnlyList<string> puertos) =>
+        puertos.Count == 0 ? "Este equipo no tiene puertos serie" : "Puertos del equipo: " + string.Join(", ", puertos);
+
+    private static string Hora(DateTimeOffset instante, TimeZoneInfo zona) =>
+        TimeZoneInfo.ConvertTime(instante, zona).ToString("HH:mm", CultureInfo.InvariantCulture);
+
+    private static string MotivoDescarte(string? motivo) => motivo switch
+    {
+        "NOT_IDLE" => "había una atención en curso",
+        "DIALOG_OPEN" => "había un diálogo abierto",
+        "STORAGE_ERROR" => "la base no respondía",
+        "STALE_FRAGMENT" => "un resto viejo de una trama",
+        "TOO_LONG" => "más de 32 caracteres",
+        "INVALID_CHARACTERS" => "caracteres que no son de un código",
+        "EMPTY" => "una lectura vacía",
+        _ => "un motivo desconocido",
+    };
+
     // La pestaña Mails (D7 de avisar-por-correo).
     public const string CorreoGuardado = "Se guardaron los correos: los avisos salen desde ahora.";
     public const string CorreoNoGuardado = "No se pudieron guardar los correos: siguen los de antes.";

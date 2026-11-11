@@ -23,11 +23,13 @@
 
 ## 3. La pestaña Lector
 
-- [ ] 3.1 La pestaña después de Red, sólo con la clave del día: el medio, el puerto con «Actualizar», el formato, el
+- [x] 3.1 La pestaña después de Red, sólo con la clave del día: el medio, el puerto con «Actualizar», el formato, el
   terminador, el relleno, «Guardar» con `CONFIGURATION_CHANGED` de `READER`, el estado y la última lectura sin el código
   (D8). Cambian, por la decisión 13, las pruebas que fijan las diez pestañas: `PestanasConfiguracionTests`,
   `AccesoOperadorTests` y `AccionesEnConsumosTests`; y `PuntoFinalTests` clasifica los mensajes nuevos. Pruebas nuevas
-  vistas fallar primero. Verifica: Kiosk en verde.
+  vistas fallar primero. Verifica: Kiosk en verde. Hecho: `LectorEnConfiguracionTests` (5), cuatro vistas fallar con la pestaña vacía (la del
+  operador pasa también sin la sección); el relleno lateral de las pestañas baja de 10 a 7 px; las tres existentes pasan
+  de diez a once pestañas y `PuntoFinalTests` clasifica `EstadoLector`, `UltimaLectura` y `PuertosDelEquipo`; Kiosk 585.
 
 ## 4. La pantalla de verdad y los documentos
 

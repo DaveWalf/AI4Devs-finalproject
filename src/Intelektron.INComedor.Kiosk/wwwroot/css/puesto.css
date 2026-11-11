@@ -367,7 +367,9 @@ html, body { overscroll-behavior: none; }
 .dialogo .pestanas button {
     min-width: 0;
     min-height: 56px;
-    padding: 0 10px;
+    /* Con once pestañas, el relleno lateral baja de 10 a 7 px para que la fila entre en 1024 × 768 sin tocar la letra ni el
+       alto (D8 de elegir-medio-de-identificacion). */
+    padding: 0 7px;
     font-size: 16px;
     white-space: nowrap;
     border-radius: 10px 10px 0 0;
