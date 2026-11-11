@@ -26,7 +26,7 @@ public class TablaPersonasTests : IDisposable
         _archivo.Dispose();
     }
 
-    [Fact(DisplayName = "administracion-local · La persona del código 0001: su fila dice «Activa», 1 en ALMUERZO, 2 en REFRIGERIO y 9 opciones habilitadas")]
+    [Fact(DisplayName = "administracion-local · La persona del código 0001: su fila dice «Activa», «0/1» en ALMUERZO, «0/2» en REFRIGERIO y 9 opciones habilitadas")]
     public async Task La_fila_de_0001()
     {
         var pantalla = await AbrirTabla();
@@ -34,7 +34,7 @@ public class TablaPersonasTests : IDisposable
         var fila = Fila(pantalla, "Persona sintética 01");
 
         Assert.Equal("Activa", fila.QuerySelector(".estado-persona")!.TextContent.Trim());
-        Assert.Equal([("ALMUERZO", "1"), ("REFRIGERIO", "2")], Cupos(fila));
+        Assert.Equal([("ALMUERZO", "0/1"), ("REFRIGERIO", "0/2")], Cupos(fila));
         Assert.Equal("9", fila.QuerySelector(".habilitadas")!.TextContent.Trim());
     }
 
@@ -59,7 +59,7 @@ public class TablaPersonasTests : IDisposable
         Assert.Equal("0", fila.QuerySelector(".habilitadas")!.TextContent.Trim());
     }
 
-    [Fact(DisplayName = "administracion-local · Cambiar un límite en su columna: con «Editar», REFRIGERIO de «Persona sintética 01» de 2 a 1; al guardar, la versión 2 está activa y la fila dice 1")]
+    [Fact(DisplayName = "administracion-local · Cambiar un límite en su columna: con «Editar», REFRIGERIO de «Persona sintética 01» de 2 a 1; al guardar, la versión 2 está activa y la fila dice «0/1»")]
     public async Task Cambiar_un_limite_en_su_columna()
     {
         var pantalla = await AbrirTabla();
@@ -70,7 +70,7 @@ public class TablaPersonasTests : IDisposable
 
         Assert.Empty(pantalla.FindAll("#panel-personas"));
         Assert.Equal(2L, Escalar("SELECT comvcVersionConfiguracion FROM tbComedorVersionesConfiguracion WHERE comvcCodigo = (SELECT comvcCodigoActiva FROM tbComedorConfiguracionPuestos)"));
-        Assert.Equal([("ALMUERZO", "1"), ("REFRIGERIO", "1")], Cupos(Fila(pantalla, "Persona sintética 01")));
+        Assert.Equal([("ALMUERZO", "0/1"), ("REFRIGERIO", "0/1")], Cupos(Fila(pantalla, "Persona sintética 01")));
     }
 
     [Fact(DisplayName = "administracion-local · Vaciar una celda quita el cupo: REFRIGERIO de «Persona sintética 01» vacío dice «—» y sus opciones habilitadas son sólo las de ALMUERZO")]
@@ -84,7 +84,7 @@ public class TablaPersonasTests : IDisposable
         await pantalla.Find("#guardar-panel").ClickAsync(new());
 
         var fila = Fila(pantalla, "Persona sintética 01");
-        Assert.Equal([("ALMUERZO", "1")], Cupos(fila));
+        Assert.Equal([("ALMUERZO", "0/1")], Cupos(fila));
         Assert.Equal("—", fila.QuerySelector("td.cupo[data-cupo=\"REFRIGERIO\"]")!.TextContent.Trim());
         Assert.Equal(almuerzos.ToString(), fila.QuerySelector(".habilitadas")!.TextContent.Trim());
     }
@@ -101,7 +101,7 @@ public class TablaPersonasTests : IDisposable
 
         Assert.Equal("descending", pantalla.Find("#tabla-personas th[data-columna=\"REFRIGERIO\"]").GetAttribute("aria-sort"));
         var valores = pantalla.FindAll("#tabla-personas tbody td.cupo[data-cupo=\"REFRIGERIO\"]").Select(c => c.TextContent.Trim()).ToList();
-        var conCupo = valores.TakeWhile(v => v != "—").Select(int.Parse).ToList();
+        var conCupo = valores.TakeWhile(v => v != "—").Select(v => int.Parse(v.Split('/')[1])).ToList();
         Assert.NotEmpty(conCupo);
         Assert.Equal(conCupo.OrderByDescending(v => v), conCupo);
         Assert.All(valores.Skip(conCupo.Count), v => Assert.Equal("—", v));

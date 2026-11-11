@@ -98,6 +98,7 @@ public static class MensajesAtencion
     public const string ExportacionTopada = "Se exportaron los primeros 10 000 consumos y hay más: acotá los filtros para el resto.";
     public const string CarpetaNoGuardada = "No se pudo guardar la carpeta elegida: se usa hasta cerrar Configuración.";
     public const string SinCarpeta = "No se eligió una carpeta: no se exportó nada.";
+    public const string ExportacionPersonasFallida = "No se pudo exportar: la carpeta no se puede escribir. Cambiala con «Cambiar carpeta» en Consumos.";
     public const string FiltradoPorCodigo = "La tabla está filtrada por el código de una persona; «Consultar» sin código lo quita.";
     public const string PedidoOperador = "Para reimprimir o recuperar un comprobante, ingresá el código de un operador.";
 
@@ -105,6 +106,10 @@ public static class MensajesAtencion
         $"Para {(recuperar ? "recuperar" : "reimprimir")} el comprobante N.º {numero}, ingresá el código de un operador.";
 
     public static string CarpetaElegida(string carpeta) => $"Las exportaciones van a {carpeta}.";
+
+    /// <summary>La exportación de Personas hecha (D5 de editar-raciones-en-personas).</summary>
+    public static string ExportacionPersonasHecha(string archivo, int filas, string carpeta) =>
+        $"Exportado {archivo} con {filas} {(filas == 1 ? "persona" : "personas")} en {carpeta}.";
 
     public static string ExportacionHecha(string archivo, int filas, string carpeta) =>
         $"Exportado {archivo} con {filas} {(filas == 1 ? "consumo" : "consumos")} en {carpeta}.";

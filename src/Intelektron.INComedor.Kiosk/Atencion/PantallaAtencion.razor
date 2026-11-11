@@ -234,6 +234,7 @@
                             Operador="@_operador" Actor="_actor" ClaveSinValidar="@(_acceso == AccesoClave)"
                             Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
                             AlmacenExportacion="_almacenExportacion" ElectorCarpeta="_electorCarpeta" RegistrarExportacion="RegistrarExportacionDeConsumos"
+                            RegistrarExportacionPersonas="RegistrarExportacionDePersonas"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
                             Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
@@ -871,6 +872,21 @@
             LastHours = exportacion.Filtro.PorInstante,
             TextSearched = !string.IsNullOrWhiteSpace(exportacion.Filtro.Texto),
             PersonCode = !string.IsNullOrWhiteSpace(exportacion.Filtro.Codigo),
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    /// <summary>
+    /// Cada exportación de Personas queda en la general con el formato, las filas y el nombre del archivo, sin su ruta ni
+    /// nombres ni códigos, con el actor nulo y cómo se entró (D5 de editar-raciones-en-personas).
+    /// </summary>
+    private void RegistrarExportacionDePersonas(PanelPersonas.ExportacionPersonasRealizada exportacion) =>
+        RegistrarConfiguracion("PEOPLE_EXPORTED", new
+        {
+            Format = exportacion.Formato,
+            Rows = exportacion.Filas,
+            File = exportacion.Archivo,
             Access = _acceso,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,

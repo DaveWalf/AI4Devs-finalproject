@@ -16,8 +16,10 @@ public sealed record CategoriaAdministrada(Guid Id, string Nombre);
 /// <summary>
 /// Un cupo de una persona tal como lo muestra el panel (D9): el límite de la regla que hoy decide ese servicio y categoría.
 /// <see cref="ReglasQueSeReemplazan"/> avisa que el par tiene reglas con vigencia o prioridad que un guardado reemplaza.
+/// <see cref="UsadoHoy"/> es lo usado en su categoría en la fecha de negocio actual, la «x» del «x/n» (D1 de
+/// editar-raciones-en-personas).
 /// </summary>
-public sealed record CupoAdministrado(Guid ServicioId, string Servicio, Guid CategoriaId, string Categoria, int Limite, bool ReglasQueSeReemplazan);
+public sealed record CupoAdministrado(Guid ServicioId, string Servicio, Guid CategoriaId, string Categoria, int Limite, bool ReglasQueSeReemplazan, int UsadoHoy = 0);
 
 /// <summary>Una persona de la versión activa, sin su código (D10): estado, cupos y las opciones que esos cupos habilitan.</summary>
 public sealed record PersonaAdministrada(
@@ -52,6 +54,37 @@ public sealed record VistaAdministracion(
     IReadOnlyList<OpcionAdministrada> Opciones)
 {
     public bool SoloLectura => Origen == OrigenConfiguracion.INWeb;
+
+    /// <summary>
+    /// Los pares de servicio y categoría que son columnas de Personas: los que usan las cargas de las opciones, en el orden
+    /// del catálogo, y después los de alguna regla que el catálogo no usa; no cada servicio por cada categoría (D4 de
+    /// administrar-personas-y-opciones). La tabla y la exportación de Personas usan los mismos.
+    /// </summary>
+    public IReadOnlyList<(Guid Servicio, Guid Categoria)> ParesDeCupo()
+    {
+        var pares = new List<(Guid, Guid)>();
+        foreach (var par in Opciones.SelectMany(o => o.Cargas.Select(c => (o.ServicioId, c.CategoriaId)))
+                     .Concat(Personas.SelectMany(p => p.Cupos.Select(c => (c.ServicioId, c.CategoriaId)))))
+        {
+            if (!pares.Contains(par))
+            {
+                pares.Add(par);
+            }
+        }
+
+        return pares
+            .OrderBy(p => Servicios.Select(s => s.Id).ToList().IndexOf(p.Item1))
+            .ThenBy(p => Categorias.Select(c => c.Id).ToList().IndexOf(p.Item2))
+            .ToList();
+    }
+
+    /// <summary>El nombre de la columna de un par: el del servicio si coincide con la categoría, o «servicio · categoría».</summary>
+    public string NombrePar((Guid Servicio, Guid Categoria) par)
+    {
+        var nombreServicio = Servicios.FirstOrDefault(s => s.Id == par.Servicio)?.Nombre ?? "?";
+        var nombreCategoria = Categorias.FirstOrDefault(c => c.Id == par.Categoria)?.Nombre ?? "?";
+        return nombreServicio == nombreCategoria ? nombreServicio : $"{nombreServicio} · {nombreCategoria}";
+    }
 }
 
 /// <summary>El límite diario de una persona para un servicio y una categoría, de 0 a 99 (D9).</summary>

@@ -1,16 +1,21 @@
 @using System.Globalization
 @using Intelektron.INComedor.Infrastructure.Sqlite
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 
 @*
     Personas en una tabla (D4 de configurar-puesto-por-pestanas, sobre «Personas habilitadas» de administrar-personas-y-opciones):
-    una fila por persona y una columna por cada par de servicio y categoría que usa el catálogo o alguna regla, con el límite
-    o «—». Para leer es #tabla-personas; con «Editar» pasa a #panel-personas en el mismo lugar: el nombre y cada límite son
+    una fila por persona y una columna por cada par de servicio y categoría que usa el catálogo o alguna regla, con lo usado
+    hoy sobre el límite («1/2») o «—» (D1 de editar-raciones-en-personas). Para leer es #tabla-personas, donde tocar un cupo
+    abre la edición con ese límite elegido (D2); la exportación (D5) está en el pie del diálogo. Con «Editar» pasa a #panel-personas en el mismo
+    lugar: el nombre y cada límite son
     campos (vacío es sin cupo, 0 es la denegación explícita), una fila nueva suma el código enmascarado, y «Quitar»,
     «Guardar» y «Cancelar» actúan como en C. Ordenar cambia sólo la vista: la edición se arma en el orden de lectura y los
     campos rechazados vuelven a su fila por esa posición. Nunca muestra un código; el servicio valida y decide (D10, D11).
 *@
 <section id="@(Editando ? "panel-personas" : "tabla-personas")" class="panel-administracion tabla-administracion" aria-label="Personas habilitadas">
-    @if (Editando)
+    @* Con el teclado a la vista, el título cede su alto a la tabla (D6 de editar-raciones-en-personas). *@
+    @if (Editando && !(Editable && TecladoVisible))
     {
         <h3 id="titulo-personas">Personas habilitadas</h3>
     }
@@ -58,8 +63,9 @@
                         <td>
                             @if (Editable)
                             {
-                                <input class="nombre-persona" type="text" maxlength="@AdministracionLocal.LargoNombrePersona" aria-label="Nombre visible"
-                                       value="@fila.Nombre" aria-invalid="@Marca(indice, "Nombre")" @oninput="e => fila.Nombre = Texto(e)" />
+                                <input class="nombre-persona @(EsElegido(TipoCampo.Nombre, indice) ? "elegido" : null)" type="text" maxlength="@AdministracionLocal.LargoNombrePersona"
+                                       aria-label="Nombre visible" value="@fila.Nombre" aria-invalid="@Marca(indice, "Nombre")"
+                                       @onfocus="() => Elegir(TipoCampo.Nombre, indice)" @oninput="e => fila.Nombre = Texto(e)" />
                             }
                             else
                             {
@@ -73,13 +79,22 @@
                             <td class="cupo" data-cupo="@NombrePar(_pares[columna])">
                                 @if (Editable)
                                 {
-                                    <input class="limite" type="number" inputmode="numeric" min="0" max="@AdministracionLocal.LimiteMaximo"
-                                           aria-label="@($"Límite diario de {NombrePar(_pares[columna])}")" value="@fila.Limites[columna]"
-                                           aria-invalid="@MarcaCupo(indice, columna)" @oninput="e => fila.Limites[columna] = Texto(e)" />
+                                    @* Lo usado ocupa siempre su ancho, vacío sin cupo, para que los campos de una columna se alineen (D6). *@
+                                    <span class="usado-hoy">@(fila.Usados[columna] is { } usado ? $"{usado}/" : string.Empty)</span>
+                                    <input class="limite @(EsElegido(TipoCampo.Limite, indice, columna) ? "elegido" : null)" type="number" inputmode="numeric" min="0"
+                                           max="@AdministracionLocal.LimiteMaximo" aria-label="@($"Límite diario de {NombrePar(_pares[columna])}")"
+                                           value="@fila.Limites[columna]" aria-invalid="@MarcaCupo(indice, columna)"
+                                           data-campo="@($"limite-{indice}-{columna}")" @onfocus="() => Elegir(TipoCampo.Limite, indice, columna)"
+                                           @oninput="e => fila.Limites[columna] = Texto(e)" />
+                                }
+                                else if (PuedeEditar && !_vista.SoloLectura)
+                                {
+                                    @* Tocar el cupo abre la edición con su límite elegido (D2 de editar-raciones-en-personas). *@
+                                    <button type="button" class="cupo-tocable" @onclick="() => TocarCupo(indice, columna)">@Racion(fila, columna)</button>
                                 }
                                 else
                                 {
-                                    @(fila.Limites[columna].Length == 0 ? "—" : fila.Limites[columna])
+                                    @Racion(fila, columna)
                                 }
                             </td>
                         }
@@ -94,8 +109,9 @@
                                 @if (fila.Nueva)
                                 {
                                     @* Sin value: lo tipeado no vuelve a dibujarse (D10 de administrar-personas-y-opciones). *@
-                                    <input class="codigo-persona" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Código"
-                                           maxlength="@AdministracionLocal.LargoCodigo" aria-invalid="@Marca(indice, "Codigo")" @oninput="e => fila.Codigo = Texto(e)" />
+                                    <input class="codigo-persona @(EsElegido(TipoCampo.Codigo, indice) ? "elegido" : null)" type="password" inputmode="numeric" pattern="[0-9]*"
+                                           autocomplete="off" aria-label="Código" maxlength="@AdministracionLocal.LargoCodigo" aria-invalid="@Marca(indice, "Codigo")"
+                                           data-campo="@($"codigo-{indice}")" @onfocus="() => Elegir(TipoCampo.Codigo, indice)" @oninput="e => fila.Codigo = Texto(e)" />
                                 }
                             </td>
                             <td>
@@ -117,12 +133,21 @@
         </table>
     </div>
 
+    @* El teclado en pantalla escribe en el campo elegido; se muestra al editar y se oculta hasta cerrar Configuración (D4). *@
+    @if (Editable && TecladoVisible)
+    {
+        <TecladoEnPantalla Tecla="Teclear" />
+    }
+
     @if (Editando)
     {
         <div class="acciones">
             @if (Editable)
             {
                 <button id="agregar-persona" type="button" @onclick="AgregarPersona">Agregar persona</button>
+                <button id="@(TecladoVisible ? "ocultar-teclado" : "mostrar-teclado")" type="button" @onclick="() => TecladoVisibleChanged.InvokeAsync(!TecladoVisible)">
+                    @(TecladoVisible ? "Ocultar teclado" : "Mostrar teclado")
+                </button>
             }
             <button id="cancelar-panel" type="button" @onclick="() => Cerrar.InvokeAsync(null)">Cancelar</button>
             @if (Editable)
@@ -145,6 +170,8 @@
     private string? _ordenColumna;
     private bool _ordenAscendente = true;
     private bool? _editandoCargado;
+    private CampoElegido? _elegido;
+    private bool _enfocarElegido;
 
     [Parameter, EditorRequired]
     public AdministracionLocal Administracion { get; set; } = null!;
@@ -168,6 +195,19 @@
     [Parameter]
     public EventCallback<string?> Cerrar { get; set; }
 
+    /// <summary>
+    /// Si el teclado en pantalla está a la vista al editar. Lo guarda Configuración, así que «Ocultar teclado» dura hasta
+    /// cerrarla aunque se cambie de pestaña (D4).
+    /// </summary>
+    [Parameter]
+    public bool TecladoVisible { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<bool> TecladoVisibleChanged { get; set; }
+
+    /// <summary>Lo que queda en la general de una exportación de Personas: el formato, el nombre del archivo y las filas.</summary>
+    public sealed record ExportacionPersonasRealizada(string Formato, string Archivo, int Filas);
+
     private bool Editable => Editando && !_vista.SoloLectura;
 
     private IEnumerable<(string Clave, string Titulo)> Columnas =>
@@ -181,14 +221,133 @@
         if (_editandoCargado != Editando)
         {
             _editandoCargado = Editando;
+            if (!Editando)
+            {
+                _elegido = null;
+            }
+
             Cargar(Administracion.Leer());
         }
     }
 
+    /// <summary>El campo elegido al tocar un cupo recibe el foco cuando la edición ya está dibujada (D2).</summary>
+    protected override async Task OnAfterRenderAsync(bool primera)
+    {
+        if (_enfocarElegido && Editable && _elegido is { Tipo: TipoCampo.Limite } elegido)
+        {
+            _enfocarElegido = false;
+            try
+            {
+                await JS.InvokeVoidAsync("incomedor.enfocar", $"[data-campo='limite-{elegido.Fila}-{elegido.Columna}']");
+            }
+            catch (JSException)
+            {
+                // Sin foco, el campo sigue elegido: el teclado en pantalla escribe igual.
+            }
+        }
+    }
+
+    /// <summary>Tocar un cupo de la tabla de lectura abre la edición, como «Editar», con ese límite elegido (D2).</summary>
+    private async Task TocarCupo(int fila, int columna)
+    {
+        _elegido = new CampoElegido(TipoCampo.Limite, fila, columna);
+        _enfocarElegido = true;
+        await Editar.InvokeAsync();
+    }
+
+    private void Elegir(TipoCampo tipo, int fila, int columna = 0) => _elegido = new CampoElegido(tipo, fila, columna);
+
+    private bool EsElegido(TipoCampo tipo, int fila, int columna = 0) => _elegido == new CampoElegido(tipo, fila, columna);
+
+    /// <summary>
+    /// Una tecla del teclado en pantalla en el campo elegido: agrega el carácter o borra el último; en el límite y el código
+    /// sólo entran dígitos (D4). Sin campo elegido, no hace nada.
+    /// </summary>
+    private async Task Teclear(string tecla)
+    {
+        if (_elegido is not { } campo || campo.Fila >= _filas.Count)
+        {
+            return;
+        }
+
+        var fila = _filas[campo.Fila];
+        var actual = campo.Tipo switch
+        {
+            TipoCampo.Nombre => fila.Nombre,
+            TipoCampo.Limite => fila.Limites[campo.Columna],
+            _ => fila.Codigo,
+        };
+        string nuevo;
+        if (tecla == TecladoEnPantalla.Borrar)
+        {
+            nuevo = actual.Length == 0 ? actual : actual[..^1];
+        }
+        else
+        {
+            var caracter = tecla == TecladoEnPantalla.Espacio ? " " : tecla;
+            if (campo.Tipo != TipoCampo.Nombre && !(caracter.Length == 1 && char.IsAsciiDigit(caracter[0])))
+            {
+                return;
+            }
+
+            // El mismo largo que el campo deja tipear: el nombre, el código y un límite de dos dígitos (0 a 99).
+            var largo = campo.Tipo switch
+            {
+                TipoCampo.Nombre => AdministracionLocal.LargoNombrePersona,
+                TipoCampo.Limite => 2,
+                _ => AdministracionLocal.LargoCodigo,
+            };
+            if (actual.Length + caracter.Length > largo)
+            {
+                return;
+            }
+
+            nuevo = actual + caracter;
+        }
+
+        switch (campo.Tipo)
+        {
+            case TipoCampo.Nombre:
+                fila.Nombre = nuevo;
+                break;
+            case TipoCampo.Limite:
+                fila.Limites[campo.Columna] = nuevo;
+                break;
+            default:
+                fila.Codigo = nuevo;
+                // El código no se dibuja (D10 de administrar-personas-y-opciones): el teclado le pone el valor al campo como
+                // propiedad del DOM, para que se vea enmascarado y lo tipeado después con un teclado físico lo continúe.
+                try
+                {
+                    await JS.InvokeVoidAsync("incomedor.ponerValor", $"[data-campo='codigo-{campo.Fila}']", nuevo);
+                }
+                catch (JSException)
+                {
+                    // El código ya está en la fila y se guarda igual; sólo el campo no lo muestra enmascarado.
+                }
+
+                break;
+        }
+    }
+
+    private enum TipoCampo
+    {
+        Nombre,
+        Limite,
+        Codigo,
+    }
+
+    /// <summary>El campo en que escribe el teclado: el nombre o el código de una fila, o el límite de una de sus celdas.</summary>
+    private readonly record struct CampoElegido(TipoCampo Tipo, int Fila, int Columna);
+
+    /// <summary>Lo usado hoy sobre el límite, «1/2», o «—» sin cupo (D1).</summary>
+    private static string Racion(FilaPersona fila, int columna) =>
+        fila.Limites[columna].Length == 0 ? "—" : $"{(fila.Usados[columna] ?? 0).ToString(CultureInfo.InvariantCulture)}/{fila.Limites[columna]}";
+
     private void Cargar(VistaAdministracion vista)
     {
         _vista = vista;
-        _pares = ParesDeColumnas(vista);
+        _pares = vista.ParesDeCupo().ToList();
         _filas = vista.Personas.Select(p => new FilaPersona
         {
             Id = p.Id,
@@ -197,33 +356,12 @@
             Limites = _pares.Select(par => p.Cupos.FirstOrDefault(c => c.ServicioId == par.Servicio && c.CategoriaId == par.Categoria) is { } cupo
                 ? cupo.Limite.ToString(CultureInfo.InvariantCulture)
                 : string.Empty).ToArray(),
+            Usados = _pares.Select(par => p.Cupos.FirstOrDefault(c => c.ServicioId == par.Servicio && c.CategoriaId == par.Categoria)?.UsadoHoy).ToArray(),
             Habilitadas = p.OpcionesHabilitadas.Count,
         }).ToList();
         _campos = [];
         _columnasEnviadas = [];
         _aviso = null;
-    }
-
-    /// <summary>
-    /// Los pares que usan las cargas de las opciones, en el orden del catálogo, y después los de alguna regla que el catálogo
-    /// no usa; no cada servicio por cada categoría (D4).
-    /// </summary>
-    private static List<(Guid Servicio, Guid Categoria)> ParesDeColumnas(VistaAdministracion vista)
-    {
-        var pares = new List<(Guid, Guid)>();
-        foreach (var par in vista.Opciones.SelectMany(o => o.Cargas.Select(c => (o.ServicioId, c.CategoriaId)))
-                     .Concat(vista.Personas.SelectMany(p => p.Cupos.Select(c => (c.ServicioId, c.CategoriaId)))))
-        {
-            if (!pares.Contains(par))
-            {
-                pares.Add(par);
-            }
-        }
-
-        return pares
-            .OrderBy(p => vista.Servicios.Select(s => s.Id).ToList().IndexOf(p.Item1))
-            .ThenBy(p => vista.Categorias.Select(c => c.Id).ToList().IndexOf(p.Item2))
-            .ToList();
     }
 
     /// <summary>El orden de la vista: las filas de lectura ordenadas por la columna elegida, y las nuevas siempre al final.</summary>
@@ -271,13 +409,20 @@
 
     private void AgregarPersona()
     {
-        _filas.Add(new FilaPersona { Nueva = true, Activa = true, Limites = new string[_pares.Count] });
+        _filas.Add(new FilaPersona { Nueva = true, Activa = true, Limites = new string[_pares.Count], Usados = new int?[_pares.Count] });
         Array.Fill(_filas[^1].Limites, string.Empty);
     }
 
     /// <summary>Descartar una fila nueva corre las posiciones: las marcas del último guardado ya no corresponden.</summary>
     private void Descartar(FilaPersona fila)
     {
+        // El campo elegido es una posición de _filas: si era de esta fila se olvida, y si venía después corre uno (D4).
+        var indice = _filas.IndexOf(fila);
+        if (_elegido is { } elegido)
+        {
+            _elegido = elegido.Fila == indice ? null : elegido.Fila > indice ? elegido with { Fila = elegido.Fila - 1 } : elegido;
+        }
+
         _filas.Remove(fila);
         _campos = [];
         _columnasEnviadas = [];
@@ -352,12 +497,7 @@
             ? "true"
             : null;
 
-    private string NombrePar((Guid Servicio, Guid Categoria) par)
-    {
-        var nombreServicio = _vista.Servicios.FirstOrDefault(s => s.Id == par.Servicio)?.Nombre ?? "?";
-        var nombreCategoria = _vista.Categorias.FirstOrDefault(c => c.Id == par.Categoria)?.Nombre ?? "?";
-        return nombreServicio == nombreCategoria ? nombreServicio : $"{nombreServicio} · {nombreCategoria}";
-    }
+    private string NombrePar((Guid Servicio, Guid Categoria) par) => _vista.NombrePar(par);
 
     private static string Estado(FilaPersona fila) =>
         fila.Nueva ? "Nueva" : fila.Quitar ? "Se da de baja al guardar" : fila.Activa ? "Activa" : "De baja";
@@ -379,6 +519,9 @@
         public bool Quitar { get; set; }
 
         public string[] Limites { get; init; } = [];
+
+        /// <summary>Lo usado hoy en cada cupo que la persona tiene; null donde no tiene cupo (D1).</summary>
+        public int?[] Usados { get; init; } = [];
 
         public int Habilitadas { get; init; }
     }

@@ -1,0 +1,67 @@
+@*
+    Un teclado en pantalla para editar sin teclado físico (D4 de editar-raciones-en-personas): números, letras con la Ñ,
+    «Mayús», espacio y borrar, en cuatro filas de teclas de 56 px y del mismo ancho por fila, para que la tabla conserve
+    sus filas a la vista a 1024 × 768. Avisa cada tecla con su valor
+    (la letra, el número, BORRAR o ESPACIO); quien lo usa decide en qué campo escribe. Las teclas no sacan el foco del campo.
+*@
+<div class="teclado-en-pantalla" role="group" aria-label="Teclado en pantalla">
+    @foreach (var fila in Filas)
+    {
+        <div class="fila-teclas">
+            @foreach (var tecla in fila)
+            {
+                <button type="button" class="tecla @(tecla.Length > 1 ? "especial" : null) @(tecla == Mayus && _mayusculas ? "activa" : null)"
+                        data-tecla="@tecla" aria-label="@Etiqueta(tecla)" aria-pressed="@(tecla == Mayus ? (_mayusculas ? "true" : "false") : null)"
+                        @onmousedown:preventDefault @onclick="() => Tocar(tecla)">@Mostrar(tecla)</button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    public const string Borrar = "BORRAR";
+    public const string Espacio = "ESPACIO";
+    public const string Mayus = "MAYUS";
+
+    private static readonly string[][] Filas =
+    [
+        ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+        ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+        ["A", "S", "D", "F", "G", "H", "J", "K", "L", "Ñ"],
+        [Mayus, "Z", "X", "C", "V", "B", "N", "M", Espacio, Borrar],
+    ];
+
+    private bool _mayusculas;
+
+    /// <summary>Cada tecla tocada: la letra (en mayúscula o minúscula según «Mayús»), el número, BORRAR o ESPACIO.</summary>
+    [Parameter]
+    public EventCallback<string> Tecla { get; set; }
+
+    private async Task Tocar(string tecla)
+    {
+        if (tecla == Mayus)
+        {
+            _mayusculas = !_mayusculas;
+            return;
+        }
+
+        await Tecla.InvokeAsync(tecla.Length == 1 && char.IsLetter(tecla[0]) && !_mayusculas ? tecla.ToLowerInvariant() : tecla);
+    }
+
+    private string Mostrar(string tecla) => tecla switch
+    {
+        Borrar => "⌫",
+        Espacio => "Espacio",
+        Mayus => "Mayús",
+        _ when char.IsLetter(tecla[0]) && !_mayusculas => tecla.ToLowerInvariant(),
+        _ => tecla,
+    };
+
+    private static string Etiqueta(string tecla) => tecla switch
+    {
+        Borrar => "Borrar",
+        Espacio => "Espacio",
+        Mayus => "Mayúsculas",
+        _ => tecla,
+    };
+}

@@ -56,6 +56,7 @@ public class PuntoFinalTests
             MensajesAtencion.PedidoOperadorPara(recuperar: true, "0a1b2c3d"),
             MensajesAtencion.CarpetaElegida(@"C:\Exportaciones"),
             MensajesAtencion.ExportacionHecha("INComedor-consumos-20261110-120000.csv", 2, @"C:\Exportaciones"),
+            MensajesAtencion.ExportacionPersonasHecha("INComedor-personas-20261110-120000.csv", 9, @"C:\Exportaciones"),
         ];
 
         var sinPunto = armados.Where(m => !m.EndsWith('.')).ToList();
@@ -72,7 +73,7 @@ public class PuntoFinalTests
     [
         nameof(MensajesAtencion.DeMotivo), nameof(MensajesAtencion.VersionGuardada), nameof(MensajesAtencion.CopiaEnviada),
         nameof(MensajesAtencion.RedCanceladaEnPaso), nameof(MensajesAtencion.RedFallo), nameof(MensajesAtencion.PedidoOperadorPara),
-        nameof(MensajesAtencion.CarpetaElegida), nameof(MensajesAtencion.ExportacionHecha),
+        nameof(MensajesAtencion.CarpetaElegida), nameof(MensajesAtencion.ExportacionHecha), nameof(MensajesAtencion.ExportacionPersonasHecha),
     ];
 
     private static readonly string[] MetodosSinPunto =
