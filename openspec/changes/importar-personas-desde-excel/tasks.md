@@ -1,11 +1,15 @@
 ## 1. Leer y escribir planillas
 
-- [ ] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: `LectorPlanilla` lee un libro del puesto
+- [x] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: `LectorPlanilla` lee un libro del puesto
   (cadenas en línea y números) y uno con cadenas compartidas (como lo guarda Excel), ubica las celdas por su referencia
   aunque falten, y rechaza un archivo que no es un zip, uno sin hojas y uno con una parte de más de 20 MB; `EscritorPlanilla`
   escribe un libro de dos hojas con una columna de texto. Verifica: rojo antes y verde después.
-- [ ] 1.2 `LectorPlanilla` y `EscritorPlanilla` con varias hojas y columnas de texto (D1 y D6). Verifica: 1.1 en verde y
+  - `PlanillasTests` (6) contra esqueletos: `total: 6`, `error: 6` (`NotImplementedException`).
+- [x] 1.2 `LectorPlanilla` y `EscritorPlanilla` con varias hojas y columnas de texto (D1 y D6). Verifica: 1.1 en verde y
   las pruebas de las exportaciones sin cambios.
+  - `LectorPlanilla` con `XmlReader` sin DTD, topes de 5 MB, 20 MB por parte y 2 000 filas; `EscritorPlanilla` arma el
+    libro con N hojas y, sólo si alguna pide columnas de texto, un `styles.xml` mínimo con el formato «@» y las columnas con
+    su ancho. `Infrastructure.Sqlite.Tests`: `total: 246`, `error: 0`, con las de exportación sin cambios.
 
 ## 2. Revisar y aplicar la importación
 
