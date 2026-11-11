@@ -1,11 +1,12 @@
 ## 1. La configuración de la base
 
-- [ ] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: leer la versión activa entera tabla por
+- [x] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: leer la versión activa entera tabla por
   tabla y recuperarla en otra base (una versión nueva con las mismas personas, opciones y permisos, y la versión anterior
   conservada); rechazar una configuración sin una tabla o con columnas de más, y una con un código que en esta base es de
-  otra persona; con INWeb como dueño, denegar (D1 a D3). Verifica: rojo antes y verde después.
-- [ ] 1.2 `AdministracionLocal.LeerConfiguracion` y `RecuperarVersion`. Verifica: 1.1 en verde y
-  `Infrastructure.Sqlite.Tests` entero.
+  otra persona; con INWeb como dueño, denegar (D1 a D3). Verifica: rojo antes y verde después. Hecho: 7 pruebas en
+  `ResguardoConfiguracionTests` (con revisar sin escribir), las 7 vistas fallar con `NotImplementedException` y en verde.
+- [x] 1.2 `AdministracionLocal.LeerConfiguracion` y `RecuperarVersion`. Verifica: 1.1 en verde y
+  `Infrastructure.Sqlite.Tests` entero. Hecho: más `RevisarConfiguracion`; Sqlite 279 de 279.
 
 ## 2. El resguardo en el puesto
 
