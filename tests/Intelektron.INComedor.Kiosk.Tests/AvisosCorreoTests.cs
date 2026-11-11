@@ -160,6 +160,24 @@ public sealed partial class AvisosCorreoTests : IDisposable
         Assert.Contains("Persona sintética 01 no pudo comer al marcar: la opción no está disponible en este horario.", correo.Cuerpo, StringComparison.Ordinal);
     }
 
+    [Fact(DisplayName = "avisos-correo · Los avisos por correo: al cerrar, los avisos que esperaban quedan en la cola y ninguno se encola después")]
+    public void Al_cerrar_los_avisos_quedan_en_la_cola()
+    {
+        var avisos = Avisos(Activos);
+        for (var i = 0; i < 20; i++)
+        {
+            avisos.PersonaSinConsumo(Guid.NewGuid(), $"Persona sintética {i:00}", "CREDENTIAL_EXPIRED");
+        }
+
+        avisos.Dispose();
+        var alCerrar = Directory.GetFiles(Path.Combine(_carpeta, ColaCorreo.Carpeta), "*.json").Length;
+        avisos.ComprobanteSinImprimir("PAPER_OUT");
+        Thread.Sleep(200);
+
+        Assert.Equal(20, alCerrar);
+        Assert.Equal(20, Directory.GetFiles(Path.Combine(_carpeta, ColaCorreo.Carpeta), "*.json").Length);
+    }
+
     [Fact(DisplayName = "avisos-correo · Los avisos por correo: con los correos apagados no se encola ni se envía nada")]
     public void Con_los_correos_apagados()
     {

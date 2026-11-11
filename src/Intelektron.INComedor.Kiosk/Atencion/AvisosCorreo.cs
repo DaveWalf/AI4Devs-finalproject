@@ -164,9 +164,13 @@ public sealed class AvisosCorreo : IDisposable
         }
     }
 
+    /// <summary>
+    /// Suelta el reloj; antes, lo que esperaba en memoria queda en la cola, así ningún aviso se pierde al cerrar ni escribe
+    /// en la base después.
+    /// </summary>
     public void Dispose()
     {
-        _liberado = true;
+        Drenar(alCerrar: true);
         lock (_pasada)
         {
             _temporizador?.Dispose();
@@ -238,10 +242,24 @@ public sealed class AvisosCorreo : IDisposable
     /// Encola los avisos que esperan, de a uno por vez. Un aviso que falla de una forma que nadie previó queda registrado y
     /// no frena a los demás: la atención no depende de los correos.
     /// </summary>
-    private void Drenar()
+    private void Drenar() => Drenar(alCerrar: false);
+
+    private void Drenar(bool alCerrar)
     {
         lock (_drenaje)
         {
+            // El cierre se marca dentro del cerrojo y drena lo que esperaba; un hilo que llegue después no vuelve a tocar la
+            // cola ni la base.
+            if (alCerrar)
+            {
+                _liberado = true;
+            }
+            else if (_liberado)
+            {
+                _porEncolar.Clear();
+                return;
+            }
+
             while (_porEncolar.TryDequeue(out var aviso))
             {
                 try
