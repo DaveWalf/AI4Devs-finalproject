@@ -49,6 +49,6 @@
   fallar de verdad y sacada como hallazgo. Verifica: las ocho en verde. Hecho: Kiosk 7 y Sqlite 1 en verde.
 - [x] 4.3 La evidencia: la fila de TDD de `docs/aplicacion-del-curso.md` suma este change. Verifica: el chequeo de
   enlaces con su control negativo, `enlaces rotos: 0`. Hecho: 0, con el control en 2.
-- [ ] 4.4 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
+- [x] 4.4 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
   --no-incremental`, el puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c
-  Release` contra ese EXE, con los totales por proyecto pegados.
+  Release` contra ese EXE, con los totales por proyecto pegados. Hecho: sobre el archivado, en el PR.
