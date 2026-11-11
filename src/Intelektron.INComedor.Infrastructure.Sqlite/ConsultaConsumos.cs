@@ -141,7 +141,10 @@ public sealed class ConsultaConsumos
         return CalculadoraFechaNegocio.Calcular(_reloj.GetUtcNow(), puesto.ZonaHoraria.Id, puesto.InicioDiaNegocio).Valor;
     }
 
-    public ResultadoConsumos Leer(FiltroConsumos filtro)
+    public ResultadoConsumos Leer(FiltroConsumos filtro) => Leer(filtro, Tope);
+
+    /// <summary>La misma consulta con otro tope: la exportación lee hasta 10 000 (D6 de buscar-y-exportar-consumos).</summary>
+    public ResultadoConsumos Leer(FiltroConsumos filtro, int tope)
     {
         if (filtro.Desde > filtro.Hasta || (filtro.PorInstante && filtro.DesdeUtc > filtro.HastaUtc))
         {
@@ -188,7 +191,7 @@ public sealed class ConsultaConsumos
             LIMIT $limite
             """,
             ("$desde", Texto(filtro.Desde)), ("$hasta", Texto(filtro.Hasta)), ("$per", filtro.PersonaId), ("$srv", filtro.ServicioId),
-            ("$men", filtro.OpcionId), ("$limite", Tope + 1),
+            ("$men", filtro.OpcionId), ("$limite", tope + 1),
             ("$ini", filtro.PorInstante ? FormatoInstante.Texto(filtro.DesdeUtc!.Value) : null),
             ("$fin", filtro.PorInstante ? FormatoInstante.Texto(filtro.HastaUtc!.Value) : null),
             ("$cod", codigo), ("$patron", Patron(filtro.Texto)));
@@ -209,8 +212,8 @@ public sealed class ConsultaConsumos
                 lector.IsDBNull(13) ? null : TrabajosImpresion.Estado(lector.GetString(13))));
         }
 
-        var hayMas = filas.Count > Tope;
-        return new ResultadoConsumos(hayMas ? filas.Take(Tope).ToList() : filas, hayMas, null);
+        var hayMas = filas.Count > tope;
+        return new ResultadoConsumos(hayMas ? filas.Take(tope).ToList() : filas, hayMas, null);
     }
 
     /// <summary>

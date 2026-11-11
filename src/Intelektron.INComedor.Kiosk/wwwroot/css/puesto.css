@@ -422,6 +422,9 @@ html, body { overscroll-behavior: none; }
 .operador-consumos { display: flex; flex-direction: column; gap: 8px; }
 .operador-consumos .entrada-operador, .operador-consumos .fila-operador { display: flex; align-items: center; gap: 12px; }
 .operador-consumos .entrada-operador input { min-height: 56px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
+/* La exportación, debajo de la tabla: tres botones del alto táctil de siempre y el resultado en una línea (D6 y D8). */
+.exportar-consumos { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.mensaje-exportacion, .consumos #mensaje-exportacion { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
 .comprobante-visto { display: flex; flex-direction: column; gap: 4px; padding: 16px; background: #fff; border: 1px dashed var(--tinta-suave); font-family: Consolas, "Courier New", monospace; }
 .filtros-consumos .lista-opciones, .filtros-consumos .lista-fila { font-size: 16px; }
 /* Dentro del diálogo, hasta cinco filas a la vista (290 px con el relleno y el borde), para que la lista no salga del panel

@@ -150,7 +150,8 @@
         <section role="tabpanel" id="seccion-consumos" class="seccion" aria-labelledby="pestana-consumos" hidden="@Oculta(Pestana.Consumos)">
             @if (Consumos is not null)
             {
-                <PestanaConsumos Consulta="Consumos" Visible="@(_elegida == Pestana.Consumos)" Zona="Zona" Registrar="RegistrarConsulta" Sesion="SesionOperador" />
+                <PestanaConsumos Consulta="Consumos" Visible="@(_elegida == Pestana.Consumos)" Zona="Zona" Registrar="RegistrarConsulta" Sesion="SesionOperador"
+                                 Almacen="AlmacenExportacion" Elector="ElectorCarpeta" RegistrarExportacion="RegistrarExportacion" />
             }
         </section>
 
@@ -489,6 +490,16 @@
     /// <summary>La pantalla registra cada consulta de consumos con cómo se entró a Configuración (D17).</summary>
     [Parameter]
     public Action<PestanaConsumos.ConsultaRealizada>? RegistrarConsulta { get; set; }
+
+    /// <summary>La carpeta de exportación recordada, que la pantalla toma del contenedor (D6 de buscar-y-exportar-consumos).</summary>
+    [Parameter]
+    public AlmacenExportacion? AlmacenExportacion { get; set; }
+
+    [Parameter]
+    public IElectorCarpeta? ElectorCarpeta { get; set; }
+
+    [Parameter]
+    public Action<PestanaConsumos.ExportacionRealizada>? RegistrarExportacion { get; set; }
 
     /// <summary>La sesión del operador para reimprimir desde Consumos, que la pantalla abre con Configuración y cierra con ella (D8).</summary>
     [Parameter]

@@ -92,6 +92,16 @@ public static class MensajesAtencion
     public const string RangoDemasiadoLargo = "El rango no puede pasar de 366 días";
     public const string HayMasConsumos = "Se muestran 500 consumos y hay más: acotá los filtros";
 
+    // La exportación de Consumos (D6 de buscar-y-exportar-consumos).
+    public const string ExportacionFallida = "No se pudo exportar: la carpeta no se puede escribir. Elegí otra con «Cambiar carpeta»";
+    public const string ExportacionTopada = "Se exportaron los primeros 10 000 consumos y hay más: acotá los filtros para el resto";
+    public const string CarpetaNoGuardada = "No se pudo guardar la carpeta elegida: se usa sólo esta vez";
+
+    public static string CarpetaElegida(string carpeta) => $"Las exportaciones van a {carpeta}";
+
+    public static string ExportacionHecha(string archivo, int filas, string carpeta) =>
+        $"Exportado {archivo} con {filas} {(filas == 1 ? "consumo" : "consumos")} en {carpeta}";
+
     /// <summary>El resumen de Personas u Opciones cuando la base no respondió al abrir Configuración.</summary>
     public const string ConfiguracionNoLeida = "No se pudo leer la configuración de la base";
 

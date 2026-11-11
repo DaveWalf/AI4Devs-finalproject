@@ -233,6 +233,7 @@
                             Inerte="@(_pedidoClave is not null)" SesionOperador="_sesionOperador"
                             Operador="@_operador" Actor="_actor" ClaveSinValidar="@(_acceso == AccesoClave)"
                             Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
+                            AlmacenExportacion="_almacenExportacion" ElectorCarpeta="_electorCarpeta" RegistrarExportacion="RegistrarExportacionDeConsumos"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
                             Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
@@ -271,6 +272,8 @@
     private ModoPuesto _modo = ModoPuesto.Mantenimiento;
     private string? _avisoModo;
     private AlmacenSimulacion? _almacenSimulacion;
+    private AlmacenExportacion? _almacenExportacion;
+    private IElectorCarpeta? _electorCarpeta;
     private bool _simulacionGuardada;
     private string? _avisoSimulacion;
     private IReadOnlyList<EntradaSimulacion> _personasSimulacion = [];
@@ -377,6 +380,9 @@
         _cierre = Proveedor.GetService(typeof(CierrePuesto)) as CierrePuesto;
         _ejecutorNetsh = Proveedor.GetService(typeof(EjecutorNetsh)) as EjecutorNetsh;
         _pruebaConexion = Proveedor.GetService(typeof(PruebaConexion)) as PruebaConexion;
+        // Sin almacén de la exportación o sin elector (las pruebas que no los usan), Consumos no exporta (D6 de buscar-y-exportar-consumos).
+        _almacenExportacion = Proveedor.GetService(typeof(AlmacenExportacion)) as AlmacenExportacion;
+        _electorCarpeta = Proveedor.GetService(typeof(IElectorCarpeta)) as IElectorCarpeta;
         if (_cierre is not null)
         {
             _cierre.RequiereClave = _modo == ModoPuesto.Operativo;
@@ -843,6 +849,22 @@
             PersonCode = !string.IsNullOrWhiteSpace(consulta.Filtro.Codigo),
             Rows = consulta.Filas,
             HasMore = consulta.HayMas,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    /// <summary>
+    /// Cada exportación de consumos queda en la general con el formato, las filas y el nombre del archivo, sin su ruta, sin
+    /// nombres ni códigos, con el actor nulo y cómo se entró, como la consulta (D6 de buscar-y-exportar-consumos).
+    /// </summary>
+    private void RegistrarExportacionDeConsumos(PestanaConsumos.ExportacionRealizada exportacion) =>
+        RegistrarConfiguracion("CONSUMPTIONS_EXPORTED", new
+        {
+            Format = exportacion.Formato,
+            Rows = exportacion.Filas,
+            HasMore = exportacion.HayMas,
+            File = exportacion.Archivo,
             Access = _acceso,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,

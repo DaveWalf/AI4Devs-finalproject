@@ -72,14 +72,26 @@ pegado, para ver que sólo cambian las pruebas existentes de la propuesta. Las p
 
 ## 4. Exportar a CSV y a Excel
 
-- [ ] 4.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: el CSV (BOM, `;`, encabezado, filas, el
+- [x] 4.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: el CSV (BOM, `;`, encabezado, filas, el
   apóstrofo de una fórmula), el XLSX (se abre como zip con una hoja, el encabezado, las filas y el cargo numérico), el
   temporal que no queda tras un error, y el tope de 10 000. Verifica: rojo antes y verde después.
-- [ ] 4.2 `ExportacionConsumos` (D6). Verifica: 4.1 en verde.
-- [ ] 4.3 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: «Exportar CSV» y «Exportar Excel» con un
+  - `ExportacionConsumosTests` (9 casos, uno por cada prefijo de fórmula), contra un esqueleto que compila: `total: 9`,
+    `error: 9` (`NotImplementedException`). Después, 9 de 9. El temporal tras un error: con un archivo del mismo nombre ya
+    en la carpeta, el renombrado falla, el `.tmp` no queda y el de antes no cambia; una carpeta borrada no se recrea.
+- [x] 4.2 `ExportacionConsumos` (D6). Verifica: 4.1 en verde.
+  - `ConsultaConsumos.Leer(filtro, tope)` lee hasta 10 000 con la misma consulta; el estado sale de
+    `ExportacionConsumos.TextoEstado`, que ahora usa también la tabla. `Infrastructure.Sqlite.Tests`: `total: 228`,
+    `error: 0`. Un libro de la prueba abierto con Excel por COM: una hoja «Consumos», 3 filas por 8 columnas, `F2` como
+    `Double` 500 y `SUMA(F2:F3)` 1000, sin pedir reparación.
+- [x] 4.3 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: «Exportar CSV» y «Exportar Excel» con un
   `IElectorCarpeta` de prueba, la carpeta recordada en `exportacion.json`, «Cambiar carpeta», sin poder escribir, y
   `CONSUMPTIONS_EXPORTED` en la general. Después, los botones, `IElectorCarpeta` y su registro en la ventana con
   `OpenFolderDialog`. Verifica: rojo antes y verde después.
+  - `ExportarConsumosTests` (6 casos, con «cancelar la elección» de más), contra la pestaña sin botones: `total: 6`,
+    `error: 6` (`ElementNotFoundException` de `#exportar-csv`, `#exportar-xlsx` y `#cambiar-carpeta`). «Sin poder
+    escribir» niega crear archivos en la carpeta con una regla de ACL del usuario actual, que la prueba saca al final.
+    Después, `Kiosk.Tests` `total: 418`, `error: 0`, sin pruebas existentes cambiadas en este grupo. El diálogo real
+    (`ElectorCarpetaWindows`, con la ventana como dueña) no lo maneja ninguna prueba: lo ve David en su prueba del EXE.
 
 ## 5. El puesto compilado, documentos y verificación integral
 

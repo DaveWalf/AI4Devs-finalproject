@@ -58,6 +58,10 @@ public partial class MainWindow : Window
             servicios.AddSingleton(new MaquinaAtencion(atencion));
             servicios.AddSingleton(new LogosLocales(entorno.Carpeta));
             servicios.AddSingleton(new AlmacenEstiloVisual(entorno.Carpeta));
+            // La exportación de Consumos: la carpeta recordada en la de datos y el diálogo de carpetas sobre esta ventana, para que
+            // se abra en el monitor del puesto (D6 de buscar-y-exportar-consumos).
+            servicios.AddSingleton(new AlmacenExportacion(entorno.Carpeta));
+            servicios.AddSingleton<IElectorCarpeta>(new ElectorCarpetaWindows(this));
         }
 
         blazorWebView.Services = servicios.BuildServiceProvider();

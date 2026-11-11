@@ -81,6 +81,12 @@ a medias. CSV en UTF-8 con BOM, separado por `;` y con comillas, que Excel abre 
 y «Cambiar carpeta» la vuelve a pedir. `CONSUMPTIONS_EXPORTED` va a la general con el formato, las filas y el nombre del
 archivo, sin la ruta completa.
 
+Las columnas son las de la tabla, con la fecha completa en la de la hora («Fecha y hora», `AAAA-MM-DD HH:mm` del puesto) y
+el cargo partido en dos: el número, con coma decimal en el CSV y como número en el libro, y «Moneda» al lado, porque una
+celda numérica no lleva el símbolo. Si se cancela la elección de la carpeta, no se exporta ni se guarda nada; si la carpeta
+elegida no se puede guardar, se usa sólo esa vez, con un aviso. La carpeta guardada que ya no existe no se vuelve a crear:
+es «sin poder escribir».
+
 - **Descartada: una biblioteca para el `.xlsx`.** Suma una dependencia y su auditoría para una hoja de seis columnas.
 - **Descartada: una carpeta fija.** La mejora pide una ubicación elegida.
 
