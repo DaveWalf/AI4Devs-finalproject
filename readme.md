@@ -291,7 +291,7 @@ Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.js
 dotnet run --project src/Intelektron.INComedor.Kiosk
 ```
 
-La ventana abre maximizada con la atención del comensal, sin red. La identificación es simulada por código: el
+La ventana abre a pantalla completa, sin bordes, con la atención del comensal, sin red. La identificación es simulada por código: el
 código solo abre la sesión, sin huella, porque la biometría es de la segunda ola (D-C24). Se tipea el código,
 se elige una opción y se confirma con la transacción de RB06. Hasta diez opciones van juntas, sin páginas: hasta
 ocho en una columna y nueve o diez en dos columnas de hasta cinco; desde once, en páginas de diez. El catálogo
