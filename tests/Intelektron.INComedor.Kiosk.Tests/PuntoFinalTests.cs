@@ -64,6 +64,10 @@ public class PuntoFinalTests
             MensajesAtencion.ImportacionConErrores(1),
             MensajesAtencion.ImportacionAplicada(2, 1, 1, 0),
             MensajesAtencion.ImportacionSinCambios(2),
+            MensajesAtencion.ImportacionConFilasDeEjemplo(1),
+            MensajesAtencion.ImportacionConFilasDeEjemplo(2),
+            MensajesAtencion.ImportacionCodigosComoNumero(1),
+            MensajesAtencion.ImportacionCodigosComoNumero(3),
             .. ErroresDeImportacion.Select(MensajesAtencion.ErrorDeImportacion),
         ];
 
@@ -84,7 +88,8 @@ public class PuntoFinalTests
         nameof(MensajesAtencion.CarpetaElegida), nameof(MensajesAtencion.ExportacionHecha), nameof(MensajesAtencion.ExportacionPersonasHecha),
         nameof(MensajesAtencion.PlanillaDeEjemploHecha), nameof(MensajesAtencion.ResumenImportacion), nameof(MensajesAtencion.ImportacionReemplazar),
         nameof(MensajesAtencion.ImportacionConErrores), nameof(MensajesAtencion.ImportacionAplicada), nameof(MensajesAtencion.ImportacionSinCambios),
-        nameof(MensajesAtencion.ErrorDeImportacion),
+        nameof(MensajesAtencion.ErrorDeImportacion), nameof(MensajesAtencion.ImportacionConFilasDeEjemplo),
+        nameof(MensajesAtencion.ImportacionCodigosComoNumero),
     ];
 
     /// <summary>Un error de cada clase: del archivo, del encabezado y de una fila, con cada motivo y uno desconocido.</summary>
@@ -97,6 +102,7 @@ public class PuntoFinalTests
         new(1, "Postre: límite", ImportacionPersonas.ColumnaDesconocida), new(1, "X", "OTRO"),
         new(2, "Código", CodigosAdministracion.Requerido), new(3, "Código", CodigosAdministracion.Repetido),
         new(4, "Código", ImportacionPersonas.CodigoDadoDeBaja), new(5, "ALMUERZO: límite", CodigosAdministracion.FueraDeRango),
+        new(4, "Código", ImportacionPersonas.CodigoComoNumero), new(4, "Código", ImportacionPersonas.MismaPersona),
         new(6, "ALMUERZO: límite", CodigosAdministracion.NoSonDigitos), new(7, "Nombre", CodigosAdministracion.DemasiadoLargo),
         new(8, "Nombre", CodigosAdministracion.CaracterDeControl), new(9, "Nombre", "OTRO"),
     ];

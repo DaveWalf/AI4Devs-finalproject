@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using static Intelektron.INComedor.Infrastructure.Sqlite.CodigosAdministracion;
 
 namespace Intelektron.INComedor.Infrastructure.Sqlite;
@@ -41,6 +42,12 @@ public sealed record RevisionImportacion(
 
     public int SinCambios => Personas.Count(p => p.Accion == AccionImportada.SinCambios);
 
+    /// <summary>Cuántos códigos venían guardados como número: Excel les pudo quitar los ceros del principio (D3).</summary>
+    public int CodigosComoNumero { get; init; }
+
+    /// <summary>Cuántas filas siguen siendo las de la planilla de ejemplo, que se agregarían como personas (D4).</summary>
+    public int FilasDeEjemplo { get; init; }
+
     /// <summary>El código de cada fila agregada, sólo en memoria para hallar su id al aplicar: nunca se muestra ni se registra.</summary>
     internal IReadOnlyDictionary<int, string> CodigosAgregados { get; init; } = new Dictionary<int, string>();
 }
@@ -66,6 +73,15 @@ public sealed class ImportacionPersonas
 {
     public const string ColumnaDesconocida = "UNKNOWN_COLUMN";
     public const string CodigoDadoDeBaja = "INACTIVE_CODE";
+
+    /// <summary>Un código de más de 15 dígitos guardado como número: Excel ya le cambió los últimos (D3).</summary>
+    public const string CodigoComoNumero = "NUMERIC_CODE";
+
+    /// <summary>Dos filas con dos códigos distintos de la misma persona (D3).</summary>
+    public const string MismaPersona = "SAME_PERSON";
+
+    /// <summary>El nombre de las filas de la planilla de ejemplo, seguido de su número (D6).</summary>
+    public const string NombreDeEjemplo = "Persona de ejemplo";
     public const string ColumnaNombre = "Nombre";
     public const string ColumnaCodigo = "Código";
     public const string SufijoLimite = ": límite";
@@ -101,9 +117,10 @@ public sealed class ImportacionPersonas
     public RevisionImportacion Revisar(Stream archivo)
     {
         IReadOnlyList<IReadOnlyList<string>> filas;
+        var numericas = new HashSet<(int Fila, int Columna)>();
         try
         {
-            filas = LectorPlanilla.Leer(archivo);
+            filas = LectorPlanilla.Leer(archivo, numericas);
         }
         catch (PlanillaInvalidaException e)
         {
@@ -132,6 +149,8 @@ public sealed class ImportacionPersonas
         var filaDeCodigo = new Dictionary<string, int>(StringComparer.Ordinal);
         var repetidas = new HashSet<int>();
         var reconocidas = new HashSet<Guid>();
+        var codigosComoNumero = 0;
+        var filasDeEjemplo = 0;
 
         for (var i = 1; i < filas.Count; i++)
         {
@@ -146,16 +165,27 @@ public sealed class ImportacionPersonas
             var erroresAntes = errores.Count;
 
             var nombre = Celda(columnas.Nombre);
+            if (nombre.StartsWith(NombreDeEjemplo + " ", StringComparison.Ordinal))
+            {
+                filasDeEjemplo++;
+            }
+
             if (AdministracionLocal.ValidarTexto(nombre, AdministracionLocal.LargoNombrePersona) is { } errorNombre)
             {
                 errores.Add(new ErrorImportacion(numero, ColumnaNombre, errorNombre));
             }
 
             var codigo = Celda(columnas.Codigo);
+            var codigoNumerico = numericas.Contains((i, columnas.Codigo));
             Guid? id = null;
             if (AdministracionLocal.ValidarCodigo(codigo) is { } errorCodigo)
             {
                 errores.Add(new ErrorImportacion(numero, ColumnaCodigo, errorCodigo));
+            }
+            else if (codigoNumerico && codigo.Length > 15)
+            {
+                // Excel guarda un número con 15 cifras: los dígitos que siguen ya no son los que se escribieron.
+                errores.Add(new ErrorImportacion(numero, ColumnaCodigo, CodigoComoNumero));
             }
             else if (filaDeCodigo.TryGetValue(codigo, out var primera))
             {
@@ -172,10 +202,10 @@ public sealed class ImportacionPersonas
                 filaDeCodigo[codigo] = numero;
                 if (padron.Vigentes.TryGetValue(codigo, out var existente))
                 {
-                    // Dos códigos vigentes de la misma persona en dos filas: la segunda la repite.
+                    // Dos códigos de la misma persona en dos filas: la segunda la repite con otro código.
                     if (!reconocidas.Add(existente))
                     {
-                        errores.Add(new ErrorImportacion(numero, ColumnaCodigo, Repetido));
+                        errores.Add(new ErrorImportacion(numero, ColumnaCodigo, MismaPersona));
                     }
 
                     id = existente;
@@ -212,6 +242,11 @@ public sealed class ImportacionPersonas
             if (errores.Count > erroresAntes)
             {
                 continue;
+            }
+
+            if (codigoNumerico)
+            {
+                codigosComoNumero++;
             }
 
             if (id is { } personaId)
@@ -257,7 +292,12 @@ public sealed class ImportacionPersonas
             .Select(p => new EdicionPersona(p.Id, p.Nombre, p.Cupos.Select(c => new CupoEditado(c.ServicioId, c.CategoriaId, c.Limite)).ToList(), Quitar: true))
             .ToList();
 
-        return new RevisionImportacion([], personas, deBaja, ediciones, bajas) { CodigosAgregados = codigosAgregados };
+        return new RevisionImportacion([], personas, deBaja, ediciones, bajas)
+        {
+            CodigosAgregados = codigosAgregados,
+            CodigosComoNumero = codigosComoNumero,
+            FilasDeEjemplo = filasDeEjemplo,
+        };
     }
 
     /// <summary>
@@ -326,12 +366,21 @@ public sealed class ImportacionPersonas
         ]);
     }
 
-    /// <summary>Las columnas de la fila 1 (D2): sin distinguir mayúsculas ni espacios de más; lo que falta o sobra va a errores.</summary>
+    /// <summary>
+    /// Las columnas de la fila 1 (D2): sin distinguir mayúsculas, espacios de más ni tildes; lo que falta o sobra va a errores.
+    /// Una columna que sobra o se repite se nombra por su letra, porque su título lo escribe cualquiera y puede ser un código.
+    /// </summary>
     private static Columnas LeerEncabezado(IReadOnlyList<IReadOnlyList<string>> filas, VistaAdministracion vista, List<ErrorImportacion> errores)
     {
         var encabezado = filas.Count > 0 ? filas[0] : [];
         var ancho = filas.Count > 0 ? filas.Max(f => f.Count) : 0;
-        var cupos = vista.ParesDeCupo().ToDictionary(p => Normalizar(vista.NombrePar(p) + SufijoLimite), p => p);
+        // Dos cupos que se escriben igual salvo mayúsculas o tildes quedan con el primero: el segundo no se puede nombrar aparte.
+        var cupos = new Dictionary<string, (Guid Servicio, Guid Categoria)>(StringComparer.Ordinal);
+        foreach (var par in vista.ParesDeCupo())
+        {
+            cupos.TryAdd(Normalizar(vista.NombrePar(par) + SufijoLimite), par);
+        }
+
         int? nombre = null;
         int? codigo = null;
         var columnasCupo = new List<(int, string, (Guid, Guid))>();
@@ -355,7 +404,7 @@ public sealed class ImportacionPersonas
 
             if (!vistas.Add(clave))
             {
-                errores.Add(new ErrorImportacion(1, titulo, Repetido));
+                errores.Add(new ErrorImportacion(1, LetraDeColumna(c), Repetido));
             }
             else if (clave == Normalizar(ColumnaNombre))
             {
@@ -371,7 +420,7 @@ public sealed class ImportacionPersonas
             }
             else
             {
-                errores.Add(new ErrorImportacion(1, titulo, ColumnaDesconocida));
+                errores.Add(new ErrorImportacion(1, LetraDeColumna(c), ColumnaDesconocida));
             }
         }
 
@@ -394,8 +443,19 @@ public sealed class ImportacionPersonas
         actuales.Select(c => (c.ServicioId, c.CategoriaId, c.Limite)).ToHashSet()
             .SetEquals(finales.Select(c => (c.ServicioId, c.CategoriaId, c.Limite)));
 
-    private static string Normalizar(string texto) =>
-        string.Join(' ', texto.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
+    private static string Normalizar(string texto)
+    {
+        var sinTildes = new StringBuilder();
+        foreach (var letra in texto.Normalize(NormalizationForm.FormD))
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(letra) != UnicodeCategory.NonSpacingMark)
+            {
+                sinTildes.Append(letra);
+            }
+        }
+
+        return string.Join(' ', sinTildes.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
+    }
 
     /// <summary>La letra de una columna desde 0, como la muestra Excel (la 0 es «A»; la 26, «AA»).</summary>
     private static string LetraDeColumna(int columna)

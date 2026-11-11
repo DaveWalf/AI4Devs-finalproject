@@ -19,7 +19,7 @@ Origen: «Exportar Personas a CSV y a Excel» (sin carpeta, se avisa), borde.
 
 ### Requirement: Importar Personas desde Excel
 
-Personas SHALL importar un `.xlsx` con las columnas de la planilla de ejemplo: cada fila se reconoce por su código; uno vigente modifica a su persona, uno nuevo la agrega. Antes de aplicar MUST mostrar el resumen; «Modificar y agregar» deja a las demás como estaban y «Reemplazar» da de baja a las activas que no están, salvo quien tenga un permiso de operador o de administrador. Una fila con error MUST frenar todo. Lo usado hoy no cambia.
+Personas SHALL importar un `.xlsx` con las columnas de la planilla de ejemplo: cada fila se reconoce por su código; uno sin revocar de una persona activa la modifica, aunque esté vencido, y uno nuevo la agrega. Antes de aplicar MUST mostrar el resumen; «Modificar y agregar» deja a las demás como estaban y «Reemplazar» da de baja a las activas que no están, salvo quien tenga un permiso de operador o de administrador. Una fila con error MUST frenar todo. Lo usado hoy no cambia.
 
 #### Scenario: Modificar y agregar
 Origen: mejora 14 de David del 10/11/2026 («modifique y agregue»).
@@ -45,6 +45,13 @@ Origen: AT37 («conservación del valor previo ante error»), borde.
 - **WHEN** se importa
 - **THEN** el resumen señala las dos filas con su motivo, no deja aplicar y la versión activa no cambia
 
+#### Scenario: Un código que Excel guardó como número
+Origen: verificación del change («Reemplazar» no se deshace y un código sin sus ceros cuenta como nuevo), borde.
+- **GIVEN** un archivo con una fila de la planilla de ejemplo y un código guardado como número
+- **WHEN** se importa
+- **THEN** el resumen avisa las dos cosas antes de aplicar, y «Reemplazar» dice que la baja revoca los códigos sin vuelta atrás
+- **AND** un código de más de 15 dígitos guardado como número es un error de su fila
+
 #### Scenario: Cancelar el resumen
 Origen: mejora 14 de David del 10/11/2026 («según se configure»), borde.
 - **GIVEN** el resumen de una importación sin errores
@@ -55,11 +62,11 @@ Origen: mejora 14 de David del 10/11/2026 («según se configure»), borde.
 Origen: `AGENTS.md` (OWASP: la entrada externa), borde.
 - **GIVEN** un archivo `.xlsx` dañado, sin la columna «Código», con una columna desconocida o sin ninguna persona
 - **WHEN** se importa
-- **THEN** el pie avisa qué falta o qué sobra y no se aplica nada
+- **THEN** el resumen lista qué falta o qué sobra, sin mostrar el título de una columna que sobra, y no deja aplicar nada
 
 ### Requirement: La importación queda en la bitácora
 
-Cada importación aplicada SHALL dejar un `CONFIGURATION_CHANGED` por persona cambiada, como un guardado a mano, y un `PEOPLE_IMPORTED` en la general con el modo, el nombre del archivo, los totales y, por persona, su `PersonId` y lo que pasó. Una rechazada MUST dejar `PEOPLE_IMPORT_REJECTED` con los errores por motivo. Ninguno MUST contener nombres ni códigos.
+Cada importación aplicada SHALL dejar un `CONFIGURATION_CHANGED` por persona cambiada, como un guardado a mano, y un `PEOPLE_IMPORTED` en la general con el modo, la huella SHA-256 del archivo, los totales y, por persona, su `PersonId` y lo que pasó. Una rechazada MUST dejar `PEOPLE_IMPORT_REJECTED` con los errores por motivo. Ninguno MUST contener nombres ni códigos.
 
 #### Scenario: El resumen persona por persona
 Origen: mejora 14 de David del 10/11/2026 («bitácora de lo decidido y del resumen persona por persona»).

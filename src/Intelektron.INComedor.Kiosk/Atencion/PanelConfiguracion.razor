@@ -2,6 +2,8 @@
 @using Intelektron.INComedor.Infrastructure.Sqlite
 @using Intelektron.INComedor.Kiosk.Red
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 
 @*
     Configuración por pestañas (D1 a D3 de configurar-puesto-por-pestanas): un diálogo modal que no cambia el estado de la
@@ -319,6 +321,14 @@
                     @if (revision.Valida)
                     {
                         <p id="importacion-totales">@MensajesAtencion.ResumenImportacion(_archivoImportado!, revision.Agregadas, revision.Modificadas, revision.SinCambios)</p>
+                        @if (revision.FilasDeEjemplo > 0)
+                        {
+                            <p id="importacion-ejemplo" class="aviso">@MensajesAtencion.ImportacionConFilasDeEjemplo(revision.FilasDeEjemplo)</p>
+                        }
+                        @if (revision.CodigosComoNumero > 0)
+                        {
+                            <p id="importacion-numeros" class="aviso">@MensajesAtencion.ImportacionCodigosComoNumero(revision.CodigosComoNumero)</p>
+                        }
                         <p id="importacion-reemplazar">@MensajesAtencion.ImportacionReemplazar(revision.DeBajaAlReemplazar.Count)</p>
                         <p>@MensajesAtencion.ConsumosDeHoyAlImportar</p>
                         <div class="acciones">
@@ -458,14 +468,19 @@
             formato == FormatoExportacion.Csv ? "CSV" : "XLSX", resultado.Archivo, resultado.Filas));
     }
 
-    /// <summary>Una importación aplicada, para la general: el archivo sin su ruta, el modo y cada persona (D8 de importar-personas-desde-excel).</summary>
-    public sealed record ImportacionPersonasRealizada(string Archivo, ModoImportacion Modo, ResultadoImportacion Resultado);
+    /// <summary>
+    /// Una importación aplicada, para la general: la huella SHA-256 del archivo, no su nombre, que lo escribe cualquiera y
+    /// puede tener un código; el modo y cada persona (D8 de importar-personas-desde-excel).
+    /// </summary>
+    public sealed record ImportacionPersonasRealizada(string? Huella, ModoImportacion Modo, ResultadoImportacion Resultado);
 
-    /// <summary>Una importación con errores, para la general: el archivo sin su ruta y sus errores, de los que se registran sólo los motivos (D8).</summary>
-    public sealed record ImportacionPersonasRechazada(string Archivo, IReadOnlyList<ErrorImportacion> Errores);
+    /// <summary>Una importación con errores, para la general: la huella del archivo y sus errores, de los que se registran sólo los motivos (D8).</summary>
+    public sealed record ImportacionPersonasRechazada(string? Huella, IReadOnlyList<ErrorImportacion> Errores);
 
     private RevisionImportacion? _revision;
     private string? _archivoImportado;
+    private string? _huellaImportada;
+    private bool _enfocarCartel;
     private int _recargaPersonas;
 
     private bool PuedeExportarPersonas => AlmacenExportacion is not null && ElectorCarpeta is not null;
@@ -547,11 +562,15 @@
 
         var archivo = System.IO.Path.GetFileName(ruta);
         RevisionImportacion revision;
+        string? huella;
         try
         {
-            // Compartido para leer aunque Excel lo tenga abierto.
+            // Compartido para leer aunque Excel lo tenga abierto. La huella, sólo de un archivo que se va a leer: uno de más de
+            // 5 MB se rechaza sin leerlo.
             using var flujo = new System.IO.FileStream(ruta, System.IO.FileMode.Open, System.IO.FileAccess.Read,
                 System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete);
+            huella = flujo.Length <= LectorPlanilla.TamanoMaximo ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(flujo)) : null;
+            flujo.Position = 0;
             revision = new ImportacionPersonas(Administracion!).Revisar(flujo);
         }
         catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
@@ -565,10 +584,10 @@
             return;
         }
 
-        (_revision, _archivoImportado) = (revision, archivo);
+        (_revision, _archivoImportado, _huellaImportada, _enfocarCartel) = (revision, archivo, huella, true);
         if (!revision.Valida)
         {
-            RegistrarImportacionRechazada?.Invoke(new ImportacionPersonasRechazada(archivo, revision.Errores));
+            RegistrarImportacionRechazada?.Invoke(new ImportacionPersonasRechazada(huella, revision.Errores));
         }
     }
 
@@ -578,7 +597,7 @@
     /// </summary>
     private void AplicarImportacion(ModoImportacion modo)
     {
-        var (revision, archivo) = (_revision!, _archivoImportado!);
+        var (revision, huella) = (_revision!, _huellaImportada);
         CerrarImportacion();
         ResultadoImportacion resultado;
         try
@@ -598,7 +617,7 @@
                 _avisoGuardado = revision.Agregadas + revision.Modificadas + dadas > 0
                     ? MensajesAtencion.ImportacionAplicada(resultado.Guardado.VersionActiva, revision.Agregadas, revision.Modificadas, dadas)
                     : MensajesAtencion.ImportacionSinCambios(resultado.Guardado.VersionActiva);
-                RegistrarImportacionPersonas?.Invoke(new ImportacionPersonasRealizada(archivo, modo, resultado));
+                RegistrarImportacionPersonas?.Invoke(new ImportacionPersonasRealizada(huella, modo, resultado));
                 break;
             case TipoGuardado.Denegado:
                 _avisoGuardado = MensajesAtencion.INWebAdministra;
@@ -612,7 +631,7 @@
         _recargaPersonas++;
     }
 
-    private void CerrarImportacion() => (_revision, _archivoImportado) = (null, null);
+    private void CerrarImportacion() => (_revision, _archivoImportado, _huellaImportada) = (null, null, null);
     private string? _avisoGuardado;
     private string? _avisoEstilo;
     private VistaAdministracion? _resumen;
@@ -855,6 +874,20 @@
             _enfocarPestana = false;
             await _botones[(int)_elegida].FocusAsync();
         }
+
+        // El foco entra al resumen de una importación, en su primer botón (D9 de importar-personas-desde-excel).
+        if (_enfocarCartel && _revision is not null)
+        {
+            _enfocarCartel = false;
+            try
+            {
+                await JS.InvokeVoidAsync("incomedor.enfocar", "#resumen-importacion .acciones button");
+            }
+            catch (JSException)
+            {
+                // Sin la función (una página vieja en caché), el foco queda donde estaba.
+            }
+        }
     }
 
     private static string Clave(Pestana pestana) => pestana switch
@@ -1010,22 +1043,8 @@
     }
 
     /// <summary>Escape cierra Configuración como «Cerrar», también con un panel de edición abierto (D3).</summary>
-    /// <summary>Escape cierra el resumen de una importación si está abierto; si no, Configuración.</summary>
-    private Task Tecla(KeyboardEventArgs e)
-    {
-        if (e.Key != "Escape")
-        {
-            return Task.CompletedTask;
-        }
-
-        if (_revision is not null)
-        {
-            CerrarImportacion();
-            return Task.CompletedTask;
-        }
-
-        return Cancelar.InvokeAsync();
-    }
+    /// <summary>Escape cierra Configuración, también con el resumen de una importación abierto, que no se aplica.</summary>
+    private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar.InvokeAsync() : Task.CompletedTask;
 
     /// <summary>Abrir una edición elige su pestaña, que queda a la vista con la tabla o el panel.</summary>
     private void AbrirPanel(Panel panel)

@@ -66,3 +66,29 @@
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+
+## 5. Correcciones de la verificación
+
+- [x] 5.1 Lo que marcó el agente de sólo lectura sobre `737a8ed` (2 críticos, 11 advertencias y 10 sugerencias), con
+  pruebas nuevas vistas fallar antes. Verifica: `Infrastructure.Sqlite.Tests` y `Kiosk.Tests` enteros en verde.
+  - El lector: una referencia de más de tres letras o más allá de XFD y una fila repetida no son una planilla (antes,
+    `ZZZZZZZ1` tiraba `ArgumentOutOfRangeException` y `AAAAAAA1` pedía 2,5 GB); las filas sin valor no cuentan; el tope de
+    20 MB, sólo en las partes que se leen; marca las celdas numéricas. `PlanillasTests` suma 5: dos vistas fallar
+    (`error: 2`) y tres fijan lo que ya andaba (DTD, 5 MB y 2 002 filas, que el mapa del curso citaba sin prueba).
+  - La importación: el encabezado sin tildes; la columna que sobra o se repite, por su letra (su título puede ser un
+    código); `SAME_PERSON` para dos códigos de una persona; `NUMERIC_CODE` para un código de más de 15 dígitos guardado
+    como número; el resumen cuenta los códigos numéricos y las filas de ejemplo. `ImportacionPersonasTests` suma 6 y
+    cambia 2 propias del change: cinco vistas fallar (`error: 5`); celda vacía, columna ausente, fila sin cambios sin
+    versión y permisos vencidos o revocados fijan lo que ya andaba. La planilla de ejemplo, probada con su formato de
+    texto en B2 y B3 y salteando un código usado.
+  - La pantalla: Escape vuelve a cerrar Configuración (la spec viva lo pide; nada se aplica); la bitácora lleva
+    `FileSha256` y no el nombre del archivo; los avisos de filas de ejemplo y de códigos numéricos; «Reemplazar» dice que
+    revoca los códigos sin vuelta atrás; el foco entra al cartel; el pie entero con 16 px de relleno. `ImportarPersonasTests`
+    suma 4 y extiende 3 propias: en un worktree de `737a8ed` con sólo la superficie, `total: 14`, `error: 4` (la huella en
+    las dos bitácoras, Escape y los avisos); la oferta sin almuerzos, 0002 y 0004 sin tocar sus fechas, las cinco bajas
+    exactas de «Reemplazar» y el operador como actor fijan lo que ya andaba.
+  - La spec: el archivo inválido lo lista el resumen, la credencial vencida, el escenario del código numérico y la huella;
+    el diseño, las «Descartada» que faltaban en D2, D5, D6, D7, D8 y D9; el proposal, `PuntoFinalTests` y las opciones 7
+    a 9 del gate. `PuntoFinalTests` suma los dos mensajes nuevos y los dos motivos.
+  - Quedan sin cambiar, con su porqué: el cartel no deja inerte lo de atrás (como el de «Ver» en Consumos); el diálogo de
+    archivos expone el menú del shell, como el de carpetas; un archivo que no se pudo abrir no se registra (D8).

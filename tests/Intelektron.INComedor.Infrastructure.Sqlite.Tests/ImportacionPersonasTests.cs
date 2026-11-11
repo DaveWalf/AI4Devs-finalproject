@@ -124,8 +124,17 @@ public class ImportacionPersonasTests : IDisposable
         var sinCodigo = Revisar(["Nombre"], [["Ana"]]);
         Assert.Contains(new ErrorImportacion(1, "Código", CodigosAdministracion.Requerido), sinCodigo.Errores);
 
-        var desconocida = Revisar(["Nombre", "Código", "Postre: límite"], [["Ana", "0777", "1"]]);
-        Assert.Contains(new ErrorImportacion(1, "Postre: límite", ImportacionPersonas.ColumnaDesconocida), desconocida.Errores);
+        // Una columna que sobra se nombra por su letra: su título lo escribe cualquiera y puede ser un código.
+        var desconocida = Revisar(["Nombre", "Código", "Postre: límite", "0001"], [["Ana", "0777", "1", ""]]);
+        Assert.Contains(new ErrorImportacion(1, "C", ImportacionPersonas.ColumnaDesconocida), desconocida.Errores);
+        Assert.Contains(new ErrorImportacion(1, "D", ImportacionPersonas.ColumnaDesconocida), desconocida.Errores);
+        Assert.DoesNotContain(desconocida.Errores, e => e.Campo.Contains("0001", StringComparison.Ordinal));
+
+        var repetida = Revisar(["Nombre", "Código", "Nombre"], [["Ana", "0777", "Ana"]]);
+        Assert.Contains(new ErrorImportacion(1, "C", CodigosAdministracion.Repetido), repetida.Errores);
+
+        var sinTitulo = Revisar(["Nombre", "Código"], [["Ana", "0777", "algo"]]);
+        Assert.Contains(new ErrorImportacion(1, "C", ImportacionPersonas.ColumnaDesconocida), sinTitulo.Errores);
 
         var vacia = Revisar(["Nombre", "Código"], Array.Empty<string[]>());
         Assert.Equal([new ErrorImportacion(0, "Personas", CodigosAdministracion.Requerido)], vacia.Errores);
@@ -137,6 +146,9 @@ public class ImportacionPersonasTests : IDisposable
     [Fact(DisplayName = "administracion-local · Descargar la planilla de ejemplo: un libro con «Personas» e «Instrucciones», el encabezado de cada cupo, el código como texto y ningún código del puesto")]
     public void La_planilla_de_ejemplo()
     {
+        // 1001 ya se usó en el puesto, aunque revocado: la planilla no lo ofrece.
+        RevocarCodigo("1001");
+
         var nombre = Importacion.EscribirPlanillaDeEjemplo(Destino, Zona);
 
         Assert.Equal("INComedor-planilla-personas-20261106-120000.xlsx", nombre);
@@ -144,20 +156,120 @@ public class ImportacionPersonasTests : IDisposable
         using (var libro = ZipFile.OpenRead(ruta))
         {
             var ns = XNamespace.Get("http://schemas.openxmlformats.org/spreadsheetml/2006/main");
-            using var flujo = libro.GetEntry("xl/workbook.xml")!.Open();
-            Assert.Equal(["Personas", "Instrucciones"], XDocument.Load(flujo).Descendants(ns + "sheet").Select(s => (string)s.Attribute("name")!));
+            XDocument Xml(string parte)
+            {
+                using var flujo = libro.GetEntry(parte)!.Open();
+                return XDocument.Load(flujo);
+            }
+
+            Assert.Equal(["Personas", "Instrucciones"], Xml("xl/workbook.xml").Descendants(ns + "sheet").Select(s => (string)s.Attribute("name")!));
+            var estilos = Xml("xl/styles.xml").Descendants(ns + "cellXfs").Elements(ns + "xf").ToList();
+            var hoja = Xml("xl/worksheets/sheet1.xml");
+            string Formato(string? estilo) => (string)estilos[int.Parse(estilo ?? "0", System.Globalization.CultureInfo.InvariantCulture)].Attribute("numFmtId")!;
+            Assert.Equal("49", Formato((string?)hoja.Descendants(ns + "col").Single(c => (string?)c.Attribute("min") == "2").Attribute("style")));
+            Assert.All(new[] { "B2", "B3" }, r => Assert.Equal("49", Formato((string?)hoja.Descendants(ns + "c").Single(c => (string?)c.Attribute("r") == r).Attribute("s"))));
         }
 
         var filas = Leer(ruta);
         var vista = Admin.Leer();
         Assert.Equal(new[] { "Nombre", "Código" }.Concat(vista.ParesDeCupo().Select(p => $"{vista.NombrePar(p)}: límite")), filas[0]);
-        Assert.True(filas.Count >= 3);
-        Assert.DoesNotContain(filas.Skip(1), f => f[1] == FixtureSintetico.CodigoSintetico);
+        Assert.Equal(["1002", "1003"], filas.Skip(1).Select(f => f[1]));
 
         using var planilla = File.OpenRead(ruta);
         var vuelta = Importacion.Revisar(planilla);
         Assert.True(vuelta.Valida, string.Join("; ", vuelta.Errores));
         Assert.Equal(2, vuelta.Agregadas);
+        Assert.Equal(2, vuelta.FilasDeEjemplo);
+    }
+
+    [Fact(DisplayName = "administracion-local · Importar Personas desde Excel: el encabezado se reconoce sin distinguir mayúsculas, espacios de más ni tildes")]
+    public void El_encabezado_sin_mayusculas_espacios_ni_tildes()
+    {
+        var vista = Admin.Leer();
+        var cupo = $"  {vista.NombrePar(vista.ParesDeCupo()[0]).ToLowerInvariant()}:   LIMITE ";
+
+        var revision = Revisar(["  NOMBRE ", "codigo", cupo], [["Persona nueva", "0777", "1"]]);
+
+        Assert.True(revision.Valida, string.Join("; ", revision.Errores));
+        Assert.Equal(1, revision.Agregadas);
+    }
+
+    [Fact(DisplayName = "administracion-local · Importar Personas desde Excel: una celda vacía quita ese cupo, una columna que falta deja los demás como estaban y una fila igual queda sin cambios, sin crear versión")]
+    public void Celda_vacia_columna_ausente_y_fila_sin_cambios()
+    {
+        var antes = Admin.Leer().Personas.Single(p => p.Id == Fixture.Habilitada.Id);
+        Assert.Contains(antes.Cupos, c => c.ServicioId == Par.Servicio && c.CategoriaId == Par.Categoria);
+        var limite = antes.Cupos.Single(c => c.ServicioId == Par.Servicio && c.CategoriaId == Par.Categoria).Limite.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        var igual = Revisar([antes.Nombre, FixtureSintetico.CodigoSintetico, limite]);
+        Assert.Equal(1, igual.SinCambios);
+        Assert.Empty(igual.Ediciones);
+        var sinCambios = Importacion.Aplicar(igual, ModoImportacion.ModificarYAgregar, null);
+        Assert.Equal(TipoGuardado.Aplicado, sinCambios.Guardado.Tipo);
+        Assert.Equal(1, sinCambios.Guardado.VersionActiva);
+        Assert.Equal(1, Admin.Leer().VersionConfiguracion);
+
+        Importacion.Aplicar(Revisar([antes.Nombre, FixtureSintetico.CodigoSintetico, ""]), ModoImportacion.ModificarYAgregar, null);
+
+        var despues = Admin.Leer().Personas.Single(p => p.Id == Fixture.Habilitada.Id);
+        Assert.DoesNotContain(despues.Cupos, c => c.ServicioId == Par.Servicio && c.CategoriaId == Par.Categoria);
+        Assert.Equal(
+            antes.Cupos.Where(c => c.ServicioId != Par.Servicio || c.CategoriaId != Par.Categoria).Select(c => (c.ServicioId, c.CategoriaId, c.Limite)),
+            despues.Cupos.Select(c => (c.ServicioId, c.CategoriaId, c.Limite)));
+    }
+
+    [Fact(DisplayName = "administracion-local · Quién es quién: una credencial vencida de una persona activa la reconoce sin tocar sus fechas; una revocada es un error, y dos códigos de la misma persona también")]
+    public void Credenciales_de_una_persona_activa()
+    {
+        AgregarCredencial(Fixture.SinDerecho.Id, "0555", hasta: "2026-10-15T03:00:00.000Z");
+        AgregarCredencial(Fixture.SinDerecho.Id, "0666", revocada: "2026-10-15T03:00:00.000Z");
+        AgregarCredencial(Fixture.Habilitada.Id, "0124");
+
+        var vencida = Revisar(["Sin derecho corregida", "0555", "1"]);
+        Assert.True(vencida.Valida, string.Join("; ", vencida.Errores));
+        Assert.Equal(Fixture.SinDerecho.Id, Assert.Single(vencida.Personas).PersonaId);
+        Importacion.Aplicar(vencida, ModoImportacion.ModificarYAgregar, null);
+        Assert.Equal("Sin derecho corregida", Admin.Leer().Personas.Single(p => p.Id == Fixture.SinDerecho.Id).Nombre);
+        using (var conexion = Base.AbrirConexion())
+        {
+            Assert.Equal("2026-10-15T03:00:00.000Z", Sql.Escalar<string>(conexion,
+                "SELECT c.comcreFechaVigenciaHastaUtc FROM tbComedorCredencialesPersonas c JOIN tbComedorConfiguracionPuestos p ON p.comvcCodigoActiva = c.comvcCodigo WHERE c.comcreValorNormalizado = '0555'"));
+        }
+
+        var revocada = Revisar(["Sin derecho", "0666", "1"]);
+        Assert.Contains(new ErrorImportacion(2, "Código", ImportacionPersonas.CodigoDadoDeBaja), revocada.Errores);
+
+        var dos = Revisar(["Persona habilitada", FixtureSintetico.CodigoSintetico, "1"], ["Persona habilitada", "0124", "1"]);
+        Assert.Contains(new ErrorImportacion(3, "Código", ImportacionPersonas.MismaPersona), dos.Errores);
+    }
+
+    [Fact(DisplayName = "administracion-local · Reemplazar conserva a los operadores: un permiso vencido sin revocar conserva a la persona; uno revocado, no")]
+    public void Reemplazar_con_permisos_vencidos_y_revocados()
+    {
+        var vencido = Fixture.SinDerecho.Id;
+        DarPermiso(vencido, hasta: "2026-10-15T03:00:00.000Z");
+        var revocado = AgregarPersona("Operador revocado");
+        DarPermiso(revocado, revocado: "2026-10-15T03:00:00.000Z");
+
+        var revision = Revisar(["Persona habilitada", FixtureSintetico.CodigoSintetico, "1"]);
+
+        Assert.DoesNotContain(revision.DeBajaAlReemplazar, p => p.PersonaId == vencido);
+        Assert.Contains(revision.DeBajaAlReemplazar, p => p.PersonaId == revocado);
+    }
+
+    [Fact(DisplayName = "administracion-local · Quién es quién: el resumen cuenta los códigos guardados como número y las filas de la planilla de ejemplo; uno de más de 15 dígitos guardado como número es un error")]
+    public void Codigos_como_numero_y_filas_de_ejemplo()
+    {
+        var vista = Admin.Leer();
+        string[] encabezado = ["Nombre", "Código", $"{vista.NombrePar(vista.ParesDeCupo()[0])}: límite"];
+
+        var numeros = Revisar(encabezado, [["Persona de ejemplo 1", new NumeroPlanilla(105, 0), "1"], ["Persona nueva", "0106", "1"]]);
+        Assert.True(numeros.Valida, string.Join("; ", numeros.Errores));
+        Assert.Equal(1, numeros.CodigosComoNumero);
+        Assert.Equal(1, numeros.FilasDeEjemplo);
+
+        var largo = Revisar(encabezado, [["Persona nueva", new NumeroPlanilla(1234567890123456, 0), "1"]]);
+        Assert.Contains(new ErrorImportacion(2, "Código", ImportacionPersonas.CodigoComoNumero), largo.Errores);
     }
 
     private (Guid Servicio, Guid Categoria) Par => Admin.Leer().ParesDeCupo()[0];
@@ -169,12 +281,34 @@ public class ImportacionPersonasTests : IDisposable
         return Revisar(["Nombre", "Código", $"{vista.NombrePar(vista.ParesDeCupo()[0])}: límite"], filas);
     }
 
-    private RevisionImportacion Revisar(string[] encabezado, string[][] filas)
+    private RevisionImportacion Revisar(string[] encabezado, string[][] filas) =>
+        Revisar(encabezado, filas.Select(f => f.Cast<object>().ToArray()).ToArray());
+
+    /// <summary>Un archivo con celdas de texto o números (<see cref="NumeroPlanilla"/>), como las guarda Excel.</summary>
+    private RevisionImportacion Revisar(string[] encabezado, object[][] filas)
     {
         var nombre = EscritorPlanilla.EscribirLibro(Destino, "importar-" + Guid.NewGuid().ToString("N"),
-            [new HojaPlanilla("Personas", encabezado, filas.Select(f => (IReadOnlyList<object>)f.Cast<object>().ToList()), [1])]);
+            [new HojaPlanilla("Personas", encabezado, filas.Select(f => (IReadOnlyList<object>)f), [1])]);
         using var flujo = File.OpenRead(Path.Combine(Destino, nombre));
         return Importacion.Revisar(flujo);
+    }
+
+    private void AgregarCredencial(Guid persona, string codigo, string? hasta = null, string? revocada = null)
+    {
+        using var conexion = Base.AbrirConexion();
+        Sql.Ejecutar(conexion,
+            "INSERT INTO tbComedorCredencialesPersonas VALUES ($vc, $cre, $per, 'SERIAL_CODE', $valor, NULL, $hasta, $revocada)",
+            ("$vc", Fixture.SnapshotId), ("$cre", Guid.NewGuid()), ("$per", persona), ("$valor", codigo), ("$hasta", hasta), ("$revocada", revocada));
+    }
+
+    private Guid AgregarPersona(string nombre)
+    {
+        var id = Guid.NewGuid();
+        using var conexion = Base.AbrirConexion();
+        Sql.Ejecutar(conexion,
+            "INSERT INTO tbComedorPersonas (comvcCodigo, comperCodigo, comperNombreVisible, comperActivo, comperVersionMaterialIdentidad) VALUES ($vc, $per, $nombre, 1, 1)",
+            ("$vc", Fixture.SnapshotId), ("$per", id), ("$nombre", nombre));
+        return id;
     }
 
     private static IReadOnlyList<IReadOnlyList<string>> Leer(string ruta)
@@ -183,12 +317,15 @@ public class ImportacionPersonasTests : IDisposable
         return LectorPlanilla.Leer(flujo);
     }
 
-    private void DarPermiso(Guid persona)
+    private void DarPermiso(Guid persona, string? hasta = null, string? revocado = null)
     {
         using var conexion = Base.AbrirConexion();
         Sql.Ejecutar(conexion,
-            "INSERT INTO tbComedorPermisosOperadores (comvcCodigo, compopCodigo, comperCodigo, compopRol) VALUES ($vc, $pop, $per, 'OPERATOR')",
-            ("$vc", Fixture.SnapshotId), ("$pop", Guid.NewGuid()), ("$per", persona));
+            """
+            INSERT INTO tbComedorPermisosOperadores (comvcCodigo, compopCodigo, comperCodigo, compopRol, compopFechaVigenciaHastaUtc, compopFechaRevocacionUtc)
+            VALUES ($vc, $pop, $per, 'OPERATOR', $hasta, $revocado)
+            """,
+            ("$vc", Fixture.SnapshotId), ("$pop", Guid.NewGuid()), ("$per", persona), ("$hasta", hasta), ("$revocado", revocado));
     }
 
     /// <summary>Una credencial revocada de la persona inactiva: un código que existe y no se puede reasignar ni reactivar.</summary>

@@ -898,7 +898,7 @@
         });
 
     /// <summary>
-    /// Cada importación aplicada queda en la general con el modo, el archivo sin su ruta, la versión, los totales y, persona
+    /// Cada importación aplicada queda en la general con el modo, la huella SHA-256 del archivo, la versión, los totales y, persona
     /// por persona, su PersonId y lo que pasó, sin nombres ni códigos; con un operador, él es el actor (D8 de
     /// importar-personas-desde-excel). Cada persona cambiada tiene además su CONFIGURATION_CHANGED, como un guardado a mano.
     /// </summary>
@@ -908,7 +908,7 @@
         RegistrarConfiguracion("PEOPLE_IMPORTED", new
         {
             Mode = importacion.Modo == ModoImportacion.Reemplazar ? "REPLACE" : "MERGE",
-            File = importacion.Archivo,
+            FileSha256 = importacion.Huella,
             Version = importacion.Resultado.Guardado.VersionActiva,
             Added = personas.Count(p => p.Accion == AccionImportada.Agregada),
             Updated = personas.Count(p => p.Accion == AccionImportada.Modificada),
@@ -932,13 +932,13 @@
     }
 
     /// <summary>
-    /// Una importación con errores queda en la general con el archivo y cuántos errores hay de cada motivo, sin filas, columnas,
+    /// Una importación con errores queda en la general con la huella del archivo y cuántos errores hay de cada motivo, sin filas, columnas,
     /// nombres ni códigos: el título de una columna lo escribe cualquiera (D8 de importar-personas-desde-excel).
     /// </summary>
     private void RegistrarImportacionRechazada(PanelConfiguracion.ImportacionPersonasRechazada rechazo) =>
         RegistrarConfiguracion("PEOPLE_IMPORT_REJECTED", new
         {
-            File = rechazo.Archivo,
+            FileSha256 = rechazo.Huella,
             Errors = rechazo.Errores.GroupBy(e => e.Motivo).OrderBy(g => g.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count()),
             Access = _acceso,
             ActorPersonId = (Guid?)null,

@@ -32,8 +32,8 @@ negocio) y RB21 (todo cambio con actor y resultado); ticket TK02.1.
   nombre inválido, un límite fuera de 0 a 99, una columna desconocida) deja la importación sin aplicar, con la fila y el
   motivo.
 - **Bitácora**: una sola versión nueva con un `CONFIGURATION_CHANGED` por persona, como al guardar a mano, y un
-  `PEOPLE_IMPORTED` con el modo, el nombre del archivo, los totales y el resumen persona por persona (agregada,
-  modificada, dada de baja, sin cambios), sin nombres ni códigos.
+  `PEOPLE_IMPORTED` con el modo, la huella SHA-256 del archivo (no su nombre, que lo escribe cualquiera), los totales y el
+  resumen persona por persona (agregada, modificada, dada de baja, sin cambios), sin nombres ni códigos.
 
 ## Non-goals
 
@@ -58,7 +58,9 @@ Ninguna.
   línea y números; `ImportacionPersonas`, que arma el resumen y las ediciones y guarda con `GuardarPersonas`;
   `EscritorPlanilla` con varias hojas y columnas de texto) y `Kiosk` (`IElectorArchivo` con el `OpenFileDialog` de WPF, el
   resumen y los botones en Personas). Sin migración.
-- **Pruebas**: nuevas en `Infrastructure.Sqlite.Tests`, `Kiosk.Tests` y una E2E a 1024 × 768.
+- **Pruebas**: nuevas en `Infrastructure.Sqlite.Tests`, `Kiosk.Tests` y una E2E a 1024 × 768. Prueba existente que
+  cambia (decisión 13): `PuntoFinalTests`, que obliga a clasificar cada método nuevo de `MensajesAtencion` con un ejemplo;
+  suma los de la importación, sin tocar ninguna aserción.
 - **Documentos**: `readme.md` (Personas) y la fila que corresponda de `docs/aplicacion-del-curso.md`.
 
 ## Gate (decisión 13 del plan: dado, con límites)
@@ -73,5 +75,13 @@ Opciones recomendadas, aplicadas sin esperar:
 5. Una fila con error frena toda la importación, como un guardado a mano con un campo inválido.
 6. Una columna de cupo que el archivo no trae deja ese cupo como estaba; una celda vacía en una columna que sí trae lo
    quita, como vaciar la celda en la tabla.
+7. (Agregada al aplicar.) Una credencial sin revocar de una persona activa la reconoce aunque esté vencida o todavía no
+   rija, y un permiso de operador vencido pero sin revocar la conserva al «Reemplazar»: en los dos casos, lo que no está
+   revocado sigue siendo de esa persona.
+8. (Agregada al aplicar.) Un operador que entró con su código puede importar con los dos modos, como ya puede dar de baja a
+   mano desde la tabla; queda como actor de cada cambio.
+9. (Agregada por la verificación.) La bitácora guarda la huella SHA-256 del archivo y no su nombre; el resumen avisa si
+   quedan filas de la planilla de ejemplo y si hay códigos guardados como número, y «Reemplazar» dice que la baja revoca
+   los códigos sin vuelta atrás.
 
 Talla: L. Si una prueba existente falla por otra razón, se para (cláusula del plan).

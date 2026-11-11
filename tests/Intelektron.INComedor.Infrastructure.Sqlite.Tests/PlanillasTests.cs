@@ -97,6 +97,60 @@ public class PlanillasTests : IDisposable
         Assert.Equal(["Persona de ejemplo 1", "1001"], Leer(Path.Combine(_carpeta, nombre))[1]);
     }
 
+    [Fact(DisplayName = "administracion-local · Un archivo que no es una planilla: una hoja con DTD se rechaza como NOT_A_WORKBOOK, sin resolverla (XXE)")]
+    public void Una_hoja_con_dtd()
+    {
+        var ruta = Libro("<sheetData/>", cadenas: null, prologo: """<?xml version="1.0"?><!DOCTYPE worksheet [<!ENTITY x SYSTEM "file:///C:/Windows/win.ini">]>""");
+
+        Assert.Equal(PlanillaInvalidaException.NoEsUnLibro, Assert.Throws<PlanillaInvalidaException>(() => Leer(ruta)).Motivo);
+    }
+
+    [Fact(DisplayName = "administracion-local · Un archivo que no es una planilla: un archivo de más de 5 MB se rechaza como TOO_LARGE, sin abrirlo")]
+    public void Un_archivo_de_mas_de_cinco_megas()
+    {
+        using var flujo = new MemoryStream(new byte[LectorPlanilla.TamanoMaximo + 1]);
+
+        Assert.Equal(PlanillaInvalidaException.Demasiado, Assert.Throws<PlanillaInvalidaException>(() => LectorPlanilla.Leer(flujo)).Motivo);
+    }
+
+    [Fact(DisplayName = "administracion-local · Un archivo que no es una planilla: una fila con datos después de la 2001 se rechaza como TOO_MANY_ROWS")]
+    public void Demasiadas_filas()
+    {
+        var ruta = Libro("""<sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Nombre</t></is></c></row><row r="2002"><c r="A2002" t="inlineStr"><is><t>Ana</t></is></c></row></sheetData>""");
+
+        Assert.Equal(PlanillaInvalidaException.DemasiadasFilas, Assert.Throws<PlanillaInvalidaException>(() => Leer(ruta)).Motivo);
+    }
+
+    [Fact(DisplayName = "administracion-local · Un archivo que no es una planilla: una referencia de celda fuera de las columnas de Excel o una fila repetida se rechazan como NOT_A_WORKBOOK, sin agotar la memoria")]
+    public void Referencias_que_no_son_de_excel()
+    {
+        foreach (var referencia in new[] { "ZZZZZZZ1", "AAAAAAA1", "XFE1" })
+        {
+            var ruta = Libro($"""<sheetData><row r="1"><c r="{referencia}" t="inlineStr"><is><t>x</t></is></c></row></sheetData>""");
+            Assert.Equal(PlanillaInvalidaException.NoEsUnLibro, Assert.Throws<PlanillaInvalidaException>(() => Leer(ruta)).Motivo);
+        }
+
+        var repetida = Libro("""<sheetData><row r="2"><c r="A2"><v>1</v></c></row><row r="2"><c r="A2"><v>2</v></c></row></sheetData>""");
+        Assert.Equal(PlanillaInvalidaException.NoEsUnLibro, Assert.Throws<PlanillaInvalidaException>(() => Leer(repetida)).Motivo);
+    }
+
+    [Fact(DisplayName = "administracion-local · Importar Personas desde Excel: las filas vacías con formato después de la 2001 no cuentan, y el lector marca qué celdas eran números")]
+    public void Filas_vacias_y_celdas_numericas()
+    {
+        var ruta = Libro("""<sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Código</t></is></c></row><row r="2"><c r="A2"><v>105</v></c><c r="B2" t="inlineStr"><is><t>0105</t></is></c></row><row r="5000"><c r="A5000" s="1"/></row></sheetData>""");
+        var numeros = new HashSet<(int, int)>();
+
+        IReadOnlyList<IReadOnlyList<string>> filas;
+        using (var flujo = File.OpenRead(ruta))
+        {
+            filas = LectorPlanilla.Leer(flujo, numeros);
+        }
+
+        Assert.Equal(2, filas.Count);
+        Assert.Equal(["105", "0105"], filas[1]);
+        Assert.Equal([(1, 0)], numeros);
+    }
+
     private static IReadOnlyList<IReadOnlyList<string>> Leer(string ruta)
     {
         using var flujo = File.OpenRead(ruta);
@@ -104,7 +158,7 @@ public class PlanillasTests : IDisposable
     }
 
     /// <summary>Un libro mínimo armado a mano, como lo guardaría otro programa: una hoja y, si se pasan, cadenas compartidas.</summary>
-    private string Libro(string datosHoja, string? cadenas = null)
+    private string Libro(string datosHoja, string? cadenas = null, string prologo = "")
     {
         var ruta = Path.Combine(_carpeta, Guid.NewGuid().ToString("N") + ".xlsx");
         using var libro = ZipFile.Open(ruta, ZipArchiveMode.Create);
@@ -112,7 +166,7 @@ public class PlanillasTests : IDisposable
             $"""<workbook xmlns="{Principal}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Hoja1" sheetId="1" r:id="rId5"/></sheets></workbook>""");
         Parte(libro, "xl/_rels/workbook.xml.rels",
             """<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="/xl/worksheets/hoja.xml"/></Relationships>""");
-        Parte(libro, "xl/worksheets/hoja.xml", $"""<worksheet xmlns="{Principal}">{datosHoja}</worksheet>""");
+        Parte(libro, "xl/worksheets/hoja.xml", $"""{prologo}<worksheet xmlns="{Principal}">{datosHoja}</worksheet>""");
         if (cadenas is not null)
         {
             Parte(libro, "xl/sharedStrings.xml", cadenas);

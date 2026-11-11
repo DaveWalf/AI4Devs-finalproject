@@ -430,8 +430,9 @@ html, body { overscroll-behavior: none; }
 .tabla-personas input.limite.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
 .exportar-personas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; margin-right: auto; }
 /* Con «Importar Excel» y «Planilla de ejemplo», los cuatro y «Cerrar» entran en una fila a 1024 × 768 con 16 px de relleno:
-   con 20, el más largo mide 192 px y «Cerrar» baja de renglón (D9 de importar-personas-desde-excel). Alto y letra, los de siempre. */
-.dialogo .exportar-personas button { padding: 0 16px; }
+   con 20, el más largo mide 192 px y «Cerrar» baja de renglón. Todo el pie comparte ese relleno, y «Cerrar» conserva su
+   ancho mínimo (D9 de importar-personas-desde-excel). Alto y letra, los de siempre. */
+.dialogo .pie-dialogo button { padding: 0 16px; }
 /* El resumen de una importación de Personas, en el cartel de «Ver» (D4 y D9 de importar-personas-desde-excel): las oraciones
    con la letra de la tabla y los errores en una lista que se desplaza dentro del cartel. */
 #resumen-importacion p { margin: 0; font-size: 18px; }

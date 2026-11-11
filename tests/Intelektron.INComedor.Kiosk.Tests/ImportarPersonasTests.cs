@@ -3,6 +3,7 @@ using Bunit;
 using Intelektron.INComedor.Infrastructure.Sqlite;
 using Intelektron.INComedor.Kiosk.Atencion;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using static Intelektron.INComedor.Kiosk.Tests.PuestoDePrueba;
 
@@ -89,7 +90,9 @@ public class ImportarPersonasTests
         var linea = puesto.General().Single(l => Tipo(l) == "PEOPLE_IMPORTED");
         var contexto = ContextoDe(linea);
         Assert.Equal("MERGE", contexto.GetProperty("Mode").GetString());
-        Assert.Equal(Path.GetFileName(ruta), contexto.GetProperty("File").GetString());
+        // La huella del archivo y no su nombre, que lo escribe cualquiera y puede tener un código (D8).
+        Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(ruta))), contexto.GetProperty("FileSha256").GetString());
+        Assert.False(contexto.TryGetProperty("File", out _));
         Assert.Equal(1, contexto.GetProperty("Added").GetInt32());
         Assert.Equal(1, contexto.GetProperty("Updated").GetInt32());
         Assert.Equal(0, contexto.GetProperty("Deactivated").GetInt32());
@@ -101,7 +104,7 @@ public class ImportarPersonasTests
         Assert.Equal(2, puesto.General().Count(l => Tipo(l) == "CONFIGURATION_CHANGED" && ContextoDe(l).GetProperty("Setting").GetString() == "PERSON"));
     }
 
-    [Fact(DisplayName = "administracion-local · Reemplazar conserva a los operadores: con un archivo sólo con 0001, «Persona sintética 02» queda de baja y el operador de 9001 y el administrador siguen activos")]
+    [Fact(DisplayName = "administracion-local · Reemplazar conserva a los operadores: con un archivo sólo con 0001, quedan de baja las cuatro personas sin permiso y el operador de permiso revocado (9003); siguen activos 9001, 9002 (permiso vencido) y el administrador")]
     public async Task Reemplazar_conserva_a_los_operadores()
     {
         using var puesto = new PuestoDePrueba();
@@ -113,13 +116,13 @@ public class ImportarPersonasTests
 
         await pantalla.Find("#importar-reemplazar").ClickAsync(new());
 
-        Assert.Equal("De baja", Fila(pantalla, "Persona sintética 02").QuerySelector("td.estado-persona")!.TextContent.Trim());
-        Assert.Equal("Activa", Fila(pantalla, "Operador sintético 01").QuerySelector("td.estado-persona")!.TextContent.Trim());
-        Assert.Equal("Activa", Fila(pantalla, "Administrador sintético 04").QuerySelector("td.estado-persona")!.TextContent.Trim());
-        Assert.Equal("Activa", Fila(pantalla, "Persona sintética 01").QuerySelector("td.estado-persona")!.TextContent.Trim());
+        string[] deBaja = ["Persona de demostración", "Persona sintética 02", "Persona sintética 03", "Persona sintética 04", "Operador sintético 03"];
+        string[] activas = ["Persona sintética 01", "Operador sintético 01", "Operador sintético 02", "Administrador sintético 04"];
+        Assert.All(deBaja, n => Assert.Equal("De baja", Fila(pantalla, n).QuerySelector("td.estado-persona")!.TextContent.Trim()));
+        Assert.All(activas, n => Assert.Equal("Activa", Fila(pantalla, n).QuerySelector("td.estado-persona")!.TextContent.Trim()));
         var contexto = ContextoDe(puesto.General().Single(l => Tipo(l) == "PEOPLE_IMPORTED"));
         Assert.Equal("REPLACE", contexto.GetProperty("Mode").GetString());
-        Assert.True(contexto.GetProperty("Deactivated").GetInt32() > 0);
+        Assert.Equal(deBaja.Length, contexto.GetProperty("Deactivated").GetInt32());
         Assert.Equal(contexto.GetProperty("Deactivated").GetInt32(),
             contexto.GetProperty("People").EnumerateArray().Count(p => p.GetProperty("Result").GetString() == "DEACTIVATED"));
     }
@@ -164,6 +167,7 @@ public class ImportarPersonasTests
         Assert.Empty(pantalla.FindAll("#importar-modificar"));
         Assert.Empty(pantalla.FindAll("#importar-reemplazar"));
         var linea = puesto.General().Single(l => Tipo(l) == "PEOPLE_IMPORT_REJECTED");
+        Assert.Equal(64, ContextoDe(linea).GetProperty("FileSha256").GetString()!.Length);
         var errores = ContextoDe(linea).GetProperty("Errors");
         Assert.Equal(1, errores.GetProperty(CodigosAdministracion.Requerido).GetInt32());
         Assert.Equal(1, errores.GetProperty(ImportacionPersonas.CodigoDadoDeBaja).GetInt32());
@@ -222,6 +226,102 @@ public class ImportarPersonasTests
 
         Assert.Equal("1/1", Celda(Fila(pantalla, "Persona sintética 01"), "ALMUERZO"));
         Assert.Equal("0/1", Celda(Fila(pantalla, "Persona sintética 01"), "REFRIGERIO"));
+
+        // Y su oferta de hoy ya no tiene almuerzos: el límite nuevo cuenta lo consumido (RB03).
+        await pantalla.Find("#cancelar-configuracion").ClickAsync(new());
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#ingresar").ClickAsync(new());
+        Assert.NotEmpty(pantalla.FindAll(".opcion"));
+        Assert.DoesNotContain(pantalla.FindAll(".opcion"), o => o.TextContent.Contains("Almuerzo", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "administracion-local · Importar Personas desde Excel: Escape con el resumen abierto cierra Configuración, como siempre, y no aplica nada")]
+    public async Task Escape_con_el_resumen_abierto()
+    {
+        using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
+        Planilla(puesto, ["Persona sintética 05", "0105", "1", ""]);
+        var pantalla = puesto.Dibujar();
+        await AbrirPersonas(pantalla);
+        await pantalla.Find("#importar-personas").ClickAsync(new());
+
+        await pantalla.Find("#importar-modificar").KeyDownAsync(new KeyboardEventArgs { Key = "Escape" });
+
+        Assert.Empty(pantalla.FindAll("[role=\"dialog\"]"));
+        Assert.Equal(1, puesto.Servicio.Administracion!.Leer().VersionConfiguracion);
+        Assert.DoesNotContain(puesto.General(), l => Tipo(l) == "PEOPLE_IMPORTED");
+    }
+
+    [Fact(DisplayName = "administracion-local · Quién es quién: una credencial vencida (0002) o que todavía no rige (0004) de una persona activa la reconoce y la corrige, sin tocar las fechas de la credencial")]
+    public async Task Credenciales_vencidas_o_futuras()
+    {
+        using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
+        Planilla(puesto, ["Persona sintética 02 corregida", "0002", "1", ""], ["Persona sintética 04 corregida", "0004", "1", ""]);
+        var pantalla = puesto.Dibujar();
+        await AbrirPersonas(pantalla);
+        await pantalla.Find("#importar-personas").ClickAsync(new());
+        Assert.Contains(MensajesAtencion.ResumenImportacion("personas-para-importar.xlsx", 0, 2, 0), pantalla.Find("#resumen-importacion").TextContent, StringComparison.Ordinal);
+
+        await pantalla.Find("#importar-modificar").ClickAsync(new());
+
+        Assert.Equal("0/1", Celda(Fila(pantalla, "Persona sintética 02 corregida"), "ALMUERZO"));
+        Assert.Equal("0/1", Celda(Fila(pantalla, "Persona sintética 04 corregida"), "ALMUERZO"));
+        using var conexion = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={puesto.RutaBase};Pooling=False");
+        conexion.Open();
+        using var comando = conexion.CreateCommand();
+        comando.CommandText =
+            """
+            SELECT c.comcreValorNormalizado || ' ' || IFNULL(c.comcreFechaVigenciaDesdeUtc, '-') || ' ' || IFNULL(c.comcreFechaVigenciaHastaUtc, '-')
+            FROM tbComedorCredencialesPersonas c JOIN tbComedorConfiguracionPuestos p ON p.comvcCodigoActiva = c.comvcCodigo
+            WHERE c.comcreValorNormalizado IN ('0002', '0004') ORDER BY 1
+            """;
+        using var lector = comando.ExecuteReader();
+        var fechas = new List<string>();
+        while (lector.Read())
+        {
+            fechas.Add(lector.GetString(0));
+        }
+
+        Assert.Equal(["0002 - 2026-10-15T03:00:00.000Z", "0004 2030-01-01T03:00:00.000Z -"], fechas);
+    }
+
+    [Fact(DisplayName = "administracion-local · Importar Personas desde Excel: con el código de un operador (9001), PEOPLE_IMPORTED y el CONFIGURATION_CHANGED de cada persona lo tienen como actor")]
+    public async Task El_operador_es_el_actor()
+    {
+        using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
+        Planilla(puesto, ["Persona sintética 05", "0105", "1", ""]);
+        var pantalla = puesto.Dibujar();
+        await EntradaConfiguracion.Entrar(pantalla, "9001");
+        await pantalla.Find("#pestana-personas").ClickAsync(new());
+        await pantalla.Find("#importar-personas").ClickAsync(new());
+
+        await pantalla.Find("#importar-modificar").ClickAsync(new());
+
+        using var conexion = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={puesto.RutaBase};Pooling=False");
+        conexion.Open();
+        using var comando = conexion.CreateCommand();
+        comando.CommandText = "SELECT comperCodigo FROM tbComedorPersonas WHERE comperNombreVisible = 'Operador sintético 01' LIMIT 1";
+        var operador = Guid.Parse((string)comando.ExecuteScalar()!);
+        Assert.Equal(operador, ContextoDe(puesto.General().Single(l => Tipo(l) == "PEOPLE_IMPORTED")).GetProperty("ActorPersonId").GetGuid());
+        var cambio = ContextoDe(puesto.General().Single(l => Tipo(l) == "CONFIGURATION_CHANGED" && ContextoDe(l).GetProperty("Setting").GetString() == "PERSON"));
+        Assert.Equal(operador, cambio.GetProperty("ActorPersonId").GetGuid());
+    }
+
+    [Fact(DisplayName = "administracion-local · Importar Personas desde Excel: el resumen avisa que quedan filas de la planilla de ejemplo y códigos guardados como número")]
+    public async Task El_resumen_avisa_filas_de_ejemplo_y_codigos_como_numero()
+    {
+        using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
+        PlanillaConCeldas(puesto, ["Persona de ejemplo 1", new NumeroPlanilla(105, 0), "1", ""]);
+        var pantalla = puesto.Dibujar();
+        await AbrirPersonas(pantalla);
+
+        await pantalla.Find("#importar-personas").ClickAsync(new());
+
+        Assert.Equal(MensajesAtencion.ImportacionConFilasDeEjemplo(1), pantalla.Find("#importacion-ejemplo").TextContent.Trim());
+        Assert.Equal(MensajesAtencion.ImportacionCodigosComoNumero(1), pantalla.Find("#importacion-numeros").TextContent.Trim());
     }
 
     private static async Task AbrirPersonas(IRenderedComponent<PantallaAtencion> pantalla)
@@ -247,7 +347,11 @@ public class ImportarPersonasTests
     }
 
     /// <summary>Una planilla con el encabezado de la demostración y las filas dadas, y el elector que la devuelve, antes de dibujar.</summary>
-    private static string Planilla(PuestoDePrueba puesto, params string[][] filas)
+    private static string Planilla(PuestoDePrueba puesto, params string[][] filas) =>
+        PlanillaConCeldas(puesto, filas.Select(f => f.Cast<object>().ToArray()).ToArray());
+
+    /// <summary>Como <see cref="Planilla"/>, con celdas de texto o números (<see cref="NumeroPlanilla"/>), como las guarda Excel.</summary>
+    private static string PlanillaConCeldas(PuestoDePrueba puesto, params object[][] filas)
     {
         var carpeta = Directory.CreateDirectory(Path.Combine(puesto.Carpeta, "planillas")).FullName;
         var nombre = EscritorPlanilla.EscribirLibro(carpeta, "personas-para-importar",

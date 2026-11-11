@@ -126,8 +126,14 @@ public static class MensajesAtencion
         $"{archivo}: {Cantidad(agregadas, "persona nueva", "personas nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")} y {Cantidad(sinCambios, "sin cambios", "sin cambios")}.";
 
     public static string ImportacionReemplazar(int deBaja) => deBaja == 0
-        ? "«Reemplazar» no da de baja a nadie: todas las personas activas están en la planilla o son operadores."
-        : $"«Reemplazar» además da de baja a {Cantidad(deBaja, "persona", "personas")} que no {(deBaja == 1 ? "está" : "están")} en la planilla; los operadores y el administrador siguen activos.";
+        ? "«Reemplazar» no da de baja a nadie: todas las personas activas están en la planilla, son operadores o son el administrador."
+        : $"«Reemplazar» además da de baja a {Cantidad(deBaja, "persona", "personas")} que no {(deBaja == 1 ? "está" : "están")} en la planilla y revoca sus códigos, sin vuelta atrás; los operadores y el administrador siguen activos.";
+
+    public static string ImportacionConFilasDeEjemplo(int filas) =>
+        $"La planilla todavía tiene {Cantidad(filas, "fila de ejemplo", "filas de ejemplo")}: si no se {(filas == 1 ? "borra, se agrega" : "borran, se agregan")} como {(filas == 1 ? "una persona" : "personas")}.";
+
+    public static string ImportacionCodigosComoNumero(int codigos) =>
+        $"{Cantidad(codigos, "código estaba guardado", "códigos estaban guardados")} como número en Excel: si {(codigos == 1 ? "tenía" : "tenían")} ceros a la izquierda, Excel se los quitó y {(codigos == 1 ? "cuenta" : "cuentan")} como {(codigos == 1 ? "otro código" : "otros códigos")}.";
 
     public static string ImportacionConErrores(int errores) =>
         $"La planilla tiene {Cantidad(errores, "error", "errores")}: no se aplicó nada. Corregila y volvé a importarla.";
@@ -155,15 +161,17 @@ public static class MensajesAtencion
         1 => error.Motivo switch
         {
             CodigosAdministracion.Requerido => $"Falta la columna «{error.Campo}».",
-            CodigosAdministracion.Repetido => $"La columna «{error.Campo}» está repetida.",
-            ImportacionPersonas.ColumnaDesconocida => $"La columna «{error.Campo}» no es de ningún cupo.",
-            _ => $"La columna «{error.Campo}» no es válida.",
+            CodigosAdministracion.Repetido => $"La columna {error.Campo} repite el título de otra.",
+            ImportacionPersonas.ColumnaDesconocida => $"La columna {error.Campo} no es «Nombre», «Código» ni el límite de un cupo.",
+            _ => $"La columna {error.Campo} no es válida.",
         },
         _ => $"Fila {error.Fila.ToString(CultureInfo.InvariantCulture)}: " + error.Motivo switch
         {
             CodigosAdministracion.Requerido => $"falta «{error.Campo}».",
             CodigosAdministracion.Repetido => $"«{error.Campo}» está repetido en otra fila.",
             ImportacionPersonas.CodigoDadoDeBaja => "el código es de una persona dada de baja o fue revocado, y no se reasigna.",
+            ImportacionPersonas.CodigoComoNumero => "el código tiene más de 15 dígitos y Excel lo guardó como número, así que cambió los últimos: escribilo como texto.",
+            ImportacionPersonas.MismaPersona => "la misma persona ya está en otra fila con otro código.",
             CodigosAdministracion.FueraDeRango => $"«{error.Campo}» tiene que ser de 0 a {AdministracionLocal.LimiteMaximo.ToString(CultureInfo.InvariantCulture)}.",
             CodigosAdministracion.NoSonDigitos => $"«{error.Campo}» lleva sólo dígitos.",
             CodigosAdministracion.DemasiadoLargo => $"«{error.Campo}» es demasiado largo.",

@@ -394,9 +394,10 @@ Consumos, sin ningún código, y quedan en la general como `PEOPLE_EXPORTED`. «
 para completar (Nombre, Código como texto y el límite de cada cupo, con una hoja de instrucciones), e «Importar Excel» lo
 lee: cada fila se reconoce por su código, uno que ya está modifica a esa persona y uno nuevo la agrega. Antes de aplicar,
 un resumen cuenta las nuevas, las modificadas y las que «Reemplazar» daría de baja por no estar en la planilla (nunca un
-operador ni el administrador), y ofrece «Modificar y agregar», «Reemplazar» y «Cancelar»; una fila con error no deja
-aplicar nada y se lista con su motivo. Lo consumido hoy sigue contando contra los límites nuevos. Cada importación
-queda en la general como `PEOPLE_IMPORTED`, persona por persona sin nombres ni códigos, o `PEOPLE_IMPORT_REJECTED` con
+operador ni el administrador), avisa si quedan filas de ejemplo o códigos que Excel guardó como número (sin sus ceros),
+y ofrece «Modificar y agregar», «Reemplazar» y «Cancelar»; una fila con error no deja aplicar nada y se lista con su
+motivo. Lo consumido hoy sigue contando contra los límites nuevos. Cada importación queda en la general con la huella
+SHA-256 del archivo, como `PEOPLE_IMPORTED`, persona por persona sin nombres ni códigos, o `PEOPLE_IMPORT_REJECTED` con
 sus errores por motivo. El código se tipea en un campo
 enmascarado de sólo dígitos, conserva sus ceros iniciales, no se puede repetir aunque esté revocado, y nunca se
 muestra ni se registra. El segundo muestra cada opción con su servicio, su importe, sus cargas de cupo y sus
