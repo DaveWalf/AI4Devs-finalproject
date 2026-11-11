@@ -18,6 +18,8 @@ TK02.1 (interfaz).
 2. **La letra de la tabla** puede bajar **hasta 14 px**, si la medición lo pide.
 3. La mejora entra en `final-project-dw` antes del Typeform del 12/11/2026 (decisión de las 17:55).
 
+El delta lo aprobó David el 11/11/2026 a las 18:23 («aprobados los deltas»).
+
 ## What Changes
 
 - **Un renglón por consumo**: ninguna celda de la tabla se parte en dos renglones, a 1024 × 768 o más.

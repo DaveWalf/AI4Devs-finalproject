@@ -70,7 +70,7 @@ cabe en la ventana. Se cierra a los 5 s con el temporizador de la pestaña, al c
 Muestra el dato entero: el nombre visible de la persona, la opción, o la fecha con el año (`dd/MM/yyyy HH:mm`). Nunca
 muestra el código, que la fila no tiene.
 
-Interpretación del gate, **para la revisión de David**: «la información completa» se lee como el dato entero de la
+Interpretación del gate, aprobada por David con los deltas el 11/11/2026 a las 18:23: «la información completa» se lee como el dato entero de la
 celda tocada, no como la fila entera. Si quiere la fila entera, cambia el contenido del globo, no el mecanismo.
 
 - *Descartada*: el atributo `title`. El tooltip nativo del navegador no aparece al tocar en WebView2, y con el mouse
