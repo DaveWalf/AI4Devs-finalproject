@@ -34,11 +34,13 @@
 
 ## 4. La pestaña Mails
 
-- [ ] 4.1 La pestaña después de Impresora, sólo con la clave del día: los campos, «Guardar» con `CONFIGURATION_CHANGED`
+- [x] 4.1 La pestaña después de Impresora, sólo con la clave del día: los campos, «Guardar» con `CONFIGURATION_CHANGED`
   de `MAIL`, «Enviar una prueba», el servidor simulado con `SIMULATED_MAIL` y los pendientes (D7). Cambian, por la
   decisión 13, las pruebas que fijan las nueve pestañas: `PestanasConfiguracionTests`, `AccesoOperadorTests` y
   `AccionesEnConsumosTests`; y `PuntoFinalTests` clasifica los mensajes nuevos. Pruebas nuevas vistas fallar primero.
-  Verifica: Kiosk en verde.
+  Verifica: Kiosk en verde. Hecho: `CorreoEnPantallaTests` (5), cuatro vistas fallar con la pestaña vacía (la del operador
+  pasa también sin la sección); las tres existentes pasan de nueve a diez pestañas y `PuntoFinalTests` clasifica
+  `PruebaCorreoEnviada` y `EstadoColaCorreo`; Kiosk 558 de 558.
 
 ## 5. La pantalla de verdad y los documentos
 

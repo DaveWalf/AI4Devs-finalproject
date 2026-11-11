@@ -404,6 +404,79 @@
             }
         </section>
 
+        @* Los correos, después de Impresora y sólo con la clave del día (D7 de avisar-por-correo). *@
+        <section role="tabpanel" id="seccion-mails" class="seccion" aria-labelledby="pestana-mails" hidden="@Oculta(Pestana.Mails)">
+            @if (Avisos is not null && GuardarCorreo is not null)
+            {
+                <section aria-labelledby="titulo-correo" class="textos-comprobante datos-comprobante">
+                    <h3 id="titulo-correo">Avisos por correo</h3>
+                    <p class="explicacion-correo">@MensajesAtencion.ExplicacionCorreo</p>
+                    <span id="rotulo-correos-activos" class="rotulo">Correos</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-correos-activos">
+                        <button id="correos-activos" type="button" aria-pressed="@(_correosActivos ? "true" : "false")" @onclick="() => _correosActivos = true">Activos</button>
+                        <button id="correos-apagados" type="button" aria-pressed="@(_correosActivos ? "false" : "true")" @onclick="() => _correosActivos = false">Apagados</button>
+                    </div>
+                    <label for="cliente-correo">Cliente</label>
+                    <input id="cliente-correo" type="text" maxlength="@ConfiguracionCorreo.LargoCliente" value="@_clienteCorreo"
+                           aria-invalid="@(_camposCorreo.Contains("Cliente") ? "true" : null)" @oninput="e => _clienteCorreo = e.Value?.ToString() ?? string.Empty" />
+                    <label for="remitente-correo">Remitente</label>
+                    <input id="remitente-correo" type="email" maxlength="@ConfiguracionCorreo.LargoCasilla" value="@_remitenteCorreo"
+                           aria-invalid="@(_camposCorreo.Contains("Remitente") ? "true" : null)" @oninput="e => _remitenteCorreo = e.Value?.ToString() ?? string.Empty" />
+                    <label for="servidor-correo">Servidor</label>
+                    <input id="servidor-correo" type="text" maxlength="100" value="@_servidorCorreo"
+                           aria-invalid="@(_camposCorreo.Contains("Servidor") ? "true" : null)" @oninput="e => _servidorCorreo = e.Value?.ToString() ?? string.Empty" />
+                    <label for="puerto-correo">Puerto</label>
+                    <input id="puerto-correo" type="text" inputmode="numeric" maxlength="5" value="@_puertoCorreo"
+                           aria-invalid="@(_camposCorreo.Contains("Puerto") ? "true" : null)" @oninput="e => _puertoCorreo = e.Value?.ToString() ?? string.Empty" />
+                    <span id="rotulo-cifrado" class="rotulo">Cifrado</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-cifrado">
+                        <button id="cifrado-starttls" type="button" aria-pressed="@(_cifradoTls ? "false" : "true")" @onclick="() => _cifradoTls = false">STARTTLS</button>
+                        <button id="cifrado-tls" type="button" aria-pressed="@(_cifradoTls ? "true" : "false")" @onclick="() => _cifradoTls = true">TLS directo</button>
+                    </div>
+                    <span id="rotulo-segundo-factor" class="rotulo">Segundo factor</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-segundo-factor">
+                        <button id="factor-aplicacion" type="button" aria-pressed="@(_factorOAuth ? "false" : "true")" @onclick="() => _factorOAuth = false">Contraseña de aplicación</button>
+                        <button id="factor-oauth" type="button" aria-pressed="@(_factorOAuth ? "true" : "false")" @onclick="() => _factorOAuth = true">OAuth 2.0</button>
+                    </div>
+                    @for (var i = 0; i < ConfiguracionCorreo.MaximoOperadores; i++)
+                    {
+                        var indice = i;
+                        var campo = "Operador" + (indice + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        <label for="operador-correo-@(indice + 1)">Operador @(indice + 1)</label>
+                        <input id="operador-correo-@(indice + 1)" type="email" maxlength="@ConfiguracionCorreo.LargoCasilla" value="@_operadoresCorreo[indice]"
+                               aria-invalid="@(_camposCorreo.Contains(campo) ? "true" : null)" @oninput="e => _operadoresCorreo[indice] = e.Value?.ToString() ?? string.Empty" />
+                    }
+                    <label for="administrador-correo">Administrador Principal</label>
+                    <input id="administrador-correo" type="email" maxlength="@ConfiguracionCorreo.LargoCasilla" value="@_administradorCorreo"
+                           aria-invalid="@(_camposCorreo.Contains("Administrador") ? "true" : null)" @oninput="e => _administradorCorreo = e.Value?.ToString() ?? string.Empty" />
+                    <label for="hora-senal">Señal de vida (HH:mm)</label>
+                    <input id="hora-senal" type="text" inputmode="numeric" maxlength="5" value="@_horaSenal"
+                           aria-invalid="@(_camposCorreo.Contains("HoraSenal") ? "true" : null)" @oninput="e => _horaSenal = e.Value?.ToString() ?? string.Empty" />
+                    <span id="rotulo-servidor-simulado-correo" class="rotulo">Servidor simulado</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-servidor-simulado-correo">
+                        <button id="servidor-correo-disponible" type="button" aria-pressed="@(Avisos.Servidor.Caido ? "false" : "true")" @onclick="() => CambiarCorreo(false)">Disponible</button>
+                        <button id="servidor-correo-caido" type="button" aria-pressed="@(Avisos.Servidor.Caido ? "true" : "false")" @onclick="() => CambiarCorreo(true)">Caído</button>
+                    </div>
+                    @if (_avisoCorreo is not null)
+                    {
+                        <p id="aviso-correo" class="aviso" role="status">@_avisoCorreo</p>
+                    }
+                    <div class="acciones">
+                        <button id="enviar-prueba-correo" type="button" disabled="@_enviandoPrueba" @onclick="EnviarPruebaCorreo">@(_enviandoPrueba ? "Enviando…" : "Enviar una prueba")</button>
+                        <button id="guardar-correo" type="button" class="principal" @onclick="GuardarLosCorreos">Guardar</button>
+                    </div>
+                </section>
+                <section aria-labelledby="titulo-estado-correo" class="estado-exportacion">
+                    <h3 id="titulo-estado-correo">Estado de los correos</h3>
+                    <p id="estado-correo">@MensajesAtencion.EstadoColaCorreo(Avisos.Pendientes)</p>
+                    @if (_mensajeCorreo is not null)
+                    {
+                        <p id="mensaje-correo" class="@(_correoFallido ? "aviso" : "mensaje-exportacion")" role="status">@_mensajeCorreo</p>
+                    }
+                </section>
+            }
+        </section>
+
         @* La exportación automática de consumos, antes de General y sólo con la clave del día (D6 de exportar-consumos-automaticamente). *@
         <section role="tabpanel" id="seccion-exportacion" class="seccion" aria-labelledby="pestana-exportacion" hidden="@Oculta(Pestana.Exportacion)">
             @if (Exportacion is not null && GuardarExportacion is not null)
@@ -726,6 +799,7 @@
         Opciones,
         Identidad,
         Impresora,
+        Mails,
         Pantalla,
         Red,
         Exportacion,
@@ -1602,6 +1676,7 @@
         _encabezado = Textos.Encabezado;
         _pie = Textos.Pie;
         LeerConfiguracionExportacion();
+        LeerConfiguracionCorreo();
         _numeroPuesto = DatosDelPuesto.Numero?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
         _nombrePuesto = DatosDelPuesto.Nombre;
         _correlativo = DatosDelPuesto.Correlativo;
@@ -1638,6 +1713,114 @@
         _avisoTextos = resultado.Aviso;
         _avisoGuardado = resultado.Guardado ? MensajesAtencion.TextosGuardados : null;
     }
+
+    /// <summary>Los avisos por correo; sin ellos, la pestaña Mails queda vacía (D7 de avisar-por-correo).</summary>
+    [Parameter]
+    public AvisosCorreo? Avisos { get; set; }
+
+    /// <summary>La configuración guardada de los correos, que la pestaña edita.</summary>
+    [Parameter]
+    public ConfiguracionCorreo ConfiguracionCorreo { get; set; } = ConfiguracionCorreo.PorDefecto;
+
+    /// <summary>Valida, guarda y registra MAIL; devuelve los campos rechazados o el aviso.</summary>
+    [Parameter]
+    public Func<ConfiguracionCorreo, ResultadoTextos>? GuardarCorreo { get; set; }
+
+    /// <summary>Cambia el modo del servidor de correo simulado, en el acto y con su registro.</summary>
+    [Parameter]
+    public Action<bool>? CambiarCorreoSimulado { get; set; }
+
+    private bool _correosActivos;
+    private string _clienteCorreo = string.Empty;
+    private string _remitenteCorreo = string.Empty;
+    private string _servidorCorreo = string.Empty;
+    private string _puertoCorreo = "587";
+    private bool _cifradoTls;
+    private bool _factorOAuth;
+    private readonly string[] _operadoresCorreo = new string[ConfiguracionCorreo.MaximoOperadores];
+    private string _administradorCorreo = string.Empty;
+    private string _horaSenal = "08:00";
+    private IReadOnlyList<string> _camposCorreo = [];
+    private string? _avisoCorreo;
+    private string? _mensajeCorreo;
+    private bool _correoFallido;
+    private bool _enviandoPrueba;
+
+    private void LeerConfiguracionCorreo()
+    {
+        var c = ConfiguracionCorreo;
+        _correosActivos = c.Activos;
+        _clienteCorreo = c.Cliente;
+        _remitenteCorreo = c.Remitente;
+        _servidorCorreo = c.Servidor;
+        _puertoCorreo = c.Puerto.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _cifradoTls = c.Cifrado == CifradoCorreo.Tls;
+        _factorOAuth = c.SegundoFactor == SegundoFactorCorreo.OAuth2;
+        for (var i = 0; i < _operadoresCorreo.Length; i++)
+        {
+            _operadoresCorreo[i] = i < c.Operadores.Count ? c.Operadores[i] : string.Empty;
+        }
+
+        _administradorCorreo = c.Administrador ?? string.Empty;
+        _horaSenal = c.HoraSenal;
+    }
+
+    /// <summary>
+    /// «Guardar» de los correos: las casillas de operador vacías no cuentan, y un campo rechazado se señala en la casilla
+    /// donde se tipeó aunque haya otras vacías antes (D7 de avisar-por-correo).
+    /// </summary>
+    private void GuardarLosCorreos()
+    {
+        var conCasilla = Enumerable.Range(0, _operadoresCorreo.Length).Where(i => _operadoresCorreo[i].Trim().Length > 0).ToList();
+        var pedida = new ConfiguracionCorreo(
+            _correosActivos, _clienteCorreo.Trim(), _remitenteCorreo.Trim(), _servidorCorreo.Trim(),
+            int.TryParse(_puertoCorreo.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var puerto) ? puerto : 0,
+            _cifradoTls ? CifradoCorreo.Tls : CifradoCorreo.StartTls,
+            _factorOAuth ? SegundoFactorCorreo.OAuth2 : SegundoFactorCorreo.ContrasenaDeAplicacion,
+            conCasilla.Select(i => _operadoresCorreo[i].Trim()).ToList(),
+            _administradorCorreo.Trim().Length == 0 ? null : _administradorCorreo.Trim(),
+            _horaSenal.Trim());
+        if (GuardarCorreo?.Invoke(pedida) is not { } resultado)
+        {
+            return;
+        }
+
+        _camposCorreo = resultado.Campos.Select(c =>
+            c.StartsWith("Operador", StringComparison.Ordinal) && int.TryParse(c["Operador".Length..], out var n) && n >= 1 && n <= conCasilla.Count
+                ? "Operador" + (conCasilla[n - 1] + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : c).ToList();
+        _avisoCorreo = resultado.Aviso;
+        _avisoGuardado = resultado.Guardado ? MensajesAtencion.CorreoGuardado : null;
+    }
+
+    /// <summary>
+    /// «Enviar una prueba»: a todas las casillas guardadas, por la cola y fuera del hilo de la pantalla; dice si salió, si
+    /// quedó en la cola o si no hay casillas (D7).
+    /// </summary>
+    private async Task EnviarPruebaCorreo()
+    {
+        _enviandoPrueba = true;
+        _mensajeCorreo = null;
+        try
+        {
+            var configuracion = ConfiguracionCorreo;
+            var pendientes = await Task.Run(() => Avisos!.EnviarPrueba());
+            var casillas = configuracion.Operadores.Concat(configuracion.Administrador is { } a ? [a] : [])
+                .Distinct(StringComparer.OrdinalIgnoreCase).Count();
+            (_mensajeCorreo, _correoFallido) = pendientes switch
+            {
+                null => (MensajesAtencion.PruebaCorreoSinCasillas, true),
+                0 => (MensajesAtencion.PruebaCorreoEnviada(casillas), false),
+                _ => (MensajesAtencion.PruebaCorreoEnCola, true),
+            };
+        }
+        finally
+        {
+            _enviandoPrueba = false;
+        }
+    }
+
+    private void CambiarCorreo(bool caido) => CambiarCorreoSimulado?.Invoke(caido);
 
     /// <summary>La exportación automática; sin ella, la pestaña Exportación queda vacía (D6 de exportar-consumos-automaticamente).</summary>
     [Parameter]

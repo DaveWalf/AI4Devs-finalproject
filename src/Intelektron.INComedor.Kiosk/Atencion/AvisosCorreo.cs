@@ -46,6 +46,9 @@ public sealed class AvisosCorreo : IDisposable
         Servidor = new CorreoSimulado(carpetaDatos);
     }
 
+    /// <summary>Al terminar cada pasada, para que la pestaña muestre la cola de ahora.</summary>
+    public event Action? PasadaTerminada;
+
     /// <summary>El servidor simulado, con su modo «Caído».</summary>
     public CorreoSimulado Servidor { get; }
 
@@ -163,6 +166,18 @@ public sealed class AvisosCorreo : IDisposable
 
     /// <summary>Una pasada: envía la cola en orden hasta la primera falla y, si toca, encola y envía la señal de vida.</summary>
     public void Pasada(bool soloCola = false)
+    {
+        try
+        {
+            PasadaBloqueada(soloCola);
+        }
+        finally
+        {
+            PasadaTerminada?.Invoke();
+        }
+    }
+
+    private void PasadaBloqueada(bool soloCola)
     {
         lock (_pasada)
         {

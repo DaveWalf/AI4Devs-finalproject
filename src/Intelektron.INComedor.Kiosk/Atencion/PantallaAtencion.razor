@@ -261,6 +261,8 @@
                             DatosDelPuesto="_datosPuesto" GuardarDatosPuesto="@(_almacenDatosPuesto is null ? null : GuardarDatosPuesto)"
                             Exportacion="_exportacion" ConfiguracionExportacion="@(_almacenExportacionAutomatica?.Leer() ?? ConfiguracionExportacion.PorDefecto)"
                             GuardarExportacion="@(_exportacion is null ? null : GuardarExportacion)" CambiarSftpSimulado="CambiarSftpSimulado"
+                            Avisos="_avisos" ConfiguracionCorreo="@(_almacenCorreo?.Leer() ?? ConfiguracionCorreo.PorDefecto)"
+                            GuardarCorreo="@(_avisos is null ? null : GuardarCorreo)" CambiarCorreoSimulado="CambiarCorreoSimulado"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
                             Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
                             AplicarRed="AplicarRed" DireccionReceptor="@_pruebaConexion?.Direccion"
@@ -314,6 +316,8 @@
     private AlmacenDatosPuesto? _almacenDatosPuesto;
     private AlmacenConfiguracionExportacion? _almacenExportacionAutomatica;
     private ExportacionAutomatica? _exportacion;
+    private AlmacenConfiguracionCorreo? _almacenCorreo;
+    private AvisosCorreo? _avisos;
     private DatosPuesto _datosPuesto = DatosPuesto.PorDefecto;
     private AlmacenPantalla? _almacenPantalla;
     private PantallaDelPuesto? _pantallaDelPuesto;
@@ -431,6 +435,7 @@
 
         Maquina.Iniciar();
         IniciarExportacion();
+        IniciarCorreos();
         LeerPersonasSimulacion();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
@@ -1611,6 +1616,115 @@
             _exportacion.PasadaTerminada -= RefrescarExportacion;
             _exportacion.Dispose();
         }
+
+        if (_avisos is not null)
+        {
+            Servicio.Avisos = null;
+            _avisos.PasadaTerminada -= RefrescarExportacion;
+            _avisos.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Los avisos por correo, con la base preparada y su almacén registrado (las pruebas que no los usan no lo registran):
+    /// la atención, la exportación y las bitácoras les cuentan lo que pasa, y su reloj envía la cola (D4 y D6 de
+    /// avisar-por-correo).
+    /// </summary>
+    private void IniciarCorreos()
+    {
+        _almacenCorreo = Proveedor.GetService(typeof(AlmacenConfiguracionCorreo)) as AlmacenConfiguracionCorreo;
+        if (_almacenCorreo is null || Servicio.RegistroConfiguracion is null)
+        {
+            return;
+        }
+
+        _avisos = new AvisosCorreo(Servicio.RegistroConfiguracion, Servicio.Reloj, ZonaDelPuesto, _almacenCorreo.CarpetaDatos, _almacenCorreo,
+            _almacenDatosPuesto ?? new AlmacenDatosPuesto(_almacenCorreo.CarpetaDatos), new ResumenDelDia(Servicio.Base));
+        Servicio.Avisos = _avisos;
+        if (_exportacion is not null)
+        {
+            _exportacion.AlFallar = _avisos.ExportacionFallida;
+        }
+
+        _avisos.PasadaTerminada += RefrescarExportacion;
+        _avisos.Programar();
+    }
+
+    /// <summary>
+    /// Guarda la configuración de los correos y la registra como CONFIGURATION_CHANGED de MAIL, con el antes, el después y
+    /// el resultado, sin ninguna dirección: sólo si cambió el remitente, el servidor, las casillas o el cliente (D7).
+    /// </summary>
+    private ResultadoTextos GuardarCorreo(ConfiguracionCorreo pedida)
+    {
+        var antes = _almacenCorreo!.Leer();
+        var campos = ConfiguracionCorreo.Validar(pedida);
+        if (campos.Count > 0)
+        {
+            RegistrarCambioDeCorreo(antes, null, "REJECTED", campos);
+            return new ResultadoTextos(false, campos, MensajesAtencion.PanelInvalido);
+        }
+
+        try
+        {
+            _almacenCorreo.Guardar(pedida);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            RegistrarCambioDeCorreo(antes, pedida, "FAILED", []);
+            return new ResultadoTextos(false, [], MensajesAtencion.CorreoNoGuardado);
+        }
+
+        RegistrarCambioDeCorreo(antes, pedida, "APPLIED", []);
+        return new ResultadoTextos(true, [], null);
+    }
+
+    private void RegistrarCambioDeCorreo(ConfiguracionCorreo antes, ConfiguracionCorreo? despues, string resultado, IReadOnlyList<string> campos) =>
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "MAIL",
+            Before = DatosDeCorreo(antes),
+            After = despues is null ? null : DatosDeCorreo(despues),
+            Result = resultado,
+            Fields = campos,
+            ClientChanged = despues is not null && despues.Cliente != antes.Cliente,
+            SenderChanged = despues is not null && despues.Remitente != antes.Remitente,
+            ServerChanged = despues is not null && (despues.Servidor, despues.Puerto) != (antes.Servidor, antes.Puerto),
+            RecipientsChanged = despues is not null
+                && (!despues.Operadores.SequenceEqual(antes.Operadores) || despues.Administrador != antes.Administrador),
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    private static object DatosDeCorreo(ConfiguracionCorreo c) => new
+    {
+        Active = c.Activos,
+        Encryption = c.Cifrado == CifradoCorreo.Tls ? "TLS" : "STARTTLS",
+        SecondFactor = c.SegundoFactor == SegundoFactorCorreo.OAuth2 ? "OAUTH2" : "APP_PASSWORD",
+        Operators = c.Operadores.Count,
+        Administrator = c.Administrador is not null,
+        Heartbeat = c.HoraSenal,
+    };
+
+    /// <summary>El modo del servidor de correo simulado, en el acto y en la general, como el del SFTP simulado (D3).</summary>
+    private void CambiarCorreoSimulado(bool caido)
+    {
+        if (_avisos is null || _avisos.Servidor.Caido == caido)
+        {
+            return;
+        }
+
+        _avisos.Servidor.Caido = caido;
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "SIMULATED_MAIL",
+            Before = caido ? "AVAILABLE" : "DOWN",
+            After = caido ? "DOWN" : "AVAILABLE",
+            Result = "APPLIED",
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
     }
 
     /// <summary>
