@@ -54,7 +54,7 @@ public class ResguardoEnGeneralTests
 
         await pantalla.Find("#guardar-resguardo").ClickAsync(new());
 
-        Assert.Equal(MensajesAtencion.SinCarpeta, pantalla.Find("#mensaje-resguardo").TextContent.Trim());
+        Assert.Equal(MensajesAtencion.SinCarpetaResguardo, pantalla.Find("#mensaje-resguardo").TextContent.Trim());
         Assert.Empty(Directory.GetFiles(puesto.Carpeta, "*.zip", SearchOption.AllDirectories));
         Assert.DoesNotContain(puesto.General(), l => Tipo(l) == "CONFIGURATION_BACKUP_CREATED");
     }
@@ -72,6 +72,10 @@ public class ResguardoEnGeneralTests
         await pantalla.Find("#recuperar-resguardo").ClickAsync(new());
 
         Assert.Equal(MensajesAtencion.ResumenResguardo(Path.GetFileName(zip), revisado, Zona), pantalla.Find("#resguardo-origen").TextContent.Trim());
+        // Los conteos, contra la base y la semilla: las personas activas, las opciones y un solo permiso de operador vigente (9001).
+        var vista = puesto.Servicio.Administracion!.Leer();
+        Assert.Contains($"{vista.Personas.Count(p => p.Activa)} personas activas, {vista.Opciones.Count} opciones y 1 permiso de operador vigente.",
+            pantalla.Find("#resguardo-origen").TextContent, StringComparison.Ordinal);
         Assert.Equal(MensajesAtencion.AjustesDelResguardo(revisado), pantalla.Find("#resguardo-ajustes").TextContent.Trim());
         Assert.Contains("principal", pantalla.Find("#resguardo-cancelar").ClassList);
 
@@ -86,7 +90,6 @@ public class ResguardoEnGeneralTests
         Assert.Equal(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(zip))), contexto.GetProperty("FileSha256").GetString());
         Assert.Equal(1, contexto.GetProperty("SourceVersion").GetInt32());
         Assert.Equal(2, contexto.GetProperty("Version").GetInt32());
-        Assert.True(contexto.GetProperty("LocalSettingsRestored").GetBoolean());
         SinCodigosNiNombres(puesto);
     }
 
@@ -134,6 +137,7 @@ public class ResguardoEnGeneralTests
     public async Task Con_inweb_no_se_recupera()
     {
         using var puesto = Preparar();
+        PrepararCarpeta(puesto);
         Elector(puesto);
         var pantalla = puesto.Dibujar();
         using (var conexion = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={puesto.RutaBase};Pooling=False"))
@@ -148,6 +152,52 @@ public class ResguardoEnGeneralTests
 
         Assert.Single(pantalla.FindAll("#guardar-resguardo"));
         Assert.Empty(pantalla.FindAll("#recuperar-resguardo"));
+    }
+
+    [Fact(DisplayName = "configuracion-puesto · Recuperar un resguardo: con la edición de Personas abierta, General no ofrece recuperar, como no se ofrece importar, para no mezclar lo editado con lo recuperado")]
+    public async Task Con_una_edicion_abierta()
+    {
+        using var puesto = Preparar();
+        PrepararCarpeta(puesto);
+        Elector(puesto);
+        var pantalla = puesto.Dibujar();
+        await AbrirGeneral(pantalla);
+        Assert.Single(pantalla.FindAll("#recuperar-resguardo"));
+
+        await pantalla.Find("#abrir-personas").ClickAsync(new());
+        await pantalla.Find("#pestana-general").ClickAsync(new());
+
+        Assert.Single(pantalla.FindAll("#guardar-resguardo"));
+        Assert.Empty(pantalla.FindAll("#recuperar-resguardo"));
+    }
+
+    [Fact(DisplayName = "configuracion-puesto · Un resguardo alterado o de otro esquema: una parte cambiada y otro esquema se rechazan con su motivo en el resumen y en CONFIGURATION_RESTORE_REJECTED, sin cambiar la versión")]
+    public async Task Alterado_y_de_otro_esquema()
+    {
+        using var puesto = Preparar();
+        var elector = Elector(puesto);
+        var pantalla = puesto.Dibujar();
+        var valido = ResguardoDeOtroPuesto(puesto);
+        var casos = new (string Archivo, string Motivo)[]
+        {
+            (ResguardosDePrueba.Rehacer(valido, Path.Combine(puesto.Carpeta, "parte-cambiada.zip"),
+                p => p["impresora.json"] = """{"encabezado":"Otro","pie":""}"""u8.ToArray(), recalcular: false), MotivosResguardo.HuellaDistinta),
+            (ResguardosDePrueba.Rehacer(valido, Path.Combine(puesto.Carpeta, "otro-esquema.zip"),
+                _ => { }, m => m["esquema"] = AdministracionLocal.VersionEsquema + 1), MotivosResguardo.OtroEsquema),
+        };
+        await AbrirGeneral(pantalla);
+
+        foreach (var (archivo, motivo) in casos)
+        {
+            elector.Ruta = archivo;
+            await pantalla.Find("#recuperar-resguardo").ClickAsync(new());
+            Assert.Equal(MensajesAtencion.ResguardoRechazado(Path.GetFileName(archivo), motivo), pantalla.Find("#resguardo-rechazado").TextContent.Trim());
+            await pantalla.Find("#resguardo-cerrar").ClickAsync(new());
+        }
+
+        Assert.Equal(1, puesto.Servicio.Administracion!.Leer().VersionConfiguracion);
+        var rechazos = puesto.General().Where(l => Tipo(l) == "CONFIGURATION_RESTORE_REJECTED").Select(l => ContextoDe(l).GetProperty("ReasonCode").GetString());
+        Assert.Equal(casos.Select(c => c.Motivo), rechazos);
     }
 
     private static PuestoDePrueba Preparar()

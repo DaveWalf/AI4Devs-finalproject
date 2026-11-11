@@ -83,7 +83,6 @@ public class PuntoFinalTests
             MensajesAtencion.AjustesDelResguardo(ResguardoDeEjemplo(conAjustes: false)),
             .. MotivosDeResguardo.Select(m => MensajesAtencion.ResguardoRechazado("resguardo.zip", m)),
             MensajesAtencion.ResguardoRecuperado(3),
-            MensajesAtencion.ResguardoRecuperadoSinAjustes(3),
         ];
 
         var sinPunto = armados.Where(m => !m.EndsWith('.')).ToList();
@@ -110,7 +109,6 @@ public class PuntoFinalTests
         nameof(MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo), nameof(MensajesAtencion.ErrorDeImportacionOpciones),
         nameof(MensajesAtencion.ResguardoGuardado), nameof(MensajesAtencion.ResumenResguardo), nameof(MensajesAtencion.AjustesDelResguardo),
         nameof(MensajesAtencion.ResguardoRechazado), nameof(MensajesAtencion.ResguardoRecuperado),
-        nameof(MensajesAtencion.ResguardoRecuperadoSinAjustes),
     ];
 
     /// <summary>Cada motivo por el que un resguardo no se recupera, y uno desconocido (D2 de resguardar-configuracion).</summary>
@@ -118,7 +116,8 @@ public class PuntoFinalTests
     [
         MotivosResguardo.Ilegible, MotivosResguardo.NoEsUnZip, MotivosResguardo.DemasiadoGrande, MotivosResguardo.ParteDesconocida,
         MotivosResguardo.HuellaDistinta, MotivosResguardo.OtroFormato, MotivosResguardo.OtroEsquema, MotivosResguardo.AjusteInvalido,
-        CodigosAdministracion.ResguardoInvalido, CodigosAdministracion.CodigoEnConflicto, CodigosAdministracion.INWebAdministra, "OTRO",
+        CodigosAdministracion.ResguardoInvalido, CodigosAdministracion.CodigoEnConflicto, CodigosAdministracion.INWebAdministra,
+        "LOCAL_FILES_NOT_WRITTEN", "DATABASE_ERROR", "OTRO",
     ];
 
     /// <summary>Un resguardo revisado de ejemplo, con todos los ajustes locales o con ninguno.</summary>

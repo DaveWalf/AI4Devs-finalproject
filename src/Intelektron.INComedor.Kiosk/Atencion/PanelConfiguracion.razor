@@ -110,7 +110,10 @@
                 <section id="resguardo" aria-labelledby="titulo-resguardo">
                     <h3 id="titulo-resguardo">Resguardo de la configuración</h3>
                     <div class="acciones botones-resguardo">
-                        <button id="guardar-resguardo" type="button" @onclick="GuardarResguardo">Guardar resguardo</button>
+                        @if (PuedeExportarPersonas)
+                        {
+                            <button id="guardar-resguardo" type="button" @onclick="GuardarResguardo">Guardar resguardo</button>
+                        }
                         @if (PuedeRecuperar)
                         {
                             <button id="recuperar-resguardo" type="button" @onclick="RevisarResguardo">Recuperar resguardo</button>
@@ -1150,8 +1153,11 @@
     private bool _enfocarCartelResguardo;
     private bool _releerTextos;
 
-    /// <summary>Recuperar, sólo con el diálogo de archivos y sin INWeb como dueño de los datos (D4, gate 6).</summary>
-    private bool PuedeRecuperar => ElectorArchivo is not null && _resumen is { SoloLectura: false };
+    /// <summary>
+    /// Recuperar, sólo con el diálogo de archivos, sin INWeb como dueño de los datos (D4, gate 6) y sin una edición abierta,
+    /// como importar: lo editado sin guardar no se mezcla con lo recuperado.
+    /// </summary>
+    private bool PuedeRecuperar => ElectorArchivo is not null && _resumen is { SoloLectura: false } && _panel is null;
 
     /// <summary>«Guardar resguardo»: el .zip en la carpeta de la exportación, como una exportación (D1 y D4).</summary>
     private void GuardarResguardo()
@@ -1159,7 +1165,7 @@
         _mensajeResguardo = null;
         if (CarpetaDeExportacion(out var avisoCarpeta) is not { } carpeta)
         {
-            (_mensajeResguardo, _resguardoFallido) = (MensajesAtencion.SinCarpeta, true);
+            (_mensajeResguardo, _resguardoFallido) = (MensajesAtencion.SinCarpetaResguardo, true);
             return;
         }
 
@@ -1205,6 +1211,7 @@
         catch (Microsoft.Data.Sqlite.SqliteException)
         {
             (_mensajeResguardo, _resguardoFallido) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            RegistrarRecuperacionRechazada?.Invoke(new RecuperacionRechazada(null, MotivosResguardo.BaseSinRespuesta));
             return;
         }
 
@@ -1216,8 +1223,8 @@
     }
 
     /// <summary>
-    /// «Recuperar»: la versión nueva y los ajustes locales del resguardo revisado (D3); la pantalla los vuelve a leer y el
-    /// panel relee su resumen, las personas y los textos. La base vuelve a validar los códigos en su transacción.
+    /// «Recuperar»: los ajustes locales y la versión nueva del resguardo revisado, todo o nada (D3); la pantalla los vuelve a
+    /// leer y el panel relee su resumen, las personas y los textos. La base vuelve a validar todo en su transacción.
     /// </summary>
     private void RecuperarResguardo()
     {
@@ -1231,15 +1238,13 @@
         catch (Microsoft.Data.Sqlite.SqliteException)
         {
             _avisoGuardado = MensajesAtencion.PanelNoGuardado;
+            RegistrarRecuperacionRechazada?.Invoke(new RecuperacionRechazada(revisado.Huella, MotivosResguardo.BaseSinRespuesta));
             return;
         }
 
         if (resultado.Base.Tipo == TipoGuardado.Aplicado)
         {
-            var version = resultado.Base.VersionActiva;
-            _avisoGuardado = resultado.AjustesRecuperados
-                ? MensajesAtencion.ResguardoRecuperado(version)
-                : MensajesAtencion.ResguardoRecuperadoSinAjustes(version);
+            _avisoGuardado = MensajesAtencion.ResguardoRecuperado(resultado.Base.VersionActiva);
             _releerTextos = true;
             _recargaPersonas++;
             RegistrarRecuperacion?.Invoke(new RecuperacionRealizada(revisado.Huella, revisado.VersionOrigen, resultado, revisado.Partes));

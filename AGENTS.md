@@ -38,6 +38,10 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
   el dispositivo elegido.
 - La pestaña Red, con los datos de red del equipo, la edición de la IPv4 con `netsh` y la prueba de conexión con el
   receptor por etapas, sale de la segunda ola por el mismo change; sigue ahí el resto del diagnóstico.
+- El resguardo de la configuración (la versión activa y los ajustes locales del puesto en un `.zip`, y su recuperación
+  como una versión nueva, en este puesto o en otro del mismo esquema) sale de la segunda ola por el change
+  `resguardar-configuracion`. Siguen ahí la configuración por snapshot que trae INWeb y ver o volver a una versión
+  anterior desde la base.
 - `docs/` describe el producto completo: es antecedente, no requisito. El requisito es la spec viva
   de `openspec/specs/` más el change activo.
 

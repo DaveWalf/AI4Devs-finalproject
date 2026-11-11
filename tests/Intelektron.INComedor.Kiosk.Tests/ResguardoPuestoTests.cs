@@ -55,13 +55,13 @@ public sealed class ResguardoPuestoTests : IDisposable
             zip.Entries.Select(e => e.FullName).Order(StringComparer.Ordinal));
         Assert.DoesNotContain(zip.Entries, e => e.FullName.Contains("certificados", StringComparison.OrdinalIgnoreCase));
 
-        var manifiesto = JsonNode.Parse(Leer(zip, "manifiesto.json"))!;
+        var manifiesto = JsonNode.Parse(ResguardosDePrueba.Leer(zip, "manifiesto.json"))!;
         Assert.Equal(1, (int)manifiesto["formato"]!);
         Assert.Equal(AdministracionLocal.VersionEsquema, (int)manifiesto["esquema"]!);
         Assert.Equal(1, (int)manifiesto["versionConfiguracion"]!);
         foreach (var parte in manifiesto["partes"]!.AsArray())
         {
-            var contenido = Leer(zip, (string)parte!["nombre"]!);
+            var contenido = ResguardosDePrueba.Leer(zip, (string)parte!["nombre"]!);
             Assert.Equal(contenido.LongLength, (long)parte["tamano"]!);
             Assert.Equal(Convert.ToHexString(SHA256.HashData(contenido)), (string)parte["sha256"]!);
         }
@@ -82,8 +82,10 @@ public sealed class ResguardoPuestoTests : IDisposable
         var resguardo = revision.Resguardo!;
         var vista = a.Administracion.Leer();
         Assert.Equal(1, resguardo.VersionOrigen);
-        Assert.Equal(vista.Personas.Count, resguardo.Personas);
+        Assert.Equal(vista.Personas.Count(p => p.Activa), resguardo.Personas);
         Assert.Equal(vista.Opciones.Count, resguardo.Opciones);
+        // La semilla tiene cuatro permisos: 9001 de operador vigente, 9002 vencido, 9003 revocado y 9004 de administrador.
+        Assert.Equal(1, resguardo.Permisos);
         Assert.Equal(new EstiloVisual(80, 6), resguardo.Estilo);
         Assert.Equal(new TextosComprobante("Comedor de prueba", "Buen provecho."), resguardo.Textos);
         Assert.True(resguardo.Logos.ContainsKey(LogoPuesto.Empresa));
@@ -108,7 +110,6 @@ public sealed class ResguardoPuestoTests : IDisposable
         var recuperacion = b.Resguardo.Recuperar(b.Resguardo.Revisar(guardado.Ruta).Resguardo!);
 
         Assert.Equal(TipoGuardado.Aplicado, recuperacion.Base.Tipo);
-        Assert.True(recuperacion.AjustesRecuperados);
         Assert.Equal(2, b.Administracion.Leer().VersionConfiguracion);
         Assert.DoesNotContain(b.Administracion.Leer().Opciones, o => o.Id == quitada.Id);
         Assert.Equal(new EstiloVisual(80, 6), new AlmacenEstiloVisual(b.Carpeta).Leer());
@@ -149,6 +150,46 @@ public sealed class ResguardoPuestoTests : IDisposable
         Assert.Equal(1, a.Administracion.Leer().VersionConfiguracion);
     }
 
+    [Fact(DisplayName = "configuracion-puesto · Recuperar un resguardo: si un ajuste local no se puede escribir, no cambia nada, ni la versión activa ni los ajustes que ya se habían escrito")]
+    public void Un_ajuste_que_no_se_escribe()
+    {
+        var a = Personalizado("ajustes-origen");
+        var guardado = a.Resguardo.Guardar(Path.Combine(_carpeta, "exportacion"), TimeZoneInfo.Utc);
+        var b = Nuevo("ajustes-destino");
+        // impresora.json es una carpeta: los textos no se pueden escribir, después de escribir el estilo.
+        Directory.CreateDirectory(Path.Combine(b.Carpeta, "impresora.json"));
+
+        var recuperacion = b.Resguardo.Recuperar(b.Resguardo.Revisar(guardado.Ruta).Resguardo!);
+
+        Assert.Equal(TipoGuardado.Rechazado, recuperacion.Base.Tipo);
+        Assert.Equal("LOCAL_FILES_NOT_WRITTEN", recuperacion.Base.Motivo);
+        Assert.Equal(1, b.Administracion.Leer().VersionConfiguracion);
+        Assert.Equal(EstiloVisual.PorDefecto, new AlmacenEstiloVisual(b.Carpeta).Leer());
+        Assert.Null(new LogosLocales(b.Carpeta).Actual(LogoPuesto.Empresa));
+    }
+
+    [Fact(DisplayName = "configuracion-puesto · Un resguardo alterado: más de 500 partes, una parte de más de 20 MB y más de 50 MB descomprimidos se rechazan por tamaño, sin leer de más")]
+    public void Los_topes_de_tamano()
+    {
+        var a = Nuevo("topes");
+        var valido = a.Resguardo.Guardar(Path.Combine(_carpeta, "exportacion"), TimeZoneInfo.Utc).Ruta;
+        static string Imagen(int n) => "opciones/" + Convert.ToHexString(SHA256.HashData(BitConverter.GetBytes(n))) + ".png";
+
+        var casos = new[]
+        {
+            Rehacer(valido, "muchas-partes", p => { foreach (var n in Enumerable.Range(0, 501)) { p[Imagen(n)] = []; } }),
+            Rehacer(valido, "parte-grande", p => p[Imagen(1)] = new byte[(20 * 1024 * 1024) + 1]),
+            Rehacer(valido, "todo-grande", p => { foreach (var n in Enumerable.Range(0, 3)) { p[Imagen(n)] = new byte[18 * 1024 * 1024]; } }),
+        };
+
+        foreach (var archivo in casos)
+        {
+            Assert.True(new FileInfo(archivo).Length < 1024 * 1024, $"{Path.GetFileName(archivo)} tenía que ser chico comprimido");
+            var revision = a.Resguardo.Revisar(archivo);
+            Assert.True(revision.Motivo == MotivosResguardo.DemasiadoGrande, $"{Path.GetFileName(archivo)}: {revision.Motivo}");
+        }
+    }
+
     private Puesto Nuevo(string nombre)
     {
         var puesto = new Puesto(Path.Combine(_carpeta, nombre));
@@ -168,14 +209,6 @@ public sealed class ResguardoPuestoTests : IDisposable
         return puesto;
     }
 
-    private static byte[] Leer(ZipArchive zip, string nombre)
-    {
-        using var flujo = zip.GetEntry(nombre)!.Open();
-        using var memoria = new MemoryStream();
-        flujo.CopyTo(memoria);
-        return memoria.ToArray();
-    }
-
     private static byte[] SinTabla(byte[] configuracion)
     {
         var json = JsonNode.Parse(configuracion)!.AsObject();
@@ -183,47 +216,8 @@ public sealed class ResguardoPuestoTests : IDisposable
         return Encoding.UTF8.GetBytes(json.ToJsonString());
     }
 
-    /// <summary>
-    /// Otro .zip con las partes del válido cambiadas; con <paramref name="recalcular"/>, el manifiesto se rehace con sus
-    /// tamaños y huellas, como lo haría quien altera el archivo a sabiendas.
-    /// </summary>
-    private string Rehacer(string valido, string nombre, Action<Dictionary<string, byte[]>> cambiar, Action<JsonObject>? manifiesto = null, bool recalcular = true)
-    {
-        var partes = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-        using (var zip = ZipFile.OpenRead(valido))
-        {
-            foreach (var entrada in zip.Entries)
-            {
-                partes[entrada.FullName] = Leer(zip, entrada.FullName);
-            }
-        }
-
-        var original = JsonNode.Parse(partes["manifiesto.json"])!.AsObject();
-        partes.Remove("manifiesto.json");
-        cambiar(partes);
-        if (recalcular)
-        {
-            original["partes"] = new JsonArray(partes.Select(p => (JsonNode)new JsonObject
-            {
-                ["nombre"] = p.Key,
-                ["tamano"] = p.Value.LongLength,
-                ["sha256"] = Convert.ToHexString(SHA256.HashData(p.Value)),
-            }).ToArray());
-        }
-
-        manifiesto?.Invoke(original);
-        var ruta = Path.Combine(_carpeta, nombre + ".zip");
-        using (var zip = ZipFile.Open(ruta, ZipArchiveMode.Create))
-        {
-            foreach (var (parte, contenido) in partes.Prepend(new("manifiesto.json", Encoding.UTF8.GetBytes(original.ToJsonString()))))
-            {
-                using var flujo = zip.CreateEntry(parte).Open();
-                flujo.Write(contenido);
-            }
-        }
-
-        return ruta;
-    }
+    private string Rehacer(string valido, string nombre, Action<Dictionary<string, byte[]>> cambiar, Action<JsonObject>? manifiesto = null, bool recalcular = true) =>
+        ResguardosDePrueba.Rehacer(valido, Path.Combine(_carpeta, nombre + ".zip"), cambiar, manifiesto, recalcular);
 
     private sealed class Puesto
     {

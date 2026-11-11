@@ -43,3 +43,17 @@
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+
+## 5. La verificación
+
+- [x] 5.1 Corregir lo que encontró la verificación por un agente sobre `4b10630` (1 crítico, 9 advertencias, 9
+  sugerencias). Verifica: las pruebas nuevas vistas fallar antes y la integral en verde. Hecho: cada columna con su tipo
+  (un código como número ya no esquiva RB25), las reglas de un guardado a mano, la revisión que ensaya la inserción
+  entera y la deshace, RB25 en una sola consulta, sólo una restricción de SQLite como resguardo inválido, los conteos de
+  personas activas y permisos de operador vigentes, recuperar todo o nada (los ajustes primero, con copia), recuperar
+  no se ofrece con una edición abierta, «Guardar resguardo» sólo con carpeta y elector, los textos del tamaño, la
+  carpeta y lo que se pierde, el registro de una falla de la base, `AGENTS.md`, D1 a D3 y la huella descrita como
+  detección de daño. Pruebas: Sqlite +4 (3 vistas fallar; RB25 contra una versión anterior ya andaba) y Kiosk +4 (3
+  vistas fallar contra el `ResguardoPuesto` anterior; los topes y los rechazos en la general fijan lo que ya andaba).
+  Quedan como deuda: una firma del resguardo con clave de la empresa, `VersionEsquema` atada a la última migración y
+  `CONFIGURATION_RESTORED` fuera de la transacción de la versión, como los registros de las importaciones.

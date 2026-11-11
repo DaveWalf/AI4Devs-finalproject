@@ -137,7 +137,7 @@ public sealed record ConfiguracionLeida(int VersionConfiguracion, int VersionEsq
 
 /// <summary>
 /// Lo que una configuración de un resguardo traería, revisada sin escribir (D2 de resguardar-configuracion): sin motivo,
-/// cuántas personas, opciones y permisos de operador sin revocar trae; con motivo, por qué no se recupera.
+/// cuántas personas activas, opciones y permisos de operador vigentes trae; con motivo, por qué no se recupera.
 /// </summary>
 public sealed record RevisionConfiguracion(string? Motivo, int Personas, int Opciones, int Permisos);
 

@@ -21,34 +21,43 @@ resumen antes y todo o nada; la bitácora.
 
 `INComedor-resguardo-AAAAMMDD-HHmmss.zip` en la carpeta de la exportación, con `manifiesto.json` (formato 1, esquema de la
 base, versión de configuración, fecha y, por cada parte, su nombre, su tamaño y su SHA-256), `configuracion.json` (la
-versión activa tabla por tabla, con las columnas de `TablasDeConfiguracion`) y los archivos locales que existan con su
-nombre de siempre (`estilo-visual.json`, `impresora.json`, `presentacion-opciones.json`, `marcas\…`, `opciones\…`).
+versión activa tabla por tabla, con las columnas de `TablasDeConfiguracion`), el estilo, los textos y la presentación
+vigentes (los de fábrica si nunca se cambiaron) con su nombre de siempre (`estilo-visual.json`, `impresora.json`,
+`presentacion-opciones.json`), los logos propios (`marcas\…`) y las imágenes que usa la presentación (`opciones\…`).
+La huella del manifiesto detecta un archivo dañado, no uno alterado a propósito, que puede rehacerla: de eso se ocupan
+las validaciones de D2.
 
 - **Descartada: copiar la base entera.** Llevaría los consumos, las bitácoras y las versiones anteriores a otro puesto, y
   el resguardo dejaría de ser «la configuración».
 
 ### D2. Revisar antes de recuperar
 
-`ResguardoPuesto.Revisar` lee el `.zip` sin escribir nada y lo rechaza con un motivo si: no es un zip o pesa más de
-50 MB; trae una parte que no es del resguardo (sólo esos nombres; ninguna ruta con `..`); una parte pesa más de 20 MB
-descomprimida o no tiene la huella del manifiesto; el formato o el esquema no son los de este puesto; `configuracion.json`
-no tiene las diez tablas con sus columnas; un código del resguardo es, en este puesto, de otra persona (RB25); o un
-archivo local no pasa la validación de su almacén. El resumen dice la versión y la fecha de origen, cuántas personas,
-opciones y permisos trae, y qué ajustes locales trae.
+`ResguardoPuesto.Revisar` lee el `.zip` una sola vez y entero, sin dejar nada escrito, y lo rechaza con un motivo si: no
+es un zip, pesa más de 50 MB comprimido o descomprimido o tiene más de 500 partes; trae una parte que no es del resguardo
+(sólo esos nombres; ninguna ruta con `..`); una parte pesa más de 20 MB descomprimida o no tiene la huella del
+manifiesto; el formato o el esquema no son los de este puesto; `configuracion.json` no tiene las diez tablas con sus
+columnas, cada valor del tipo de la suya (un GUID, un instante, una hora, un entero o un texto) y con las reglas de un
+guardado a mano (nombres, códigos, importe, unidades y límites); un archivo local no pasa la validación de su almacén;
+o el ensayo de la recuperación falla: `RevisarConfiguracion` inserta y activa la versión nueva, controla que ningún
+código sea, en cualquier versión de este puesto, de otra persona (RB25) y relee la vista, en `BEGIN IMMEDIATE`, y lo
+deshace. El resumen dice la versión y la fecha de origen, cuántas personas activas, opciones y permisos de operador
+vigentes trae, y qué ajustes locales trae.
 
 - **Descartada: recuperar lo que se pueda.** Una configuración a medias (las personas sí, sus cupos no) es peor que la
   de antes; el resumen dice por qué no se recupera nada.
 
 ### D3. Recuperar
 
-`AdministracionLocal.RecuperarVersion` crea una versión nueva con las filas del resguardo, en una transacción
-`BEGIN IMMEDIATE`, y la activa como cualquier guardado (los números de padrón, políticas y catálogo suben, y el hash se
-recalcula); un error de la base deshace todo. Después, los archivos locales del resguardo reemplazan a los del puesto,
-cada uno con escritura atómica; un logo o una presentación que el resguardo no trae vuelve al de ejemplo o a ninguna.
-La pantalla vuelve a leer el estilo, los logos, los textos y la presentación.
+Todo o nada. `ResguardoPuesto.Recuperar` copia en memoria los ajustes locales vigentes y escribe los del resguardo,
+cada uno con escritura atómica (un logo o una presentación que no trae vuelve al de ejemplo o a ninguna); después,
+`AdministracionLocal.RecuperarVersion` repite el ensayo de D2 y, si pasa, deja la versión nueva activa como cualquier
+guardado (los números de padrón, políticas y catálogo suben, y el hash se recalcula). Si un archivo no se escribe o la
+base no acepta el resguardo, los ajustes vuelven a los copiados y la versión activa no cambia. La pantalla vuelve a leer
+el estilo, los logos, los textos y la presentación.
 
-- **Descartada: escribir los archivos antes que la base.** Si la base rechaza el resguardo, los archivos ya estarían
-  cambiados; la base es lo que puede fallar por su contenido.
+- **Descartada: la base primero y los archivos después.** Un archivo que no se escribe después del commit dejaría la
+  versión nueva con los ajustes viejos o a medias; con el ensayo de D2, lo que la base rechaza ya se sabe antes, y los
+  ajustes se reponen desde la copia.
 
 ### D4. La pantalla
 
@@ -80,6 +89,9 @@ letra y la misma altura. Medido por CDP a 1024 × 768, con capturas.
 - [El resguardo lleva los códigos] → el archivo es un dato de la empresa; el readme lo dice y ni el resumen ni la bitácora
   los muestran.
 - [Un resguardo grande por las imágenes] → los topes de D2.
+- [Un resguardo alterado a propósito] → la huella no lo frena; lo frenan los tipos, las reglas de un guardado, el ensayo
+  y RB25 de D2. Firmarlo con una clave de la empresa queda fuera de este change.
+- [Un resguardo de un puesto con INWeb como dueño] → se recupera como versión LOCAL, como cualquier guardado del puesto.
 
 ## Migration Plan
 

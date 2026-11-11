@@ -20,6 +20,8 @@ public static class MotivosResguardo
     public const string OtroFormato = "OTHER_FORMAT";
     public const string OtroEsquema = "OTHER_SCHEMA";
     public const string AjusteInvalido = "INVALID_LOCAL_FILE";
+    public const string AjustesNoEscritos = "LOCAL_FILES_NOT_WRITTEN";
+    public const string BaseSinRespuesta = "DATABASE_ERROR";
 }
 
 /// <summary>El resguardo escrito: su ruta, la huella SHA-256 del archivo, la versión que lleva y sus partes (D1).</summary>
@@ -44,8 +46,8 @@ public sealed record ResguardoRevisado(
 /// <summary>La revisión de un archivo: el resguardo válido, o el motivo por el que no se recupera, con la huella si se leyó.</summary>
 public sealed record RevisionResguardo(string? Huella, ResguardoRevisado? Resguardo, string? Motivo);
 
-/// <summary>El resultado de recuperar: el de la base y si los ajustes locales se escribieron todos (D3).</summary>
-public sealed record RecuperacionResguardo(ResultadoGuardado Base, bool AjustesRecuperados);
+/// <summary>El resultado de recuperar, todo o nada (D3): aplicado con la versión nueva, o rechazado con su motivo y nada cambiado.</summary>
+public sealed record RecuperacionResguardo(ResultadoGuardado Base);
 
 /// <summary>
 /// El resguardo de la configuración del puesto (resguardar-configuracion, D1 a D3): un .zip con el manifiesto, la versión
@@ -235,56 +237,117 @@ public sealed partial class ResguardoPuesto
     }
 
     /// <summary>
-    /// Recupera lo revisado (D3): primero la base, en una versión nueva que vuelve a validar los códigos en su transacción; si
-    /// la base lo acepta, los ajustes locales reemplazan a los del puesto, y los que el resguardo no trae vuelven al de ejemplo.
+    /// Recupera lo revisado, todo o nada (D3): copia en memoria los ajustes locales vigentes, escribe los del resguardo (los
+    /// que no trae vuelven al de ejemplo) y recién entonces crea la versión nueva, que vuelve a validar todo en su transacción.
+    /// Si un archivo no se escribe o la base no lo acepta, los ajustes vuelven a los de antes y la versión activa no cambia.
     /// </summary>
     public RecuperacionResguardo Recuperar(ResguardoRevisado resguardo)
     {
-        var resultado = _administracion.RecuperarVersion(resguardo.Configuracion);
-        if (resultado.Tipo != TipoGuardado.Aplicado)
-        {
-            return new RecuperacionResguardo(resultado, false);
-        }
-
+        var antes = Copiar();
         try
         {
-            if (resguardo.Estilo is { } estilo)
-            {
-                _estilo.Guardar(estilo);
-            }
-            else
-            {
-                _estilo.VolverAlPorDefecto();
-            }
-
-            if (resguardo.Textos is { } textos)
-            {
-                _impresora.Guardar(textos);
-            }
-            else
-            {
-                _impresora.VolverAlPorDefecto();
-            }
-
-            foreach (var logo in new[] { LogoPuesto.Empresa, LogoPuesto.Concesionaria })
-            {
-                if (resguardo.Logos.TryGetValue(logo, out var elegido))
-                {
-                    _logos.Guardar(logo, elegido);
-                }
-                else if (_logos.Actual(logo) is not null)
-                {
-                    _logos.VolverAlDeEjemplo(logo);
-                }
-            }
-
-            _presentacion.Reemplazar(resguardo.Presentacion ?? new Dictionary<Guid, PresentacionOpcion>(), resguardo.Imagenes);
-            return new RecuperacionResguardo(resultado, true);
+            Escribir(resguardo.Estilo, resguardo.Textos, resguardo.Logos, resguardo.Presentacion ?? new Dictionary<Guid, PresentacionOpcion>(), resguardo.Imagenes);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            // La base ya tiene la versión nueva; quien llama avisa que los ajustes locales quedaron como estaban o a medias.
-            return new RecuperacionResguardo(resultado, false);
+            Reponer(antes);
+            var actual = _administracion.Leer().VersionConfiguracion;
+            return new RecuperacionResguardo(new ResultadoGuardado(TipoGuardado.Rechazado, actual, MotivosResguardo.AjustesNoEscritos, []));
+        }
+
+        ResultadoGuardado resultado;
+        try
+        {
+            resultado = _administracion.RecuperarVersion(resguardo.Configuracion);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            Reponer(antes);
+            throw;
+        }
+
+        if (resultado.Tipo != TipoGuardado.Aplicado)
+        {
+            Reponer(antes);
+        }
+
+        return new RecuperacionResguardo(resultado);
+    }
+
+    /// <summary>Los ajustes locales vigentes, como se dibujan, para volver a ellos si la recuperación no termina.</summary>
+    private sealed record AjustesVigentes(
+        EstiloVisual Estilo,
+        TextosComprobante Textos,
+        Dictionary<LogoPuesto, LogoElegido> Logos,
+        Dictionary<Guid, PresentacionOpcion> Presentacion,
+        List<LogoElegido> Imagenes);
+
+    private AjustesVigentes Copiar()
+    {
+        var logos = new Dictionary<LogoPuesto, LogoElegido>();
+        foreach (var logo in new[] { LogoPuesto.Empresa, LogoPuesto.Concesionaria })
+        {
+            if (_logos.Actual(logo) is { } actual)
+            {
+                logos.Add(logo, actual);
+            }
+        }
+
+        var presentacion = new Dictionary<Guid, PresentacionOpcion>(_presentacion.Leer());
+        var imagenes = presentacion.Values.Select(p => p.Imagen is { } nombre ? _presentacion.ImagenDe(nombre) : null).OfType<LogoElegido>().ToList();
+        return new AjustesVigentes(_estilo.Leer(), _impresora.Leer(), logos, presentacion, imagenes);
+    }
+
+    private void Escribir(
+        EstiloVisual? estilo, TextosComprobante? textos, IReadOnlyDictionary<LogoPuesto, LogoElegido> logos,
+        IReadOnlyDictionary<Guid, PresentacionOpcion> presentacion, IEnumerable<LogoElegido> imagenes)
+    {
+        if (estilo is not null)
+        {
+            _estilo.Guardar(estilo);
+        }
+        else
+        {
+            _estilo.VolverAlPorDefecto();
+        }
+
+        if (textos is not null)
+        {
+            _impresora.Guardar(textos);
+        }
+        else
+        {
+            _impresora.VolverAlPorDefecto();
+        }
+
+        foreach (var logo in new[] { LogoPuesto.Empresa, LogoPuesto.Concesionaria })
+        {
+            if (logos.TryGetValue(logo, out var elegido))
+            {
+                _logos.Guardar(logo, elegido);
+            }
+            else if (_logos.Actual(logo) is not null)
+            {
+                _logos.VolverAlDeEjemplo(logo);
+            }
+        }
+
+        _presentacion.Reemplazar(presentacion, imagenes);
+    }
+
+    /// <summary>
+    /// Vuelve a los ajustes copiados. Si tampoco se pueden escribir, quedan como estén: la carpeta del puesto no deja escribir,
+    /// y la versión activa, que es lo que la atención usa para autorizar, no cambió.
+    /// </summary>
+    private void Reponer(AjustesVigentes antes)
+    {
+        try
+        {
+            Escribir(antes.Estilo, antes.Textos, antes.Logos, antes.Presentacion, antes.Imagenes);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            System.Diagnostics.Debug.WriteLine($"INComedor: no se pudieron reponer los ajustes locales ({e.GetType().Name}).");
         }
     }
 

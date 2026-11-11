@@ -373,11 +373,14 @@ consumos ni lo que es del equipo (el monitor, el modo, la simulación y la carpe
 los códigos de identificación de las personas**, porque sin ellos no se puede recuperar: se guarda como un dato de la
 empresa, y ni el resumen ni la bitácora los muestran. «Recuperar resguardo», sólo sin INWeb como dueño, pide el `.zip`
 con el diálogo de archivos, lo revisa entero sin escribir (hasta 50 MB, sólo sus partes y de hasta 20 MB cada una, sus
-huellas, el mismo formato y esquema, cada ajuste con las reglas de su almacén y ningún código que en este puesto sea de
-otra persona) y muestra de qué versión y fecha es, cuántas personas, opciones y permisos de operador trae y qué ajustes,
-con «Recuperar» y «Cancelar», destacado. «Recuperar» crea una versión nueva, la anterior queda en la base, y la pantalla
-toma en el acto el estilo, los logos y los textos; lo que el resguardo no trae vuelve al de ejemplo. Un rechazo dice el
-motivo y no cambia nada. Queda en la general como `CONFIGURATION_BACKUP_CREATED`, `CONFIGURATION_RESTORED` o
+huellas, el mismo formato y esquema, cada valor del tipo de su columna y con las reglas de un guardado a mano, cada
+ajuste con las reglas de su almacén, un ensayo de la inserción que se deshace y ningún código que en este puesto sea de
+otra persona) y muestra de qué versión y fecha es, cuántas personas activas, opciones y permisos de operador vigentes
+trae y qué ajustes, con «Recuperar» y «Cancelar», éste destacado. «Recuperar» es todo o nada: escribe los ajustes,
+crea una versión nueva (la anterior queda en la base) y la pantalla toma en el acto el estilo, los logos y los textos;
+lo que el resguardo no trae vuelve al de ejemplo, y si algo falla, todo queda como estaba. Los ajustes locales de antes
+no quedan guardados: para conservarlos, se guarda antes un resguardo. La huella del manifiesto detecta un archivo
+dañado, no uno alterado a propósito: a ése lo frenan las validaciones. Un rechazo dice el motivo y no cambia nada. Queda en la general como `CONFIGURATION_BACKUP_CREATED`, `CONFIGURATION_RESTORED` o
 `CONFIGURATION_RESTORE_REJECTED`, con la huella del archivo y sin códigos ni nombres.
 
 **Modos, clave del día y cierre.** El puesto tiene dos modos, que atienden igual y sólo cambian el cierre. En los dos,

@@ -242,12 +242,15 @@ public static class MensajesAtencion
 
     public const string ResguardoNoGuardado = "No se pudo escribir el resguardo en la carpeta elegida: no se guardó nada.";
 
-    /// <summary>De qué versión y de cuándo es el resguardo, y cuántas personas, opciones y permisos trae (D2), sin nombres ni códigos.</summary>
+    /// <summary>
+    /// De qué versión y de cuándo es el resguardo, y cuántas personas activas, opciones y permisos de operador vigentes trae
+    /// (D2), sin nombres ni códigos.
+    /// </summary>
     public static string ResumenResguardo(string archivo, ResguardoRevisado resguardo, TimeZoneInfo zona) =>
         $"{archivo} tiene la versión {resguardo.VersionOrigen.ToString(CultureInfo.InvariantCulture)} de la configuración, guardada el "
         + $"{TimeZoneInfo.ConvertTime(resguardo.FechaUtc, zona).ToString("dd/MM/yyyy 'a las' HH:mm", CultureInfo.InvariantCulture)}, con "
-        + $"{Cantidad(resguardo.Personas, "persona", "personas")}, {Cantidad(resguardo.Opciones, "opción", "opciones")} y "
-        + $"{Cantidad(resguardo.Permisos, "permiso de operador", "permisos de operador")}.";
+        + $"{Cantidad(resguardo.Personas, "persona activa", "personas activas")}, {Cantidad(resguardo.Opciones, "opción", "opciones")} y "
+        + $"{Cantidad(resguardo.Permisos, "permiso de operador vigente", "permisos de operador vigentes")}.";
 
     /// <summary>Qué ajustes locales trae el resguardo; los que no trae vuelven al de ejemplo al recuperar (D3).</summary>
     public static string AjustesDelResguardo(ResguardoRevisado resguardo)
@@ -285,19 +288,24 @@ public static class MensajesAtencion
     }
 
     public const string RecuperarReemplaza =
-        "«Recuperar» reemplaza la configuración y los ajustes locales del puesto por los del resguardo, en una versión nueva; la anterior queda en la base.";
+        "«Recuperar» reemplaza la configuración y los ajustes locales del puesto por los del resguardo, en una versión nueva; la anterior queda en la base, "
+        + "pero los ajustes locales de ahora no: si los querés conservar, guardá antes un resguardo.";
+
+    public const string SinCarpetaResguardo = "No se eligió una carpeta: no se guardó el resguardo.";
 
     /// <summary>Por qué un resguardo no se recupera (D2), sin mostrar un código ni un nombre.</summary>
     public static string ResguardoRechazado(string archivo, string motivo) => $"No se recupera {archivo}: " + motivo switch
     {
         MotivosResguardo.Ilegible => "no se pudo leer el archivo.",
         MotivosResguardo.NoEsUnZip => "no es un resguardo del puesto, porque no es un .zip.",
-        MotivosResguardo.DemasiadoGrande => "pasa de 50 MB, o una de sus partes pasa de 20 MB.",
+        MotivosResguardo.DemasiadoGrande => "es demasiado grande: pasa de 50 MB, comprimido o descomprimido, una de sus partes pasa de 20 MB o tiene más de 500 partes.",
         MotivosResguardo.ParteDesconocida => "tiene un archivo que no es de un resguardo.",
         MotivosResguardo.HuellaDistinta => "una de sus partes cambió después de guardarlo.",
         MotivosResguardo.OtroFormato => "es de otro formato de resguardo.",
         MotivosResguardo.OtroEsquema => "es de otra versión de la base del puesto.",
         MotivosResguardo.AjusteInvalido => "uno de sus ajustes locales no es válido.",
+        MotivosResguardo.AjustesNoEscritos => "no se pudieron escribir sus ajustes locales en la carpeta del puesto, y no cambió nada.",
+        MotivosResguardo.BaseSinRespuesta => "la base no respondió, y no cambió nada.",
         CodigosAdministracion.ResguardoInvalido => "su configuración no tiene la forma de la de este puesto.",
         CodigosAdministracion.CodigoEnConflicto => "un código de identificación del resguardo es, en este puesto, de otra persona, y los códigos no se reasignan.",
         CodigosAdministracion.INWebAdministra => "la configuración de este puesto la administra INWeb.",
@@ -307,10 +315,6 @@ public static class MensajesAtencion
     /// <summary>Lo recuperado, con la versión nueva (D3).</summary>
     public static string ResguardoRecuperado(int version) =>
         $"Se recuperó el resguardo en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración, con sus ajustes locales.";
-
-    /// <summary>La base tomó el resguardo, pero algún ajuste local no se pudo escribir (D3).</summary>
-    public static string ResguardoRecuperadoSinAjustes(int version) =>
-        $"Se recuperó la configuración en la versión {version.ToString(CultureInfo.InvariantCulture)}, pero no se pudieron escribir los ajustes locales: revisá el estilo, los logos, los textos y la presentación.";
 
     private static string Cantidad(int cantidad, string uno, string varios) =>
         $"{cantidad.ToString(CultureInfo.InvariantCulture)} {(cantidad == 1 ? uno : varios)}";
