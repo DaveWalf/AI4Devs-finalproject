@@ -115,7 +115,7 @@ local → ticket → reposo**. La sincronización ocurre aparte.
 Los [bocetos de pantallas](docs/experiencia.md) son diseños, no capturas de software.
 Incluyen cancelación, rechazo por cupo, huella no coincidente, falta de papel y
 recuperación. Una nueva lectura no sustituye la identidad de una sesión ocupada.
-Las capturas del puesto real, tomadas por el E2E en cada paso del flujo principal, están en
+Las capturas del puesto real, tomadas por CDP sobre el EXE publicado y siguiendo el escenario del E2E, están en
 [«Capturas del flujo principal»](#capturas-del-flujo-principal).
 
 ### 1.4. Instrucciones de instalación
