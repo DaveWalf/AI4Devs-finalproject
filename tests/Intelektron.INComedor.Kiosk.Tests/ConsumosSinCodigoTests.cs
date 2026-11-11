@@ -103,6 +103,24 @@ public class ConsumosSinCodigoTests
         Assert.Equal("DAILY_KEY", recuperacion.GetProperty("Access").GetString());
     }
 
+    [Fact(DisplayName = "comprobante-local · La sesión del operador vence durante Configuración: a los 2 minutos de entrar con 9001, reimprimir no crea copia y la pestaña dice que cierre Configuración y vuelva a entrar, sin pedir un código")]
+    public async Task La_sesion_del_operador_vence_durante_configuracion()
+    {
+        using var puesto = new PuestoDePrueba();
+        var pantalla = puesto.Dibujar();
+        await Consumir(pantalla);
+        await EntradaConfiguracion.Entrar(pantalla, "9001");
+        puesto.Reloj.Avanzar(TimeSpan.FromMinutes(2));
+
+        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
+        await pantalla.FindAll("#seccion-consumos .motivo")[0].ClickAsync(new());
+
+        Assert.Equal("La sesión del operador terminó. Cerrá Configuración y volvé a entrar con tu código.",
+            pantalla.Find("#aviso-comprobantes").TextContent.Trim());
+        Assert.Empty(pantalla.FindAll("#codigo-operador"));
+        Assert.Equal(0L, Escalar(puesto, "SELECT COUNT(*) FROM tbComedorTrabajosImpresion WHERE comimpNumeroCopia > 0"));
+    }
+
     private static async Task Consumir(IRenderedComponent<PantallaAtencion> pantalla)
     {
         await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });

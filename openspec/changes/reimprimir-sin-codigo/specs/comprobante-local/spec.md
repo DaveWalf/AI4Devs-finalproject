@@ -28,6 +28,12 @@ Origen: HU03-E («vuelve a reposo sin privilegios ni identidad de la persona ant
 - **WHEN** se cierra Configuración con «Cerrar»
 - **THEN** la sesión ya no es utilizable y la bitácora registra su cierre una sola vez, con `CONFIGURATION_CLOSED`
 
+#### Scenario: La sesión del operador vence durante Configuración
+Origen: decisión de David del 11/11/2026 sobre la advertencia de la verificación (opción a), borde: Consumos ya no tiene dónde pedir el código.
+- **GIVEN** Configuración abierta con `9001` y su sesión vencida, a los 2 minutos de entrar
+- **WHEN** toca «Reimprimir» en una fila de Consumos y elige un motivo
+- **THEN** la acción se deniega sin trabajo nuevo, y la pestaña avisa «La sesión del operador terminó. Cerrá Configuración y volvé a entrar con tu código.» sin pedir un código
+
 #### Scenario: Reposo sin «Asistencia»
 Origen: pedido de David del 06/11/2026 («1. Eliminar el botón de Asistencia») y su decisión 2/3 del mismo día.
 - **GIVEN** el puesto en reposo

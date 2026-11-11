@@ -108,6 +108,15 @@ sesión.
   `buscar-y-exportar-consumos`), y cerrarla en medio de una consulta sorprendería a quien la usa.
 - *Descartada*: pasar a la clave del día. El operador no la tipeó, y pasaría a imprimir sin que nadie la haya dado.
 
+La sesión del operador vence a los 2 minutos (`VigenciaSesion` de `IdentificacionPorCodigo`). Antes de este change, al
+vencer, la pestaña volvía a pedir el código; ahora `SESSION_NOT_USABLE` en Consumos muestra
+`MensajesAtencion.SesionOperadorVencida`: «La sesión del operador terminó. Cerrá Configuración y volvé a entrar con tu
+código.», porque el «Identificate de nuevo» de la atención no dice dónde. Lo decidió David el 11/11/2026 sobre la
+advertencia de la verificación (opción a).
+
+- *Descartada*: renovar la sesión mientras Configuración esté abierta. Lo resolvería, pero cambia la vigencia fija de las
+  sesiones privilegiadas a un día del cierre.
+
 ### D7. El aviso antes de una copia sin validez
 
 Con la clave del día, la sección del motivo muestra `#aviso-sin-validez` con

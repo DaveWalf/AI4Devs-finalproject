@@ -105,6 +105,12 @@ public static class MensajesAtencion
     /// <summary>El aviso antes de elegir el motivo con la clave del día (D7 de reimprimir-sin-codigo).</summary>
     public const string CopiaSinValidez = "La copia va a salir marcada SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD porque se entró con la clave del día.";
 
+    /// <summary>
+    /// La sesión del operador venció durante Configuración: Consumos no pide códigos, así que dice dónde volver a entrar (D6 de
+    /// reimprimir-sin-codigo, decisión de David del 11/11/2026).
+    /// </summary>
+    public const string SesionOperadorVencida = "La sesión del operador terminó. Cerrá Configuración y volvé a entrar con tu código.";
+
     public static string CarpetaElegida(string carpeta) => $"Las exportaciones van a {carpeta}.";
 
     /// <summary>La exportación de Personas hecha (D5 de editar-raciones-en-personas).</summary>

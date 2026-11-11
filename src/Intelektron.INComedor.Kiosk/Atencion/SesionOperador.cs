@@ -109,8 +109,11 @@ public sealed class SesionOperador
         {
             // El permiso o la sesión cayeron: se avisa el motivo sin pedir un código y la sesión queda como está, así que la
             // acción siguiente vuelve a comprobar el permiso y vuelve a denegarse (RB26, D6 de reimprimir-sin-codigo).
+            // La sesión que venció no se renueva acá: Consumos dice que se vuelva a entrar por el engranaje (D6).
             Mensaje = null;
-            Aviso = MensajesAtencion.DeMotivo(resultado.ReasonCode);
+            Aviso = resultado.ReasonCode == "SESSION_NOT_USABLE"
+                ? MensajesAtencion.SesionOperadorVencida
+                : MensajesAtencion.DeMotivo(resultado.ReasonCode);
             return;
         }
 

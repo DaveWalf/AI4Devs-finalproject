@@ -120,6 +120,13 @@ sigue la regla de prolijidad de `config.yaml`.
     cada uno el de su texto, D5). Seis corridas en primer plano: cinco en verde y la primera roja sólo por el control de
     `EscenarioE2E.cs:410`, porque `%LOCALAPPDATA%\INComedor\demo\` cambió durante la corrida, una carpeta que esta prueba
     no usa (corría otra sesión en paralelo); las cuatro siguientes dieron la foto igual.
+- [x] 4.5 La sesión del operador que vence durante Configuración (D6, decisión de David del 11/11/2026 sobre la advertencia
+  de la verificación, opción a). Primero una prueba nueva en `ConsumosSinCodigoTests`, vista fallar antes: con `9001` y el
+  reloj 2 minutos después, «Reimprimir» con un motivo no crea copia y `#aviso-comprobantes` dice el mensaje entero, sin
+  campo de código. Después, `MensajesAtencion.SesionOperadorVencida` y su uso en `SesionOperador`. Verifica: la prueba en
+  rojo antes y en verde después, y `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` en verde.
+  - Hecho el 11/11 a las 18:40: rojo con «La sesión de asistencia terminó. Identificate de nuevo.» y verde con el mensaje
+    nuevo; `Kiosk.Tests` 603 de 603, con `PuntoFinalTests`. El `git diff --diff-filter=M` sigue con los ocho archivos de 1.1.
 
 ## 5. Documentación, decisión y verificación completa
 
