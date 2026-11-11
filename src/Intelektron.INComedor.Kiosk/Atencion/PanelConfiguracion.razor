@@ -232,7 +232,7 @@
             {
                 <section aria-labelledby="titulo-prueba">
                     <h3 id="titulo-prueba">Prueba de impresión</h3>
-                    <p>Envía un comprobante con la leyenda PRUEBA, sin persona ni importe; no registra ningún consumo.</p>
+                    <p>@MensajesAtencion.PruebaImpresionExplicacion</p>
                     <div class="acciones abrir-paneles">
                         <button id="imprimir-prueba" type="button" @onclick="Probar">Imprimir una prueba</button>
                     </div>
@@ -273,7 +273,7 @@
             {
                 <p id="aviso-monitor" class="aviso" role="status">@AvisoMonitor</p>
             }
-            <p>Elegí el monitor del puesto: la ventana pasa a pantalla completa en él y vuelve a él cada vez que el puesto abre.</p>
+            <p>@MensajesAtencion.MonitorExplicacion</p>
             <ul class="lista-monitores">
                 @for (var i = 0; i < _monitores.Count; i++)
                 {
@@ -527,7 +527,7 @@
     private string Editar => _resumen?.SoloLectura == true ? "Ver" : "Editar";
 
     private string ResumenOpciones => _resumen is { } vista
-        ? $"{vista.Opciones.Count} opciones en la versión {vista.VersionConfiguracion} de la configuración"
+        ? MensajesAtencion.ResumenOpciones(vista.Opciones.Count, vista.VersionConfiguracion)
         : MensajesAtencion.ConfiguracionNoLeida;
 
     protected override void OnInitialized()

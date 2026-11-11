@@ -120,15 +120,27 @@ public static class MensajesAtencion
     public const string EdicionDeOpcionesAbierta = "Terminá o cancelá la edición de Opciones.";
     public const string OriginalEnviado = "Comprobante original enviado otra vez.";
     public const string ComprobanteQuedoPendiente = "El comprobante quedó pendiente: revisá la impresora.";
+    public const string ImpresoraDemostracion = "Demostración: elegí cómo responde al próximo comprobante.";
+    public const string PruebaImpresionExplicacion = "Envía un comprobante con la leyenda PRUEBA, sin persona ni importe; no registra ningún consumo.";
+    public const string MonitorExplicacion = "Elegí el monitor del puesto: la ventana pasa a pantalla completa en él y vuelve a él cada vez que el puesto abre.";
+    public const string DemostracionExplicacion = "Datos sintéticos: no es la atención del comedor. Cada toque confirma una intención nueva sobre la base local.";
+
+    /// <summary>El pedido del motivo de una reimpresión: termina en dos puntos porque presenta los botones de los motivos (D2).</summary>
+    public static string PedidoMotivo(string numero, string opcion) => $"Reimprimir el comprobante N.º {numero} · {opcion}. Elegí el motivo:";
+
+    /// <summary>El resumen de la pestaña Opciones: un estado, sin punto (D2).</summary>
+    public static string ResumenOpciones(int opciones, int version) =>
+        $"{opciones.ToString(CultureInfo.InvariantCulture)} opciones en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración";
 
     public static string CopiaEnviada(int numeroCopia) =>
         $"Copia {numeroCopia.ToString(CultureInfo.InvariantCulture)} enviada con la leyenda DUPLICADO.";
 
     public static string RedCanceladaEnPaso(int? paso, int pasos) =>
-        $"No se dio el permiso de administrador del paso {paso} de {pasos}: quedaron aplicados los anteriores.";
+        $"No se dio el permiso de administrador del paso {paso?.ToString(CultureInfo.InvariantCulture)} de {pasos.ToString(CultureInfo.InvariantCulture)}: quedaron aplicados los anteriores.";
 
     public static string RedFallo(int? paso, int pasos, int? codigo, bool conAplicados) =>
-        $"Falló el paso {paso} de {pasos} con el código {codigo}: " + (conAplicados ? "quedaron aplicados los anteriores." : "la red no cambió.");
+        $"Falló el paso {paso?.ToString(CultureInfo.InvariantCulture)} de {pasos.ToString(CultureInfo.InvariantCulture)} con el código {codigo?.ToString(CultureInfo.InvariantCulture)}: "
+        + (conAplicados ? "quedaron aplicados los anteriores." : "la red no cambió.");
 
     /// <summary>El resumen de Personas u Opciones cuando la base no respondió al abrir Configuración.</summary>
     public const string ConfiguracionNoLeida = "No se pudo leer la configuración de la base.";

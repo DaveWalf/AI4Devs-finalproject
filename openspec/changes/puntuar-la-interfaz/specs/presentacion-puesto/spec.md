@@ -2,7 +2,7 @@
 
 ### Requirement: Las oraciones de la pantalla terminan en punto
 
-Toda oración que la pantalla del puesto muestra (un aviso, un mensaje, una explicación o una indicación) SHALL terminar en punto. Un título, un rótulo, un botón, una opción o un estado MUST NOT llevarlo. Una spec que cita un mensaje entre comillas latinas deja el punto final fuera de ellas, como pide la RAE.
+Toda oración que la pantalla del puesto muestra (un aviso, un mensaje, una explicación o una indicación) SHALL terminar en punto, o en el signo que la cierra: «?» o «!», o «:» antes de lo que presenta. Un título, un rótulo, un botón, una opción o un estado MUST NOT llevar punto final.
 
 #### Scenario: Un aviso de la atención
 Origen: pedido de David del 10/11/2026 («no dejar oraciones sin el punto final donde corresponda en la interfaz»).

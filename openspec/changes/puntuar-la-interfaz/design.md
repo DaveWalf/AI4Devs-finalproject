@@ -1,11 +1,12 @@
 ## Context
 
-`MensajesAtencion` reúne casi todo lo que la pantalla del puesto dice: 55 constantes y métodos como `DeMotivo`,
-`VersionGuardada` o `ExportacionHecha`. Hasta `buscar-y-exportar-consumos`, ninguna oración terminaba en punto. Quedan
-fuera de esa clase unas pocas oraciones: las de `PantallaAtencion.razor` («Confirmando: el puesto está ocupado», «Tocá el
-comprobante para retirarlo» y los tres pedidos de la clave del día), la indicación de `PanelConfiguracion.razor`, el
-`title` de `PanelPersonas.razor`, el error de `PantallaDemostracion.razor`, los resultados de `ResultadoRed` y los de
-`SesionOperador`. La regla de `openspec/config.yaml` dice que toda oración termina en punto y que un título, un rótulo, un
+`MensajesAtencion` reúne casi todo lo que la pantalla del puesto dice: 59 constantes en `41f4552`, 52 de ellas sin
+punto (las otras siete son las que agregó `buscar-y-exportar-consumos`, que ya lo llevan), y métodos como `DeMotivo`,
+`VersionGuardada` o `ExportacionHecha`. Quedan fuera de esa clase unas pocas oraciones: las de `PantallaAtencion.razor`
+(«Confirmando: el puesto está ocupado», «Tocá el comprobante para retirarlo» y los tres pedidos de la clave del día), la
+indicación y las dos explicaciones de `PanelConfiguracion.razor`, el `title` de `PanelPersonas.razor`, la explicación de
+`FranjaImpresora.razor`, la explicación y el error de `PantallaDemostracion.razor`, el pedido del motivo de
+`PestanaConsumos.razor`, los resultados de `ResultadoRed` y los de `SesionOperador`. Algunas ya tenían punto. La regla de `openspec/config.yaml` dice que toda oración termina en punto y que un título, un rótulo, un
 botón, una opción o un estado no.
 
 ## Goals / Non-Goals
@@ -20,8 +21,11 @@ mensajes con el punto fuera de las comillas.
 ### D1. Las oraciones viven en `MensajesAtencion`
 
 Las oraciones sueltas de los componentes, de `ResultadoRed` y de `SesionOperador` se mudan a `MensajesAtencion`, como
-constantes o como métodos con sus partes variables (el paso de la red, el número de la copia). Los componentes las usan
-desde ahí. Así la prueba de D3 las ve todas, y un texto nuevo tiene un lugar obvio.
+constantes o como métodos con sus partes variables (el paso de la red, el número de la copia, el número y la opción del
+pedido del motivo), también las que ya tenían punto. Los componentes las usan desde ahí. Así la prueba de D3 las ve, y un
+texto nuevo tiene un lugar obvio. Los estados cortos de las franjas, el saludo y los rótulos quedan en sus componentes:
+no son oraciones. Ningún control cambia de tamaño ni de lugar, sólo su texto; que un punto no parta una línea lo mide la
+E2E de la tarea 3.1.
 
 - **Descartada: puntuar los literales donde están.** Quedarían fuera de la prueba, y el próximo texto suelto volvería a
   salir sin punto.
@@ -32,9 +36,13 @@ No llevan punto, por ser títulos, rótulos, botones, opciones o estados: `Titul
 (un estado de la pestaña Red), `Motivo` (los botones del motivo de la reimpresión), `EstadoBitacora` («Bitácora general:
 al día»), `UsoDelDia` («Hoy ya usaste: almuerzo 1 de 1»), los estados de las filas de Personas y Opciones («Nueva», «Se
 da de baja al guardar», «Sale del catálogo al guardar»), la leyenda «Identificación simulada por código (demostración)»,
-los rótulos de las franjas («Sin receptor configurado», «Sin papel») y el detalle de cada etapa de la prueba de conexión
+los rótulos y estados de las franjas («Sin receptor configurado», «Sin papel», «Error técnico: credencial del equipo»),
+el saludo «Hola, <nombre>», el rótulo del combo «Simulación: elegí a la persona», el resumen de Opciones
+(`ResumenOpciones`, «9 opciones en la versión 2 de la configuración»), el cargo (`Cargo`, «ARS 1.500,00»), las
+etiquetas «Clave: valor» (Modo, Operador, Equipo, Receptor, Fecha) y el detalle de cada etapa de la prueba de conexión
 («no se resolvió …»), que va después del nombre de la etapa, como un estado. La cabecera «INComedor · tu pausa del día»
-es un título.
+es un título. Una oración que presenta lo que sigue cierra con dos puntos: el pedido del motivo («… Elegí el motivo:»,
+`PedidoMotivo`) presenta sus botones; una pregunta cierra con su signo («¿Aplicar … al adaptador …?» en Red).
 
 - **Descartada: puntuar también los estados.** La RAE no pone punto a títulos, rótulos ni enunciados que funcionan como
   tales, y un «Activa.» en una celda de tabla se lee como un error.
@@ -45,8 +53,11 @@ es un título.
 que terminen en punto, salvo una lista explícita (`TituloReposo` y `SinRed`), que además afirma que ésas no lo llevan.
 Otro caso llama a cada método que arma una oración con valores de ejemplo (`DeMotivo` con cada motivo conocido y uno
 desconocido, `VersionGuardada`, `ExportacionHecha`, `CarpetaElegida`, `PedidoOperadorPara`, los de la red y los de la
-asistencia), y otro afirma que `Motivo`, `EstadoBitacora` y `UsoDelDia` no terminan en punto. Una constante nueva sin
-punto, o un título nuevo sin pasar por la lista, la hacen fallar.
+asistencia), y otro afirma que `Motivo`, `EstadoBitacora`, `UsoDelDia`, `ResumenOpciones` y `Cargo` no terminan en punto
+y que `PedidoMotivo` cierra con dos puntos. Un último caso compara los métodos públicos que devuelven `string` con esas
+dos listas: un método nuevo sin clasificar la hace fallar y obliga a sumarlo con su valor de ejemplo. Una constante nueva
+sin punto, o un título nuevo sin pasar por la lista, también. No ve un motivo nuevo de `DeMotivo` que no esté en su lista
+ni un literal nuevo en un componente: eso lo cuida la regla de `openspec/config.yaml`.
 
 - **Descartada: un analizador de Roslyn sobre los literales.** Distinguir un título de una oración pide el mismo juicio
   que la lista, a un costo mucho mayor.
@@ -55,7 +66,11 @@ punto, o un título nuevo sin pasar por la lista, la hacen fallar.
 
 Las pruebas que comparan un mensaje con su constante no cambian. Las que lo comparan con un literal cambian sólo para
 sumar el punto (decisión 13 del plan), y la tarea las lista. Las specs y el `readme.md` no cambian: citan los mensajes
-entre comillas latinas, con el punto de la oración citada fuera de ellas. `prompts.md` actualiza el criterio humano 16.
+entre comillas latinas, con el punto de la oración citada fuera de ellas. `prompts.md` actualiza el criterio humano 16, y
+`docs/aplicacion-del-curso.md`, la fila de las reglas de `config.yaml`.
+
+- **Descartada: cambiar los literales de las pruebas por las constantes.** Sería cambiar más que lo que el comportamiento
+  nuevo exige, y una prueba que compara con la constante no ve un cambio de texto: el literal, sí.
 
 ## Risks / Trade-offs
 

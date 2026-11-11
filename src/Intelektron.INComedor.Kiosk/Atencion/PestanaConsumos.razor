@@ -92,7 +92,7 @@
                             {
                                 <p id="aviso-incertidumbre" class="aviso" role="alert">@MensajesAtencion.Incertidumbre</p>
                             }
-                            <p>Reimprimir el comprobante N.º @pedida.TicketId.ToString("D")[..8] · @pedida.Opcion. Elegí el motivo:</p>
+                            <p>@MensajesAtencion.PedidoMotivo(pedida.TicketId.ToString("D")[..8], pedida.Opcion)</p>
                             <div class="acciones">
                                 @foreach (var motivo in Enum.GetValues<MotivoReimpresion>())
                                 {

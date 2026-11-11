@@ -3,8 +3,9 @@
 ## Why
 
 El 10/11/2026, durante `buscar-y-exportar-consumos`, David pidió: «Asegurate de no dejar oraciones sin el punto final
-donde corresponda en la interfaz.» Los 55 mensajes de `MensajesAtencion` terminaban sin punto, como los textos sueltos de
-las pantallas, por una costumbre que ninguna regla pedía. La regla ya está en `openspec/config.yaml` (rules de `design` y
+donde corresponda en la interfaz.» En ese momento los 55 mensajes de `MensajesAtencion` terminaban sin punto, como los
+textos sueltos de las pantallas, sin que ninguna regla lo pidiera; en la punta de este change, después de
+`buscar-y-exportar-consumos`, son 52 de sus 59 constantes. La regla ya está en `openspec/config.yaml` (rules de `design` y
 `tasks`) y los textos nuevos de aquel change la cumplen; éste puntúa el resto. Es el change 1c del §6b del plan
 `AI4DEVS-GOAL-CIERRE-FINAL-11-11.md` (decisión 15), después del 1b y antes del 2.
 
@@ -44,7 +45,8 @@ Ninguna.
   las usaban, `SesionOperador.cs` y `Red/ResultadoRed.cs`). Sin cambios en la base, el receptor ni el contrato.
 - **Pruebas**: `PuntoFinalTests` nueva en `Kiosk.Tests`. Las pruebas existentes que comparan un mensaje con un literal,
   en lugar de su constante, cambian sólo para sumar el punto (decisión 13 del plan); la lista va en la tarea y en el PR.
-- **Documentos**: `prompts.md`, el criterio humano 16, dice que el resto ya se puntuó.
+- **Documentos**: `prompts.md`, el criterio humano 16, dice que el resto ya se puntuó, y la fila de las reglas de
+  `openspec/config.yaml` en `docs/aplicacion-del-curso.md` nombra la regla y su prueba.
 
 ## Gate (decisión 13 del plan: dado, con límites)
 

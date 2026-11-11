@@ -6,8 +6,10 @@ namespace Intelektron.INComedor.Kiosk.Tests;
 
 /// <summary>
 /// Las oraciones de la pantalla terminan en punto, y los títulos, rótulos, botones y estados no (presentacion-puesto de
-/// puntuar-la-interfaz, D2 y D3). Recorre <see cref="MensajesAtencion"/>, donde viven todas las oraciones del puesto: una
-/// constante nueva sin punto, o un título nuevo que no pase por <see cref="SinPunto"/>, hace fallar la prueba y la nombra.
+/// puntuar-la-interfaz, D2 y D3). Recorre <see cref="MensajesAtencion"/>, donde viven las oraciones del puesto (los estados
+/// cortos de las franjas, el saludo y los rótulos quedan en sus componentes): una constante nueva sin punto, un título
+/// nuevo que no pase por <see cref="SinPunto"/> o un método nuevo sin clasificar hacen fallar la prueba y la nombran. Un
+/// literal nuevo en un componente no lo ve: para eso está la regla de <c>openspec/config.yaml</c>.
 /// </summary>
 public class PuntoFinalTests
 {
@@ -61,6 +63,42 @@ public class PuntoFinalTests
         Assert.True(sinPunto.Count == 0, "Oraciones sin punto final:\n" + string.Join('\n', sinPunto));
     }
 
+    /// <summary>
+    /// Cada método que arma un texto de la pantalla, con cómo cierra: una oración con punto, el pedido del motivo con dos
+    /// puntos (presenta los botones) o un rótulo o estado sin punto (D2). Un método nuevo que no esté acá hace fallar
+    /// <see cref="Cada_metodo_esta_clasificado"/>, que obliga a sumarlo con su valor de ejemplo.
+    /// </summary>
+    private static readonly string[] MetodosConPunto =
+    [
+        nameof(MensajesAtencion.DeMotivo), nameof(MensajesAtencion.VersionGuardada), nameof(MensajesAtencion.CopiaEnviada),
+        nameof(MensajesAtencion.RedCanceladaEnPaso), nameof(MensajesAtencion.RedFallo), nameof(MensajesAtencion.PedidoOperadorPara),
+        nameof(MensajesAtencion.CarpetaElegida), nameof(MensajesAtencion.ExportacionHecha),
+    ];
+
+    private static readonly string[] MetodosSinPunto =
+    [
+        nameof(MensajesAtencion.Motivo), nameof(MensajesAtencion.EstadoBitacora), nameof(MensajesAtencion.UsoDelDia),
+        nameof(MensajesAtencion.ResumenOpciones), nameof(MensajesAtencion.Cargo), nameof(MensajesAtencion.PedidoMotivo),
+    ];
+
+    [Fact(DisplayName = "presentacion-puesto · Un mensaje nuevo sin punto: cada método de MensajesAtencion que arma un texto está clasificado, con o sin punto")]
+    public void Cada_metodo_esta_clasificado()
+    {
+        var metodos = typeof(MensajesAtencion).GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(m => m.ReturnType == typeof(string) && !m.IsSpecialName)
+            .Select(m => m.Name)
+            .Distinct()
+            .Order(StringComparer.Ordinal);
+
+        Assert.Equal(MetodosConPunto.Concat(MetodosSinPunto).Order(StringComparer.Ordinal), metodos);
+    }
+
+    [Fact(DisplayName = "presentacion-puesto · Un título y un estado no llevan punto: el pedido del motivo cierra con dos puntos, porque presenta los botones")]
+    public void El_pedido_del_motivo_cierra_con_dos_puntos()
+    {
+        Assert.EndsWith("Elegí el motivo:", MensajesAtencion.PedidoMotivo("0a1b2c3d", "Almuerzo común"), StringComparison.Ordinal);
+    }
+
     [Fact(DisplayName = "presentacion-puesto · Un título y un estado no llevan punto: los botones del motivo, el estado de una bitácora y el uso del día no terminan en punto")]
     public void Los_botones_y_los_estados_no_llevan_punto()
     {
@@ -70,6 +108,8 @@ public class PuntoFinalTests
             MensajesAtencion.EstadoBitacora(new EstadoBitacora(DestinoBitacora.General, true, 0, null), TimeZoneInfo.Utc),
             MensajesAtencion.EstadoBitacora(new EstadoBitacora(DestinoBitacora.Interacciones, false, 3, null), TimeZoneInfo.Utc),
             MensajesAtencion.UsoDelDia([new CategoriaAgotada(Guid.NewGuid(), "ALMUERZO", 1, 1)])!,
+            MensajesAtencion.ResumenOpciones(9, 2),
+            MensajesAtencion.Cargo("ARS", 2, 150000),
         ];
 
         Assert.All(rotulos, r => Assert.False(r.EndsWith('.'), $"«{r}»"));
