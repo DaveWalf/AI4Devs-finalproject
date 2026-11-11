@@ -245,21 +245,21 @@ Release cuando se publique.
 
 #### Capturas del flujo principal
 
-Las tomó el E2E del camino 3 en este equipo el 30/10/2026, sobre los EXE compilados del puesto y del receptor, con
-la base y los códigos sintéticos de la demostración. Son del flujo anterior a ofrecer-solo-opciones-disponibles. Siguen el escenario E2E del
-[plan de pruebas](docs/pruebas.md#pruebas-previstas): el receptor arranca apagado y vuelve al final.
+Las tomó el 11/11/2026 un recorrido por CDP sobre el EXE publicado desde `d50cb4d`, en un área de 1024 × 768, con una
+carpeta de datos nueva, la base sembrada de quince opciones y los códigos sintéticos de la demostración. Siguen el
+escenario E2E del [plan de pruebas](docs/pruebas.md#pruebas-previstas): el receptor arranca apagado y vuelve al final.
 
-| 1. Selección de `0001` | 2. Consumo registrado | 3. Segundo almuerzo: cupo |
+| Selección de `0001` | El cartel de la elección | Consumo registrado |
 |---|---|---|
-| ![Catálogo paginado con «Almuerzo común» elegido y su cargo informado](docs/capturas/01-seleccion-de-servicio.png) | ![«Consumo registrado. Retirá tu comprobante»](docs/capturas/02-consumo-registrado.png) | ![«Ya registraste este servicio»](docs/capturas/03-cupo-alcanzado.png) |
+| ![«Elegí tu servicio de hoy» con «Hola, Persona sintética 01»: diez opciones con su cargo en dos columnas y «Página 1 de 2»](docs/capturas/01-seleccion-de-servicio.jpg) | ![El cartel «¿Confirmás tu elección?» con «Almuerzo común», su cargo informado, «Elegir otra» y «Confirmar»](docs/capturas/16-cartel-eleccion.jpg) | ![«Consumo registrado. Retirá tu comprobante.» y el comprobante ORIGINAL de «Almuerzo común» con el nombre del comensal y una frase, sin ningún código](docs/capturas/02-consumo-registrado.jpg) |
 
-| 4. Receptor apagado: 2 pendientes | 5. Receptor de vuelta: al día |
-|---|---|
-| ![Reposo con la franja «Sincronización: 2 pendientes»](docs/capturas/04-sincronizacion-pendiente.png) | ![Reposo con la franja «Sincronización: al día»](docs/capturas/05-sincronizacion-al-dia.png) |
+| Lo usado del día | Receptor apagado: 1 pendiente | Receptor de vuelta: al día |
+|---|---|---|
+| ![«Hoy ya usaste: almuerzo 1 de 1» y sólo los seis refrigerios, sin ningún almuerzo](docs/capturas/03-lo-usado-del-dia.jpg) | ![Reposo con la franja «Sincronización: 1 pendiente»](docs/capturas/04-sincronizacion-pendiente.jpg) | ![Reposo con la franja «Sincronización: al día»](docs/capturas/05-sincronizacion-al-dia.jpg) |
 
-En las dos primeras la franja todavía dice «al día»: se actualiza en cada ciclo de envío, de 30 s, y la cuarta
-captura es la del primer ciclo con el receptor apagado. Cuenta 2 pendientes con un solo consumo: en el flujo del 30/10 el puesto enviaba
-también el rechazo por cupo de la tercera. Desde ofrecer-solo-opciones-disponibles el segundo almuerzo ya no se ofrece (captura 11, más abajo) y la franja cuenta 1 pendiente.
+En las tres primeras la franja todavía dice «al día»: se actualiza en cada ciclo de envío, de 30 s, y la quinta es la
+del primer ciclo con el receptor apagado. El segundo almuerzo ya no se ofrece, así que la franja cuenta un solo
+pendiente, el consumo.
 
 #### Consultar el diseño
 
@@ -451,17 +451,17 @@ esas versiones. Se entra con la clave del día o con el código de un operador, 
 Lo que el recorte deja fuera está en [`AGENTS.md`](AGENTS.md). La base pasa a la versión de esquema 4 al abrirse, y un
 puesto anterior ya no la abre.
 
-| Reposo | Nueve opciones: 5 + 4 | Quince: primera página de diez |
+| Reposo | Nueve opciones: 5 + 4 | Quince: la segunda página |
 |---|---|---|
-| ![Reposo con el fondo de cocina, los logos de ejemplo y el engranaje en el borde inferior derecho](docs/capturas/06-reposo-tactil.jpg) | ![Nueve opciones en dos columnas con «Almuerzo con gaseosa» elegida](docs/capturas/07-seleccion-nueve.jpg) | ![Diez opciones en dos columnas, «Página 1 de 2»](docs/capturas/08-quince-primera-pagina.jpg) |
+| ![Reposo con el fondo de cocina, los logos de ejemplo, la lista de la simulación, el campo del código con «Ingresar» y el engranaje en el borde inferior derecho](docs/capturas/06-reposo-tactil.jpg) | ![Nueve opciones en dos columnas, cinco y cuatro, con su cargo o sin él](docs/capturas/07-seleccion-nueve.jpg) | ![La segunda página del catálogo de quince: cinco opciones, «Anterior» y «Página 2 de 2»](docs/capturas/08-quince-segunda-pagina.jpg) |
 
 | Comprobante en pantalla | Configuración |
 |---|---|
-| ![La impresora en pantalla con el comprobante de «Almuerzo con gaseosa»](docs/capturas/09-comprobante-en-pantalla.jpg) | ![Configuración en la pestaña General: las nueve pestañas, el modo y el estado de las bitácoras](docs/capturas/10-configuracion.jpg) |
+| ![La impresora en pantalla con el comprobante ORIGINAL de «Almuerzo con gaseosa», el nombre del comensal y una frase](docs/capturas/09-comprobante-en-pantalla.jpg) | ![Configuración en General, la última de las once pestañas: el modo, la simulación, las bitácoras y el resguardo](docs/capturas/10-configuracion.jpg) |
 
 | Lo ya usado del día | Sin ninguna opción |
 |---|---|
-| ![Con el almuerzo del día usado, cinco opciones de refrigerio y «Hoy ya usaste: almuerzo 1 de 1»](docs/capturas/11-uso-del-dia.jpg) | ![«No tenés opciones disponibles ahora», lo usado del día y «Listo», sin opciones ni «Confirmar»](docs/capturas/12-sin-opciones.jpg) |
+| ![Con el almuerzo del día usado, cinco opciones de refrigerio y «Hoy ya usaste: almuerzo 1 de 1»](docs/capturas/11-uso-del-dia.jpg) | ![«No tenés opciones disponibles ahora.», «Hoy ya usaste: almuerzo 1 de 1 · refrigerio 2 de 2» y «Listo», sin opciones ni «Confirmar»](docs/capturas/12-sin-opciones.jpg) |
 
 **Pantalla en Configuración.** La pestaña Pantalla lista los monitores conectados con su resolución y cuál es el
 principal, y guarda el del puesto en `pantalla.json` por su identificador de interfaz, que sobrevive a un reinicio y a
@@ -579,18 +579,16 @@ conservan sus propios teclados.
 
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|
-| ![La pestaña Personas en edición: la tabla con una fila por persona, ALMUERZO y REFRIGERIO en columnas y las opciones habilitadas, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |
+| ![La pestaña Personas: una fila por persona con su estado, lo usado sobre el límite de ALMUERZO y REFRIGERIO («1/1» y «2/2» de Persona sintética 01) y las opciones habilitadas, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» en edición con «Almuerzo con gaseosa», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |
 
-| Consumos del día |
-|---|
-| ![La pestaña Consumos con los filtros del día y un consumo de «Persona sintética 01», sin ningún código](docs/capturas/15-consumos-del-dia.jpg) |
+| Consumos del día | La clave del día con su teclado | Configuración de un operador |
+|---|---|---|
+| ![La pestaña Consumos, la primera de once: los filtros y los tres consumos del día de «Persona sintética 01», sin ningún código](docs/capturas/15-consumos-del-dia.jpg) | ![El diálogo «Clave del día» con la clave enmascarada y el teclado numérico en pantalla](docs/capturas/17-teclado-clave.jpg) | ![Configuración abierta con el código de «Operador sintético 01»: sólo Consumos, Personas e Impresora, con el operador a la vista y «Salir»](docs/capturas/18-configuracion-operador.jpg) |
 
-Las 06 a 10 las sacó el 03/11/2026 el apply de `presentar-atencion-tactil` y las rehízo el 04/11 el de
-`mover-engranaje-al-pie`; las 11 y 12, el de `ofrecer-solo-opciones-disponibles`; las 13 y 14, el 06/11 el E2E de
-`administrar-personas-y-opciones`. El 07/11, el E2E de `configurar-puesto-por-pestanas` rehízo la 06 (reposo sin
-«Asistencia»), la 10 (Configuración en General) y la 13 (la tabla de personas) y sacó la 15 (consumos del día). Todas, a
-1024 × 768 por CDP. Las del
-flujo principal, más arriba, son del 30/10 y muestran la presentación anterior.
+Las 18 las sacó el 11/11/2026 un recorrido por CDP sobre el EXE publicado desde `d50cb4d`, la punta con los nueve
+changes del cierre, a 1024 × 768 y en JPEG a escala CSS con calidad 85, con una carpeta de datos nueva: las del flujo
+principal y la 08 con la base de quince y el receptor, y las demás con `INCOMEDOR_CATALOGO=nueve`, por eso su franja
+dice «Sin receptor configurado».
 
 **Pantalla de demostración anterior.**
 
