@@ -27,7 +27,7 @@ Origen: historias HU03.1 (el operador con permiso) y HU03.3 (configurar el equip
 5. **Entra en `final-project-dw` antes del Typeform del 12/11**, en el mismo goal que las otras cuatro mejoras
    aprobadas.
 
-El delta lo aprobó David el 11/11/2026 a las 19:05 («aprobado el delta»), y aparte el cambio de la prueba de la tarea 1.1.
+El delta lo aprobó David el 11/11/2026 a las 19:59 («aprobado el delta»), y aparte el cambio de la prueba de la tarea 1.1.
 
 ## What Changes
 

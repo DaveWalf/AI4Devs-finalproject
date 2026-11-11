@@ -13,7 +13,7 @@ prolijidad de `config.yaml`. Se aplica después de `operador-desde-la-identifica
   - `Infrastructure.Sqlite.Tests/ImportacionPersonasTests.cs`, la prueba «Descargar la planilla de ejemplo»: el
     encabezado esperado pasa de «Nombre», «Código» y los cupos a «Nombre», «Código», «Operador» y los cupos. El código
     sigue en la columna B, así que lo demás de la prueba no cambia.
-  - Aprobada por David el 11/11/2026 a las 19:05 («Sí, se cambia»). Otra prueba existente necesita otra aprobación suya.
+  - Aprobada por David el 11/11/2026 a las 19:59 («Sí, se cambia»). Otra prueba existente necesita otra aprobación suya.
   - Sin cambios:
     - `ExportacionPersonasTests`, porque «Operador» va al final y las celdas que lee por posición no se corren;
     - `Kiosk.Tests/ImportarPersonasTests`, cuya planilla propia no tiene «Operador», que entonces no cambia nada;
