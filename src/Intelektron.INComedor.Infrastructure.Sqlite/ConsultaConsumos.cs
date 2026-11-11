@@ -116,6 +116,20 @@ public sealed class ConsultaConsumos
         _reloj = reloj;
     }
 
+    /// <summary>
+    /// Los datos de impresión de un comprobante, para verlo en pantalla sin imprimirlo ni crear una copia (D4 de
+    /// buscar-y-exportar-consumos): con la leyenda «COPIA EN PANTALLA» y sin trabajo. Null si no existe.
+    /// </summary>
+    public ComprobanteAImprimir? Comprobante(Guid ticketId)
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        using var comando = ComandosSqlite.Crear(conexion, null,
+            "SELECT comcmpDatosImpresion FROM tbComedorComprobantes WHERE comcmpCodigo = $tk", ("$tk", ticketId));
+        return comando.ExecuteScalar() is string datos ? new ComprobanteAImprimir(Guid.Empty, ticketId, 0, datos, LeyendaEnPantalla) : null;
+    }
+
+    public const string LeyendaEnPantalla = "COPIA EN PANTALLA";
+
     /// <summary>El instante del puesto, el final de las últimas 24 horas (D1 de buscar-y-exportar-consumos).</summary>
     public DateTimeOffset Ahora() => _reloj.GetUtcNow();
 

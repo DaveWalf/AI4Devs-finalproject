@@ -573,6 +573,8 @@
         if (Maquina.Estado == EstadoAtencion.Reposo)
         {
             AbrirConfiguracionCon(AccesoOperador);
+            // Consumos usa la sesión de este operador para reimprimir, sin pedirle el código otra vez (D5 de buscar-y-exportar-consumos).
+            _sesionOperador?.Adoptar(resultado.SesionId!.Value, resultado.NombreVisible ?? string.Empty);
         }
         else
         {

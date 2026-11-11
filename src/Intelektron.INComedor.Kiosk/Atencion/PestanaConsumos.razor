@@ -8,7 +8,7 @@
     identificadores, y la tabla nunca muestra un código. La tabla se dibuja sólo con la pestaña elegida, para que los nombres
     no queden en la página mientras se usa otra; los filtros se conservan hasta cerrar Configuración.
 *@
-<div class="consumos">
+<div class="consumos" @onpointerdown="() => Sesion?.Tocar()">
     @if (Visible && _cargado)
     {
         <div class="filtros-consumos">
@@ -46,6 +46,56 @@
             <p id="aviso-consumos" class="aviso" role="status">@_aviso</p>
         }
 
+        @* Reimprimir y recuperar piden un operador con OPERATOR (RB26): la sesión adoptada del que entró con su código, o el
+           código tipeado acá, que no se vuelve a mostrar (D4 y D5 de buscar-y-exportar-consumos). *@
+        @if (Sesion is not null && (Sesion.Abierta || _pendiente is not null || Sesion.Aviso is not null))
+        {
+            <section class="operador-consumos" aria-label="Operador">
+                @if (!Sesion.Abierta)
+                {
+                    <p>Para reimprimir o recuperar un comprobante, ingresá el código de un operador.</p>
+                    <div class="entrada-operador">
+                        <input id="codigo-operador" type="text" inputmode="numeric" autocomplete="off" aria-label="Código del operador"
+                               value="@_codigoOperador" @oninput="e => _codigoOperador = e.Value?.ToString() ?? string.Empty" />
+                        <button id="entrar-operador" type="button" class="principal" @onclick="EntrarOperador">Ingresar</button>
+                        <button id="cancelar-operador" type="button" @onclick="() => _pendiente = null">Cancelar</button>
+                    </div>
+                    @if (Sesion.Aviso is not null)
+                    {
+                        <p id="aviso-comprobantes" class="aviso" role="status">@Sesion.Aviso</p>
+                    }
+                }
+                else
+                {
+                    <div class="fila-operador">
+                        <p>Operador: <strong>@Sesion.NombreVisible</strong></p>
+                        <button id="salir" type="button" @onclick="SalirOperador">Salir</button>
+                    </div>
+                    @if (Sesion.Mensaje is not null)
+                    {
+                        <p id="mensaje-asistencia" role="status">@Sesion.Mensaje</p>
+                    }
+                    @if (Sesion.ReimpresionPedida is { } pedida)
+                    {
+                        <section class="pedido-reimpresion" aria-label="Motivo de la reimpresión">
+                            @if (Sesion.AvisoIncertidumbre)
+                            {
+                                <p id="aviso-incertidumbre" class="aviso" role="alert">@MensajesAtencion.Incertidumbre</p>
+                            }
+                            <p>Reimprimir el comprobante N.º @pedida.TicketId.ToString("D")[..8] · @pedida.Opcion. Elegí el motivo:</p>
+                            <div class="acciones">
+                                @foreach (var motivo in Enum.GetValues<MotivoReimpresion>())
+                                {
+                                    <button type="button" class="motivo" @onclick="() => Reimprimir(motivo)">@MensajesAtencion.Motivo(motivo)</button>
+                                }
+                                <button id="cancelar-reimpresion" type="button" @onclick="Sesion.CancelarReimpresion">Cancelar</button>
+                            </div>
+                        </section>
+                    }
+                }
+            </section>
+        }
+
         <div class="caja-tabla">
             <table class="tabla-consumos">
                 <thead>
@@ -60,6 +110,7 @@
                                 <th scope="col" class="numero">N.º</th>
                             }
                         }
+                        <th scope="col" class="acciones-consumo"><span class="oculto">Acciones</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,6 +124,17 @@
                             <td>@fila.Servicio</td>
                             <td class="cargo">@CargoDe(fila)</td>
                             <td>@Estado(fila.EstadoComprobante)</td>
+                            <td class="acciones-consumo">
+                                @if (fila.TicketId is not null)
+                                {
+                                    <button type="button" class="ver" @onclick="() => Ver(fila)">Ver</button>
+                                    <button type="button" class="reimprimir" @onclick="() => PedirReimpresion(fila)">Reimprimir</button>
+                                    @if (fila.EstadoOriginal == EstadoTrabajoImpresion.Failed && fila.TrabajoOriginalId is not null)
+                                    {
+                                        <button type="button" class="recuperar" @onclick="() => PedirRecuperacion(fila)">Recuperar</button>
+                                    }
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -87,6 +149,27 @@
         @if (_hayMas)
         {
             <p id="hay-mas" class="aviso" role="status">@MensajesAtencion.HayMasConsumos</p>
+        }
+
+        @* «Ver»: el comprobante en pantalla, sin imprimir ni crear una copia, marcado COPIA EN PANTALLA (D4). *@
+        @if (_enPantalla is { } papel)
+        {
+            <div class="fondo-cartel">
+                <section id="comprobante-en-pantalla" class="cartel superficie" role="dialog" aria-modal="true" aria-label="Comprobante en pantalla">
+                    <div class="comprobante comprobante-visto">
+                        <span class="leyenda">@papel.Leyenda · N.º @papel.Numero</span>
+                        <span class="opcion-comprobante">@papel.Opcion</span>
+                        <span>Fecha: @papel.FechaNegocio</span>
+                        @if (papel.Cargo.Length > 0)
+                        {
+                            <span>Cargo informado: @papel.Cargo</span>
+                        }
+                    </div>
+                    <div class="acciones">
+                        <button id="cerrar-comprobante" type="button" class="principal" @onclick="() => _enPantalla = null">Cerrar</button>
+                    </div>
+                </section>
+            </div>
         }
     }
 </div>
@@ -111,6 +194,9 @@
     private string _texto = string.Empty;
     private string _codigo = string.Empty;
     private bool _porInstante = true;
+    private string _codigoOperador = string.Empty;
+    private (bool Recuperar, ConsumoConsultado Fila)? _pendiente;
+    private ComprobanteEnPantalla? _enPantalla;
     private IReadOnlyList<PersonaParaFiltro> _personas = [];
     private IReadOnlyList<ElementoParaFiltro> _servicios = [];
     private IReadOnlyList<ElementoParaFiltro> _opciones = [];
@@ -138,6 +224,83 @@
     /// <summary>La pantalla registra cada consulta en la general, con cómo se entró a Configuración.</summary>
     [Parameter]
     public Action<ConsultaRealizada>? Registrar { get; set; }
+
+    /// <summary>La sesión del operador para reimprimir y recuperar; sin ella, las filas sólo dejan ver (D4 y D5).</summary>
+    [Parameter]
+    public SesionOperador? Sesion { get; set; }
+
+    /// <summary>«Ver»: el comprobante de la fila en pantalla, sin operador, sin imprimir y sin copia (D4).</summary>
+    private void Ver(ConsumoConsultado fila)
+    {
+        try
+        {
+            _enPantalla = Consulta.Comprobante(fila.TicketId!.Value) is { } comprobante ? ComprobanteEnPantalla.Desde(comprobante) : null;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _aviso = MensajesAtencion.ConfiguracionNoLeida;
+        }
+    }
+
+    private void PedirReimpresion(ConsumoConsultado fila) => Pedir(recuperar: false, fila);
+
+    private void PedirRecuperacion(ConsumoConsultado fila) => Pedir(recuperar: true, fila);
+
+    /// <summary>Con la sesión abierta, la acción sigue; si no, queda pendiente hasta que un operador tipee su código (D5).</summary>
+    private void Pedir(bool recuperar, ConsumoConsultado fila)
+    {
+        if (Sesion is null)
+        {
+            return;
+        }
+
+        if (!Sesion.Abierta)
+        {
+            _pendiente = (recuperar, fila);
+            return;
+        }
+
+        Hacer(recuperar, fila);
+    }
+
+    private void Hacer(bool recuperar, ConsumoConsultado fila)
+    {
+        _pendiente = null;
+        if (recuperar)
+        {
+            Sesion!.Recuperar(fila.TrabajoOriginalId!.Value);
+            Ejecutar(_aplicado);
+            return;
+        }
+
+        Sesion!.PedirReimpresion(new ComprobanteDelDia(fila.TicketId!.Value, fila.ConfirmadoUtc, fila.Opcion, fila.Persona,
+            fila.TrabajoOriginalId ?? Guid.Empty, fila.EstadoOriginal ?? EstadoTrabajoImpresion.Queued, 0,
+            fila.EstadoComprobante ?? EstadoTrabajoImpresion.Queued));
+    }
+
+    /// <summary>El código del operador se vacía apenas se envía y no se vuelve a mostrar.</summary>
+    private void EntrarOperador()
+    {
+        var codigo = _codigoOperador;
+        _codigoOperador = string.Empty;
+        Sesion!.Entrar(codigo);
+        if (Sesion.Abierta && _pendiente is { } pendiente)
+        {
+            Hacer(pendiente.Recuperar, pendiente.Fila);
+        }
+    }
+
+    private void Reimprimir(MotivoReimpresion motivo)
+    {
+        Sesion!.Reimprimir(motivo);
+        Ejecutar(_aplicado);
+    }
+
+    private void SalirOperador()
+    {
+        Sesion!.Salir();
+        _pendiente = null;
+    }
 
     protected override void OnParametersSet()
     {

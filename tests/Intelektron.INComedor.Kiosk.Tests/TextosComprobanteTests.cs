@@ -90,10 +90,10 @@ public class TextosComprobanteTests
         await pantalla.Find("#encabezado-comprobante").InputAsync(new ChangeEventArgs { Value = "Comedor de planta" });
         await pantalla.Find("#guardar-textos").ClickAsync(new());
 
-        await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
+        await pantalla.Find("#pestana-consumos").ClickAsync(new());
+        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
         await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "9001" });
         await pantalla.Find("#entrar-operador").ClickAsync(new());
-        await pantalla.Find(".reimprimir").ClickAsync(new());
         await pantalla.FindAll(".motivo")[0].ClickAsync(new());
 
         var copia = File.ReadAllLines(Assert.Single(Directory.GetFiles(impresora.Carpeta, "*-1.txt")));

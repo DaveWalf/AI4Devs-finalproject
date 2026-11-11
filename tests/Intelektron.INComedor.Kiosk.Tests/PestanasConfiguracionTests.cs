@@ -16,7 +16,7 @@ namespace Intelektron.INComedor.Kiosk.Tests;
 public class PestanasConfiguracionTests : IDisposable
 {
     private static readonly string[] Pestanas =
-        ["Consumos", "Personas", "Opciones", "Comprobantes", "Identidad visual", "Impresora", "Pantalla", "Red", "General"];
+        ["Consumos", "Personas", "Opciones", "Identidad visual", "Impresora", "Pantalla", "Red", "General"];
 
     private readonly string _carpeta = Path.Combine(Path.GetTempPath(), "incomedor-tests", "pestanas-" + Guid.NewGuid().ToString("N"));
     private readonly ArchivoTemporal _archivo = new();
@@ -51,7 +51,7 @@ public class PestanasConfiguracionTests : IDisposable
         var lista = pantalla.Find("[role=\"tablist\"]");
         var pestanas = lista.QuerySelectorAll("[role=\"tab\"]");
         Assert.Equal(Pestanas, pestanas.Select(p => p.TextContent.Trim()));
-        Assert.Equal(["true", "false", "false", "false", "false", "false", "false", "false", "false"], pestanas.Select(p => p.GetAttribute("aria-selected")));
+        Assert.Equal(["true", "false", "false", "false", "false", "false", "false", "false"], pestanas.Select(p => p.GetAttribute("aria-selected")));
         Assert.False(pantalla.Find("#seccion-consumos").HasAttribute("hidden"));
         await pantalla.Find("#pestana-general").ClickAsync(new());
         var general = pantalla.Find("#seccion-general");
@@ -59,7 +59,7 @@ public class PestanasConfiguracionTests : IDisposable
         Assert.False(general.HasAttribute("hidden"));
         Assert.Contains("Modo: mantenimiento", general.TextContent);
         Assert.NotNull(general.QuerySelector("#estado-bitacoras"));
-        Assert.Equal(8, pantalla.FindAll("[role=\"tabpanel\"][hidden]").Count);
+        Assert.Equal(7, pantalla.FindAll("[role=\"tabpanel\"][hidden]").Count);
     }
 
     [Fact(DisplayName = "configuracion-puesto · Elegir otra pestaña: tocar «Impresora» deja visible sólo su contenido y la marca como elegida")]

@@ -4,10 +4,11 @@ using Microsoft.Data.Sqlite;
 namespace Intelektron.INComedor.Kiosk.Atencion;
 
 /// <summary>
-/// La sesión del operador de la pestaña Comprobantes (D8 de configurar-puesto-por-pestanas): la asistencia que antes era un
-/// estado de la máquina, sobre el mismo <see cref="Asistencia"/>. Vive mientras Configuración esté abierta y termina con
-/// «Salir», al cerrar Configuración, cuando una acción vuelve sin privilegio o a los 30 s sin un toque; cada salida queda
-/// en la bitácora con su causa.
+/// La sesión del operador para reimprimir y recuperar desde Consumos (D8 de configurar-puesto-por-pestanas y D5 de
+/// buscar-y-exportar-consumos): la asistencia que antes era un estado de la máquina, sobre el mismo <see cref="Asistencia"/>.
+/// Se abre con el código de un operador en la pestaña, o adopta la del operador que entró a Configuración con su código.
+/// Vive mientras Configuración esté abierta y termina con «Salir», al cerrar Configuración, cuando una acción vuelve sin
+/// privilegio o a los 30 s sin un toque; cada salida queda en la bitácora con su causa.
 /// </summary>
 public sealed class SesionOperador
 {
@@ -27,8 +28,6 @@ public sealed class SesionOperador
     public bool Abierta => _sesion is not null;
 
     public string? NombreVisible { get; private set; }
-
-    public IReadOnlyList<ComprobanteDelDia> Comprobantes { get; private set; } = [];
 
     /// <summary>El comprobante cuyo motivo de reimpresión se está pidiendo.</summary>
     public ComprobanteDelDia? ReimpresionPedida { get; private set; }
@@ -56,7 +55,6 @@ public sealed class SesionOperador
             Limpiar();
             _sesion = resultado.SesionId;
             NombreVisible = resultado.NombreVisible;
-            Comprobantes = _asistencia.ComprobantesDelDia();
             Tocar();
         }
         catch (SqliteException)
@@ -66,14 +64,27 @@ public sealed class SesionOperador
         }
     }
 
-    public void PedirReimpresion(Guid ticketId)
+    /// <summary>
+    /// Adopta la sesión de acción privilegiada que abrió un operador al entrar a Configuración con su código, para no pedírselo
+    /// otra vez (D5 de buscar-y-exportar-consumos). Asistencia sigue comprobando el permiso en cada acción (RB26).
+    /// </summary>
+    public void Adoptar(Guid sesion, string nombreVisible)
+    {
+        Limpiar();
+        _sesion = sesion;
+        NombreVisible = nombreVisible;
+        Tocar();
+    }
+
+    /// <summary>El comprobante de una fila de Consumos, cuyo motivo de reimpresión se pide a continuación.</summary>
+    public void PedirReimpresion(ComprobanteDelDia comprobante)
     {
         if (!Abierta)
         {
             return;
         }
 
-        ReimpresionPedida = Comprobantes.FirstOrDefault(c => c.TicketId == ticketId);
+        ReimpresionPedida = comprobante;
         Mensaje = null;
         Tocar();
     }
@@ -155,7 +166,6 @@ public sealed class SesionOperador
             ? MensajesAtencion.DeMotivo(resultado.ReasonCode)
             : resultado.Envio?.Estado == EstadoTrabajoImpresion.Submitted ? exito : "El comprobante quedó pendiente: revisá la impresora";
         ReimpresionPedida = null;
-        Comprobantes = _asistencia.ComprobantesDelDia();
         Tocar();
     }
 
@@ -163,7 +173,6 @@ public sealed class SesionOperador
     {
         _sesion = null;
         NombreVisible = null;
-        Comprobantes = [];
         ReimpresionPedida = null;
         Mensaje = null;
         Aviso = null;

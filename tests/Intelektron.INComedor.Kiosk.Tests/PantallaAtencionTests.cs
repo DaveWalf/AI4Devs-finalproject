@@ -177,20 +177,22 @@ public class PantallaAtencionTests : IDisposable
     {
         var pantalla = Dibujar();
 
+        await Consumir(pantalla);
         await EntradaConfiguracion.Entrar(pantalla);
-        await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
+        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
         await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "0001" });
         await pantalla.Find("#entrar-operador").ClickAsync(new());
 
         Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_MISSING"), pantalla.Find("#aviso-comprobantes").TextContent.Trim());
         Assert.NotNull(pantalla.Find("#codigo"));
-        Assert.Empty(pantalla.FindAll(".reimprimir"));
+        Assert.Empty(pantalla.FindAll(".motivo"));
     }
 
     [Fact(DisplayName = "RB26 · Salir de la asistencia (pantalla): vuelve a reposo sin privilegios ni el nombre del operador")]
     public async Task Salir_de_la_asistencia_vuelve_a_reposo()
     {
         var pantalla = Dibujar();
+        await Consumir(pantalla);
         await EntrarAsistencia(pantalla, "9001");
         Assert.Contains("Operador sintético 01", pantalla.Markup);
 
@@ -266,12 +268,27 @@ public class PantallaAtencionTests : IDisposable
         Assert.NotEmpty(pantalla.FindAll(".opcion"));
     }
 
+    /// <summary>
+    /// La asistencia desde la fila de Consumos (buscar-y-exportar-consumos): «Reimprimir» en el primer consumo pide el código
+    /// del operador. Antes era la pestaña Comprobantes.
+    /// </summary>
     private static async Task EntrarAsistencia(IRenderedComponent<PantallaAtencion> pantalla, string codigo)
     {
         await EntradaConfiguracion.Entrar(pantalla);
-        await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
+        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
         await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = codigo });
         await pantalla.Find("#entrar-operador").ClickAsync(new());
         Assert.NotNull(pantalla.Find("#salir"));
+    }
+
+    /// <summary>Un consumo de 0001, para que Consumos tenga una fila con «Reimprimir».</summary>
+    private static async Task Consumir(IRenderedComponent<PantallaAtencion> pantalla)
+    {
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#ingresar").ClickAsync(new());
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
+        await pantalla.Find("#confirmar").ClickAsync(new());
+        pantalla.WaitForAssertion(() => pantalla.Find("#listo"));
+        await pantalla.Find("#listo").ClickAsync(new());
     }
 }

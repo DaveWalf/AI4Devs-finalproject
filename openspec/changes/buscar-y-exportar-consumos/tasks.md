@@ -48,14 +48,27 @@ pegado, para ver que sólo cambian las pruebas existentes de la propuesta. Las p
 
 ## 3. Ver, Reimprimir y Recuperar en cada fila, sin Comprobantes
 
-- [ ] 3.1 Pruebas nuevas, vistas fallar antes: «Ver» sin operador, sin trabajo ni copia; «Reimprimir» pide el código
+- [x] 3.1 Pruebas nuevas, vistas fallar antes: «Ver» sin operador, sin trabajo ni copia; «Reimprimir» pide el código
   con la clave del día y no con un operador que entró con el suyo (`SesionOperador.Adoptar`); «Recuperar» sólo con el
   original en `FAILED`; ninguna pestaña Comprobantes. Verifica: rojo antes y verde después.
-- [ ] 3.2 Las acciones en `PestanaConsumos.razor`, la entrada del operador en la pestaña, `Adoptar` y el diálogo de «Ver»
+  - `AccionesEnConsumosTests` (6 casos), copiada a un worktree de `67c1e88` (sin el grupo 3): `total: 6`, `error: 6`
+    (`ElementNotFoundException` de `.ver`, `.reimprimir` y `.recuperar` en la fila, y nueve pestañas). Después, verde.
+    La reimpresión y la recuperación se leen en `tbComedorBitacora`, donde las escribe la asistencia.
+- [x] 3.2 Las acciones en `PestanaConsumos.razor`, la entrada del operador en la pestaña, `Adoptar` y el diálogo de «Ver»
   (D4 y D5); el `enum Pestana` sin Comprobantes y `PestanaComprobantes.razor` borrado (D7). Verifica: 3.1 en verde.
-- [ ] 3.3 Pasar a Consumos las pruebas existentes de `PestanaComprobantesTests` y las de la asistencia en
+  - El contenedor del motivo se llama `pedido-reimpresion`: con `motivo-reimpresion`, su clase empezaba como la de los
+    botones `.motivo` y `PantallaAtencionTests.Aviso_de_incertidumbre_antes_del_motivo`, que busca `class="motivo`,
+    lo encontraba antes del aviso. Se cambió el nombre, no la prueba.
+- [x] 3.3 Pasar a Consumos las pruebas existentes de `PestanaComprobantesTests` y las de la asistencia en
   `PantallaAtencionTests`, y las que cuentan nueve pestañas, sin cambiar lo que afirman; vistas fallar antes. Verifica:
   `Kiosk.Tests` en verde y la lista de archivos cambiados pegada.
+  - Con el grupo 3 y las pruebas sin tocar: `total: 412`, `error: 15` (las 2 propias que leían otra bitácora y 13
+    existentes). Después: `total: 412`, `error: 0`. Pruebas existentes cambiadas contra `b9a794f`
+    (`git diff --diff-filter=M --name-only b9a794f -- tests/`): `AccesoOperadorTests.cs` (nueve pestañas pasan a ocho),
+    `PestanasConfiguracionTests.cs` (la lista sin Comprobantes, ocho `aria-selected`, siete paneles ocultos),
+    `PestanaConsumosTests.cs` («Reimprimir» en la fila pide el código, en lugar de la pestaña Comprobantes),
+    `PestanaComprobantesTests.cs` y `PantallaAtencionTests.cs` (la asistencia entra por «Reimprimir» de una fila, con
+    un consumo antes) y `TextosComprobanteTests.cs` (la copia se pide desde Consumos). Ninguna afirmación se aflojó.
 
 ## 4. Exportar a CSV y a Excel
 
