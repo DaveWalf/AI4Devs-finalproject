@@ -64,6 +64,10 @@ La columna «Operador» va después de «Estado», angosta, con el contenido cen
 Alineación: el botón comparte el alto de 44 px de los campos de cupo de la fila y queda centrado en su columna; el
 encabezado «Operador» usa la letra y el relleno de los demás encabezados ordenables.
 
+Ajuste al aplicar (11/11/2026), medido por CDP: con la columna nueva, la tabla de edición medía 909,48 px en una caja de
+909 y mostraba la barra horizontal; el encabezado «Operador» lleva menos relleno (2 px en la celda y 4 px en su botón) y
+la columna queda de 83,7 px.
+
 - *Descartada*: un emoji como ícono. Su dibujo depende de la fuente del sistema y no toma el color del tema.
 
 ### D4. Los Excel

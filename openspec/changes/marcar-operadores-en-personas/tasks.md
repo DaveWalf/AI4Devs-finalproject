@@ -62,7 +62,7 @@ prolijidad de `config.yaml`. Se aplica después de `operador-desde-la-identifica
 
 ## 4. La columna en Personas
 
-- [ ] 4.1 Pruebas nuevas en `Kiosk.Tests` (`OperadoresEnPersonasPantallaTests`), vistas fallar antes, una por escenario
+- [x] 4.1 Pruebas nuevas en `Kiosk.Tests` (`OperadoresEnPersonasPantallaTests`), vistas fallar antes, una por escenario
   de «Los operadores en Personas»:
   - el escudo sólo en «Operador sintético 01», con su texto accesible;
   - marcar a «Persona sintética 01» y entrar con `0001` por el engranaje;
@@ -70,14 +70,17 @@ prolijidad de `config.yaml`. Se aplica después de `operador-desde-la-identifica
   - `9001` marca a otro, y su propia celda está deshabilitada;
   - la celda de una persona dada de baja, deshabilitada;
   - ordenar por «Operador».
+  Hecho: `OperadoresEnPersonasPantallaTests`, 7 pruebas (las seis de la tarea más la importación en pantalla, con el resumen y `PEOPLE_IMPORTED`), 6 en rojo antes y 7 en verde después.
 
   Verifica: en rojo antes y en verde después.
-- [ ] 4.2 D3 en `PanelPersonas.razor`, `wwwroot/css/puesto.css` y `MensajesAtencion.cs`. Verifica: 4.1 en verde y
+- [x] 4.2 D3 en `PanelPersonas.razor`, `wwwroot/css/puesto.css` y `MensajesAtencion.cs`. Verifica: 4.1 en verde y
   `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` en verde.
-- [ ] 4.3 Prolijidad. Por CDP, a 1024 × 768, en Personas, en lectura y en edición, se miden:
+  Hecho: la columna «Operador» después de «Estado» (el escudo con `role="img"` y `aria-label="Operador"` en lectura; en edición, un botón de 44 × 44 px con `aria-pressed`, deshabilitado en la propia fila de un operador con el título `MensajesAtencion.PermisoPropio` y en una persona de baja), el orden con los operadores primero y el guardado que manda el permiso sólo si cambió. La oración de los permisos de una importación va dentro de `ResumenImportacion`, con dos parámetros opcionales, para no sumar un método de texto sin clasificar en `PuntoFinalTests`. 4.1 en verde; `Kiosk.Tests` 636 de 637, con la roja de `TablaPersonasTests` del hallazgo de 1.1, sin tocar.
+- [x] 4.3 Prolijidad. Por CDP, a 1024 × 768, en Personas, en lectura y en edición, se miden:
   - el ancho de la columna «Operador» y el centro del escudo;
   - el alto del botón de la celda contra los campos de cupo de la misma fila (tolerancia de 1 px);
   - que se sigan viendo al menos diez filas.
+  Hecho: `OperadoresEnPersonasE2ETests` en verde, en primer plano. Medidas de `registro.txt`: en lectura, la columna «Operador» de x 349,7 a 433,4 (83,7 px) con el escudo centrado en 391,5, 9 de 9 filas a la vista (la base de la demostración tiene 9 personas) y la tabla de 924 px en 924 px; en edición, el botón de 44,0 × 44,0 px contra los campos de cupo de 44,0 px, centrado en su columna y la tabla de 909 px en 909 px, sin barra horizontal. La primera medida dio 909,48 px en 909 (la barra aparecía por medio píxel): el encabezado «Operador» bajó su relleno y la prueba compara el ancho real de la tabla, sin tolerancia. Capturas `personas-operador-1024x768` y `personas-operador-edicion-1024x768`, miradas.
 
   Queda la captura `personas-operador-1024x768`, en una prueba E2E nueva, `OperadoresEnPersonasE2ETests`. Verifica:
   `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter-class *OperadoresEnPersonas*`, en primer plano, con las
@@ -85,14 +88,17 @@ prolijidad de `config.yaml`. Se aplica después de `operador-desde-la-identifica
 
 ## 5. Documentación y verificación completa
 
-- [ ] 5.1 `readme.md`: la columna «Operador» de Personas, la regla del propio permiso y la columna de los Excel.
+- [x] 5.1 `readme.md`: la columna «Operador» de Personas, la regla del propio permiso y la columna de los Excel.
   Verifica: `git grep -n "Operador»" -- readme.md` con las líneas nuevas.
+  Hecho: `readme.md` describe la columna «Operador» de Personas, la regla del propio permiso y la columna de los Excel (exportación, planilla de ejemplo e importación). `git grep -n "Operador»" -- readme.md` da las líneas 409, 414, 421, 422 y 427.
 - [ ] 5.2 La verificación completa: `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y
   `openspec validate --all --strict`, sin errores. Verifica: las tres salidas pegadas, con el total de pruebas.
-- [ ] 5.3 La evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` (el pedido de David, con la regla
+  Se cierra con la corrida única del final (§6.6 del plan del goal); depende además de la aprobación de las dos pruebas del hallazgo de 1.1.
+- [x] 5.3 La evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` (el pedido de David, con la regla
   del propio permiso y la revisión OWASP de la columna del Excel) y, si deja un workflow o un ajuste humano nuevo, su
   entrada en `prompts.md`. Verifica: el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso`, con su
   control negativo, `enlaces rotos: 0`.
+  Hecho: la fila «OWASP Top 10 como criterio fijo del contexto» de `docs/aplicacion-del-curso.md` suma la lista cerrada de la columna «Operador», el `INVALID_VALUE` sin lo escrito y la regla del propio permiso en el servicio. No deja un workflow ni un ajuste humano nuevo para `prompts.md`. Chequeo de D8: `enlaces rotos: 0`; control negativo `enlaces rotos: 2`.
 
 ## Workflow follow-up
 

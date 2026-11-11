@@ -73,6 +73,28 @@
                             }
                         </td>
                         <td class="estado-persona">@Estado(fila)</td>
+                        @* «Operador» (D3 de marcar-operadores-en-personas): para leer, el escudo con su texto accesible en quien tiene *@
+                        @* OPERATOR vigente; en edición, un botón de 44 × 44 px con el escudo lleno o en contorno, deshabilitado en la *@
+                        @* propia fila de un operador y en una persona de baja. *@
+                        <td class="operador-persona">
+                            @if (Editable)
+                            {
+                                var propia = Actor is { } actor && actor == fila.Id;
+                                <button type="button" class="operador-celda" aria-label="Operador" aria-pressed="@(fila.Operador ? "true" : "false")"
+                                        disabled="@(propia || !fila.Activa || fila.Quitar)" title="@(propia ? MensajesAtencion.PermisoPropio : null)"
+                                        @onclick="() => fila.Operador = !fila.Operador">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                                        <path d="M12 2 4 5v6c0 5.2 3.4 9.6 8 11 4.6-1.4 8-5.8 8-11V5z" fill="@(fila.Operador ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                            }
+                            else if (fila.Operador)
+                            {
+                                <svg class="escudo-operador" role="img" aria-label="Operador" viewBox="0 0 24 24" width="24" height="24" focusable="false">
+                                    <path d="M12 2 4 5v6c0 5.2 3.4 9.6 8 11 4.6-1.4 8-5.8 8-11V5z" fill="currentColor" />
+                                </svg>
+                            }
+                        </td>
                         @for (var j = 0; j < _pares.Count; j++)
                         {
                             var columna = j;
@@ -211,7 +233,7 @@
     private bool Editable => Editando && !_vista.SoloLectura;
 
     private IEnumerable<(string Clave, string Titulo)> Columnas =>
-        new[] { ("Nombre", "Nombre"), ("Estado", "Estado") }
+        new[] { ("Nombre", "Nombre"), ("Estado", "Estado"), ("Operador", "Operador") }
             .Concat(_pares.Select(p => (NombrePar(p), NombrePar(p))))
             .Append(("Opciones", "Opciones habilitadas"));
 
@@ -358,6 +380,8 @@
                 : string.Empty).ToArray(),
             Usados = _pares.Select(par => p.Cupos.FirstOrDefault(c => c.ServicioId == par.Servicio && c.CategoriaId == par.Categoria)?.UsadoHoy).ToArray(),
             Habilitadas = p.OpcionesHabilitadas.Count,
+            Operador = p.Operador,
+            OperadorAntes = p.Operador,
         }).ToList();
         _campos = [];
         _columnasEnviadas = [];
@@ -379,6 +403,8 @@
         {
             "Nombre" => Ordenadas(existentes, i => _filas[i].Nombre, PorNombre),
             "Estado" => Ordenadas(existentes, i => _filas[i].Activa ? 0 : 1, Comparer<int>.Default),
+            // Los operadores primero en el orden ascendente (D3 de marcar-operadores-en-personas).
+            "Operador" => Ordenadas(existentes, i => _filas[i].Operador ? 0 : 1, Comparer<int>.Default),
             "Opciones" => Ordenadas(existentes, i => _filas[i].Habilitadas, Comparer<int>.Default),
             _ when parIndice >= 0 => OrdenarPorCupo(existentes, parIndice),
             _ => existentes,
@@ -455,9 +481,10 @@
             }
 
             _columnasEnviadas[i] = columnas;
+            // El permiso sólo viaja si cambió: null lo deja como estaba (D1 de marcar-operadores-en-personas).
             ediciones.Add(fila.Nueva
-                ? new EdicionPersona(null, fila.Nombre, cupos, fila.Codigo)
-                : new EdicionPersona(fila.Id, fila.Nombre, cupos, Quitar: fila.Quitar));
+                ? new EdicionPersona(null, fila.Nombre, cupos, fila.Codigo, Operador: fila.Operador ? true : null)
+                : new EdicionPersona(fila.Id, fila.Nombre, cupos, Quitar: fila.Quitar, Operador: fila.Operador != fila.OperadorAntes ? fila.Operador : null));
         }
 
         ResultadoGuardado resultado;
@@ -482,7 +509,12 @@
                 break;
             default:
                 _campos = resultado.Campos;
-                _aviso = resultado.Motivo == CodigosAdministracion.CodigoDuplicado ? MensajesAtencion.CodigoYaExiste : MensajesAtencion.PanelInvalido;
+                _aviso = resultado.Motivo switch
+                {
+                    CodigosAdministracion.CodigoDuplicado => MensajesAtencion.CodigoYaExiste,
+                    CodigosAdministracion.PermisoPropio => MensajesAtencion.PermisoPropio,
+                    _ => MensajesAtencion.PanelInvalido,
+                };
                 break;
         }
     }
@@ -524,5 +556,10 @@
         public int?[] Usados { get; init; } = [];
 
         public int Habilitadas { get; init; }
+
+        /// <summary>Si es operador: lo marcado en la celda, y lo que tenía al leer (D3).</summary>
+        public bool Operador { get; set; }
+
+        public bool OperadorAntes { get; init; }
     }
 }

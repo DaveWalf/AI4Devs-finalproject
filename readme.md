@@ -406,20 +406,28 @@ cómo se entró (`MAINTENANCE_MODE` para el cierre directo, `DAILY_KEY` u `OPERA
 Personas y Opciones abren, con «Editar», «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y
 su «Cancelar», que vuelven a la pestaña. Personas es una **tabla**: una fila por persona y una columna por cada cupo
 que usa el catálogo (en la semilla, ALMUERZO y REFRIGERIO), con lo usado hoy sobre su límite diario de 0 a 99 («1/2»)
-o «—» sin cupo, el estado y la cantidad de opciones que esos cupos habilitan. En 1024 × 768 entran diez filas de 44 px,
+o «—» sin cupo, el estado, la columna «Operador», con un escudo (texto accesible «Operador») en quien tiene el permiso
+`OPERATOR` vigente, y la cantidad de opciones que esos cupos habilitan. En 1024 × 768 entran diez filas de 44 px,
 el encabezado queda fijo y cada encabezado ordena la vista sin cambiar lo que se guarda. Tocar un cupo, o «Editar» en
 el encabezado, la pasa a edición en el mismo lugar, con un teclado en pantalla que escribe en el campo elegido y que
 «Ocultar teclado» esconde hasta cerrar Configuración: agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus cupos (vaciar una celda
-quita el cupo) y quitarla, que la da de baja y revoca su código sin borrar sus consumos. Cada guardado deja en la
+quita el cupo) y quitarla, que la da de baja y revoca su código sin borrar sus consumos. En edición, la celda «Operador»
+se toca para marcar o desmarcar: guardar da el permiso desde ese momento y sin fin, o lo revoca en la versión nueva sin
+borrarlo; un operador marca a otros pero no a sí mismo («No podés cambiar tu propio permiso.»), y una persona de baja no
+se marca. Cada guardado deja en la
 general los cupos cambiados de cada persona, con el límite antes y después, y el operador que entró con su código como
 actor. «Exportar CSV» y «Exportar Excel», en el pie de Personas, guardan la tabla en la carpeta de la exportación de
 Consumos, sin ningún código, y quedan en la general como `PEOPLE_EXPORTED`. «Planilla de ejemplo» deja ahí un `.xlsx`
-para completar (Nombre, Código como texto y el límite de cada cupo, con una hoja de instrucciones), e «Importar Excel» lo
+para completar (Nombre, Código como texto, «Operador» con «Sí» o «No» y el límite de cada cupo, con una hoja de
+instrucciones; la segunda fila de ejemplo es operador), y la exportación lleva «Operador» al final. «Importar Excel» lo
 lee: cada fila se reconoce por su código, uno que ya está modifica a esa persona y uno nuevo la agrega. Antes de aplicar,
 un resumen cuenta las nuevas, las modificadas y las que «Reemplazar» daría de baja por no estar en la planilla (nunca un
 operador ni el administrador), avisa si quedan filas de ejemplo o códigos que Excel guardó como número (sin sus ceros),
 y ofrece «Modificar y agregar», «Reemplazar» y «Cancelar»; una fila con error no deja aplicar nada y se lista con su
-motivo. Lo consumido hoy sigue contando contra los límites nuevos. Cada importación queda en la general con la huella
+motivo. En la columna «Operador», «Sí» da el permiso, «No» lo quita y una celda vacía o la columna ausente lo deja como
+estaba; otro valor, también una fórmula, es un error de su fila que no muestra lo escrito, y un operador no puede cambiar
+el suyo por planilla. El resumen suma «1 permiso de operador dado y 1 quitado.» cuando hay alguno, y `PEOPLE_IMPORTED`
+los cuenta en `OperatorGranted` y `OperatorRevoked`. Lo consumido hoy sigue contando contra los límites nuevos. Cada importación queda en la general con la huella
 SHA-256 del archivo, como `PEOPLE_IMPORTED`, persona por persona sin nombres ni códigos, o `PEOPLE_IMPORT_REJECTED` con
 sus errores por motivo. El código se tipea en un campo
 enmascarado de sólo dígitos, conserva sus ceros iniciales, no se puede repetir aunque esté revocado, y nunca se
