@@ -76,16 +76,19 @@
                         @foreach (var opcion in Maquina.PaginaActual)
                         {
                             var elegida = opcion.Id == Maquina.Elegida?.Id;
-                            <button type="button" class="opcion @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
-                                    @onclick="() => ElegirOpcion(opcion.Id)">
+                            @* Con su presentación: el fondo y la transparencia, y sin cargo si el precio está oculto (D4 de personalizar-opciones). *@
+                            var presentacion = PresentacionDe(opcion);
+                            var uriFondo = _presentacionOpciones?.UriImagen(presentacion);
+                            <button type="button" class="opcion @PresentacionOpcion.Clase(presentacion, uriFondo) @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
+                                    style="@PresentacionOpcion.EstiloCss(presentacion, uriFondo)" @onclick="() => ElegirOpcion(opcion.Id)">
                                 <span class="nombre">@opcion.Nombre</span>
                                 @if (elegida)
                                 {
                                     <span class="marca-elegida">Elegida</span>
                                 }
-                                @if (opcion.Cargo.Length > 0)
+                                @if (CargoVisible(opcion) is { Length: > 0 } cargoVisible)
                                 {
-                                    <span class="cargo">@opcion.Cargo</span>
+                                    <span class="cargo">@cargoVisible</span>
                                 }
                             </button>
                         }
@@ -108,9 +111,9 @@
                             <h2 id="titulo-cartel">¿Confirmás tu elección?</h2>
                             <p id="eleccion">
                                 <strong class="nombre-eleccion">@eleccion.Nombre</strong>
-                                @if (eleccion.Cargo.Length > 0)
+                                @if (CargoVisible(eleccion) is { Length: > 0 } cargoEleccion)
                                 {
-                                    <span class="cargo-eleccion">Cargo informado: @eleccion.Cargo</span>
+                                    <span class="cargo-eleccion">Cargo informado: @cargoEleccion</span>
                                 }
                             </p>
                             <div class="acciones">
@@ -934,6 +937,15 @@
             ActorReason = SinAutenticacion,
         });
     }
+
+    /// <summary>La presentación de una opción, o la de siempre sin almacén (D3 de personalizar-opciones).</summary>
+    private PresentacionOpcion PresentacionDe(OpcionCatalogo opcion) => _presentacionOpciones?.De(opcion.Id) ?? PresentacionOpcion.PorDefecto;
+
+    /// <summary>
+    /// El cargo que muestra la pantalla: vacío si el precio está oculto, como una opción sin cargo (D4). El comprobante y la
+    /// bitácora usan el cargo de la opción, que no cambia.
+    /// </summary>
+    private string CargoVisible(OpcionCatalogo opcion) => PresentacionDe(opcion).PrecioVisible ? opcion.Cargo : string.Empty;
 
     /// <summary>
     /// Cada presentación guardada queda en la general con la opción, el color, la huella de la imagen y no su contenido, la

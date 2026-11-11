@@ -28,10 +28,14 @@
 
 ## 3. La atención
 
-- [ ] 3.1 Pruebas nuevas, vistas fallar antes: la tarjeta personalizada con su fondo y su transparencia, las demás como
+- [x] 3.1 Pruebas nuevas, vistas fallar antes: la tarjeta personalizada con su fondo y su transparencia, las demás como
   siempre; con el precio oculto, ni la tarjeta ni el cartel muestran importe y el comprobante sí (D4). Verifica: rojo
   antes y verde después.
-- [ ] 3.2 La tarjeta y el cartel de `PantallaAtencion` y `puesto.css`. Verifica: 3.1 en verde y `Kiosk.Tests` entero.
+  - `AtencionPersonalizadaTests` (2): `total: 2`, `error: 2` (la tarjeta sin su clase y con su cargo). El comprobante se
+    prueba con `ImpresoraDePrueba`: `EmployeeChargeMinor` es el importe de la opción.
+- [x] 3.2 La tarjeta y el cartel de `PantallaAtencion` y `puesto.css`. Verifica: 3.1 en verde y `Kiosk.Tests` entero.
+  - La tarjeta con `PresentacionOpcion.Clase` y `EstiloCss` y el cargo de `CargoVisible`, igual en el cartel; la máquina
+    y el comprobante no cambian. `Kiosk.Tests`: `total: 477`, `error: 0`.
 
 ## 4. El puesto compilado, documentos y verificación integral
 
