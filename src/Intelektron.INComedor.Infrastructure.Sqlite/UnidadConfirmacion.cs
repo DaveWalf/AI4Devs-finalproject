@@ -187,10 +187,16 @@ public sealed class UnidadConfirmacion
 
         // El nombre visible del comensal y, con la numeración correlativa, el número, en la misma transacción: dos
         // confirmaciones no pueden tomar el mismo, y una copia repite los de su original (D1 y D2 de enriquecer-comprobante).
-        var nombre = (string?)ComandosSqlite.Crear(conexion, transaccion,
-                "SELECT comperNombreVisible FROM tbComedorPersonas WHERE comvcCodigo = $vc AND comperCodigo = $per",
-                ("$vc", puesto.SnapshotId), ("$per", solicitud.PersonId))
-            .ExecuteScalar();
+        string? nombre;
+        using (var comandoNombre = ComandosSqlite.Crear(conexion, transaccion,
+                   "SELECT comperNombreVisible FROM tbComedorPersonas WHERE comvcCodigo = $vc AND comperCodigo = $per",
+                   ("$vc", puesto.SnapshotId), ("$per", solicitud.PersonId)))
+        {
+            nombre = comandoNombre.ExecuteScalar() as string;
+        }
+
+        // El mayor emitido recorre los comprobantes: unos 95 ms cada 100.000, medido el 11/11 con SQLite 3.50; leer sólo
+        // el último pediría un índice, una migración y otro esquema (deuda de enriquecer-comprobante).
         long? numero = CorrelativoDesde() is { } desde
             ? Math.Max(desde, ComandosSqlite.EscalarLong(conexion, transaccion,
                 "SELECT COALESCE(MAX(json_extract(comcmpDatosImpresion, '$.TicketNumber')), 0) + 1 FROM tbComedorComprobantes"))

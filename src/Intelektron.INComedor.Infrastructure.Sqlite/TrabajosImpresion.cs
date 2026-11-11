@@ -2,10 +2,10 @@ using System.Globalization;
 
 namespace Intelektron.INComedor.Infrastructure.Sqlite;
 
-/// <summary>Lo que recibe la impresora: el JSON del comprobante, sin persona ni código, y la leyenda de una copia.</summary>
 /// <summary>
-/// Lo que recibe la impresora: los datos guardados del comprobante, la leyenda de la copia y, en una reimpresión, el nombre
-/// del operador que la habilitó (D5 de enriquecer-comprobante).
+/// Lo que recibe la impresora: los datos guardados del comprobante, con el nombre del comensal y sin su código ni su
+/// credencial, la leyenda de la copia y, en una reimpresión, el nombre del operador que la habilitó (D1 y D5 de
+/// enriquecer-comprobante).
 /// </summary>
 public sealed record ComprobanteAImprimir(Guid TrabajoId, Guid TicketId, int NumeroCopia, string DatosImpresion, string? Leyenda, string? Habilito = null);
 
@@ -114,9 +114,11 @@ public sealed class TrabajosImpresion
                        SELECT per.comperNombreVisible
                        FROM tbComedorBitacora bit
                        JOIN tbComedorPersonas per ON lower(per.comperCodigo) = lower(json_extract(bit.combitContexto, '$.PersonId'))
+                       JOIN tbComedorVersionesConfiguracion ver ON ver.comvcCodigo = per.comvcCodigo
                        WHERE bit.combitTipoEvento = 'TICKET_REPRINTED'
                          AND lower(json_extract(bit.combitContexto, '$.PrintJobId')) = lower(imp.comimpCodigo)
-                       ORDER BY per.comvcCodigo = (SELECT comvcCodigoActiva FROM tbComedorConfiguracionPuestos LIMIT 1) DESC
+                       ORDER BY per.comvcCodigo = (SELECT comvcCodigoActiva FROM tbComedorConfiguracionPuestos LIMIT 1) DESC,
+                                ver.comvcVersionConfiguracion DESC
                        LIMIT 1) END
             FROM tbComedorTrabajosImpresion imp
             JOIN tbComedorComprobantes cmp ON cmp.comcmpCodigo = imp.comcmpCodigo

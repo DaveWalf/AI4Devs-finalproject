@@ -29,7 +29,8 @@ public class TrabajosImpresionTests : ConfirmacionTestBase
         Assert.DoesNotContain(FixtureSintetico.CodigoSintetico, recibido.DatosImpresion);
         var propiedades = JsonDocument.Parse(recibido.DatosImpresion).RootElement.EnumerateObject().Select(p => p.Name).ToList();
         // El nombre del comensal sí, por la mejora 9b de David (enriquecer-comprobante); el código y la credencial, nunca.
-        Assert.DoesNotContain(propiedades, p => p.Contains("Credential", StringComparison.OrdinalIgnoreCase) || p.Contains("Code", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(propiedades, p => (p.Contains("Person", StringComparison.OrdinalIgnoreCase) && p != "PersonName")
+            || p.Contains("Credential", StringComparison.OrdinalIgnoreCase) || p.Contains("Code", StringComparison.OrdinalIgnoreCase));
         Assert.Equal("Persona habilitada", JsonDocument.Parse(recibido.DatosImpresion).RootElement.GetProperty("PersonName").GetString());
         var registros = RegistrosDeImpresion();
         Assert.Equal(["QUEUED>UNKNOWN", "UNKNOWN>SUBMITTED"], registros);

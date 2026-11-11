@@ -53,3 +53,17 @@
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+
+## 5. La verificación
+
+- [x] 5.1 Corregir lo que encontró la verificación por un agente sobre `739139e` (1 crítico, 7 advertencias, 11
+  sugerencias). Verifica: las pruebas nuevas vistas fallar antes y la integral en verde. Hecho: los dos mensajes que
+  todavía decían DUPLICADO (el aviso de incertidumbre y el de la copia enviada); el pedido del motivo con el número de la
+  fila; `TextosComprobanteTests` vuelve a comparar los datos del comprobante y no una línea por posición;
+  `TrabajosImpresionTests` prohíbe toda propiedad de la persona salvo `PersonName`; la copia que repite el comensal y el
+  correlativo con la persona renombrada; «Ver» y la prueba de impresión en el delta; el costo medido del correlativo
+  (unos 95 ms cada 100.000 comprobantes) como deuda en el diseño; el operador de la versión más nueva; el comando del
+  nombre liberado; el nombre del puesto sin espacios de más y el «desde» ignorado con el código de siempre; lo último
+  leído si `puesto.json` está tomado; el número de un `TicketNumber` que no es número; la frase de un comprobante
+  conocido fijada; la fila OWASP con `ContratoEventosTests` y el guion sin DUPLICADO. Pruebas: 5 nuevas, 2 vistas fallar
+  (los mensajes y el pedido del motivo); las otras 3 fijan lo que ya andaba. Sqlite 290, Kiosk 526.

@@ -1145,6 +1145,8 @@
     private ResultadoTextos GuardarDatosPuesto(string numero, string nombre, bool correlativo, string desde)
     {
         var antes = _datosPuesto;
+        // Sin espacios de más: un nombre sólo de espacios es ninguno, y no deja «Puesto 3 ·» con un blanco.
+        nombre = nombre.Trim();
         var campos = new List<string>();
         int? puesto = null;
         if (numero.Trim().Length > 0)
@@ -1159,13 +1161,12 @@
             }
         }
 
-        long inicio = antes.Desde;
-        if (desde.Trim().Length > 0 || correlativo)
+        // Con el código de siempre, el «desde» no se usa: uno inválido se ignora y queda el de antes.
+        var desdeValido = long.TryParse(desde.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var inicio)
+            && inicio is >= 1 and <= DatosPuesto.DesdeMaximo;
+        if (!desdeValido)
         {
-            if (!long.TryParse(desde.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out inicio))
-            {
-                inicio = 0;
-            }
+            inicio = correlativo ? 0 : antes.Desde;
         }
 
         foreach (var campo in DatosPuesto.Validar(puesto, nombre, inicio))

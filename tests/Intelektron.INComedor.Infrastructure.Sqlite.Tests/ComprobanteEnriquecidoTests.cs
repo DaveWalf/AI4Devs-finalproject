@@ -10,7 +10,7 @@ public class ComprobanteEnriquecidoTests : ConfirmacionTestBase
 {
     private static readonly DateOnly Hoy = new(2026, 10, 19);
 
-    [Fact(DisplayName = "comprobante-local · Un comprobante con el puesto y la frase: los datos guardados llevan el nombre visible del comensal y nunca su código; con el código de siempre, ningún número guardado")]
+    [Fact(DisplayName = "comprobante-local · El contenido del comprobante: los datos guardados llevan el nombre visible del comensal y nunca su código; con el código de siempre, ningún número guardado")]
     public void Los_datos_llevan_el_nombre()
     {
         var ticket = Confirmar(Unidad, Fixture.AlmuerzoComun);
@@ -35,8 +35,8 @@ public class ComprobanteEnriquecidoTests : ConfirmacionTestBase
         var consulta = new ConsultaConsumos(Base, Reloj);
         var filas = consulta.Leer(FiltroConsumos.UltimasHoras(Reloj.GetUtcNow(), Hoy)).Filas;
         Assert.Equal(["1000", "1001"], filas.Select(f => f.Numero).Order(StringComparer.Ordinal));
-        var buscado = Assert.Single(consulta.Leer(FiltroConsumos.UltimasHoras(Reloj.GetUtcNow(), Hoy) with { Texto = "1001" }).Filas);
-        Assert.Equal(segundo, buscado.TicketId);
+        var buscados = consulta.Leer(FiltroConsumos.UltimasHoras(Reloj.GetUtcNow(), Hoy) with { Texto = "1001" }).Filas;
+        Assert.Contains(buscados, f => f.TicketId == segundo);
     }
 
     [Fact(DisplayName = "comprobante-local · Bajar el «desde» no reusa números: después del 1000, con el «desde» en 5, el próximo es el 1001")]

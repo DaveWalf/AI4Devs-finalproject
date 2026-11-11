@@ -92,7 +92,7 @@
                             {
                                 <p id="aviso-incertidumbre" class="aviso" role="alert">@MensajesAtencion.Incertidumbre</p>
                             }
-                            <p>@MensajesAtencion.PedidoMotivo(pedida.TicketId.ToString("D")[..8], pedida.Opcion)</p>
+                            <p>@MensajesAtencion.PedidoMotivo(pedida.Numero ?? pedida.TicketId.ToString("D")[..8], pedida.Opcion)</p>
                             <div class="acciones">
                                 @foreach (var motivo in Enum.GetValues<MotivoReimpresion>())
                                 {
@@ -418,7 +418,7 @@
 
         Sesion!.PedirReimpresion(new ComprobanteDelDia(fila.TicketId!.Value, fila.ConfirmadoUtc, fila.Opcion, fila.Persona,
             fila.TrabajoOriginalId ?? Guid.Empty, fila.EstadoOriginal ?? EstadoTrabajoImpresion.Queued, 0,
-            fila.EstadoComprobante ?? EstadoTrabajoImpresion.Queued));
+            fila.EstadoComprobante ?? EstadoTrabajoImpresion.Queued, fila.Numero));
     }
 
     /// <summary>El código del operador se vacía apenas se envía y no se vuelve a mostrar.</summary>

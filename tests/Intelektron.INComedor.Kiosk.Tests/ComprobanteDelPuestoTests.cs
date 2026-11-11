@@ -40,6 +40,25 @@ public sealed class ComprobanteDelPuestoTests : IDisposable
         Assert.True(repartidas > 40, $"500 comprobantes usaron {repartidas} frases");
     }
 
+    [Fact(DisplayName = "comprobante-local · La copia repite al comensal y la frase: la lista no se reordena ni se edita, así un comprobante conocido conserva su frase")]
+    public void La_frase_de_un_comprobante_conocido()
+    {
+        Assert.Equal("Gracias por pasar por el comedor.", FrasesComprobante.Para(Guid.Parse("0000001e-0000-4000-8000-000000000000")));
+        Assert.Equal("¡Que lo disfrutes!", FrasesComprobante.Para(Guid.Parse("00000000-0000-4000-8000-000000000000")));
+    }
+
+    [Fact(DisplayName = "comprobante-local · Resultado incierto: ningún mensaje de la pantalla anuncia DUPLICADO; el aviso de incertidumbre y el de la copia enviada dicen REIMPRESIÓN")]
+    public void Ningun_mensaje_dice_duplicado()
+    {
+        var constantes = typeof(MensajesAtencion).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(f => f.IsLiteral && f.FieldType == typeof(string))
+            .Select(f => (string)f.GetRawConstantValue()!);
+
+        Assert.DoesNotContain(constantes, c => c.Contains("DUPLICADO", StringComparison.Ordinal));
+        Assert.Contains("REIMPRESIÓN", MensajesAtencion.Incertidumbre, StringComparison.Ordinal);
+        Assert.Contains("REIMPRESIÓN", MensajesAtencion.CopiaEnviada(1), StringComparison.Ordinal);
+    }
+
     [Fact(DisplayName = "comprobante-local · Guardar los datos del comprobante: el puesto y la numeración se guardan en puesto.json y se leen con otro almacén; la línea del puesto dice lo que haya")]
     public void Los_datos_del_puesto()
     {

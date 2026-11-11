@@ -3,6 +3,7 @@ namespace Intelektron.INComedor.Kiosk.Atencion;
 /// <summary>
 /// Las 50 frases cálidas del pie del comprobante (D4 de enriquecer-comprobante): fijas, sin datos de nadie, de hasta 60
 /// caracteres. La de un comprobante sale de su identificador, así el original, sus copias y la pantalla dicen la misma.
+/// La lista no se reordena, no se edita y no cambia de largo: la copia de un comprobante viejo cambiaría de frase.
 /// </summary>
 public static class FrasesComprobante
 {

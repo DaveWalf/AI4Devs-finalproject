@@ -207,6 +207,28 @@ public class AsistenciaTests : ConfirmacionTestBase
         Assert.Null(_impresora.Recibidos[^1].Habilito);
     }
 
+    [Fact(DisplayName = "comprobante-local · La copia repite al comensal y la frase: con la persona renombrada después, la copia llega con el nombre y el correlativo del original")]
+    public void La_copia_repite_el_comensal_y_el_numero()
+    {
+        var unidad = new UnidadConfirmacion(Base, Reloj) { CorrelativoDesde = () => 1000 };
+        var resultado = unidad.Confirmar(Solicitud(Fixture.Habilitada, Fixture.AlmuerzoComun));
+        Assert.Equal(TipoResultado.Autorizada, resultado.Tipo);
+        var ticket = resultado.TicketId!.Value;
+        new TrabajosImpresion(Base, Reloj, _impresora).EnviarPendientes();
+        using (var conexion = Abrir())
+        {
+            Sql.Ejecutar(conexion, "UPDATE tbComedorPersonas SET comperNombreVisible = 'Otro nombre' WHERE comperCodigo = $per", ("$per", Fixture.Habilitada.Id));
+        }
+
+        InsertarOperador(CodigoOperador, "OPERATOR", null, null, null);
+        var sesion = _asistencia.Entrar(CodigoOperador).SesionId!.Value;
+        Assert.True(_asistencia.Reimprimir(sesion, ticket, MotivoReimpresion.PapelIlegible).Realizada);
+
+        var datos = System.Text.Json.JsonDocument.Parse(_impresora.Recibidos[^1].DatosImpresion).RootElement;
+        Assert.Equal("Persona habilitada", datos.GetProperty("PersonName").GetString());
+        Assert.Equal(1000, datos.GetProperty("TicketNumber").GetInt64());
+    }
+
     [Fact(DisplayName = "RB08 · Segunda reimpresión: la copia nueva es la 2")]
     public void Segunda_reimpresion_es_la_copia_2()
     {

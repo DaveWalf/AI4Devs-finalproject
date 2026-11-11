@@ -57,12 +57,14 @@ La leyenda de la copia N pasa a «REIMPRESIÓN · copia N». El trabajo de una c
 `TICKET_REPRINTED` de su trabajo y, con su `PersonId`, el nombre visible del operador en la versión activa; la impresora
 lo recibe en `Habilito` y lo imprime como «Habilitó: …». La copia 0, también la recuperada, no lleva leyenda ni operador.
 
-### D6. El comprobante, en papel y en pantalla
+### D6. El comprobante, en papel, en pantalla y en «Ver»
 
 De arriba abajo: el encabezado, «Puesto N · Nombre» (lo que haya), la leyenda o «ORIGINAL», el número, el comensal, la
 opción, la fecha de negocio, el cargo, «Habilitó: …» en una copia, la frase y el pie. La impresora simulada conserva las
 líneas de hoy (el identificador completo, la copia y los datos) y suma las nuevas; el comprobante en pantalla muestra las
-nuevas con la letra y el ancho de las de hoy. La prueba de impresión lleva el puesto y una frase, sin persona ni número.
+nuevas con la letra y el ancho de las de hoy. «Ver» de Consumos muestra los datos del comprobante (el número, el
+comensal, la opción, la fecha, el cargo y la frase), no los de la impresora, como hasta hoy. La prueba de impresión lleva
+el puesto y una frase, sin persona ni número. El pedido del motivo de una reimpresión dice el número de la fila.
 
 ### D7. La pestaña Impresora
 
@@ -84,6 +86,13 @@ pantalla.
 - [El número correlativo de dos puestos] → cada puesto lleva su serie; el número y el nombre del puesto los distinguen.
 - [Leer el operador de la bitácora] → es el registro auditado de la reimpresión, escrito en la misma transacción que el
   trabajo; si faltara, la copia sale sin «Habilitó:».
+- [El costo del correlativo] → el mayor emitido recorre los comprobantes dentro del bloqueo de RB06: unos 95 ms cada
+  100.000, medido el 11/11 con SQLite 3.50. Leer sólo el último pide un índice, una migración y otro esquema, que dejaría
+  sin recuperar los resguardos de hoy: queda como deuda, para cuando un puesto acumule historia.
+- [La frase de un comprobante viejo] → sale de la lista por posición: la lista no se reordena, no se edita y no cambia de
+  largo, y una prueba fija la frase de un comprobante conocido.
+- [Un archivo de datos tomado por otro programa] → el almacén devuelve lo último que leyó o guardó, así un comprobante no
+  sale con el código de siempre en medio de la serie.
 
 ## Migration Plan
 

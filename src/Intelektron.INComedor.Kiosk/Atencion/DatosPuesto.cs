@@ -67,6 +67,7 @@ public sealed class AlmacenDatosPuesto
     private const string Nombre = "puesto.json";
 
     private readonly string _carpeta;
+    private DatosPuesto? _ultimo;
 
     public AlmacenDatosPuesto(string carpetaDatos)
     {
@@ -75,6 +76,11 @@ public sealed class AlmacenDatosPuesto
 
     private string Ruta => Path.Combine(_carpeta, Nombre);
 
+    /// <summary>
+    /// Lo guardado; sin archivo, o con uno fuera de forma, los valores por defecto. Si el archivo existe pero no se puede
+    /// leer en ese instante (un antivirus que lo tiene tomado), lo último que se leyó o se guardó: un comprobante no sale
+    /// con el código de siempre en medio de la serie correlativa.
+    /// </summary>
     public DatosPuesto Leer()
     {
         try
@@ -90,13 +96,18 @@ public sealed class AlmacenDatosPuesto
                 int? puesto = numero.ValueKind == JsonValueKind.Null ? null : numero.GetInt32();
                 if (DatosPuesto.Validar(puesto, nombre.GetString(), inicio).Count == 0)
                 {
-                    return new DatosPuesto(puesto, nombre.GetString()!, correlativo.GetBoolean(), inicio);
+                    return _ultimo = new DatosPuesto(puesto, nombre.GetString()!, correlativo.GetBoolean(), inicio);
                 }
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException or JsonException)
         {
             // Sin archivo, o ilegible: los valores por defecto.
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Existe pero no se puede leer ahora: lo último que se leyó o se guardó.
+            return _ultimo ?? DatosPuesto.PorDefecto;
         }
 
         return DatosPuesto.PorDefecto;
@@ -118,6 +129,7 @@ public sealed class AlmacenDatosPuesto
                 numero = datos.Numero, nombre = datos.Nombre, correlativo = datos.Correlativo, desde = datos.Desde,
             }));
             File.Move(temporal, Ruta, overwrite: true);
+            _ultimo = datos;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

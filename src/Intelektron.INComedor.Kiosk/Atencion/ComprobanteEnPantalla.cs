@@ -52,7 +52,8 @@ public sealed record ComprobanteEnPantalla(
                 return null;
             }
 
-            var numero = raiz.TryGetProperty("TicketNumber", out var correlativo) && correlativo.TryGetInt64(out var valor)
+            var numero = raiz.TryGetProperty("TicketNumber", out var correlativo) && correlativo.ValueKind == JsonValueKind.Number
+                && correlativo.TryGetInt64(out var valor)
                 ? valor.ToString(CultureInfo.InvariantCulture)
                 : comprobante.TicketId.ToString("D")[..8];
             var comensal = raiz.TryGetProperty("PersonName", out var nombre) && nombre.ValueKind == JsonValueKind.String ? nombre.GetString() : null;

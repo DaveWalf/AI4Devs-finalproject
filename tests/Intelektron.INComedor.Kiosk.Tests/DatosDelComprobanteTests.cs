@@ -76,6 +76,28 @@ public class DatosDelComprobanteTests
         Assert.Single(pantalla.FindAll("#guardar-textos"));
     }
 
+    [Fact(DisplayName = "comprobante-local · La numeración del comprobante: con correlativo, «Reimprimir» en Consumos pide el motivo con el número de la fila, el 1000, y no con los ocho caracteres")]
+    public async Task El_pedido_del_motivo_dice_el_correlativo()
+    {
+        using var puesto = Preparar();
+        new AlmacenDatosPuesto(puesto.Carpeta).Guardar(new DatosPuesto(null, string.Empty, true, 1000));
+        var pantalla = puesto.Dibujar();
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#ingresar").ClickAsync(new());
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
+        await pantalla.Find("#confirmar").ClickAsync(new());
+        pantalla.WaitForAssertion(() => pantalla.Find("#listo"));
+        await pantalla.Find("#listo").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
+
+        Assert.Equal("1000", pantalla.Find("#seccion-consumos tr.consumo td.numero").TextContent.Trim());
+        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
+        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "9001" });
+        await pantalla.Find("#entrar-operador").ClickAsync(new());
+
+        Assert.Contains("N.º 1000 ·", pantalla.Find("#seccion-consumos").TextContent);
+    }
+
     private static PuestoDePrueba Preparar()
     {
         var puesto = new PuestoDePrueba();

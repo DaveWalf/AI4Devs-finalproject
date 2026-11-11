@@ -20,7 +20,7 @@ Origen: RB08 («reimprimir no modifica consumo/cupo/importe»), borde: el compro
 Origen: D1 de este change, borde: los comprobantes guardados no cambian.
 - **GIVEN** un comprobante guardado antes de este cambio, sin nombre en sus datos
 - **WHEN** se lo reimprime o se lo ve en pantalla
-- **THEN** sale como antes, sin línea de comensal
+- **THEN** sale sin línea de comensal y con los ocho caracteres de siempre como número
 
 ### Requirement: La numeración del comprobante
 
@@ -182,6 +182,41 @@ Origen: D11 de `atender-seleccion-y-confirmacion` (la simulación es sólo de la
 - **WHEN** una confirmación se autoriza
 - **THEN** el resultado muestra el mensaje y el botón «Listo», sin impresora en pantalla
 
+### Requirement: Prueba de impresión sin consumo
+
+La pestaña «Impresora» SHALL ofrecer «Imprimir una prueba», que envía a la impresora del puesto un comprobante con la leyenda PRUEBA, el puesto y una frase, sin persona, código, número ni importe, y dice si salió, si falló o si quedó incierto. La prueba MUST NOT crear intención, consumo, comprobante, trabajo de impresión ni evento de salida, MUST NOT mostrarse como el comprobante de la próxima atención y MUST quedar en la bitácora general con su resultado.
+
+#### Scenario: Prueba con la impresora disponible
+Origen: decisión de David del 03/11/2026 («realizar todas las operaciones que sean convenientes en cuanto a su prueba y puesta en funcionamiento»), RF41 y AT38.
+- **GIVEN** la impresora simulada en «Disponible»
+- **WHEN** se toca «Imprimir una prueba»
+- **THEN** la impresora recibió un comprobante con la leyenda PRUEBA y la pestaña dice que salió
+- **AND** la bitácora general tiene la prueba con su resultado y el actor nulo con `NO_AUTHENTICATION`
+
+#### Scenario: La prueba con el puesto y una frase
+Origen: mejora 9b de David del 10/11/2026 y D6 de este change: la prueba muestra cómo sale el comprobante.
+- **GIVEN** el puesto 3 «Comedor Norte» guardado en Impresora
+- **WHEN** se toca «Imprimir una prueba»
+- **THEN** la prueba lleva «Puesto 3 · Comedor Norte» y una de las 50 frases, sin comensal ni número
+
+#### Scenario: Prueba sin papel
+Origen: AT38 («errores inyectados») y AT06, borde.
+- **GIVEN** la impresora simulada en «Sin papel»
+- **WHEN** se toca «Imprimir una prueba»
+- **THEN** la pestaña dice que la impresora no tiene papel
+
+#### Scenario: La prueba no toca la base
+Origen: AT38 («sin consumo») y RNF14 («sin modificar efectos económicos»), borde.
+- **GIVEN** la base con sus intenciones, consumos, comprobantes, trabajos y eventos de salida
+- **WHEN** se imprime una prueba
+- **THEN** ninguna de esas tablas tiene una fila nueva
+
+#### Scenario: La prueba no es el comprobante de la próxima atención
+Origen: D7 de `presentar-atencion-tactil` (el comprobante en pantalla es el del consumo), borde.
+- **GIVEN** una prueba impresa con la impresora simulada
+- **WHEN** después una persona confirma con «Sin papel»
+- **THEN** la pantalla dice que el comprobante queda pendiente y no muestra el comprobante de la prueba
+
 ### Requirement: Textos del comprobante
 
 La pestaña «Impresora» SHALL permitir cambiar el encabezado del comprobante, de 1 a 40 caracteres, y su pie, de 0 a 60, sin caracteres de control, y conservarlos en la carpeta de datos. MUST aplicarse desde el próximo comprobante que salga, en la impresora y en pantalla, sin cambiar los datos guardados de ningún comprobante. Sin textos guardados, o con un archivo ilegible o fuera de forma, MUST usarse «INComedor · comprobante» y ningún pie.
@@ -212,7 +247,7 @@ Origen: `AGENTS.md` (OWASP: la configuración que llega al puesto), borde.
 
 ### Requirement: Ver el comprobante sin imprimirlo
 
-«Ver» en una fila de Consumos SHALL mostrar el comprobante en pantalla, con los mismos datos que el impreso y la marca «COPIA EN PANTALLA», sin pedir un operador. MUST NOT crear un trabajo de impresión ni una copia, ni cambiar consumo, cupo o importe, y MUST NOT mostrar el código de identificación.
+«Ver» en una fila de Consumos SHALL mostrar el comprobante en pantalla, con los datos del comprobante que lleva el impreso (no los de la impresora: encabezado, puesto y pie) y la marca «COPIA EN PANTALLA», sin pedir un operador. MUST NOT crear un trabajo de impresión ni una copia, ni cambiar consumo, cupo o importe, y MUST NOT mostrar el código de identificación.
 
 #### Scenario: Ver un comprobante
 Origen: mejora 6 de David del 10/11/2026 («con reimpresión virtual o real»).
