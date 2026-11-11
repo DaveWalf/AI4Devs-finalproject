@@ -154,6 +154,8 @@ public sealed class MaquinaAtencion
         if (!resultado.Abierta)
         {
             Aviso = MensajesAtencion.DeMotivo(resultado.ReasonCode);
+            // A los operadores, con el nombre de una credencial conocida y nunca el código (D4 de avisar-por-correo).
+            _servicio.Avisos?.PersonaSinConsumo(resultado.PersonId, resultado.NombreVisible, resultado.ReasonCode ?? "IDENTITY_NOT_RESOLVED");
             return ResultadoToque.Rechazado;
         }
 
@@ -169,6 +171,13 @@ public sealed class MaquinaAtencion
         // Sin ninguna opción disponible no hay selección: la pantalla avisa y vuelve a reposo con «Listo» o a los 10 s (D4).
         Estado = _catalogo.Count == 0 ? EstadoAtencion.SinOpciones : EstadoAtencion.Seleccion;
         _codigoMensaje = _catalogo.Count == 0 ? nameof(MensajesAtencion.SinOpciones) : null;
+        if (_catalogo.Count == 0)
+        {
+            // El motivo común de lo retenido (sin cupo, fuera de horario, inactiva) o, si no hay uno, ninguna opción disponible.
+            var motivos = _retenidas.Select(r => r.Causa ?? r.Motivo).Distinct(StringComparer.Ordinal).ToList();
+            _servicio.Avisos?.PersonaSinConsumo(PersonaId, NombreVisible, motivos.Count == 1 ? motivos[0] : "NO_OPTIONS");
+        }
+
         Tocar();
         return ResultadoToque.Aceptado;
     }
@@ -381,6 +390,12 @@ public sealed class MaquinaAtencion
                 ConsumoRegistrado = true;
                 MotivoResultado = null;
                 Mensaje = ComprobantePendiente ? MensajesAtencion.ComprobantePendiente : MensajesAtencion.Exito;
+                if (ComprobantePendiente)
+                {
+                    // El papel, una falla o un resultado incierto, a los operadores (D4 de avisar-por-correo).
+                    _servicio.Avisos?.ComprobanteSinImprimir(envio?.CodigoError ?? (estadoOriginal == EstadoTrabajoImpresion.Failed ? "PRINT_FAILED" : "UNKNOWN"));
+                }
+
                 _codigoMensaje = ComprobantePendiente ? nameof(MensajesAtencion.ComprobantePendiente) : nameof(MensajesAtencion.Exito);
                 _decisionId = resultado.DecisionId;
                 ComprobanteEnPantalla = !ComprobantePendiente && _servicio.Impresora is ImpresoraSimulada { UltimoEnviado: { } enviado }
@@ -396,6 +411,7 @@ public sealed class MaquinaAtencion
                 // La causa interna, si la hay, elige el mensaje: fuera de horario no es lo mismo que sin habilitación (D5).
                 Mensaje = MensajesAtencion.DeMotivo(resultado.ReasonCause ?? resultado.ReasonCode);
                 _codigoMensaje = resultado.ReasonCause ?? resultado.ReasonCode;
+                _servicio.Avisos?.PersonaSinConsumo(PersonaId, NombreVisible, resultado.ReasonCause ?? resultado.ReasonCode ?? "DENIED");
                 _decisionId = resultado.DecisionId;
                 Estado = EstadoAtencion.Resultado;
                 break;

@@ -71,6 +71,7 @@ public partial class MainWindow : Window
             // La exportación automática de consumos: su configuración en la carpeta de datos; la pantalla arma el motor y su reloj
             // cuando la base está lista (D4 y D6 de exportar-consumos-automaticamente).
             servicios.AddSingleton(new AlmacenConfiguracionExportacion(entorno.Carpeta));
+            servicios.AddSingleton(new AlmacenConfiguracionCorreo(entorno.Carpeta));
             servicios.AddSingleton<IElectorCarpeta>(new ElectorCarpetaWindows(this));
             // La planilla que se importa a Personas, con el diálogo de archivos sobre esta ventana (D7 de importar-personas-desde-excel).
             servicios.AddSingleton<IElectorArchivo>(new ElectorArchivoWindows(this));

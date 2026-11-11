@@ -41,8 +41,8 @@ public enum EstadoTrabajoImpresion
     Failed,
 }
 
-/// <summary>Cómo quedó un trabajo después de un envío.</summary>
-public sealed record ResultadoEnvio(Guid TrabajoId, Guid TicketId, int NumeroCopia, EstadoTrabajoImpresion Estado);
+/// <summary>Cómo quedó un trabajo después de un envío y, si falló, el código de la impresora (PAPER_OUT, PRINT_FAILED).</summary>
+public sealed record ResultadoEnvio(Guid TrabajoId, Guid TicketId, int NumeroCopia, EstadoTrabajoImpresion Estado, string? CodigoError = null);
 
 /// <summary>
 /// Envía los trabajos en QUEUED después del commit de RB06, sincrónicamente (D7 de atender-seleccion-y-confirmacion):
@@ -83,7 +83,7 @@ public sealed class TrabajosImpresion
                 _ => ("UNKNOWN", (string?)null),
             };
             Cambiar(trabajo, "UNKNOWN", estado, error);
-            resultados.Add(new ResultadoEnvio(trabajo.TrabajoId, trabajo.TicketId, trabajo.NumeroCopia, Estado(estado)));
+            resultados.Add(new ResultadoEnvio(trabajo.TrabajoId, trabajo.TicketId, trabajo.NumeroCopia, Estado(estado), error));
         }
 
         return resultados;

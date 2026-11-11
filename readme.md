@@ -533,6 +533,25 @@ la conexión real**: un cliente SFTP con la clave guardada en el almacén de cre
 conexión, detrás del mismo destino. La configuración vive en `exportacion-automatica.json` y las marcas en
 `exportacion-estado.json`; son del equipo y no viajan en un resguardo.
 
+**Avisos por correo.** La pestaña Mails, después de Impresora y sólo con la clave del día, configura los correos del
+puesto: «Activos», el cliente que encabeza cada asunto, la casilla de origen (remitente, servidor, puerto, cifrado
+STARTTLS o TLS directo y el segundo factor como método: contraseña de aplicación u OAuth 2.0), hasta cinco casillas de
+operador, la del Administrador Principal y la hora de la señal de vida. Ninguna clave ni token se guarda. Con los
+correos activos, los operadores reciben los avisos de gestión: una persona con una credencial conocida que no pudo comer
+al marcar (vencida, revocada, sin habilitación, fuera de horario o sin cupo), con su nombre visible y nunca su código, y
+un comprobante que no se imprimió (sin papel, una falla o un resultado incierto); el Administrador Principal recibe el
+estado técnico (una exportación automática que falla y una bitácora que se degrada) y, una vez por día a la hora
+elegida, la señal de vida con el resumen del día anterior. El asunto siempre es «Cliente · Puesto N Nombre · Situación»,
+y un mismo aviso no se repite antes de 15 minutos. Cada correo pasa por una cola (`correo-pendiente\`, hasta 500) y un
+reloj de cada minuto la envía en orden; la general registra `NOTIFICATION_QUEUED`, `NOTIFICATION_SENT` y
+`NOTIFICATION_FAILED`, sin direcciones. **El envío es simulado** (decisión 11 del plan del cierre): cada correo queda
+como un `.eml` en `correo-simulado\` de la carpeta de datos, que se abre con cualquier cliente de correo, y el servidor
+simulado «Caído» deja la cola esperando hasta que vuelve; «Enviar una prueba» manda un correo a todas las casillas.
+**Queda pendiente el envío real**: un cliente SMTP con la clave o el token en el almacén de credenciales de Windows,
+detrás de la misma cola. Queda pendiente también el aviso de un operador que habilita otro consumo, que este corte no
+tiene. La configuración vive en `correo.json` y la fecha de la última señal en `correo-estado.json`; son del equipo y no
+viajan en un resguardo.
+
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|
 | ![La pestaña Personas en edición: la tabla con una fila por persona, ALMUERZO y REFRIGERIO en columnas y las opciones habilitadas, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |

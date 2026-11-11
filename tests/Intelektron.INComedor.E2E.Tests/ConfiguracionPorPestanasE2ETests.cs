@@ -21,7 +21,7 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _escenario.DisposeAsync();
 
-    [Fact(DisplayName = "configuracion-puesto · Las pestañas entran en 1024 × 768: las nueve en una fila, cada una de al menos 56 px de alto, sin desplazar la pantalla")]
+    [Fact(DisplayName = "configuracion-puesto · Las pestañas entran en 1024 × 768: las diez en una fila, cada una de al menos 56 px de alto, sin desplazar la pantalla")]
     public async Task Las_pestanas_entran_en_1024_x_768()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -52,7 +52,7 @@ public class ConfiguracionPorPestanasE2ETests : IAsyncLifetime
             """);
         _escenario.Registrar($"pestañas a 1024 × 768: {medida}");
 
-        Assert.Equal(9, medida.GetProperty("Cantidad").GetInt32());
+        Assert.Equal(10, medida.GetProperty("Cantidad").GetInt32());
         var arriba = medida.GetProperty("Arriba").EnumerateArray().Select(a => a.GetDouble()).ToList();
         Assert.True(arriba.Max() - arriba.Min() < 1, $"Las pestañas no están en una fila: arriba de {arriba.Min()} a {arriba.Max()} px.");
         Assert.True(medida.GetProperty("Alto").GetDouble() >= 56, $"La pestaña más baja mide {medida.GetProperty("Alto").GetDouble()} px.");
