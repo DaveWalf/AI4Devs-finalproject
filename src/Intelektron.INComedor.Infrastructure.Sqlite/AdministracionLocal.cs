@@ -169,6 +169,16 @@ public sealed class AdministracionLocal
                     LecturaDecision.LeerInstanteOpcional(l, 5), LecturaDecision.LeerInstanteOpcional(l, 6)))
             .ToLookup(r => r.Persona);
 
+        // Lo usado hoy por persona y categoría, de la misma tabla con que la atención cuenta el cupo (D1 de editar-raciones-en-personas).
+        var fecha = CalculadoraFechaNegocio.Calcular(ahora, puesto.ZonaHoraria.Id, puesto.InicioDiaNegocio);
+        var usados = Leer(conexion, transaccion,
+                """
+                SELECT comperCodigo, comcatCodigo, SUM(comucUsado) FROM tbComedorUsosCupo
+                WHERE comucFechaNegocio = $fecha GROUP BY comperCodigo, comcatCodigo
+                """, [("$fecha", LecturaDecision.Texto(fecha))],
+                l => (Persona: l.GetGuid(0), Categoria: l.GetGuid(1), Usado: l.GetInt32(2)))
+            .ToDictionary(u => (u.Persona, u.Categoria), u => u.Usado);
+
         var personas = Leer(conexion, transaccion,
                 "SELECT comperCodigo, comperNombreVisible, comperActivo FROM tbComedorPersonas WHERE comvcCodigo = $vc", [("$vc", vc)],
                 l => (Id: l.GetGuid(0), Nombre: l.GetString(1), Activa: l.GetInt64(2) == 1))
@@ -176,7 +186,10 @@ public sealed class AdministracionLocal
             {
                 var cupos = reglas[p.Id]
                     .GroupBy(r => (r.Servicio, r.Categoria))
-                    .Select(g => CupoDe(g.ToList(), nombreServicio, nombreCategoria, ahora))
+                    .Select(g => CupoDe(g.ToList(), nombreServicio, nombreCategoria, ahora) with
+                    {
+                        UsadoHoy = usados.GetValueOrDefault((p.Id, g.Key.Categoria)),
+                    })
                     .OrderBy(c => c.Servicio, OrdenPorNombre).ThenBy(c => c.Categoria, OrdenPorNombre)
                     .ToList();
                 var habilitadas = opciones
@@ -552,7 +565,8 @@ public sealed class AdministracionLocal
                 cambios.Padron = true;
                 cambios.Politicas |= edicion.Cupos.Count > 0;
                 var despuesAlta = PersonaRegistrada(edicion.Nombre, true, edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias);
-                cambios.Registrar(RegistroPersona(id, null, despuesAlta, credencial));
+                cambios.Registrar(RegistroPersona(id, null, despuesAlta, credencial,
+                    CuposCambiados([], edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias)));
                 continue;
             }
 
@@ -619,7 +633,9 @@ public sealed class AdministracionLocal
             {
                 var antes = PersonaRegistrada(actual.Nombre, actual.Activa, actual.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias);
                 var despues = PersonaRegistrada(edicion.Nombre, activa, edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias);
-                cambios.Registrar(RegistroPersona(id, antes, despues, revocada));
+                cambios.Registrar(RegistroPersona(id, antes, despues, revocada,
+                    CuposCambiados(actual.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)),
+                        edicion.Cupos.Select(x => (x.ServicioId, x.CategoriaId, x.Limite)), servicios, categorias)));
             }
         }
     }
@@ -650,14 +666,41 @@ public sealed class AdministracionLocal
         }).ToList(),
     };
 
+    /// <summary>
+    /// Los cupos cuyo límite cambió, con el antes y el después (nulo si no había cupo o se quitó): qué cambió, para no tener
+    /// que comparar la persona entera de antes y de después (D3 de editar-raciones-en-personas).
+    /// </summary>
+    private static List<object> CuposCambiados(
+        IEnumerable<(Guid Servicio, Guid Categoria, int Limite)> antes, IEnumerable<(Guid Servicio, Guid Categoria, int Limite)> despues,
+        Dictionary<Guid, string> servicios, Dictionary<Guid, string> categorias)
+    {
+        var previos = antes.ToDictionary(x => (x.Servicio, x.Categoria), x => (int?)x.Limite);
+        var nuevos = despues.ToDictionary(x => (x.Servicio, x.Categoria), x => (int?)x.Limite);
+        return previos.Keys.Union(nuevos.Keys)
+            .Select(par => (Par: par, Antes: previos.GetValueOrDefault(par), Despues: nuevos.GetValueOrDefault(par)))
+            .Where(x => x.Antes != x.Despues)
+            .OrderBy(x => servicios[x.Par.Servicio], OrdenPorNombre).ThenBy(x => categorias[x.Par.Categoria], OrdenPorNombre)
+            .Select(x => (object)new
+            {
+                ServiceId = x.Par.Servicio,
+                Service = servicios[x.Par.Servicio],
+                CategoryId = x.Par.Categoria,
+                Category = categorias[x.Par.Categoria],
+                Before = x.Antes,
+                After = x.Despues,
+            })
+            .ToList();
+    }
+
     /// <summary>El registro de una persona cambiada: la marca y el identificador de la credencial, nunca su valor (D10).</summary>
-    private static Func<int, int, object> RegistroPersona(Guid persona, object? antes, object despues, Guid? credencial) =>
+    private static Func<int, int, object> RegistroPersona(Guid persona, object? antes, object despues, Guid? credencial, List<object> cuposCambiados) =>
         (versionAntes, versionDespues) => new
         {
             Setting = "PERSON",
             PersonId = persona,
             Before = antes,
             After = despues,
+            QuotaChanges = cuposCambiados,
             CredentialChanged = credencial is not null,
             CredentialId = credencial,
             Result = "APPLIED",

@@ -1,10 +1,15 @@
 ## 1. Lo usado hoy y los cupos cambiados
 
-- [ ] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: la vista trae lo usado hoy por persona y
+- [x] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: la vista trae lo usado hoy por persona y
   categoría (un almuerzo hoy y otro ayer dan 1); `CONFIGURATION_CHANGED` de una persona trae `QuotaChanges` con el límite
   antes y después, y con el actor de un operador (D1 y D3). Verifica: rojo antes y verde después.
-- [ ] 1.2 `AdministracionLocal`: lo usado hoy en `VistaAdministracion` y `QuotaChanges` en el registro. Verifica: 1.1 en
+  - `RacionesDePersonasTests` (3), con `UsadoHoy` en 0 y sin `QuotaChanges`: `total: 3`, `error: 3` («Expected: 1,
+    Actual: 0» y «The given key 'QuotaChanges' was not present»).
+- [x] 1.2 `AdministracionLocal`: lo usado hoy en `VistaAdministracion` y `QuotaChanges` en el registro. Verifica: 1.1 en
   verde y `Infrastructure.Sqlite.Tests` entero en verde.
+  - `UsadoHoy` sale de `tbComedorUsosCupo` sumado por persona y categoría en la fecha de negocio de
+    `CalculadoraFechaNegocio`; `QuotaChanges` compara los cupos de antes y de después, también en el alta (todos con el
+    antes nulo). `Infrastructure.Sqlite.Tests`: `total: 237`, `error: 0`, sin pruebas existentes cambiadas.
 
 ## 2. La planilla compartida y la exportación de Personas
 

@@ -16,8 +16,10 @@ public sealed record CategoriaAdministrada(Guid Id, string Nombre);
 /// <summary>
 /// Un cupo de una persona tal como lo muestra el panel (D9): el límite de la regla que hoy decide ese servicio y categoría.
 /// <see cref="ReglasQueSeReemplazan"/> avisa que el par tiene reglas con vigencia o prioridad que un guardado reemplaza.
+/// <see cref="UsadoHoy"/> es lo usado en su categoría en la fecha de negocio actual, la «x» del «x/n» (D1 de
+/// editar-raciones-en-personas).
 /// </summary>
-public sealed record CupoAdministrado(Guid ServicioId, string Servicio, Guid CategoriaId, string Categoria, int Limite, bool ReglasQueSeReemplazan);
+public sealed record CupoAdministrado(Guid ServicioId, string Servicio, Guid CategoriaId, string Categoria, int Limite, bool ReglasQueSeReemplazan, int UsadoHoy = 0);
 
 /// <summary>Una persona de la versión activa, sin su código (D10): estado, cupos y las opciones que esos cupos habilitan.</summary>
 public sealed record PersonaAdministrada(
