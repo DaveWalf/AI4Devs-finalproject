@@ -28,6 +28,8 @@ táctil del 03/11/2026 (objetivos amplios, foco visible); ticket TK02 (interfaz:
 - Los diálogos de Windows para elegir una carpeta o un archivo: son del sistema y ya se operan con el dedo.
 - Un teclado en otro idioma o con más símbolos que los de las casillas y las rutas.
 - Cambiar cómo se ve la atención del comensal fuera del campo del código.
+- Los campos de fecha y hora (las fechas de Consumos y las franjas de Opciones) y los combos: siguen con su selector
+  nativo, que se mira en el monitor del puesto en la prueba de David.
 
 ## Capabilities
 
@@ -42,7 +44,7 @@ táctil del 03/11/2026 (objetivos amplios, foco visible); ticket TK02 (interfaz:
 
 ## Impact
 
-- **Código**: `Kiosk` (un componente `TecladoGeneral`, el teclado en pantalla con símbolos, lo que escucha el foco y
+- **Código**: `Kiosk` (el aviso estático `TecladoGeneral`, el teclado en pantalla con símbolos que dibuja la pantalla, lo que escucha el foco y
   escribe en el campo en `wwwroot/js/puesto.js`, la pantalla y Configuración). Sin migración.
 - **Pruebas**: nuevas en `Kiosk.Tests` (bUnit) y una E2E a 1024 × 768 que, con toques reales de la pantalla táctil,
   escribe una casilla en Mails y un código en reposo sólo con las teclas en pantalla. Ninguna prueba existente cambia: el

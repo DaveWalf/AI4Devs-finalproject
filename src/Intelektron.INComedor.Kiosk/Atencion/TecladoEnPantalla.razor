@@ -1,8 +1,9 @@
 @*
     Un teclado en pantalla para editar sin teclado físico (D4 de editar-raciones-en-personas): números, letras con la Ñ,
     «Mayús», espacio y borrar, en cuatro filas de teclas de 56 px y del mismo ancho por fila, para que la tabla conserve
-    sus filas a la vista a 1024 × 768. Avisa cada tecla con su valor
-    (la letra, el número, BORRAR o ESPACIO); quien lo usa decide en qué campo escribe. Las teclas no sacan el foco del campo.
+    sus filas a la vista a 1024 × 768. El teclado general suma una quinta fila con los símbolos y, en Configuración,
+    «Ocultar teclado» (D1 y D4 de operar-solo-con-la-pantalla). Avisa cada tecla con su valor (la letra, el número, el
+    símbolo, BORRAR, ESPACIO u OCULTAR); quien lo usa decide en qué campo escribe. Las teclas no sacan el foco del campo.
 *@
 <div class="teclado-en-pantalla" role="group" aria-label="Teclado en pantalla">
     @foreach (var fila in FilasVisibles)
@@ -10,8 +11,9 @@
         <div class="fila-teclas">
             @foreach (var tecla in fila)
             {
-                <button type="button" class="tecla @(tecla.Length > 1 ? "especial" : null) @(tecla == Mayus && _mayusculas ? "activa" : null)"
+                <button type="button" class="tecla @(tecla.Length > 1 ? "especial" : null) @(tecla == Mayus && _mayusculas ? "activa" : null) @(tecla == Ocultar ? "ocultar" : null)"
                         data-tecla="@tecla" aria-label="@Etiqueta(tecla)" aria-pressed="@(tecla == Mayus ? (_mayusculas ? "true" : "false") : null)"
+                        tabindex="@(ConSimbolos ? "-1" : null)"
                         @onmousedown:preventDefault @onclick="() => Tocar(tecla)">@Mostrar(tecla)</button>
             }
         </div>
@@ -79,6 +81,13 @@
         Espacio => "Espacio",
         Mayus => "Mayúsculas",
         Ocultar => "Ocultar teclado",
+        "." => "Punto",
+        "-" => "Guion",
+        "_" => "Guion bajo",
+        "@" => "Arroba",
+        ":" => "Dos puntos",
+        "/" => "Barra",
+        "\\" => "Barra invertida",
         _ => tecla,
     };
 }

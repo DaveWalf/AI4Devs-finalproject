@@ -462,6 +462,16 @@ html, body { overscroll-behavior: none; }
 .puesto.con-teclado .fondo-dialogo { bottom: var(--alto-teclado-general); }
 .puesto.con-teclado .dialogo.ancho { height: min(760px, calc(100vh - var(--alto-teclado-general) - 32px)); }
 .puesto.con-teclado .atencion { padding-bottom: var(--alto-teclado-general); }
+.puesto.con-teclado input { scroll-margin-block: 16px; }
+/* Las teclas con el estilo de los botones del puesto, que el teclado general no hereda porque cuelga de .puesto. */
+.teclado-general .tecla {
+    font: inherit; font-size: 20px; color: var(--tinta); background: rgb(var(--papel));
+    border: 1px solid var(--tinta-suave); border-radius: 12px; cursor: pointer; touch-action: manipulation;
+}
+.teclado-general .tecla.especial { font-size: 16px; }
+/* «Ocultar teclado», aparte de los símbolos: del ancho de tres teclas, así la quinta fila tiene las diez columnas de las de
+   arriba, y con el borde del acento (D4). */
+.teclado-general .tecla.ocultar { grid-column: span 3; margin-left: 16px; border: 2px solid var(--acento); font-weight: 700; }
 .tabla-personas input.nombre-persona.elegido, .tabla-personas input.codigo-persona.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
 /* Un campo elegido que el guardado rechazó se marca como los demás rechazados, no con el acento (D6). */
 .tabla-personas input.elegido[aria-invalid="true"] { outline-color: #b3261e; }

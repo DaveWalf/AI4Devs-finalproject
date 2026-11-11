@@ -1,5 +1,6 @@
 using Bunit;
 using Intelektron.INComedor.Kiosk.Atencion;
+using Microsoft.AspNetCore.Components;
 
 namespace Intelektron.INComedor.Kiosk.Tests;
 
@@ -24,6 +25,9 @@ public class TecladoGeneralTests
         var teclas = puesto.Contexto.JSInterop.VerifyInvoke("incomedor.teclear", 2);
         Assert.Equal(["p", "@"], teclas.Select(t => t.Arguments[0]!.ToString()));
         Assert.Single(pantalla.FindAll(".teclado-general [data-tecla=\"\\\\\"]"));
+        Assert.Equal("Arroba", pantalla.Find(".teclado-general [data-tecla=\"@\"]").GetAttribute("aria-label"));
+        Assert.Equal("Barra invertida", pantalla.Find(".teclado-general [data-tecla=\"\\\\\"]").GetAttribute("aria-label"));
+        Assert.All(pantalla.FindAll(".teclado-general .tecla"), t => Assert.Equal("-1", t.GetAttribute("tabindex")));
         Assert.Empty(pantalla.FindAll(".teclado-general [data-tecla=\"OCULTAR\"]"));
         Assert.Contains("con-teclado", pantalla.Find(".puesto").ClassName, StringComparison.Ordinal);
 
@@ -39,6 +43,7 @@ public class TecladoGeneralTests
         await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.InvokeAsync(() => pantalla.Instance.CampoEnfocado(true));
+        Assert.Contains("ocultar", pantalla.Find(".teclado-general [data-tecla=\"OCULTAR\"]").ClassName, StringComparison.Ordinal);
         await pantalla.Find(".teclado-general [data-tecla=\"OCULTAR\"]").ClickAsync(new());
         Assert.Empty(pantalla.FindAll(".teclado-general"));
         await pantalla.InvokeAsync(() => pantalla.Instance.CampoEnfocado(false));
@@ -50,6 +55,26 @@ public class TecladoGeneralTests
         await pantalla.InvokeAsync(() => pantalla.Instance.CampoEnfocado(true));
 
         Assert.Single(pantalla.FindAll(".teclado-general"));
+    }
+
+    [Fact(DisplayName = "operacion-tactil · El código leído al salir del reposo: con el teclado a la vista en el código, la identificación lo saca con el reposo, y al volver no está hasta tocar otro campo")]
+    public async Task Al_salir_del_reposo_se_va()
+    {
+        using var puesto = Preparar();
+        var pantalla = puesto.Dibujar();
+        await pantalla.InvokeAsync(() => pantalla.Instance.CampoEnfocado(true));
+        Assert.Single(pantalla.FindAll(".teclado-general"));
+
+        // El campo sale de la pantalla sin que puesto.js avise el foco, como con una lectura del lector.
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#ingresar").ClickAsync(new());
+        Assert.NotEmpty(pantalla.FindAll(".opcion"));
+        Assert.Empty(pantalla.FindAll(".teclado-general"));
+        Assert.DoesNotContain("con-teclado", pantalla.Find(".puesto").ClassName, StringComparison.Ordinal);
+
+        await pantalla.Find("#cancelar").ClickAsync(new());
+        Assert.NotEmpty(pantalla.FindAll("#codigo"));
+        Assert.Empty(pantalla.FindAll(".teclado-general"));
     }
 
     [Fact(DisplayName = "operacion-tactil · Un teclado en pantalla para cada campo de texto: el de Personas sigue sin los símbolos ni «Ocultar teclado»")]

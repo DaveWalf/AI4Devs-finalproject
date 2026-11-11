@@ -1,11 +1,11 @@
 @using Intelektron.INComedor.Infrastructure.Sqlite
 @using Intelektron.INComedor.Kiosk.Red
 @using Intelektron.INComedor.Kiosk.Lector
+@using Microsoft.JSInterop
 @implements IDisposable
 @inject MaquinaAtencion Maquina
 @inject ServicioAtencion Servicio
 @inject IServiceProvider Proveedor
-@using Microsoft.JSInterop
 @inject IJSRuntime JS
 
 @* La presentación táctil (D3 de presentar-atencion-tactil): los estilos están en wwwroot/css/puesto.css. *@
@@ -294,7 +294,7 @@
     @* operar-solo-con-la-pantalla); en Configuración se puede ocultar por la sesión. *@
     @if (TecladoGeneralVisible)
     {
-        <div class="teclado-general superficie" data-teclado-propio>
+        <div class="teclado-general superficie" data-teclado-propio @onmousedown:preventDefault>
             <TecladoEnPantalla ConSimbolos="true" Ocultable="ConfiguracionAbierta" Tecla="TeclearGeneral" />
         </div>
     }
@@ -344,12 +344,17 @@
     private bool _campoTocado;
     private bool _tecladoOculto;
 
-    /// <summary>El teclado general: un campo de texto tocado con el dedo y no oculto en esta sesión de Configuración (D2 y D4).</summary>
-    private bool TecladoGeneralVisible => _campoTocado && !(_tecladoOculto && ConfiguracionAbierta);
+    /// <summary>
+    /// El teclado general: un campo de texto tocado con el dedo, en reposo o en Configuración, y no oculto en esta sesión de
+    /// Configuración (D2 y D4).
+    /// </summary>
+    private bool TecladoGeneralVisible => _campoTocado && EnLugarDelTeclado && !(_tecladoOculto && ConfiguracionAbierta);
+
+    private bool EnLugarDelTeclado => Maquina.Estado == EstadoAtencion.Reposo || ConfiguracionAbierta;
 
     /// <summary>
     /// Lo que avisa puesto.js por <see cref="TecladoGeneral"/>: un campo de texto recibió el foco por un toque, o el foco salió
-    /// de los campos (D2). Llega en otro hilo y se aplica en el de la pantalla.
+    /// de los campos (D2). Se aplica con InvokeAsync, en el contexto de la pantalla.
     /// </summary>
     public Task CampoEnfocado(bool enfocado) => InvokeAsync(() =>
     {
@@ -375,6 +380,10 @@
         catch (JSException)
         {
             // Sin la función (una página vieja en caché), la tecla no escribe: el campo sigue con lo que tenía.
+        }
+        catch (JSDisconnectedException)
+        {
+            // La ventana se está cerrando: la tecla ya no tiene campo.
         }
     }
     private AlmacenLector? _almacenLector;
@@ -1754,7 +1763,6 @@
     /// </summary>
     protected override async Task OnAfterRenderAsync(bool primera)
     {
-
         var enReposo = Maquina.Estado == EstadoAtencion.Reposo && !HayDialogo;
         var estado = HayDialogo ? (EstadoAtencion?)null : Maquina.Estado;
         var volvioAReposo = enReposo && !primera && _estadoDibujado != EstadoAtencion.Reposo;
@@ -1764,6 +1772,12 @@
         }
 
         _estadoDibujado = estado;
+
+        // Fuera del reposo y de Configuración el campo tocado ya no está: el teclado vuelve recién con otro toque (D2).
+        if (!EnLugarDelTeclado)
+        {
+            _campoTocado = false;
+        }
 
         // Fuera de la selección y de la confirmación, el cartel queda cerrado; abierto, el foco va a «Confirmar» (D1 y D3).
         if (Maquina.Estado is not (EstadoAtencion.Seleccion or EstadoAtencion.Confirmando))

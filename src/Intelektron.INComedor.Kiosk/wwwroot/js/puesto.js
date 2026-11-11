@@ -1,7 +1,8 @@
-// Lo único que el puesto hace fuera de Blazor, para el teclado en pantalla de Personas (D4 de editar-raciones-en-personas):
+// Lo único que el puesto hace fuera de Blazor: para el teclado en pantalla de Personas (D4 de editar-raciones-en-personas),
 // enfocar un campo y ponerle el valor como propiedad del DOM, sin atributo ni árbol de render, al código de una persona
 // nueva, que no se dibuja ni se vuelve a mostrar (D10 de administrar-personas-y-opciones). Los campos se buscan por su
-// data-campo, sin referencias de Blazor: una referencia agrega a la página un identificador al azar.
+// data-campo, sin referencias de Blazor: una referencia agrega a la página un identificador al azar. Más abajo, el teclado
+// general de operar-solo-con-la-pantalla.
 window.incomedor = window.incomedor || {};
 window.incomedor.enfocar = function (selector) {
     var campo = document.querySelector(selector);
@@ -33,29 +34,81 @@ window.incomedor.esCampoDeTexto = function (elemento) {
     window.incomedor._ultimoToque = 0;
     window.incomedor._tecladoAbierto = false;
     var avisarANet = function (abrir) {
+        window.incomedor._tecladoAbierto = abrir;
         if (window.DotNet) {
             window.DotNet.invokeMethodAsync('Intelektron.INComedor.Kiosk', 'CampoTocado', abrir).catch(function () { });
         }
     };
-    // El último puntero manda: un clic de mouse después de un toque no abre el teclado.
+    // Un campo tocado lleva inputmode="none" hasta perder el foco, así el teclado táctil de Windows no se abre encima del
+    // general; el teclado físico escribe igual (D2).
+    var silenciar = function (campo) {
+        if (!campo.hasAttribute('data-modo-previo')) {
+            campo.setAttribute('data-modo-previo', campo.getAttribute('inputmode') || '');
+            campo.setAttribute('inputmode', 'none');
+        }
+    };
+    var restituir = function (campo) {
+        if (campo && campo.hasAttribute && campo.hasAttribute('data-modo-previo')) {
+            var previo = campo.getAttribute('data-modo-previo');
+            campo.removeAttribute('data-modo-previo');
+            if (previo) {
+                campo.setAttribute('inputmode', previo);
+            } else {
+                campo.removeAttribute('inputmode');
+            }
+        }
+    };
+    // El último puntero manda: un clic de mouse después de un toque no abre el teclado. Con el teclado abierto y el foco
+    // fuera de los campos (el campo salió de la pantalla sin avisar), un toque fuera del teclado lo cierra.
     document.addEventListener('pointerdown', function (evento) {
-        window.incomedor._ultimoToque = evento.pointerType === 'touch' || evento.pointerType === 'pen' ? Date.now() : 0;
+        var toque = evento.pointerType === 'touch' || evento.pointerType === 'pen';
+        window.incomedor._ultimoToque = toque ? Date.now() : 0;
+        if (toque && window.incomedor.esCampoDeTexto(evento.target)) {
+            silenciar(evento.target);
+        }
+
+        if (window.incomedor._tecladoAbierto && !window.incomedor.esCampoDeTexto(document.activeElement)
+            && !(evento.target.closest && evento.target.closest('.teclado-general'))) {
+            avisarANet(false);
+        }
     }, true);
+    // El campo queda a la vista dos veces: la segunda, cuando la pantalla ya se acortó para el teclado (D5).
+    var desplazar = function (campo) {
+        [150, 400].forEach(function (espera) {
+            setTimeout(function () {
+                if (document.activeElement === campo) {
+                    campo.scrollIntoView({ block: 'nearest' });
+                }
+            }, espera);
+        });
+    };
     var avisar = function () {
         var campo = document.activeElement;
         var tocado = Date.now() - window.incomedor._ultimoToque < 1500;
         var abrir = window.incomedor.esCampoDeTexto(campo) && (tocado || window.incomedor._tecladoAbierto);
-        if (abrir !== window.incomedor._tecladoAbierto) {
-            window.incomedor._tecladoAbierto = abrir;
+        // Un foco por un toque avisa siempre: la pantalla pudo haber cerrado el teclado al salir del reposo (D2).
+        if (abrir !== window.incomedor._tecladoAbierto || (abrir && tocado)) {
             avisarANet(abrir);
         }
 
         if (abrir) {
-            setTimeout(function () { campo.scrollIntoView({ block: 'nearest' }); }, 150);
+            silenciar(campo);
+            desplazar(campo);
         }
     };
     document.addEventListener('focusin', avisar);
-    document.addEventListener('focusout', function () { setTimeout(avisar, 0); });
+    document.addEventListener('focusout', function (evento) {
+        var campo = evento.target;
+        restituir(campo);
+        // Lo escrito con las teclas llega también como change al salir del campo, como con un teclado físico: los campos
+        // que Blazor lee con onchange, como los de Opciones, reciben el valor antes del toque en «Guardar» (D3).
+        if (campo && campo.hasAttribute && campo.hasAttribute('data-tecleado')) {
+            campo.removeAttribute('data-tecleado');
+            campo.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        setTimeout(avisar, 0);
+    });
 })();
 window.incomedor.teclear = function (tecla) {
     var campo = document.activeElement;
@@ -64,6 +117,11 @@ window.incomedor.teclear = function (tecla) {
     }
 
     var texto = tecla === 'ESPACIO' ? ' ' : tecla;
+    // Un campo numérico recibe sólo dígitos: otra tecla lo vaciaría al sanear su valor, y un teclado físico no la deja entrar.
+    if (tecla !== 'BORRAR' && (campo.getAttribute('type') || '').toLowerCase() === 'number' && !/^[0-9]$/.test(texto)) {
+        return;
+    }
+
     var inicio, fin, conSeleccion = true;
     try {
         inicio = campo.selectionStart;
@@ -104,5 +162,6 @@ window.incomedor.teclear = function (tecla) {
         }
     }
 
+    campo.setAttribute('data-tecleado', '1');
     campo.dispatchEvent(new Event('input', { bubbles: true }));
 };
