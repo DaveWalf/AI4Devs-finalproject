@@ -424,7 +424,11 @@ html, body { overscroll-behavior: none; }
 .codigo-oculto { -webkit-text-security: disc; }
 /* Las acciones de cada fila de Consumos, de 44 px como el resto de la tabla, y el operador arriba de ella (D4 y D5). */
 .tabla-consumos td.acciones-consumo { white-space: nowrap; }
-.dialogo .tabla-consumos .acciones-consumo button { min-height: 44px; min-width: 0; padding: 0 10px; font-size: 15px; margin-right: 4px; }
+/* Los botones de la fila, en la letra de la tabla, 8 px de relleno y 4 px entre ellos, con el alto táctil de 44 px (D3 de
+   ver-consumos-en-un-renglon): comparten alto, borde, relleno y tipografía; la columna reserva los tres, así los «Ver» de
+   todas las filas quedan en la misma vertical. */
+.dialogo .tabla-consumos .acciones-consumo button { min-height: 44px; min-width: 0; padding: 0 8px; font-size: var(--letra-tabla-consumos); margin-right: 4px; }
+.dialogo .tabla-consumos .acciones-consumo button:last-child { margin-right: 0; }
 .operador-consumos { display: flex; flex-direction: column; gap: 8px; }
 .operador-consumos .fila-operador { display: flex; align-items: center; gap: 12px; }
 /* Personas: el cupo tocable se lee como la celda, «x/n», con el alto de la fila; al editar, lo usado va antes del campo
@@ -487,12 +491,46 @@ html, body { overscroll-behavior: none; }
    de la pestaña aunque la fila de filtros ocupe dos renglones; con más, se desplaza adentro (ordenar-configuracion). */
 .dialogo .lista-opciones { max-height: 290px; }
 .filtros-consumos input, .filtros-consumos .lista-boton { min-height: 56px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
-.tabla-consumos { width: 100%; border-collapse: collapse; font-size: 16px; }
+/* Cada consumo en un renglón (D1 y D2 de ver-consumos-en-un-renglon): anchos fijos en ch para las columnas cortas, medidos en
+   la letra elegida, y el resto por mitades para la persona y la opción, que cortan con «…». El texto de cada celda sigue
+   entero en el DOM: la búsqueda, el orden y la exportación no cambian. La letra es la mayor de 14 a 16 px con la que el
+   renglón de prueba entra, medida por CDP. */
+.tabla-consumos { --letra-tabla-consumos: 14px; width: 100%; border-collapse: collapse; table-layout: fixed; font-size: var(--letra-tabla-consumos); }
 .tabla-consumos th { position: sticky; top: 0; z-index: 1; background: rgb(var(--papel)); text-align: left; border-bottom: 2px solid var(--tinta-suave); }
-.tabla-consumos th, .tabla-consumos td { height: 44px; padding: 0 8px; }
+.tabla-consumos th, .tabla-consumos td { height: 44px; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* El encabezado lleva el relleno en su botón de orden, así su texto empieza en el mismo borde que el de las celdas. */
+.tabla-consumos th { padding: 0; }
+/* Los anchos, medidos por CDP en Segoe UI: «11/11 13:51», ocho caracteres del número, «REFRIGERIO» y «Servicio ▲», «ARS
+   2.000,00» y «Estado ▲» entran en sus ch; las acciones reservan «Ver», «Reimprimir» y «Recuperar» con su relleno. */
+.tabla-consumos th[data-columna="Hora"] { width: calc(10ch + 8px); }
+.tabla-consumos th.numero { width: calc(9ch + 8px); }
+.tabla-consumos th[data-columna="Servicio"] { width: calc(10.5ch + 8px); }
+.tabla-consumos th[data-columna="Cargo"] { width: calc(11ch + 8px); }
+.tabla-consumos th[data-columna="Estado"] { width: calc(9.5ch + 8px); }
+.tabla-consumos th.acciones-consumo { width: calc(10.8em + 3 * 18px + 8px + 8px); }
+.tabla-consumos th button.ordenar { overflow: hidden; text-overflow: ellipsis; }
+/* El globo del dato completo (D4): anclado debajo de la celda que lo abrió, del tamaño de su texto hasta 360 px. */
+.globo-dato {
+    position: fixed;
+    position-anchor: --globo-dato;
+    top: calc(anchor(bottom) + 4px);
+    left: anchor(left);
+    position-try-fallbacks: flip-block;
+    z-index: 3;
+    max-width: 360px;
+    padding: 8px 12px;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+    color: var(--tinta);
+    background: rgb(var(--papel));
+    border: 1px solid var(--tinta-suave);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgb(0 0 0 / .2);
+    pointer-events: none;
+}
 .tabla-consumos tbody tr { border-bottom: 1px solid rgb(0 0 0 / .08); }
 .tabla-consumos td.cargo { text-align: right; font-variant-numeric: tabular-nums; }
-.dialogo .tabla-consumos th button.ordenar { width: 100%; min-height: 44px; min-width: 0; padding: 0 4px; border: none; background: transparent; text-align: left; font-size: 16px; font-weight: 700; }
+.dialogo .tabla-consumos th button.ordenar { width: 100%; min-height: 44px; min-width: 0; padding: 0 4px; border: none; background: transparent; text-align: left; font-size: var(--letra-tabla-consumos); font-weight: 700; }
 .tabla-consumos th[aria-sort="ascending"] button.ordenar::after { content: " ▲"; }
 .tabla-consumos th[aria-sort="descending"] button.ordenar::after { content: " ▼"; }
 .modo-puesto { font-size: 18px; font-weight: 600; }

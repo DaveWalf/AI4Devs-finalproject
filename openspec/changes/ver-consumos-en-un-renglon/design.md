@@ -35,6 +35,12 @@ la opción se reparten el resto por mitades, con `overflow: hidden` y `text-over
 sigue entero en el DOM: el corte es de CSS, así que la búsqueda, el orden, la exportación y las pruebas que leen las
 celdas no cambian.
 
+Ajuste al aplicar (11/11/2026), medido por CDP con los anchos de cada texto en Segoe UI: a 14 px, con 8 px de relleno,
+la persona y la opción no llegaban a «Persona sintética…». El relleno de las celdas bajó a 4 px por lado (el encabezado lo
+lleva en su botón de orden, así su texto empieza en el borde del de su columna), y los anchos quedaron en hora `10ch`,
+N.º `9ch`, servicio `10.5ch`, cargo `11ch` y estado `9.5ch`, más el relleno; las acciones, `10.8em` del texto de los tres
+botones más su relleno, sus bordes y los 4 px entre ellos.
+
 - *Descartada*: `table-layout` automático con `max-width` en la persona y la opción. El navegador ignora `max-width` en
   las celdas de una tabla automática, y el reparto vuelve a depender del contenido.
 - *Descartada*: abreviar el servicio o el estado. Son palabras de la spec y de la exportación, y cambiarlas confunde la
@@ -69,6 +75,12 @@ con `position: fixed` en las coordenadas del puntero (`ClientX`, `ClientY` de `P
 cabe en la ventana. Se cierra a los 5 s con el temporizador de la pestaña, al cambiar la consulta o al dejar la pestaña.
 Muestra el dato entero: el nombre visible de la persona, la opción, o la fecha con el año (`dd/MM/yyyy HH:mm`). Nunca
 muestra el código, que la fila no tiene.
+
+Ajuste al aplicar (11/11/2026): el diálogo de Configuración es una `.superficie` con `backdrop-filter`, que vuelve al
+diálogo el bloque contenedor de `position: fixed`, así que las coordenadas del puntero lo corrían. El globo se ancla a la
+celda que lo abrió con `anchor-name` y `position-anchor` (WebView2 157), 4 px debajo de ella y con `position-try-fallbacks:
+flip-block` en las últimas filas; el E2E mide que empieza en el borde izquierdo de su celda y no la tapa. La espera del
+mouse y el cierre a los 5 s corren con el `TimeProvider` de la pestaña, que las pruebas reemplazan.
 
 Interpretación del gate, aprobada por David con los deltas el 11/11/2026 a las 18:23: «la información completa» se lee como el dato entero de la
 celda tocada, no como la fila entera. Si quiere la fila entera, cambia el contenido del globo, no el mecanismo.

@@ -585,7 +585,7 @@ conservan sus propios teclados.
 
 | Consumos del día | La clave del día con su teclado | Configuración de un operador |
 |---|---|---|
-| ![La pestaña Consumos, la primera de once: los filtros y los tres consumos del día de «Persona sintética 01», sin ningún código](docs/capturas/15-consumos-del-dia.jpg) | ![El diálogo «Clave del día» con la clave enmascarada y el teclado numérico en pantalla](docs/capturas/17-teclado-clave.jpg) | ![Configuración abierta con el código de «Operador sintético 01»: sólo Consumos, Personas e Impresora, con el operador a la vista y «Salir»](docs/capturas/18-configuracion-operador.jpg) |
+| ![La pestaña Consumos, la primera de once: los filtros y tres consumos, cada uno en un renglón, con la persona y la opción largas cortadas con «…» y sin ningún código](docs/capturas/15-consumos-del-dia.jpg) | ![El diálogo «Clave del día» con la clave enmascarada y el teclado numérico en pantalla](docs/capturas/17-teclado-clave.jpg) | ![Configuración abierta con el código de «Operador sintético 01»: sólo Consumos, Personas e Impresora, con el operador a la vista y «Salir»](docs/capturas/18-configuracion-operador.jpg) |
 
 Las 18 las sacó el 11/11/2026 un recorrido por CDP sobre el EXE publicado desde `d50cb4d`, la punta con los nueve
 changes del cierre, a 1024 × 768 y en JPEG a escala CSS con calidad 85, con una carpeta de datos nueva: las del flujo
