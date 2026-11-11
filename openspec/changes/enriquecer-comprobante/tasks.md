@@ -41,12 +41,15 @@
 
 ## 4. El puesto compilado, documentos y verificación integral
 
-- [ ] 4.1 E2E nueva a 1024 × 768: guardar los datos del comprobante con correlativo, medir sus campos y su «Guardar» contra
+- [x] 4.1 E2E nueva a 1024 × 768: guardar los datos del comprobante con correlativo, medir sus campos y su «Guardar» contra
   los de los textos, confirmar un consumo y leer en el comprobante en pantalla el puesto, el número 1000, el comensal y una
-  frase, con capturas miradas (D8). Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde.
-- [ ] 4.2 `readme.md` (el comprobante, con el algoritmo del código) y la fila que corresponda de
+  frase, con capturas miradas (D8). Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests` en verde. Hecho:
+  `ComprobanteE2ETests` en verde. Encontró la columna de rótulos de cada sección de ancho distinto (los campos nuevos
+  empezaban 105 px más a la derecha) y el «desde» corto: las dos con la columna de 12,5 em y el «desde» hasta el borde;
+  todos los campos desde x 273,5 hasta x 960, de 56 px y 18 px de letra; el comprobante en pantalla termina en 426 px.
+- [x] 4.2 `readme.md` (el comprobante, con el algoritmo del código) y la fila que corresponda de
   `docs/aplicacion-del-curso.md`. Verifica: el chequeo de enlaces de D8 de `mostrar-aplicacion-del-curso` con su control
-  negativo, `enlaces rotos: 0`.
+  negativo, `enlaces rotos: 0`. Hecho: 0, con el control en 2.
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.

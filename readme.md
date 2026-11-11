@@ -210,7 +210,8 @@ receptor, en la ventana:
    REFRIGERIO: «Tu consumo está registrado. El comprobante queda pendiente».
 5. La impresora en «Disponible» y, en Consumos, «Ver» en la fila del paso 4: el comprobante en pantalla, marcado COPIA
    EN PANTALLA, sin pedir un operador ni imprimir. «Recuperar» en esa fila pide el código de un operador: `9001` e
-   «Ingresar» lo saca como el mismo trabajo. «Reimprimir», con un motivo, saca una copia con la leyenda DUPLICADO.
+   «Ingresar» lo saca como el mismo trabajo. «Reimprimir», con un motivo, saca una copia con la leyenda REIMPRESIÓN y
+   «Habilitó:» con el nombre del operador.
    «Salir», cerrar Configuración o 30 s sin tocar la pestaña terminan la sesión del operador.
 6. «Salir» y, en Consumos, «Reimprimir» en una fila y `9002` e «Ingresar»: «Tu permiso de operador está vencido». «Buscar» con el
    número de una fila y «Consultar» dejan sólo esa; «Exportar CSV» pide la carpeta la primera vez y deja ahí el archivo.
@@ -317,14 +318,14 @@ Códigos sintéticos:
 
 El comprobante sale después del commit hacia una impresora simulada, que escribe un archivo de texto por
 copia en `%LOCALAPPDATA%\INComedor\demo\comprobantes\` (`<TicketId>-<copia>.txt`). Cuando sale, la pantalla
-muestra además una impresora de la que sale el comprobante, con la opción, la fecha y el cargo y sin el nombre;
-tocarlo equivale a «Listo», y con movimiento reducido aparece sin animación. Los modos de la impresora
+muestra además una impresora de la que sale el comprobante, con el nombre del comensal, la opción, la fecha, el cargo y
+una frase, nunca con el código; tocarlo equivale a «Listo», y con movimiento reducido aparece sin animación. Los modos de la impresora
 (Disponible, Sin papel o Incierta) están en Configuración. Con «Sin papel», el consumo queda registrado y el
 comprobante, pendiente, sin comprobante en pantalla. La pantalla de reposo ya no tiene «Asistencia»: en Consumos de
 Configuración, cada fila tiene «Ver», que muestra el comprobante en pantalla marcado COPIA EN PANTALLA, sin imprimir ni
 crear una copia, y «Reimprimir», que pide el código de un operador con `OPERATOR` vigente, salvo que ese operador haya
 entrado a Configuración con su código. Reimprime con un motivo de una lista fija, y la copia sale con la leyenda
-DUPLICADO y su número. Si el original falló, «Recuperar» lo saca otra vez como el mismo trabajo y no como una copia nueva.
+REIMPRESIÓN, su número y «Habilitó:» con el nombre del operador. Si el original falló, «Recuperar» lo saca otra vez como el mismo trabajo y no como una copia nueva.
 
 Todo lo que pasa en el puesto queda primero en la base y después, fuera de la atención, en dos bitácoras de texto
 por mes en `%LOCALAPPDATA%\INComedor\demo\bitacoras\<KioskId>\`: `INComedor-interacciones-AAAAMM.log` (cada
@@ -487,6 +488,20 @@ una atención; y los **textos del comprobante**: el encabezado (de 1 a 40 caract
 defecto) y el pie (hasta 60), en `impresora.json` de la carpeta de datos, que se aplican desde el próximo comprobante,
 en la impresora y en pantalla, también a una copia. Cada prueba (`PRINTER_TESTED`) y cada guardado (`TICKET_TEXTS`)
 quedan en la general.
+
+**El comprobante.** De arriba abajo: el encabezado; el número y el nombre del puesto, si se guardaron en «Datos del
+comprobante» de Impresora; «ORIGINAL» o «REIMPRESIÓN · copia N» con el número del comprobante; el nombre del comensal,
+tomado al confirmar y guardado con el comprobante, así una copia repite el de ese día; la opción, la fecha y el cargo;
+en una copia, «Habilitó:» con el nombre del operador que la pidió; una de 50 frases cálidas, siempre la misma para el
+mismo comprobante; y el pie. Nunca el código de identificación. **El número del comprobante** se elige en «Datos del
+comprobante»: «El código de siempre» o «Correlativo desde» un número de 1 a 999.999.999. El código de siempre sale así:
+al confirmar, el puesto crea el identificador del comprobante con un GUID versión 4 (122 bits al azar) y el comprobante
+muestra sus primeros ocho caracteres hexadecimales; no es correlativo, y la chance de que dos comprobantes muestren los
+mismos ocho es de una en unos 4.300 millones por par, aunque el identificador completo, el que guarda la base, no se
+repite. Con correlativo, cada confirmación toma, en su transacción, el mayor número ya emitido más uno, nunca menor que
+el «desde»: dos confirmaciones no toman el mismo y bajar el «desde» no reusa números. Consumos muestra el número y lo
+encuentra al buscar. El número y el nombre del puesto y la numeración son del equipo: viven en `puesto.json` de la
+carpeta de datos, no viajan en un resguardo y cada guardado queda en la general como `TICKET_DATA`.
 
 **Consumos en Configuración.** La pestaña Consumos muestra los consumos de las últimas 24 horas, del más reciente al
 más antiguo, con la fecha y la hora, el número del comprobante, la persona y la opción como eran al consumir, el
