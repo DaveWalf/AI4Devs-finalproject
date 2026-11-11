@@ -1,12 +1,14 @@
 ## 1. El lector sin pantalla
 
-- [ ] 1.1 `ConfiguracionLector` con su validación y `AlmacenLector` (`lector.json`), validado al leer y al guardar (D3);
+- [x] 1.1 `ConfiguracionLector` con su validación y `AlmacenLector` (`lector.json`), validado al leer y al guardar (D3);
   el armado de tramas con el terminador, el largo, los caracteres, el resto viejo y el relleno (D4). Pruebas nuevas
   vistas fallar primero. Verifica: `dotnet test --project tests/Intelektron.INComedor.Kiosk.Tests` en verde.
-- [ ] 1.2 `IPuertoSerie`, `PuertoSimulado` y `PuertoSerieDelSistema` con `System.IO.Ports` `11.0.0`, y el servicio
+- [x] 1.2 `IPuertoSerie`, `PuertoSimulado` y `PuertoSerieDelSistema` con `System.IO.Ports` `11.0.0`, y el servicio
   `LectorIdentificacion`: abre, reintenta cada 5 segundos, publica el estado y cada lectura, y registra
   `READER_STATE_CHANGED` (D1, D2 y D9). Pruebas nuevas con el puerto simulado vistas fallar primero; ninguna abre un
-  puerto COM. Verifica: Kiosk en verde.
+  puerto COM. Verifica: Kiosk en verde. Hecho (1.1 y 1.2): `LectorTests` (8), las ocho vistas fallar contra un esqueleto
+  con `NotImplementedException`; `System.IO.Ports` 11.0.0 en `Directory.Packages.props` y en el `Kiosk`, sin avisos de
+  NuGet Audit con `-warnaserror`.
 
 ## 2. La lectura en la atención
 
