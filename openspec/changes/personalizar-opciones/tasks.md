@@ -1,10 +1,13 @@
 ## 1. La presentación de las opciones
 
-- [ ] 1.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: `AlmacenPresentacionOpciones` guarda y lee el color, la
+- [x] 1.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: `AlmacenPresentacionOpciones` guarda y lee el color, la
   imagen (por su huella, en `opciones\`), la transparencia y el precio visible de una opción; descarta un color fuera de
   la paleta, una transparencia fuera de los cuatro pasos y una imagen que no existe; sin archivo, ninguna opción
   personalizada (D3). Verifica: rojo antes y verde después.
-- [ ] 1.2 `PresentacionOpciones` y `AlmacenPresentacionOpciones`, registrado en la ventana. Verifica: 1.1 en verde.
+  - `PresentacionOpcionesTests` (5) contra el esqueleto: `total: 5`, `error: 5` (`NotImplementedException`).
+- [x] 1.2 `PresentacionOpciones` y `AlmacenPresentacionOpciones`, registrado en la ventana. Verifica: 1.1 en verde.
+  - Escritura atómica como el estilo visual; la imagen se revalida con las reglas de los logos al leerla, y un nombre que
+    no es una huella con su extensión (por ejemplo `..\..\secreto.png`) no se abre. `total: 5`, `error: 0`.
 
 ## 2. La pestaña Opciones
 
