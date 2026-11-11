@@ -58,7 +58,9 @@ Configuración: lo guarda `PanelConfiguracion`, porque en lectura el panel se vu
 debajo de la tabla, dentro del panel, con las teclas de una fila del mismo ancho (D8 de prolijidad). Corta el largo como
 el campo: el nombre hasta 80, el código hasta 20 y el límite en dos dígitos. El código de una persona nueva no se dibuja
 (D10 de administrar-personas-y-opciones): el teclado le pone el valor al campo como propiedad del DOM con
-`incomedor.ponerValor` (`wwwroot/js/puesto.js`), sin atributo ni árbol de render, así que se ve enmascarado y lo que se
+`incomedor.ponerValor` (`wwwroot/js/puesto.js`), sin atributo ni árbol de render, y el foco del límite tocado lo pone
+`incomedor.enfocar`; los dos buscan el campo por su `data-campo`, sin referencias de Blazor, que agregan a la página un
+identificador al azar, así que se ve enmascarado y lo que se
 tipee después con un teclado físico lo continúa. Descartar una fila nueva corre el campo elegido si venía después. Queda
 abierto si el teclado táctil de Windows aparece igual al tocar un campo (`inputmode`): depende de la configuración del
 equipo y lo ve David en su monitor.

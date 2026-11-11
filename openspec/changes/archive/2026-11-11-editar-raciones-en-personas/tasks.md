@@ -106,3 +106,10 @@
     del límite, ocultar entre pestañas y la carpeta sin escritura). Las demás nuevas cubren comportamiento que ya andaba
     (cancelar la elección, el cambio de 9001, reabrir Configuración). Sobre las correcciones: Sqlite 240 de 240, Kiosk
     450 de 450, y las E2E de Personas y de administración en verde.
+  - La integral sobre `67a4f1d` encontró dos cosas que las corridas en Debug no veían. Una prueba nueva que el analizador
+    de xUnit rechaza con `-warnaserror` (`xUnit2031`), corregida. Y `PanelPersonasTests.Ningun_codigo_en_el_panel`
+    (existente, sin cambios) cayó una vez en Release: cada `@ref` agrega en bUnit un atributo `blazor:elementreference` con
+    un identificador al azar, y uno contenía «9002». No era un código filtrado sino una prueba que se volvía inestable por
+    este change; se quitaron todos los `@ref` del panel: el foco y el valor del código los ponen `incomedor.enfocar` e
+    `incomedor.ponerValor` buscando el campo por su `data-campo`, y las pruebas nuevas que los usan ponen el JSInterop de
+    bUnit en modo permisivo. Kiosk 450 de 450 en Debug y en Release, y la E2E del 2a en verde.

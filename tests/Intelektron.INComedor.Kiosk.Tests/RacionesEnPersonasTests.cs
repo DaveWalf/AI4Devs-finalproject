@@ -20,6 +20,7 @@ public class RacionesEnPersonasTests
     public async Task La_fila_de_0001_en_x_de_n()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
 
         await AbrirPersonas(pantalla);
@@ -33,6 +34,7 @@ public class RacionesEnPersonasTests
     public async Task Lo_usado_hoy_en_cada_cupo()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await Consumir(pantalla);
 
@@ -45,6 +47,7 @@ public class RacionesEnPersonasTests
     public async Task Tocar_un_cupo_lo_edita()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await AbrirPersonas(pantalla);
 
@@ -64,6 +67,7 @@ public class RacionesEnPersonasTests
     public async Task Exportar_personas_a_csv()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var destino = Preparar(puesto);
         var pantalla = puesto.Dibujar();
         await AbrirPersonas(pantalla);
@@ -88,6 +92,7 @@ public class RacionesEnPersonasTests
     public async Task Exportar_personas_a_excel()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var destino = Preparar(puesto);
         var pantalla = puesto.Dibujar();
         await AbrirPersonas(pantalla);
@@ -102,6 +107,7 @@ public class RacionesEnPersonasTests
     public async Task Una_carpeta_que_no_se_puede_escribir()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var destino = Preparar(puesto);
         var pantalla = puesto.Dibujar();
         await AbrirPersonas(pantalla);
@@ -131,6 +137,7 @@ public class RacionesEnPersonasTests
     public async Task Cancelar_la_eleccion()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         puesto.Contexto.Services.AddSingleton(new AlmacenExportacion(puesto.Carpeta));
         puesto.Contexto.Services.AddSingleton<IElectorCarpeta>(new ElectorQueCancela());
         var pantalla = puesto.Dibujar();
@@ -146,6 +153,7 @@ public class RacionesEnPersonasTests
     public async Task Un_cupo_cambiado_por_9001()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await EntradaConfiguracion.Entrar(pantalla, "9001");
         await pantalla.Find("#pestana-personas").ClickAsync(new());

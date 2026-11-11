@@ -19,6 +19,7 @@ public class TecladoEnPersonasTests
     public async Task Escribir_un_nombre_con_el_teclado()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await Editar(pantalla);
 
@@ -36,6 +37,7 @@ public class TecladoEnPersonasTests
     public async Task Una_letra_en_el_limite()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-personas").ClickAsync(new MouseEventArgs());
@@ -53,6 +55,7 @@ public class TecladoEnPersonasTests
     public async Task Ocultar_el_teclado()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await Editar(pantalla);
         Assert.NotNull(pantalla.Find(".teclado-en-pantalla"));
@@ -73,6 +76,7 @@ public class TecladoEnPersonasTests
     public async Task Reabrir_configuracion_muestra_el_teclado()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await Editar(pantalla);
         await pantalla.Find("#ocultar-teclado").ClickAsync(new MouseEventArgs());
@@ -87,6 +91,7 @@ public class TecladoEnPersonasTests
     public async Task El_codigo_con_el_teclado()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         puesto.Contexto.JSInterop.SetupVoid("incomedor.ponerValor", _ => true).SetVoidResult();
         var pantalla = puesto.Dibujar();
         await Editar(pantalla);
@@ -112,6 +117,7 @@ public class TecladoEnPersonasTests
     public async Task El_limite_no_pasa_de_dos_digitos()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-personas").ClickAsync(new MouseEventArgs());
@@ -129,6 +135,7 @@ public class TecladoEnPersonasTests
     public async Task Descartar_no_cambia_el_campo_elegido()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await Editar(pantalla);
         await pantalla.Find("#agregar-persona").ClickAsync(new MouseEventArgs());
@@ -140,7 +147,7 @@ public class TecladoEnPersonasTests
         await primera.QuerySelector("button.quitar-persona")!.ClickAsync(new MouseEventArgs());
         await Tecla(pantalla, "X").ClickAsync(new MouseEventArgs());
 
-        var queda = Assert.Single(pantalla.FindAll("tr.persona").Where(f => f.QuerySelector("input.codigo-persona") is not null));
+        var queda = Assert.Single(pantalla.FindAll("tr.persona"), f => f.QuerySelector("input.codigo-persona") is not null);
         Assert.Equal("x", queda.QuerySelector("input.nombre-persona")!.GetAttribute("value"));
     }
 
@@ -148,6 +155,7 @@ public class TecladoEnPersonasTests
     public async Task Solo_al_editar()
     {
         using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
         var pantalla = puesto.Dibujar();
         await EntradaConfiguracion.Entrar(pantalla);
         await pantalla.Find("#pestana-personas").ClickAsync(new MouseEventArgs());

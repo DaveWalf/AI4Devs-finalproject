@@ -84,7 +84,7 @@
                                     <input class="limite @(EsElegido(TipoCampo.Limite, indice, columna) ? "elegido" : null)" type="number" inputmode="numeric" min="0"
                                            max="@AdministracionLocal.LimiteMaximo" aria-label="@($"Límite diario de {NombrePar(_pares[columna])}")"
                                            value="@fila.Limites[columna]" aria-invalid="@MarcaCupo(indice, columna)"
-                                           @ref="_referenciasLimite[(indice, columna)]" @onfocus="() => Elegir(TipoCampo.Limite, indice, columna)"
+                                           data-campo="@($"limite-{indice}-{columna}")" @onfocus="() => Elegir(TipoCampo.Limite, indice, columna)"
                                            @oninput="e => fila.Limites[columna] = Texto(e)" />
                                 }
                                 else if (PuedeEditar && !_vista.SoloLectura)
@@ -111,7 +111,7 @@
                                     @* Sin value: lo tipeado no vuelve a dibujarse (D10 de administrar-personas-y-opciones). *@
                                     <input class="codigo-persona @(EsElegido(TipoCampo.Codigo, indice) ? "elegido" : null)" type="password" inputmode="numeric" pattern="[0-9]*"
                                            autocomplete="off" aria-label="Código" maxlength="@AdministracionLocal.LargoCodigo" aria-invalid="@Marca(indice, "Codigo")"
-                                           @ref="_referenciasCodigo[indice]" @onfocus="() => Elegir(TipoCampo.Codigo, indice)" @oninput="e => fila.Codigo = Texto(e)" />
+                                           data-campo="@($"codigo-{indice}")" @onfocus="() => Elegir(TipoCampo.Codigo, indice)" @oninput="e => fila.Codigo = Texto(e)" />
                                 }
                             </td>
                             <td>
@@ -171,9 +171,7 @@
     private bool _ordenAscendente = true;
     private bool? _editandoCargado;
     private CampoElegido? _elegido;
-    private readonly Dictionary<int, ElementReference> _referenciasCodigo = [];
     private bool _enfocarElegido;
-    private readonly Dictionary<(int, int), ElementReference> _referenciasLimite = [];
 
     [Parameter, EditorRequired]
     public AdministracionLocal Administracion { get; set; } = null!;
@@ -235,11 +233,17 @@
     /// <summary>El campo elegido al tocar un cupo recibe el foco cuando la edición ya está dibujada (D2).</summary>
     protected override async Task OnAfterRenderAsync(bool primera)
     {
-        if (_enfocarElegido && Editable && _elegido is { Tipo: TipoCampo.Limite } elegido
-            && _referenciasLimite.TryGetValue((elegido.Fila, elegido.Columna), out var campo))
+        if (_enfocarElegido && Editable && _elegido is { Tipo: TipoCampo.Limite } elegido)
         {
             _enfocarElegido = false;
-            await campo.FocusAsync();
+            try
+            {
+                await JS.InvokeVoidAsync("incomedor.enfocar", $"[data-campo='limite-{elegido.Fila}-{elegido.Columna}']");
+            }
+            catch (JSException)
+            {
+                // Sin foco, el campo sigue elegido: el teclado en pantalla escribe igual.
+            }
         }
     }
 
@@ -313,16 +317,13 @@
                 fila.Codigo = nuevo;
                 // El código no se dibuja (D10 de administrar-personas-y-opciones): el teclado le pone el valor al campo como
                 // propiedad del DOM, para que se vea enmascarado y lo tipeado después con un teclado físico lo continúe.
-                if (_referenciasCodigo.TryGetValue(campo.Fila, out var referencia))
+                try
                 {
-                    try
-                    {
-                        await JS.InvokeVoidAsync("incomedor.ponerValor", referencia, nuevo);
-                    }
-                    catch (JSException)
-                    {
-                        // El código ya está en la fila y se guarda igual; sólo el campo no lo muestra enmascarado.
-                    }
+                    await JS.InvokeVoidAsync("incomedor.ponerValor", $"[data-campo='codigo-{campo.Fila}']", nuevo);
+                }
+                catch (JSException)
+                {
+                    // El código ya está en la fila y se guarda igual; sólo el campo no lo muestra enmascarado.
                 }
 
                 break;
