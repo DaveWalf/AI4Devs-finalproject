@@ -40,9 +40,11 @@
 - [x] 4.2 `readme.md` (General) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
   enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`. Hecho: 0, con el control
   en 2.
-- [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
+- [x] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
-  los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+  los totales por proyecto pegados, y la lista de pruebas existentes cambiadas. Hecho sobre `4b10630` (05:49 a 05:57):
+  validate 16, build sin advertencias, el paquete con su E2E y 1000 de 1000 (Contracts 23, Domain 91, Sqlite 279, Kiosk
+  507, Sync.Api 62, E2E 38); cambió `PuntoFinalTests`. La final, después del archivado, va en el PR.
 
 ## 5. La verificación
 
