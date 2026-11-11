@@ -29,6 +29,9 @@ public sealed record RevisionOpciones(IReadOnlyList<ErrorImportacion> Errores, I
     public int SinCambios => Opciones.Count(o => o.Accion == AccionOpcionImportada.SinCambios);
 
     public int Quitadas => Opciones.Count(o => o.Accion == AccionOpcionImportada.Quitada);
+
+    /// <summary>Cuántas filas siguen siendo las de la planilla base, que se agregarían como opciones (D5).</summary>
+    public int FilasDeEjemplo { get; init; }
 }
 
 /// <summary>Lo que dejó una importación de Opciones aplicada: el guardado y cada opción con su id.</summary>
@@ -53,6 +56,9 @@ public sealed partial class ImportacionOpciones
     public const string ColumnaCargas = "Cargas";
     public const string SufijoUnidades = ": unidades";
 
+    /// <summary>El nombre de las filas de la planilla base, seguido de su número (D5).</summary>
+    public const string NombreDeEjemplo = "Opción de ejemplo";
+
     private static readonly CultureInfo EnEspanol = CultureInfo.GetCultureInfo("es-AR");
 
     /// <summary>La hoja «Instrucciones» de la planilla base y de la exportación, una oración por fila (D5).</summary>
@@ -64,7 +70,9 @@ public sealed partial class ImportacionOpciones
         "«Servicio» es el nombre de un servicio del puesto, como figura en la pestaña Opciones.",
         "«Importe» es lo que paga el empleado en pesos, de 0 a 9.999.999,99; con 0, la opción no muestra importe.",
         "Cada columna «…: unidades» es cuántas unidades de ese cupo consume la opción, de 1 a 9; vacía o 0, ninguna, y cada opción necesita al menos una.",
+        "Si se borra la columna de una categoría, las opciones que ya estaban conservan sus cargas de esa categoría.",
         "«Franjas» son los horarios en que se ofrece, como «11:00 a 14:00; 18:00 a 21:00»; vacía, todo el día.",
+        "Las dos filas de ejemplo se pueden reemplazar o borrar: si quedan, se agregan como opciones.",
         "Antes de aplicar, el puesto muestra un resumen con las opciones nuevas, las modificadas y las que se quitan.",
     ];
 
@@ -99,7 +107,7 @@ public sealed partial class ImportacionOpciones
 
         return EscritorPlanilla.EscribirLibro(carpeta, Raiz("INComedor-planilla-opciones-", zona),
         [
-            new HojaPlanilla(HojaOpciones, Encabezado(vista), [Ejemplo("Opción de ejemplo 1", 1500, "11:00 a 14:00"), Ejemplo("Opción de ejemplo 2", 0, string.Empty)]),
+            new HojaPlanilla(HojaOpciones, Encabezado(vista), [Ejemplo(NombreDeEjemplo + " 1", 1500, "11:00 a 14:00"), Ejemplo(NombreDeEjemplo + " 2", 0, string.Empty)]),
             HojaDeInstrucciones(),
         ]);
     }
@@ -142,10 +150,15 @@ public sealed partial class ImportacionOpciones
         }
 
         var existentes = new Dictionary<string, OpcionAdministrada>(StringComparer.Ordinal);
+        var exactas = new Dictionary<string, OpcionAdministrada>(StringComparer.Ordinal);
         foreach (var opcion in vista.Opciones)
         {
             existentes.TryAdd(ImportacionPersonas.Normalizar(opcion.Nombre), opcion);
+            exactas.TryAdd(opcion.Nombre, opcion);
         }
+
+        var categoriasDelArchivo = columnas.Categorias.Select(c => c.Categoria).ToHashSet();
+        var filasDeEjemplo = 0;
 
         var opciones = new List<OpcionImportada>();
         var ediciones = new List<EdicionOpcion>();
@@ -166,6 +179,11 @@ public sealed partial class ImportacionOpciones
             var erroresAntes = errores.Count;
 
             var nombre = Celda(columnas.Nombre);
+            if (nombre.StartsWith(NombreDeEjemplo + " ", StringComparison.Ordinal))
+            {
+                filasDeEjemplo++;
+            }
+
             if (AdministracionLocal.ValidarTexto(nombre, AdministracionLocal.LargoNombreOpcion) is { } errorNombre)
             {
                 errores.Add(new ErrorImportacion(numero, ColumnaNombre, errorNombre));
@@ -202,10 +220,11 @@ public sealed partial class ImportacionOpciones
             }
 
             var cargas = new List<CargaEditada>();
+            var erroresAntesDeUnidades = errores.Count;
             foreach (var (columna, categoria, titulo) in columnas.Categorias)
             {
                 var valor = Celda(columna);
-                if (valor.Length == 0 || valor == "0")
+                if (valor.Length == 0)
                 {
                     continue;
                 }
@@ -218,13 +237,21 @@ public sealed partial class ImportacionOpciones
                 {
                     errores.Add(new ErrorImportacion(numero, titulo, FueraDeRango));
                 }
-                else
+                else if (unidades > 0)
                 {
+                    // «0» o «00»: sin carga en esa categoría.
                     cargas.Add(new CargaEditada(categoria, unidades));
                 }
             }
 
-            if (cargas.Count == 0 && errores.Count == erroresAntes)
+            var existente = exactas.GetValueOrDefault(nombre) ?? existentes.GetValueOrDefault(ImportacionPersonas.Normalizar(nombre));
+            if (existente is not null)
+            {
+                cargas.InsertRange(0, existente.Cargas.Where(c => !categoriasDelArchivo.Contains(c.CategoriaId)).Select(c => new CargaEditada(c.CategoriaId, c.Unidades)));
+            }
+
+            // «Sin cargas» sólo si ninguna celda de unidades tuvo su propio error: si no, sería el mismo error dicho dos veces.
+            if (cargas.Count == 0 && errores.Count == erroresAntesDeUnidades)
             {
                 errores.Add(new ErrorImportacion(numero, ColumnaCargas, Requerido));
             }
@@ -241,7 +268,7 @@ public sealed partial class ImportacionOpciones
             }
 
             var edicion = new EdicionOpcion(null, nombre, servicioId, importe, cargas, franjas);
-            if (existentes.TryGetValue(ImportacionPersonas.Normalizar(nombre), out var existente) && reconocidas.Add(existente.Id))
+            if (existente is not null && reconocidas.Add(existente.Id))
             {
                 var igual = existente.Nombre == nombre && existente.ServicioId == servicioId && existente.ImporteUnidadesMenores == importe
                     && existente.Cargas.Select(c => (c.CategoriaId, c.Unidades)).ToHashSet().SetEquals(cargas.Select(c => (c.CategoriaId, c.Unidades)))
@@ -279,7 +306,7 @@ public sealed partial class ImportacionOpciones
                 quitada.Franjas.Select(f => new FranjaEditada(Hora(f.Inicio), Hora(f.Fin))).ToList(), Quitar: true));
         }
 
-        return new RevisionOpciones([], opciones, ediciones);
+        return new RevisionOpciones([], opciones, ediciones) { FilasDeEjemplo = filasDeEjemplo };
     }
 
     /// <summary>
@@ -354,17 +381,33 @@ public sealed partial class ImportacionOpciones
             return 0;
         }
 
+        // Un texto lleva coma decimal y, si tiene puntos, de miles («1.800,50»): con otra forma («1800.50», «1.8»), es-AR
+        // ignoraría dónde cae el punto y leería otro importe.
+        decimal valor = 0;
         var leido = numerico
-            ? decimal.TryParse(texto, NumberStyles.Float, CultureInfo.InvariantCulture, out var valor)
-            : decimal.TryParse(texto, NumberStyles.AllowDecimalPoint | NumberStyles.AllowThousands, EnEspanol, out valor);
+            ? decimal.TryParse(texto, NumberStyles.Float, CultureInfo.InvariantCulture, out valor)
+            : ImporteEnTexto().IsMatch(texto) && decimal.TryParse(texto, NumberStyles.AllowDecimalPoint | NumberStyles.AllowThousands, EnEspanol, out valor);
         if (!leido)
         {
             error = NoSonDigitos;
             return 0;
         }
 
+        // El tope antes de multiplicar: un número enorme desbordaría el decimal.
+        if (valor < 0 || valor > AdministracionLocal.ImporteMaximo / Potencia(escala))
+        {
+            error = FueraDeRango;
+            return 0;
+        }
+
         var menores = valor * Potencia(escala);
-        if (menores != decimal.Truncate(menores) || menores < 0 || menores > AdministracionLocal.ImporteMaximo)
+        // Un número de Excel arrastra el ruido de la coma flotante (0,30000000000000004): se lleva a la escala si es ruido.
+        if (numerico && Math.Abs(menores - Math.Round(menores)) < 0.0001m)
+        {
+            menores = Math.Round(menores);
+        }
+
+        if (menores != decimal.Truncate(menores))
         {
             error = FueraDeRango;
             return 0;
@@ -460,8 +503,11 @@ public sealed partial class ImportacionOpciones
 
     private static RevisionOpciones Rechazo(IReadOnlyList<ErrorImportacion> errores) => new(errores, [], []);
 
-    [GeneratedRegex("^(\\d{1,2}:\\d{2})\\s*(?:a|-)\\s*(\\d{1,2}:\\d{2})$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex("^(\\d{1,2}:\\d{2})\\s*(?:a|-)\\s*(\\d{1,2}:\\d{2})\\z", RegexOptions.IgnoreCase)]
     private static partial Regex UnaFranja();
+
+    [GeneratedRegex("^(\\d{1,3}(\\.\\d{3})+|\\d+)(,\\d+)?\\z")]
+    private static partial Regex ImporteEnTexto();
 
     private sealed record Columnas(int Nombre, int Servicio, int Importe, int Franjas, IReadOnlyList<(int Columna, Guid Categoria, string Titulo)> Categorias);
 }

@@ -73,6 +73,9 @@ public class PuntoFinalTests
             MensajesAtencion.PlanillaBaseHecha("INComedor-planilla-opciones-20261111-120000.xlsx", @"C:\Exportaciones"),
             MensajesAtencion.ResumenImportacionOpciones("opciones.xlsx", 1, 1, 12, 1),
             MensajesAtencion.ImportacionOpcionesAplicada(2, 1, 1, 1),
+            MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo(1),
+            MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo(2),
+            .. ErroresDeImportacionOpciones.Select(MensajesAtencion.ErrorDeImportacionOpciones),
             .. ErroresDeImportacion.Select(MensajesAtencion.ErrorDeImportacion),
         ];
 
@@ -97,6 +100,7 @@ public class PuntoFinalTests
         nameof(MensajesAtencion.ImportacionCodigosComoNumero), nameof(MensajesAtencion.PresentacionGuardada),
         nameof(MensajesAtencion.ExportacionOpcionesHecha), nameof(MensajesAtencion.PlanillaBaseHecha),
         nameof(MensajesAtencion.ResumenImportacionOpciones), nameof(MensajesAtencion.ImportacionOpcionesAplicada),
+        nameof(MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo), nameof(MensajesAtencion.ErrorDeImportacionOpciones),
     ];
 
     /// <summary>Un error de cada clase: del archivo, del encabezado y de una fila, con cada motivo y uno desconocido.</summary>
@@ -110,10 +114,24 @@ public class PuntoFinalTests
         new(2, "Código", CodigosAdministracion.Requerido), new(3, "Código", CodigosAdministracion.Repetido),
         new(4, "Código", ImportacionPersonas.CodigoDadoDeBaja), new(5, "ALMUERZO: límite", CodigosAdministracion.FueraDeRango),
         new(4, "Código", ImportacionPersonas.CodigoComoNumero), new(4, "Código", ImportacionPersonas.MismaPersona),
-        new(0, "Opciones", CodigosAdministracion.Requerido), new(5, "Servicio", CodigosAdministracion.Desconocido),
-        new(6, "Franjas", CodigosAdministracion.HoraInvalida), new(7, "Franjas", CodigosAdministracion.FranjaVacia),
+
         new(6, "ALMUERZO: límite", CodigosAdministracion.NoSonDigitos), new(7, "Nombre", CodigosAdministracion.DemasiadoLargo),
         new(8, "Nombre", CodigosAdministracion.CaracterDeControl), new(9, "Nombre", "OTRO"),
+    ];
+
+    /// <summary>Un error de la importación de Opciones de cada clase, con cada motivo y uno desconocido.</summary>
+    private static readonly ErrorImportacion[] ErroresDeImportacionOpciones =
+    [
+        new(0, "Opciones", CodigosAdministracion.Requerido), new(0, "Archivo", PlanillaInvalidaException.NoEsUnLibro),
+        new(1, "Importe", CodigosAdministracion.Requerido), new(1, "C", CodigosAdministracion.Repetido),
+        new(1, "G", ImportacionPersonas.ColumnaDesconocida), new(1, "X", "OTRO"),
+        new(2, "Cargas", CodigosAdministracion.Requerido), new(3, "Nombre", CodigosAdministracion.Requerido),
+        new(4, "Nombre", CodigosAdministracion.Repetido), new(5, "Servicio", CodigosAdministracion.Desconocido),
+        new(6, "Importe", CodigosAdministracion.NoSonDigitos), new(7, "Importe", CodigosAdministracion.FueraDeRango),
+        new(8, "ALMUERZO: unidades", CodigosAdministracion.NoSonDigitos), new(9, "ALMUERZO: unidades", CodigosAdministracion.FueraDeRango),
+        new(10, "Franjas", CodigosAdministracion.HoraInvalida), new(11, "Franjas", CodigosAdministracion.FranjaVacia),
+        new(12, "Nombre", CodigosAdministracion.DemasiadoLargo), new(13, "Nombre", CodigosAdministracion.CaracterDeControl),
+        new(14, "Nombre", "OTRO"),
     ];
 
     private static readonly string[] MetodosSinPunto =

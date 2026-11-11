@@ -3,6 +3,8 @@ using System.Text.Json;
 using Bunit;
 using Intelektron.INComedor.Infrastructure.Sqlite;
 using Intelektron.INComedor.Kiosk.Atencion;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using static Intelektron.INComedor.Kiosk.Tests.PuestoDePrueba;
 
@@ -81,6 +83,9 @@ public class ImportarOpcionesTests
         var resumen = pantalla.Find("#resumen-importacion-opciones");
         Assert.Contains(MensajesAtencion.ResumenImportacionOpciones(Path.GetFileName(ruta), 1, 1, vista.Opciones.Count - 2, 1), resumen.TextContent, StringComparison.Ordinal);
         Assert.Equal(["Reemplazar", "Cancelar"], resumen.QuerySelectorAll(".acciones button").Select(b => b.TextContent.Trim()));
+        Assert.Equal([quitada.Nombre], resumen.QuerySelectorAll("#opciones-que-se-quitan li").Select(l => l.TextContent.Trim()));
+        Assert.Contains(MensajesAtencion.ReemplazarOpciones, resumen.TextContent, StringComparison.Ordinal);
+        Assert.Contains("principal", pantalla.Find("#importar-opciones-cancelar").ClassList);
         Assert.DoesNotContain(puesto.General(), l => Tipo(l) == "MENU_OPTIONS_IMPORTED");
 
         await pantalla.Find("#importar-opciones-reemplazar").ClickAsync(new());
@@ -97,6 +102,7 @@ public class ImportarOpcionesTests
         Assert.Equal(vista.Opciones.Count + 1, contexto.GetProperty("Options").GetArrayLength());
         Assert.All(contexto.GetProperty("Options").EnumerateArray(), o => Assert.NotEqual(Guid.Empty, o.GetProperty("OptionId").GetGuid()));
         Assert.Equal(3, puesto.General().Count(l => Tipo(l) == "CONFIGURATION_CHANGED" && ContextoDe(l).GetProperty("Setting").GetString() == "MENU_OPTION"));
+        Assert.DoesNotContain("Fruta de estación nueva", linea.GetRawText(), StringComparison.Ordinal);
     }
 
     [Fact(DisplayName = "administracion-local · Cancelar el resumen de Opciones: la versión activa no cambia y la general no tiene MENU_OPTIONS_IMPORTED")]
@@ -135,17 +141,138 @@ public class ImportarOpcionesTests
 
         Assert.Equal(
             [
-                MensajesAtencion.ErrorDeImportacion(new ErrorImportacion(2, "Nombre", CodigosAdministracion.Requerido)),
-                MensajesAtencion.ErrorDeImportacion(new ErrorImportacion(3, "Franjas", CodigosAdministracion.HoraInvalida)),
+                MensajesAtencion.ErrorDeImportacionOpciones(new ErrorImportacion(2, "Nombre", CodigosAdministracion.Requerido)),
+                MensajesAtencion.ErrorDeImportacionOpciones(new ErrorImportacion(3, "Franjas", CodigosAdministracion.HoraInvalida)),
             ],
             pantalla.FindAll("#errores-importacion-opciones li").Select(l => l.TextContent.Trim()));
         Assert.Empty(pantalla.FindAll("#importar-opciones-reemplazar"));
         var errores = ContextoDe(puesto.General().Single(l => Tipo(l) == "MENU_OPTIONS_IMPORT_REJECTED")).GetProperty("Errors");
         Assert.Equal(1, errores.GetProperty(CodigosAdministracion.Requerido).GetInt32());
         Assert.Equal(1, errores.GetProperty(CodigosAdministracion.HoraInvalida).GetInt32());
+        Assert.DoesNotContain(puesto.General(), l => Tipo(l) == "MENU_OPTIONS_IMPORTED");
 
         await pantalla.Find("#importar-opciones-cerrar").ClickAsync(new());
         Assert.Empty(pantalla.FindAll("#resumen-importacion-opciones"));
+    }
+
+    [Fact(DisplayName = "administracion-local · Una fila de Opciones con error: cada motivo se dice con los rangos de Opciones (el importe de 0 a 9.999.999,99, las unidades de 0 a 9), el servicio y la opción sin cargas")]
+    public async Task Los_errores_con_los_rangos_de_opciones()
+    {
+        using var puesto = Preparar();
+        var elector = Elector(puesto);
+        var pantalla = puesto.Dibujar();
+        var vista = puesto.Servicio.Administracion!.Leer();
+        object[] Fila(string nombre, string servicio, string importe, string almuerzo) =>
+            [nombre, servicio, importe, "", .. vista.Categorias.Select((c, i) => i == 0 ? (object)almuerzo : string.Empty)];
+        elector.Ruta = Planilla(puesto, vista,
+        [
+            Fila("Punto decimal", "ALMUERZO", "1800.50", "1"),
+            Fila("Milésimos", "ALMUERZO", "1.800,505", "1"),
+            Fila("Diez unidades", "ALMUERZO", "1.500,00", "10"),
+            Fila("Servicio raro", "POSTRE", "1.500,00", "1"),
+            Fila("Sin cargas", "ALMUERZO", "1.500,00", "0"),
+        ]);
+        await AbrirOpciones(pantalla);
+
+        await pantalla.Find("#importar-opciones").ClickAsync(new());
+
+        var categoria = vista.Categorias[0].Nombre + ": unidades";
+        Assert.Equal(
+            [
+                "Fila 2: el importe no es un número: escribilo como 1.800,00 o como número de Excel.",
+                "Fila 3: el importe tiene que ser de 0 a 9.999.999,99, con hasta dos decimales.",
+                $"Fila 4: «{categoria}» tiene que ser de 0 a 9.",
+                "Fila 5: el servicio no es uno del puesto.",
+                "Fila 6: la opción no tiene ninguna carga: completá las unidades de al menos una categoría.",
+            ],
+            pantalla.FindAll("#errores-importacion-opciones li").Select(l => l.TextContent.Trim()));
+    }
+
+    [Fact(DisplayName = "administracion-local · Reemplazar el catálogo: la opción quitada no se ofrece más y sus consumos siguen registrados")]
+    public async Task La_quitada_conserva_sus_consumos()
+    {
+        using var puesto = Preparar();
+        var elector = Elector(puesto);
+        var pantalla = puesto.Dibujar();
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#ingresar").ClickAsync(new());
+        var consumida = pantalla.FindAll(".opcion").First(o => o.QuerySelector(".cargo") is not null && o.TextContent.Contains("Barra", StringComparison.Ordinal));
+        var nombre = consumida.QuerySelector(".nombre")!.TextContent.Trim();
+        await consumida.ClickAsync(new());
+        await pantalla.Find("#confirmar").ClickAsync(new());
+        pantalla.WaitForAssertion(() => pantalla.Find("#listo"));
+        await pantalla.Find("#listo").ClickAsync(new());
+        var consumos = Contar(puesto, "tbComedorConsumos");
+        var vista = puesto.Servicio.Administracion!.Leer();
+        elector.Ruta = Planilla(puesto, vista, vista.Opciones.Where(o => o.Nombre != nombre).Select(o => Fila(vista, o)));
+        await AbrirOpciones(pantalla);
+        await pantalla.Find("#importar-opciones").ClickAsync(new());
+
+        await pantalla.Find("#importar-opciones-reemplazar").ClickAsync(new());
+
+        Assert.Equal(consumos, Contar(puesto, "tbComedorConsumos"));
+        await pantalla.Find("#cancelar-configuracion").ClickAsync(new());
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#ingresar").ClickAsync(new());
+        Assert.NotEmpty(pantalla.FindAll(".opcion"));
+        Assert.DoesNotContain(pantalla.FindAll(".opcion .nombre"), n => n.TextContent.Trim() == nombre);
+    }
+
+    [Fact(DisplayName = "administracion-local · Exportar el catálogo: el archivo exportado, vuelto a importar sin cambios, dice que la planilla no cambia nada y no crea versión")]
+    public async Task Exportar_e_importar_sin_cambios()
+    {
+        using var puesto = Preparar();
+        var destino = PrepararCarpeta(puesto);
+        var elector = Elector(puesto);
+        var pantalla = puesto.Dibujar();
+        await AbrirOpciones(pantalla);
+        await pantalla.Find("#exportar-opciones").ClickAsync(new());
+        elector.Ruta = Assert.Single(Directory.GetFiles(destino, "INComedor-opciones-*.xlsx"));
+        var version = puesto.Servicio.Administracion!.Leer().VersionConfiguracion;
+
+        await pantalla.Find("#importar-opciones").ClickAsync(new());
+        await pantalla.Find("#importar-opciones-reemplazar").ClickAsync(new());
+
+        Assert.Equal(MensajesAtencion.ImportacionSinCambios(version), pantalla.Find("#aviso-guardado").TextContent.Trim());
+        Assert.Equal(version, puesto.Servicio.Administracion.Leer().VersionConfiguracion);
+    }
+
+    [Fact(DisplayName = "administracion-local · Descargar la planilla base: importada tal cual, el resumen avisa que sus dos filas de ejemplo se agregarían como opciones")]
+    public async Task La_planilla_base_importada_avisa()
+    {
+        using var puesto = Preparar();
+        var destino = PrepararCarpeta(puesto);
+        var elector = Elector(puesto);
+        var pantalla = puesto.Dibujar();
+        await AbrirOpciones(pantalla);
+        await pantalla.Find("#planilla-opciones").ClickAsync(new());
+        elector.Ruta = Assert.Single(Directory.GetFiles(destino, "INComedor-planilla-opciones-*.xlsx"));
+
+        await pantalla.Find("#importar-opciones").ClickAsync(new());
+
+        Assert.Equal(MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo(2), pantalla.Find("#importacion-opciones-ejemplo").TextContent.Trim());
+    }
+
+    [Fact(DisplayName = "administracion-local · Cancelar el resumen de Opciones: Escape con el resumen abierto cierra Configuración y no aplica nada; con la edición abierta, el pie no ofrece exportar ni importar")]
+    public async Task Escape_y_el_pie_con_la_edicion()
+    {
+        using var puesto = Preparar();
+        PrepararCarpeta(puesto);
+        var elector = Elector(puesto);
+        var pantalla = puesto.Dibujar();
+        var vista = puesto.Servicio.Administracion!.Leer();
+        elector.Ruta = Planilla(puesto, vista, [["Una sola opción", "ALMUERZO", "1.500,00", "", .. vista.Categorias.Select((_, i) => i == 0 ? (object)"1" : string.Empty)]]);
+        await AbrirOpciones(pantalla);
+        await pantalla.Find("#abrir-opciones").ClickAsync(new());
+        Assert.Empty(pantalla.FindAll("#exportar-opciones"));
+        await pantalla.Find("#cancelar-panel").ClickAsync(new());
+        await pantalla.Find("#importar-opciones").ClickAsync(new());
+
+        await pantalla.Find("#importar-opciones-cancelar").KeyDownAsync(new KeyboardEventArgs { Key = "Escape" });
+
+        Assert.Empty(pantalla.FindAll("[role=\"dialog\"]"));
+        Assert.Equal(vista.VersionConfiguracion, puesto.Servicio.Administracion.Leer().VersionConfiguracion);
+        Assert.DoesNotContain(puesto.General(), l => Tipo(l) == "MENU_OPTIONS_IMPORTED");
     }
 
     [Fact(DisplayName = "administracion-local · Importar Opciones desde Excel: con INWeb como dueño de los datos, Opciones no ofrece «Importar Excel»")]
@@ -166,6 +293,15 @@ public class ImportarOpcionesTests
 
         Assert.NotNull(pantalla.Find("#exportar-opciones"));
         Assert.Empty(pantalla.FindAll("#importar-opciones"));
+    }
+
+    private static long Contar(PuestoDePrueba puesto, string tabla)
+    {
+        using var conexion = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={puesto.RutaBase};Pooling=False");
+        conexion.Open();
+        using var comando = conexion.CreateCommand();
+        comando.CommandText = $"SELECT COUNT(*) FROM {tabla}";
+        return (long)comando.ExecuteScalar()!;
     }
 
     private static PuestoDePrueba Preparar()

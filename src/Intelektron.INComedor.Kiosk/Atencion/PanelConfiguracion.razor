@@ -474,10 +474,25 @@
                     @if (revisionOpciones.Valida)
                     {
                         <p id="importacion-opciones-totales">@MensajesAtencion.ResumenImportacionOpciones(_archivoOpciones!, revisionOpciones.Agregadas, revisionOpciones.Modificadas, revisionOpciones.SinCambios, revisionOpciones.Quitadas)</p>
+                        @* Las que se quitan, por su nombre: un cambio de nombre es una quitada y una agregada (D2). *@
+                        @if (revisionOpciones.Quitadas > 0)
+                        {
+                            <ul id="opciones-que-se-quitan">
+                                @foreach (var quitada in revisionOpciones.Opciones.Where(o => o.Accion == AccionOpcionImportada.Quitada))
+                                {
+                                    <li>@quitada.Nombre</li>
+                                }
+                            </ul>
+                        }
+                        @if (revisionOpciones.FilasDeEjemplo > 0)
+                        {
+                            <p id="importacion-opciones-ejemplo" class="aviso">@MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo(revisionOpciones.FilasDeEjemplo)</p>
+                        }
                         <p>@MensajesAtencion.ReemplazarOpciones</p>
+                        @* «Reemplazar» quita opciones: el botón destacado y el foco van a «Cancelar». *@
                         <div class="acciones">
-                            <button id="importar-opciones-reemplazar" type="button" class="principal" @onclick="AplicarImportacionOpciones">Reemplazar</button>
-                            <button id="importar-opciones-cancelar" type="button" @onclick="CerrarImportacionOpciones">Cancelar</button>
+                            <button id="importar-opciones-reemplazar" type="button" @onclick="AplicarImportacionOpciones">Reemplazar</button>
+                            <button id="importar-opciones-cancelar" type="button" class="principal" @onclick="CerrarImportacionOpciones">Cancelar</button>
                         </div>
                     }
                     else
@@ -486,7 +501,7 @@
                         <ul id="errores-importacion-opciones">
                             @foreach (var error in revisionOpciones.Errores)
                             {
-                                <li>@MensajesAtencion.ErrorDeImportacion(error)</li>
+                                <li>@MensajesAtencion.ErrorDeImportacionOpciones(error)</li>
                             }
                         </ul>
                         <div class="acciones">
@@ -524,7 +539,7 @@
                 }
             }
             @* Exportar, importar y la planilla base de Opciones, en el pie como los de Personas (D6 de importar-opciones-desde-excel). *@
-            @if (_elegida == Pestana.Opciones && _panel is null && Administracion is not null && (PuedeExportarPersonas || PuedeImportarPersonas))
+            @if (_elegida == Pestana.Opciones && _panel is null && Operador is null && Administracion is not null && (PuedeExportarPersonas || PuedeImportarPersonas))
             {
                 <div class="exportar-personas archivos-opciones">
                     @if (PuedeExportarPersonas)
@@ -989,7 +1004,7 @@
     private void ImportarOpciones()
     {
         _mensajeArchivosOpciones = null;
-        if (ElectorArchivo!.Elegir(AlmacenExportacion?.Leer(), "Planilla de Opciones para importar") is not { } ruta)
+        if (ElectorArchivo!.Elegir(AlmacenExportacion?.Leer(), IElectorArchivo.TituloOpciones) is not { } ruta)
         {
             return;
         }
@@ -1353,7 +1368,7 @@
             _enfocarCartelOpciones = false;
             try
             {
-                await JS.InvokeVoidAsync("incomedor.enfocar", "#resumen-importacion-opciones .acciones button");
+                await JS.InvokeVoidAsync("incomedor.enfocar", "#resumen-importacion-opciones .acciones button.principal");
             }
             catch (JSException)
             {

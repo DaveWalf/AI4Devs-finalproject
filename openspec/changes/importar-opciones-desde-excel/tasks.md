@@ -7,7 +7,7 @@
   escrita) y las columnas que faltan o sobran; un archivo sin opciones; aplicar sin cambios no crea versión (D1 a D5).
   Verifica: rojo antes y verde después.
   - `ImportacionOpcionesTests` (6) contra el esqueleto: `total: 6`, `error: 6` (`NotImplementedException`).
-- [x] 1.2 `ExportacionOpciones` e `ImportacionOpciones`. Verifica: 1.1 en verde y `Infrastructure.Sqlite.Tests` entero.
+- [x] 1.2 `ImportacionOpciones` (exportar, la planilla base, revisar y aplicar). Verifica: 1.1 en verde y `Infrastructure.Sqlite.Tests` entero.
   - Las dos en `ImportacionOpciones` (exportar, la planilla base, revisar y aplicar), con el encabezado y la letra de
     columna de la importación de Personas, que pasan a internas. `Infrastructure.Sqlite.Tests`: `total: 268`, `error: 0`;
     build con `-warnaserror` sin advertencias.
@@ -32,7 +32,8 @@
 
 ## 3. El puesto compilado, documentos y verificación integral
 
-- [x] 3.1 E2E nueva a 1024 × 768: exportar, cambiar un importe en el archivo, importarlo con el diálogo de archivos, el
+- [x] 3.1 E2E nueva a 1024 × 768: exportar, cambiar el archivo (el nombre escrito de una opción, que se ubica en el XML
+  mejor que un número), importarlo con el diálogo de archivos, el
   resumen y «Reemplazar»; los tres botones del pie y los del resumen medidos, con capturas miradas (D7). Verifica: `dotnet
   test tests/Intelektron.INComedor.E2E.Tests` en verde.
   - `ImportarOpcionesE2ETests`: el cambio del archivo es el nombre escrito de «Almuerzo común» («Almuerzo Común»), la
@@ -46,6 +47,34 @@
   enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
   - `readme.md` (Opciones) y la fila de OWASP del mapa. Enlaces de los dos y del change: `enlaces rotos: 0`; el control
     negativo, `enlaces rotos: 2`.
-- [ ] 3.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
+- [x] 3.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+  - Sobre `c72fc28`, de 04:09 a 04:17: validate 16 de 16, build sin advertencias, el paquete con su E2E y `total: 973`,
+    `error: 0` (Contracts 23, Domain 91, Sqlite 268, Kiosk 492, Sync.Api 62, E2E 37). Prueba existente cambiada: sólo
+    `PuntoFinalTests`. La integral después de las correcciones y del archivado va en el PR.
+
+## 4. Correcciones de la verificación
+
+- [x] 4.1 Lo que marcó el agente de sólo lectura sobre `c72fc28` (3 críticos, 10 advertencias y 14 sugerencias), con
+  pruebas nuevas vistas fallar antes. Verifica: `Infrastructure.Sqlite.Tests` y `Kiosk.Tests` enteros en verde.
+  - El importe: un texto con otra forma que la de es-AR («1800.50», «1.8», «18.00») es `NOT_DIGITS` en vez de leerse
+    multiplicado; el tope se mira antes de multiplicar, así 28 dígitos dan `OUT_OF_RANGE` y no desbordan; el ruido de la
+    coma flotante de Excel se lleva a la escala. «00» unidades es ninguna carga. Una columna de categoría que falta
+    conserva esas cargas, como Personas. El nombre se reconoce primero exacto. El resumen cuenta las filas de ejemplo.
+    `ImportacionOpcionesTests` suma 4: `error: 4` antes de corregir (los importes, los valores que se leen bien, la columna
+    que falta y las filas de ejemplo).
+  - La pantalla: `MensajesAtencion.ErrorDeImportacionOpciones`, con los rangos de Opciones (los errores reusaban los de
+    Personas: «de 0 a 99», «ni el límite de un cupo»); el resumen nombra las que se quitan, avisa las filas de ejemplo y
+    destaca «Cancelar» con el foco; el pie de Opciones exige también que no haya un operador; el título del diálogo, una
+    constante de `IElectorArchivo`. `ImportarOpcionesTests` suma 5 y extiende 2 propias del change: en un worktree de
+    `c72fc28` con sólo la superficie, `total: 11`, `error: 4` (los textos de error en dos pruebas, los nombres que se
+    quitan y el aviso de la planilla base); la opción quitada sin ofrecer y con sus consumos, importar sin cambios,
+    Escape y el pie con la edición abierta fijan lo que ya andaba. `Kiosk.Tests`: `total: 497`; `Sqlite`: 272.
+  - La spec cita AT37 y AT47, suma el importe escrito de otra forma y aclara que el rechazo al aplicar queda como el de un
+    guardado a mano; el diseño, la columna que falta, el reconocimiento exacto primero, la forma del importe, las franjas
+    que se aceptan y la medida de los botones; el proposal, las tildes y el nombre de la clase.
+  - `PuntoFinalTests` clasifica también `ErrorDeImportacionOpciones` e `ImportacionOpcionesConFilasDeEjemplo`, con un
+    ejemplo de cada motivo de Opciones (antes iban en la lista de Personas).
+  - Quedan sin cambiar, con su porqué: `DialogoDeArchivosE2E` duplica el código de la E2E de Personas, que no se toca
+    sin que el comportamiento lo exija (decisión 13).

@@ -46,8 +46,8 @@ Ninguna.
 
 ## Impact
 
-- **Código**: `Infrastructure.Sqlite` (`ExportacionOpciones`, `ImportacionOpciones`, que reúsan `EscritorPlanilla`,
-  `LectorPlanilla` y la validación de `GuardarOpciones`) y `Kiosk` (los botones del pie de Opciones, el resumen en el
+- **Código**: `Infrastructure.Sqlite` (`ImportacionOpciones`, que exporta, escribe la planilla base e importa, y reúsa
+  `EscritorPlanilla`, `LectorPlanilla` y la validación de `GuardarOpciones`) y `Kiosk` (los botones del pie de Opciones, el resumen en el
   cartel de la importación y los registros). Sin migración.
 - **Pruebas**: nuevas en `Infrastructure.Sqlite.Tests`, `Kiosk.Tests` y una E2E a 1024 × 768. Pruebas existentes que
   pueden cambiar (decisión 13): `PuntoFinalTests`, si se suman métodos a `MensajesAtencion`.
@@ -57,14 +57,18 @@ Ninguna.
 
 Opciones recomendadas, aplicadas sin esperar:
 
-1. Una opción del archivo se reconoce por su nombre, sin distinguir mayúsculas ni espacios de más: las opciones no
+1. Una opción del archivo se reconoce por su nombre, sin distinguir mayúsculas, espacios de más ni tildes: las opciones no
    tienen código, y el nombre es lo que se ve en la atención. Un nombre repetido en el archivo es un error.
 2. «Reemplazar» es el único modo: lo pide la mejora. La opción que no está en el archivo se quita del catálogo activo y sus
    consumos quedan registrados, como al quitarla a mano.
-3. Las cargas van en una columna por categoría de cupo («<CATEGORÍA>: unidades»), vacía o cero sin carga; las franjas,
-   en una columna de texto («11:00 a 14:00; 18:00 a 21:00»), vacía para todo el día.
-4. El importe se lee como número de Excel o como texto con coma decimal («1.800,00»), en pesos.
+3. Las cargas van en una columna por categoría de cupo («<CATEGORÍA>: unidades»), vacía o cero sin carga, y una columna
+   que falta deja esas cargas como estaban, como en Personas; las franjas, en una columna de texto («11:00 a 14:00;
+   18:00 a 21:00»), vacía para todo el día.
+4. El importe se lee como número de Excel o como texto con coma decimal («1.800,00»), en pesos; un texto con punto
+   decimal («1800.50») es un error, porque se leería otro importe.
 5. Un cambio de nombre es, para el archivo, una opción nueva y otra que se quita; la planilla de instrucciones lo dice.
 6. Un archivo sin ninguna opción es un error: dejaría la atención sin nada que ofrecer.
+7. (Agregada por la verificación.) El resumen nombra las opciones que se quitan, avisa si quedan las filas de la planilla
+   base, y destaca «Cancelar» con el foco, porque «Reemplazar» quita opciones.
 
 Talla: L. Si una prueba existente falla por otra razón, se para (cláusula del plan).

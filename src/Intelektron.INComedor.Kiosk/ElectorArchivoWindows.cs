@@ -16,7 +16,7 @@ public sealed class ElectorArchivoWindows : IElectorArchivo
     public const string Titulo = "Planilla de Personas para importar";
 
     /// <summary>El título del diálogo de Opciones (D6 de importar-opciones-desde-excel).</summary>
-    public const string TituloOpciones = "Planilla de Opciones para importar";
+    public const string TituloOpciones = IElectorArchivo.TituloOpciones;
 
     private readonly Window _ventana;
 

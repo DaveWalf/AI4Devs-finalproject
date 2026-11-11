@@ -7,6 +7,9 @@ namespace Intelektron.INComedor.Kiosk.Atencion;
 /// </summary>
 public interface IElectorArchivo
 {
+    /// <summary>El título del diálogo al importar Opciones (D6 de importar-opciones-desde-excel).</summary>
+    public const string TituloOpciones = "Planilla de Opciones para importar";
+
     string? Elegir(string? carpeta);
 
     /// <summary>

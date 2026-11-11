@@ -177,6 +177,72 @@ public class ImportacionOpcionesTests : IDisposable
         Assert.Equal(2, vista.Opciones.Single(o => o.Nombre == "Número").Franjas.Count);
     }
 
+    [Fact(DisplayName = "administracion-local · Una fila de Opciones con error: un importe escrito con punto decimal, negativo, con más decimales que centavos o tan grande que desborda se rechaza con su motivo, sin multiplicarlo ni tirar la revisión")]
+    public void Importes_mal_escritos()
+    {
+        var revision = Revisar(
+        [
+            ["Punto", "ALMUERZO", "1800.50", "", "1", ""],
+            ["Uno coma ocho", "ALMUERZO", "1.8", "", "1", ""],
+            ["Dieciocho", "ALMUERZO", "18.00", "", "1", ""],
+            ["Negativo", "ALMUERZO", "-5", "", "1", ""],
+            ["Milésimos", "ALMUERZO", "1.800,505", "", "1", ""],
+            ["Enorme en texto", "ALMUERZO", "1000000000000000000000000000", "", "1", ""],
+            ["Enorme en número", "ALMUERZO", new NumeroPlanilla(1e27m, 0), "", "1", ""],
+        ]);
+
+        Assert.Contains(new ErrorImportacion(2, "Importe", CodigosAdministracion.NoSonDigitos), revision.Errores);
+        Assert.Contains(new ErrorImportacion(3, "Importe", CodigosAdministracion.NoSonDigitos), revision.Errores);
+        Assert.Contains(new ErrorImportacion(4, "Importe", CodigosAdministracion.NoSonDigitos), revision.Errores);
+        Assert.Contains(new ErrorImportacion(5, "Importe", CodigosAdministracion.NoSonDigitos), revision.Errores);
+        Assert.Contains(new ErrorImportacion(6, "Importe", CodigosAdministracion.FueraDeRango), revision.Errores);
+        Assert.Contains(new ErrorImportacion(7, "Importe", CodigosAdministracion.FueraDeRango), revision.Errores);
+        Assert.Contains(new ErrorImportacion(8, "Importe", CodigosAdministracion.FueraDeRango), revision.Errores);
+    }
+
+    [Fact(DisplayName = "administracion-local · Importar Opciones desde Excel: miles sin decimales, el ruido de un número de Excel, «00» unidades, el servicio en minúsculas, «-» y una hora de un dígito en las franjas se leen bien")]
+    public void Valores_que_se_leen_bien()
+    {
+        var revision = Revisar(
+        [
+            ["Miles", "almuerzo", "1.800", "8:00-10:00", "1", "00"],
+            ["Ruido", "ALMUERZO", new NumeroPlanilla(0.30000000000000004m, 0), "", "1", ""],
+        ]);
+
+        Assert.True(revision.Valida, string.Join("; ", revision.Errores));
+        Importacion.Aplicar(revision, null);
+        var vista = Admin.Leer();
+        var miles = vista.Opciones.Single(o => o.Nombre == "Miles");
+        Assert.Equal(180000, miles.ImporteUnidadesMenores);
+        Assert.Single(miles.Cargas);
+        Assert.Equal([new TimeOnly(8, 0)], miles.Franjas.Select(f => f.Inicio));
+        Assert.Equal(30, vista.Opciones.Single(o => o.Nombre == "Ruido").ImporteUnidadesMenores);
+    }
+
+    [Fact(DisplayName = "administracion-local · Importar Opciones desde Excel: una columna de categoría que falta deja como estaban las cargas de esa categoría, como un cupo en Personas")]
+    public void Una_columna_de_categoria_que_falta()
+    {
+        var vista = Admin.Leer();
+        string[] sinRefrigerio = ["Nombre", "Servicio", "Importe", "Franjas", "ALMUERZO: unidades"];
+        var filas = vista.Opciones.Select(o => Fila(o).Take(5).ToArray()).Where(f => !string.IsNullOrEmpty(f[4] as string) || f[4] is NumeroPlanilla).ToList();
+
+        var revision = Revisar(sinRefrigerio, filas);
+
+        Assert.True(revision.Valida, string.Join("; ", revision.Errores));
+        Importacion.Aplicar(revision, null);
+        var combo = Admin.Leer().Opciones.Single(o => o.Id == Fixture.ComboAlmuerzoYRefrigerio.Id);
+        Assert.Equal(2, combo.Cargas.Count);
+    }
+
+    [Fact(DisplayName = "administracion-local · Descargar la planilla base: el resumen cuenta las filas de ejemplo que quedan, que se agregarían como opciones")]
+    public void Las_filas_de_ejemplo()
+    {
+        var nombre = Importacion.EscribirPlanillaBase(Destino, Zona);
+
+        using var planilla = File.OpenRead(Path.Combine(Destino, nombre));
+        Assert.Equal(2, Importacion.Revisar(planilla).FilasDeEjemplo);
+    }
+
     private object[] Fila(OpcionAdministrada opcion)
     {
         var vista = Admin.Leer();
