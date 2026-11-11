@@ -103,6 +103,93 @@ public sealed class Asistencia
         return resultado;
     }
 
+    /// <summary>
+    /// Si la persona tiene un permiso OPERATOR vigente en el snapshot activo, en este instante (D1 de
+    /// operador-desde-la-identificacion): sólo lee, sin abrir sesión ni escribir en la bitácora. La atención lo usa para
+    /// mostrar «Configuración»; tocarlo lo vuelve a evaluar.
+    /// </summary>
+    public bool EsOperador(Guid personaId)
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        var puesto = PuestoLocal.Leer(conexion, null);
+        return EvaluarPermiso(conexion, null, puesto, personaId, _reloj.GetUtcNow()).Concedido;
+    }
+
+    /// <summary>
+    /// Lo mismo que <see cref="Entrar"/>, pero con la credencial de una sesión de consumo vigente en lugar de un código (D2 de
+    /// operador-desde-la-identificacion): en una transacción vuelve a evaluar OPERATOR (RB26), cierra la sesión de consumo, abre
+    /// la PRIVILEGED_ACTION y deja ASSISTANCE_GRANTED o ASSISTANCE_DENIED con Source IDENTIFICATION. Una denegación deja la
+    /// sesión de consumo como estaba. Sirve igual para el código tipeado y el combo, que abren la misma sesión.
+    /// </summary>
+    public ResultadoAsistencia EntrarDesdeIdentificacion(Guid sesionConsumo)
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        using var transaccion = BaseComedor.IniciarTransaccionEscritura(conexion);
+        var ahora = _reloj.GetUtcNow();
+        var puesto = PuestoLocal.Leer(conexion, transaccion);
+        const string Origen = "IDENTIFICATION";
+
+        var consumo = SesionDeConsumo(conexion, transaccion, puesto, sesionConsumo, ahora);
+        ResultadoAsistencia resultado;
+        if (consumo is not { } vigente)
+        {
+            const string Motivo = "SESSION_NOT_USABLE";
+            _bitacora.Insertar(conexion, transaccion, puesto, ahora, "ASSISTANCE_DENIED",
+                new Dictionary<string, object> { ["RequestedRole"] = RolPedido, ["ReasonCode"] = Motivo, ["Source"] = Origen });
+            resultado = new(null, null, null, Motivo);
+        }
+        else
+        {
+            var permiso = EvaluarPermiso(conexion, transaccion, puesto, vigente.PersonaId, ahora);
+            if (permiso.Concedido)
+            {
+                ComandosSqlite.Ejecutar(conexion, transaccion,
+                    "UPDATE tbComedorSesionesIdentidad SET comsidFechaVencimientoUtc = $ahora WHERE comsidCodigo = $sid",
+                    ("$sid", sesionConsumo), ("$ahora", FormatoInstante.Texto(ahora)));
+                var sesion = IdentificacionPorCodigo.AbrirSesion(conexion, transaccion, puesto, vigente, PropositoSesion.PrivilegedAction, ahora);
+                _bitacora.Insertar(conexion, transaccion, puesto, ahora, "ASSISTANCE_GRANTED",
+                    ContextoDePermiso(vigente.PersonaId, permiso, ("IdentitySessionId", sesion), ("Source", Origen)));
+                resultado = new(sesion, vigente.PersonaId, vigente.NombreVisible, null);
+            }
+            else
+            {
+                var motivo = CodigoDe(permiso.Motivo!.Value);
+                _bitacora.Insertar(conexion, transaccion, puesto, ahora, "ASSISTANCE_DENIED",
+                    ContextoDePermiso(vigente.PersonaId, permiso, ("ReasonCode", motivo), ("Source", Origen)));
+                resultado = new(null, null, null, motivo);
+            }
+        }
+
+        transaccion.Commit();
+        return resultado;
+    }
+
+    /// <summary>
+    /// La credencial y la persona de una sesión CONSUMPTION del snapshot activo, no vencida y todavía sin consumir; null si no
+    /// se puede usar.
+    /// </summary>
+    private static CredencialResuelta? SesionDeConsumo(
+        SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, Guid sesion, DateTimeOffset ahora)
+    {
+        using var comando = ComandosSqlite.Crear(conexion, transaccion,
+            """
+            SELECT sid.comcreCodigo, sid.comperCodigo, per.comperNombreVisible, sid.comsidProposito, sid.comsidFechaVencimientoUtc,
+                   sid.comicCodigoConsumidora
+            FROM tbComedorSesionesIdentidad sid
+            JOIN tbComedorPersonas per ON per.comvcCodigo = sid.comvcCodigo AND per.comperCodigo = sid.comperCodigo
+            WHERE sid.comsidCodigo = $sid AND sid.comvcCodigo = $vc
+            """,
+            ("$sid", sesion), ("$vc", puesto.SnapshotId));
+        using var lector = comando.ExecuteReader();
+        if (!lector.Read() || lector.IsDBNull(0) || lector.GetString(3) != "CONSUMPTION"
+            || FormatoInstante.Leer(lector.GetString(4)) <= ahora || !lector.IsDBNull(5))
+        {
+            return null;
+        }
+
+        return new CredencialResuelta(lector.GetGuid(0), lector.GetGuid(1), lector.GetString(2), new CredencialIdentificacion(null, null, null));
+    }
+
     /// <summary>Los comprobantes de la fecha de negocio actual, del más reciente al más antiguo.</summary>
     public IReadOnlyList<ComprobanteDelDia> ComprobantesDelDia()
     {
@@ -369,7 +456,7 @@ public sealed class Asistencia
     }
 
     private static ResultadoPermiso EvaluarPermiso(
-        SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, Guid persona, DateTimeOffset ahora)
+        SqliteConnection conexion, SqliteTransaction? transaccion, PuestoLocal puesto, Guid persona, DateTimeOffset ahora)
     {
         var permisos = new List<PermisoOperador>();
         using (var comando = ComandosSqlite.Crear(conexion, transaccion,

@@ -72,6 +72,12 @@
                 <div class="titulo superficie" inert="@CartelVisible">
                     <h2>Elegí tu servicio de hoy</h2>
                     <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
+                    @* Un operador identificado ve «Configuración» a la izquierda de «Cancelar», con su misma clase (D3 de *@
+                    @* operador-desde-la-identificacion). *@
+                    @if (Maquina.EsOperador)
+                    {
+                        <button id="configuracion-operador" type="button" disabled="@(Maquina.Estado == EstadoAtencion.Confirmando)" @onclick="EntrarDesdeIdentificacion">Configuración</button>
+                    }
                     <button id="cancelar" type="button" disabled="@(Maquina.Estado == EstadoAtencion.Confirmando)" @onclick="Maquina.Cancelar">Cancelar</button>
                     @* Sólo lo agotado hoy, que es lo que explica una opción ausente (D3 de ofrecer-solo-opciones-disponibles). *@
                     @if (Maquina.UsoDelDia is { } uso)
@@ -79,6 +85,10 @@
                         <p id="uso-del-dia" class="uso-del-dia">@uso</p>
                     }
                 </div>
+                @if (_avisoOperador is not null)
+                {
+                    <p id="aviso-operador" class="aviso superficie" role="status">@_avisoOperador</p>
+                }
                 @if (Maquina.Aviso is not null && Maquina.Estado == EstadoAtencion.Seleccion)
                 {
                     <p id="aviso" class="aviso titulo superficie" role="status" inert="@CartelVisible">@Maquina.Aviso</p>
@@ -176,7 +186,15 @@
                     {
                         <p id="motivo-sin-opciones" class="aviso">@motivo</p>
                     }
+                    @if (_avisoOperador is not null)
+                    {
+                        <p id="aviso-operador" class="aviso" role="status">@_avisoOperador</p>
+                    }
                     <div class="acciones">
+                        @if (Maquina.EsOperador)
+                        {
+                            <button id="configuracion-operador" type="button" @onclick="EntrarDesdeIdentificacion">Configuración</button>
+                        }
                         <button id="listo" type="button" class="principal" @onclick="Maquina.Listo">Listo</button>
                     </div>
                 </section>
@@ -537,6 +555,10 @@
     private const string AccesoMantenimiento = "MAINTENANCE_MODE";
     private const string AccesoClave = "DAILY_KEY";
     private const string AccesoOperador = "OPERATOR";
+    private const string AccesoOperadorIdentificacion = "OPERATOR_IDENTIFICATION";
+
+    /// <summary>El motivo por el que «Configuración» no abrió desde la identificación, hasta la próxima identificación (D2).</summary>
+    private string? _avisoOperador;
 
     /// <summary>Con un operador no hay General: el modo, la simulación y el cierre vuelven sin hacer nada (D6).</summary>
     private bool EsOperador => _actor is not null;
@@ -648,6 +670,7 @@
     {
         var codigo = _codigo;
         _codigo = string.Empty;
+        _avisoOperador = null;
         Maquina.Identificar(codigo);
         CancelarConfiguracionFueraDeReposo();
     }
@@ -665,6 +688,7 @@
             return;
         }
 
+        _avisoOperador = null;
         Maquina.IdentificarPorCredencial(credencial);
         CancelarConfiguracionFueraDeReposo();
     }
@@ -824,6 +848,58 @@
 
         StateHasChanged();
         return new(null);
+    }
+
+    /// <summary>
+    /// «Configuración» de un operador identificado (D2 y D4 de operador-desde-la-identificacion): la asistencia vuelve a evaluar
+    /// OPERATOR y abre la sesión privilegiada desde la de consumo, sin el código; concedida, la atención termina sin consumo y
+    /// Configuración abre como con el engranaje, con OPERATOR_IDENTIFICATION y el operador como actor. Denegada, la atención
+    /// sigue y la pantalla dice el motivo.
+    /// </summary>
+    private void EntrarDesdeIdentificacion()
+    {
+        if (!Maquina.EsOperador || Maquina.SesionConsumo is not { } sesion)
+        {
+            return;
+        }
+
+        ResultadoAsistencia resultado;
+        try
+        {
+            resultado = Servicio.Asistencia.EntrarDesdeIdentificacion(sesion);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _avisoOperador = MensajesAtencion.ErrorAlmacenamiento;
+            return;
+        }
+
+        if (!resultado.Concedida)
+        {
+            // La denegación queda también en la general, que es la de los accesos a Configuración; ASSISTANCE_DENIED va a
+            // interacciones (D4 de operador-desde-la-identificacion, ajuste al aplicar).
+            RegistrarConfiguracion("CONFIGURATION_ACCESS_DENIED", new
+            {
+                Access = AccesoOperadorIdentificacion, resultado.ReasonCode, ActorPersonId = Maquina.PersonaId,
+            }, SeveridadBitacora.Warning);
+            _avisoOperador = MensajesAtencion.DeMotivo(resultado.ReasonCode);
+            return;
+        }
+
+        _avisoOperador = null;
+        _estadoBitacoras = LeerEstadoBitacoras();
+        _actor = resultado.PersonId;
+        _operador = resultado.NombreVisible;
+        _sesionDelOperador = resultado.SesionId;
+        Maquina.TerminarPorConfiguracion();
+        if (Maquina.Estado != EstadoAtencion.Reposo)
+        {
+            SalirDelOperador();
+            return;
+        }
+
+        AbrirConfiguracionCon(AccesoOperadorIdentificacion);
+        _sesionOperador?.Adoptar(resultado.SesionId!.Value, resultado.NombreVisible ?? string.Empty);
     }
 
     /// <summary>Termina la sesión privilegiada del operador de Configuración y olvida su acceso.</summary>

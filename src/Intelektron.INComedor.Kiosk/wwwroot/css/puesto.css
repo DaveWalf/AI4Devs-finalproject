@@ -207,6 +207,10 @@ body:has(.puesto) {
 /* «Hoy ya usaste: …» en su propia línea, debajo del saludo: color de aviso sobre la superficie opaca del título, sin tocar el alto de las opciones. */
 .titulo .uso-del-dia { flex: 0 0 100%; color: var(--aviso); font-weight: 600; }
 .titulo #cancelar { margin-left: auto; align-self: center; min-width: 140px; }
+/* «Configuración» de un operador identificado, a la izquierda de «Cancelar», con su misma clase de botón y su ancho mínimo,
+   en la misma línea (D3 de operador-desde-la-identificacion). */
+.titulo #configuracion-operador { margin-left: auto; align-self: center; min-width: 140px; }
+.titulo #configuracion-operador + #cancelar { margin-left: 0; }
 
 .lista { container-type: inline-size; }
 

@@ -64,6 +64,15 @@ public sealed class MaquinaAtencion
 
     public Guid? PersonaId { get; private set; }
 
+    /// <summary>
+    /// Si quien se identificó tiene OPERATOR vigente, leído al identificarse sin abrir nada (D1 de
+    /// operador-desde-la-identificacion): la pantalla muestra «Configuración» mientras dura la atención.
+    /// </summary>
+    public bool EsOperador { get; private set; }
+
+    /// <summary>La sesión de consumo de la atención, para entrar a Configuración desde ella sin el código (D2).</summary>
+    public Guid? SesionConsumo => _sesion;
+
     public int Pagina { get; private set; } = 1;
 
     public int TotalPaginas => Math.Max(1, (_catalogo.Count + TamanoPagina - 1) / TamanoPagina);
@@ -196,6 +205,7 @@ public sealed class MaquinaAtencion
             return ResultadoToque.NoDisponible;
         }
 
+        EsOperador = LeerOperador();
         // Sin ninguna opción disponible no hay selección: la pantalla avisa y vuelve a reposo con «Listo» o a los 10 s (D4).
         Estado = _catalogo.Count == 0 ? EstadoAtencion.SinOpciones : EstadoAtencion.Seleccion;
         _codigoMensaje = _catalogo.Count == 0 ? nameof(MensajesAtencion.SinOpciones) : null;
@@ -277,6 +287,43 @@ public sealed class MaquinaAtencion
                 MenuVersion = Elegida?.Version,
                 MenuLabel = Elegida?.Nombre,
             });
+        }
+    }
+
+    /// <summary>
+    /// Termina la atención sin consumo porque el operador entró a Configuración desde ella (D2 de
+    /// operador-desde-la-identificacion): en la selección, SESSION_CANCELLED con la causa CONFIGURATION; sin opciones,
+    /// SESSION_CLOSED cerrada por CONFIGURATION. La sesión de consumo ya la cerró la entrada.
+    /// </summary>
+    public void TerminarPorConfiguracion()
+    {
+        if (Estado is EstadoAtencion.Seleccion or EstadoAtencion.Reconfirmacion)
+        {
+            Cerrar("SESSION_CANCELLED", new
+            {
+                IdentitySessionId = _sesion,
+                MenuItemId = Elegida?.Id,
+                MenuVersion = Elegida?.Version,
+                MenuLabel = Elegida?.Nombre,
+                Cause = "CONFIGURATION",
+            });
+        }
+        else if (Estado == EstadoAtencion.SinOpciones)
+        {
+            CerrarConMensaje("CONFIGURATION");
+        }
+    }
+
+    /// <summary>El permiso OPERATOR de la persona identificada; sin la base o sin asistencia, no se ofrece (D1).</summary>
+    private bool LeerOperador()
+    {
+        try
+        {
+            return PersonaId is { } persona && _servicio.Asistencia is { } asistencia && asistencia.EsOperador(persona);
+        }
+        catch (SqliteException)
+        {
+            return false;
         }
     }
 
@@ -566,6 +613,7 @@ public sealed class MaquinaAtencion
         _agotadas = [];
         PersonaId = null;
         NombreVisible = null;
+        EsOperador = false;
         Pagina = 1;
         Elegida = null;
         Vigente = null;

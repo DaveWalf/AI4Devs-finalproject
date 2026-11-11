@@ -74,6 +74,11 @@ el engranaje. Si se deniega, la atención sigue y la pantalla muestra el aviso d
 `CONFIGURATION_OPENED` lleva `Access` `OPERATOR_IDENTIFICATION` y el operador como actor. Lo que se guarda en esa
 Configuración usa el mismo `Access`, porque `_acceso` es uno solo por apertura. Ningún registro lleva el código.
 
+Ajuste al aplicar (11/11/2026): `ASSISTANCE_GRANTED` y `ASSISTANCE_DENIED` van sólo a la bitácora de interacciones (D3 de
+`escribir-bitacoras-externas`), y el escenario «El permiso cae antes de tocar "Configuración"» pide la denegación en la
+general. La pantalla la registra ahí como `CONFIGURATION_ACCESS_DENIED`, con `Access` `OPERATOR_IDENTIFICATION`, el motivo y
+la persona como actor, sin el código; `ASSISTANCE_DENIED` sigue en interacciones con `Source` `IDENTIFICATION`.
+
 - *Descartada*: registrar `OPERATOR` con un campo `Source` aparte. Un solo campo, `Access`, ya dice cómo se entró en todos
   los eventos de Configuración, y sumar otro obligaría a mirar dos.
 

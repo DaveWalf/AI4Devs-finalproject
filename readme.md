@@ -219,7 +219,10 @@ receptor, en la ventana:
    2 de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
    no se reconoce. Con `9001` en lugar de la clave, Configuración abre sólo con Consumos, Personas e Impresora y
    «Operador: Operador sintético 01» arriba, sin General ni «Cerrar el puesto»; `9002` dice que su permiso está
-   vencido.
+   vencido. El otro camino del operador: en reposo, `9001` e «Ingresar» (o su nombre en el combo de la simulación) muestran
+   «Configuración» junto a «Listo», y tocarlo abre la misma Configuración, sin pedir la clave ni el código otra vez; un
+   operador con comidas lo ve junto a «Cancelar», arriba de sus opciones. La general distingue los dos caminos:
+   `CONFIGURATION_OPENED` con `OPERATOR` por el engranaje y con `OPERATOR_IDENTIFICATION` desde la identificación.
 8. La simulación viene encendida: desde el paso 1, la pantalla de identificación tiene, arriba del campo del código, el
    combo «Simulación: elegí a la persona», con los nombres y sin ningún código, de borde a borde con la fila del campo
    e «Ingresar», que queda a la derecha del campo. Su lista no es la nativa de Windows: la dibuja la página, dentro de
@@ -309,7 +312,7 @@ Códigos sintéticos:
 | `0002` | Credencial vencida: «Esta credencial está vencida» |
 | `0003` | Credencial revocada: «Esta credencial ya no está habilitada» |
 | `0004` | Credencial todavía no vigente: «No pudimos identificarte» |
-| `9001` | Operador con permiso `OPERATOR` vigente: reimprime y recupera en Consumos |
+| `9001` | Operador con permiso `OPERATOR` vigente: reimprime y recupera en Consumos. Tipeado en reposo, o elegido en el combo de la simulación, ve «No tenés opciones disponibles ahora.» con «Configuración» junto a «Listo», que abre Configuración como su código en el engranaje |
 | `9002` | Operador con el permiso vencido: Consumos no lo deja reimprimir |
 | `9003` | Operador con el permiso revocado: Consumos no lo deja reimprimir |
 | `9004` | Administrador sin `OPERATOR`: Consumos no lo deja reimprimir |
