@@ -1,5 +1,6 @@
 @using Intelektron.INComedor.Infrastructure.Sqlite
 @using Intelektron.INComedor.Kiosk.Red
+@using Intelektron.INComedor.Kiosk.Lector
 @implements IDisposable
 @inject MaquinaAtencion Maquina
 @inject ServicioAtencion Servicio
@@ -45,6 +46,19 @@
                                value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" @onkeydown="TeclaCodigo" />
                         <button id="ingresar" type="button" class="principal" @onclick="Ingresar">Ingresar</button>
                     </div>
+                    @* El simulador interno del lector, sólo en mantenimiento (D6 de elegir-medio-de-identificacion): lo tipeado y el *@
+                    @* terminador recorren el mismo armado que el puerto real. *@
+                    @if (LectorSimuladoVisible)
+                    {
+                        <div class="lector-simulado">
+                            <label for="lector-simulado">Lector simulado</label>
+                            <div class="ingreso">
+                                <input id="lector-simulado" type="text" autocomplete="off" value="@_lecturaSimulada"
+                                       @oninput="e => _lecturaSimulada = e.Value?.ToString() ?? string.Empty" />
+                                <button id="pasar-por-lector" type="button" @onclick="PasarPorLector">Pasar por el lector</button>
+                            </div>
+                        </div>
+                    }
                     @if (Maquina.Aviso is not null)
                     {
                         <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
@@ -317,6 +331,70 @@
     private AlmacenConfiguracionExportacion? _almacenExportacionAutomatica;
     private ExportacionAutomatica? _exportacion;
     private AlmacenConfiguracionCorreo? _almacenCorreo;
+    private LectorIdentificacion? _lector;
+    private string _lecturaSimulada = string.Empty;
+
+    /// <summary>El lector simulado, sólo con el simulador interno y en mantenimiento (D6 de elegir-medio-de-identificacion).</summary>
+    private bool LectorSimuladoVisible => _lector?.Configuracion.Medio == MedioIdentificacion.Simulador && _modo == ModoPuesto.Mantenimiento;
+
+    /// <summary>
+    /// El lector, con su almacén registrado (las pruebas que no lo usan no lo registran) y el puerto real si la ventana lo
+    /// registró: escucha según el medio guardado (D1 y D5).
+    /// </summary>
+    private void IniciarLector()
+    {
+        var almacen = Proveedor.GetService(typeof(AlmacenLector)) as AlmacenLector;
+        if (almacen is null || Servicio.RegistroConfiguracion is null)
+        {
+            return;
+        }
+
+        _lector = new LectorIdentificacion(Proveedor.GetService(typeof(IPuertoSerie)) as IPuertoSerie, almacen, Servicio.RegistroConfiguracion, Servicio.Reloj);
+        _lector.Lectura += LecturaDelLector;
+        _lector.Cambio += RefrescarExportacion;
+        _lector.Aplicar();
+    }
+
+    /// <summary>
+    /// Una lectura llega en el hilo del puerto y se decide en el de la pantalla (D5): con un diálogo abierto se descarta;
+    /// si no, la máquina identifica o descarta, y el campo del código queda vacío si identificó o rechazó.
+    /// </summary>
+    private void LecturaDelLector(string codigo, string origen) => _ = InvokeAsync(() =>
+    {
+        if (_lector is null)
+        {
+            return;
+        }
+
+        if (HayDialogo)
+        {
+            _lector.Resultado("DISCARDED", "DIALOG_OPEN");
+            return;
+        }
+
+        var resultado = Maquina.IdentificarPorLector(codigo, origen);
+        _lector.Resultado(resultado.Resultado, resultado.Motivo);
+        if (resultado.Resultado != "DISCARDED")
+        {
+            _codigo = string.Empty;
+            CancelarConfiguracionFueraDeReposo();
+        }
+
+        StateHasChanged();
+    });
+
+    /// <summary>«Pasar por el lector»: lo tipeado y el terminador, como bytes, al simulador interno (D6).</summary>
+    private void PasarPorLector()
+    {
+        if (!LectorSimuladoVisible)
+        {
+            return;
+        }
+
+        var texto = _lecturaSimulada;
+        _lecturaSimulada = string.Empty;
+        _lector!.Simulado.Pasar(texto, _lector.Configuracion);
+    }
     private AvisosCorreo? _avisos;
     private DatosPuesto _datosPuesto = DatosPuesto.PorDefecto;
     private AlmacenPantalla? _almacenPantalla;
@@ -436,6 +514,7 @@
         Maquina.Iniciar();
         // Los correos antes que la exportación: su primera pasada ya puede avisar una falla.
         IniciarCorreos();
+        IniciarLector();
         IniciarExportacion();
         LeerPersonasSimulacion();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
@@ -1616,6 +1695,13 @@
         {
             _exportacion.PasadaTerminada -= RefrescarExportacion;
             _exportacion.Dispose();
+        }
+
+        if (_lector is not null)
+        {
+            _lector.Lectura -= LecturaDelLector;
+            _lector.Cambio -= RefrescarExportacion;
+            _lector.Dispose();
         }
 
         if (_avisos is not null)

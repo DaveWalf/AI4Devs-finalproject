@@ -12,12 +12,14 @@
 
 ## 2. La lectura en la atención
 
-- [ ] 2.1 El origen de la lectura en el registro de la identificación, sin cambiar el tipeado (D7). Prueba nueva vista
+- [x] 2.1 El origen de la lectura en el registro de la identificación, sin cambiar el tipeado (D7). Prueba nueva vista
   fallar primero. Verifica: `dotnet test --project tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` en verde.
-- [ ] 2.2 `MaquinaAtencion.IdentificarPorLector` y la pantalla: identifica en reposo, descarta en una atención, con un
+- [x] 2.2 `MaquinaAtencion.IdentificarPorLector` y la pantalla: identifica en reposo, descarta en una atención, con un
   diálogo o con el error de almacenamiento, con `READER_READING_DISCARDED` a lo sumo una vez por motivo y por minuto
   (D5 y D7); el simulador interno en reposo sólo en mantenimiento (D6). Pruebas nuevas vistas fallar primero. Verifica:
-  Kiosk en verde.
+  Kiosk en verde. Hecho (2.1 y 2.2): `OrigenDeLaLecturaTests` (1, el origen en la clave `Origin` de siempre) y
+  `LectorEnPantallaTests` (6), vistas fallar con la sobrecarga sin origen y sin el cableado (la de operativo pasa también
+  sin él); Sqlite 297, Kiosk 580, sin cambiar ninguna prueba existente.
 
 ## 3. La pestaña Lector
 

@@ -28,6 +28,9 @@ public enum ResultadoToque
 /// El modelo de estados de la atención, sin interfaz (D5 de atender-seleccion-y-confirmacion). Las pantallas Razor
 /// sólo lo dibujan y le reenvían los toques; los plazos se cuentan con el reloj inyectado.
 /// </summary>
+/// <summary>Lo que pasó con una lectura del lector: IDENTIFIED, REJECTED o DISCARDED, con el motivo de un descarte.</summary>
+public sealed record ResultadoLectura(string Resultado, string? Motivo);
+
 public sealed class MaquinaAtencion
 {
     /// <summary>Hasta diez opciones van juntas; desde once, en páginas de diez (D1 de presentar-atencion-tactil).</summary>
@@ -123,6 +126,31 @@ public sealed class MaquinaAtencion
 
     public ResultadoToque Identificar(string codigo) =>
         Identificar(() => _servicio.Identificacion.Identificar(codigo, PropositoSesion.Consumption));
+
+    /// <summary>
+    /// Una lectura del lector (D5 de elegir-medio-de-identificacion): con el error de almacenamiento o fuera de reposo se
+    /// descarta sin poner ningún aviso, porque quien pasó la tarjeta puede no ser quien está en la pantalla; en reposo,
+    /// identifica como el código tipeado, con su origen.
+    /// </summary>
+    public ResultadoLectura IdentificarPorLector(string codigo, string origen)
+    {
+        if (Estado == EstadoAtencion.ErrorAlmacenamiento)
+        {
+            return new ResultadoLectura("DISCARDED", "STORAGE_ERROR");
+        }
+
+        if (Estado != EstadoAtencion.Reposo)
+        {
+            return new ResultadoLectura("DISCARDED", "NOT_IDLE");
+        }
+
+        return Identificar(() => _servicio.Identificacion.Identificar(codigo, PropositoSesion.Consumption, origen)) switch
+        {
+            ResultadoToque.Aceptado => new ResultadoLectura("IDENTIFIED", null),
+            ResultadoToque.Rechazado => new ResultadoLectura("REJECTED", null),
+            _ => new ResultadoLectura("DISCARDED", "STORAGE_ERROR"),
+        };
+    }
 
     /// <summary>
     /// La persona elegida en el combo del modo simulación, por su credencial (D2 de simular-identificacion-por-lista): las

@@ -5,6 +5,7 @@ using System.Windows.Interop;
 using Intelektron.INComedor.Kiosk.Red;
 using Intelektron.INComedor.Kiosk.Atencion;
 using Intelektron.INComedor.Kiosk.Demostracion;
+using Intelektron.INComedor.Kiosk.Lector;
 using Intelektron.INComedor.Kiosk.Sincronizacion;
 using Microsoft.AspNetCore.Components.WebView.Wpf;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,6 +73,9 @@ public partial class MainWindow : Window
             // cuando la base está lista (D4 y D6 de exportar-consumos-automaticamente).
             servicios.AddSingleton(new AlmacenConfiguracionExportacion(entorno.Carpeta));
             servicios.AddSingleton(new AlmacenConfiguracionCorreo(entorno.Carpeta));
+            servicios.AddSingleton(new AlmacenLector(entorno.Carpeta));
+            // El puerto serie real sólo lo registra la ventana, como el ejecutor de netsh: ninguna prueba abre un COM (D2).
+            servicios.AddSingleton<IPuertoSerie>(new PuertoSerieDelSistema());
             servicios.AddSingleton<IElectorCarpeta>(new ElectorCarpetaWindows(this));
             // La planilla que se importa a Personas, con el diálogo de archivos sobre esta ventana (D7 de importar-personas-desde-excel).
             servicios.AddSingleton<IElectorArchivo>(new ElectorArchivoWindows(this));
