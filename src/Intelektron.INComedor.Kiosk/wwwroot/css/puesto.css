@@ -414,6 +414,8 @@ html, body { overscroll-behavior: none; }
 .filtros-consumos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; font-size: 16px; }
 .filtros-consumos label, .filtros-consumos .filtro { display: flex; flex-direction: column; gap: 4px; }
 .filtros-consumos .lista-desplegable { min-width: 240px; }
+/* El código de una persona se tipea enmascarado sin ser un campo de contraseña (D3 de buscar-y-exportar-consumos). */
+.codigo-oculto { -webkit-text-security: disc; }
 .filtros-consumos .lista-opciones, .filtros-consumos .lista-fila { font-size: 16px; }
 /* Dentro del diálogo, hasta cinco filas a la vista (290 px con el relleno y el borde), para que la lista no salga del panel
    de la pestaña aunque la fila de filtros ocupe dos renglones; con más, se desplaza adentro (ordenar-configuracion). */

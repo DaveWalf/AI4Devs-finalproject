@@ -12,8 +12,13 @@
     @if (Visible && _cargado)
     {
         <div class="filtros-consumos">
-            <label>Desde <input id="consumos-desde" type="date" value="@Fecha(_desde)" @onchange="e => _desde = LeerFecha(e, _desde)" /></label>
-            <label>Hasta <input id="consumos-hasta" type="date" value="@Fecha(_hasta)" @onchange="e => _hasta = LeerFecha(e, _hasta)" /></label>
+            <label>Desde <input id="consumos-desde" type="date" value="@Fecha(_desde)" @onchange="e => ElegirFecha(e, desde: true)" /></label>
+            <label>Hasta <input id="consumos-hasta" type="date" value="@Fecha(_hasta)" @onchange="e => ElegirFecha(e, desde: false)" /></label>
+            @* El texto busca en persona, opción, servicio y número; el código de una persona va enmascarado y se vacía al *@
+            @* consultar, y ninguno de los dos llega a la bitácora (D2 y D3 de buscar-y-exportar-consumos). *@
+            <label>Buscar <input id="consumos-texto" type="search" autocomplete="off" value="@_texto" @oninput="e => _texto = e.Value?.ToString() ?? string.Empty" /></label>
+            <label>Código <input id="consumos-codigo" class="codigo-oculto" type="text" inputmode="numeric" autocomplete="off" value="@_codigo"
+                                 aria-label="Código de una persona" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" /></label>
             @* Los filtros son listas propias, dibujadas en la página, no select nativos: se abren en el monitor del puesto (D3 de *@
             @* ordenar-configuracion). El valor es la posición en la lista, nunca un identificador ni un código, como antes. No van *@
             @* dentro de un label: el label reenviaría al botón el toque en una fila y volvería a abrir la lista. *@
@@ -32,6 +37,7 @@
                 <ListaDesplegable Id="consumos-opcion" Etiqueta="etiqueta-consumos-opcion" Entradas="_entradasOpcion" Valor="@_opcion" ValorChanged="v => _opcion = v"
                                   TextoVacio="Todas" OpcionVacia="true" />
             </div>
+            <button id="ultimas-24h" type="button" @onclick="UltimasHoras">Últimas 24 h</button>
             <button id="consultar-consumos" type="button" class="principal" @onclick="Consultar">Consultar</button>
         </div>
 
@@ -49,6 +55,10 @@
                             <th scope="col" data-columna="@columna" aria-sort="@Orden(columna)">
                                 <button type="button" class="ordenar" @onclick="() => Ordenar(columna)">@titulo</button>
                             </th>
+                            @if (columna == OrdenConsumos.Hora)
+                            {
+                                <th scope="col" class="numero">N.º</th>
+                            }
                         }
                     </tr>
                 </thead>
@@ -56,7 +66,8 @@
                     @foreach (var fila in _filas)
                     {
                         <tr class="consumo">
-                            <td>@Hora(fila)</td>
+                            <td class="hora">@Hora(fila)</td>
+                            <td class="numero">@fila.Numero</td>
                             <td>@fila.Persona</td>
                             <td>@fila.Opcion</td>
                             <td>@fila.Servicio</td>
@@ -97,6 +108,9 @@
     private string _persona = string.Empty;
     private string _servicio = string.Empty;
     private string _opcion = string.Empty;
+    private string _texto = string.Empty;
+    private string _codigo = string.Empty;
+    private bool _porInstante = true;
     private IReadOnlyList<PersonaParaFiltro> _personas = [];
     private IReadOnlyList<ElementoParaFiltro> _servicios = [];
     private IReadOnlyList<ElementoParaFiltro> _opciones = [];
@@ -130,25 +144,61 @@
         if (Visible && !_cargado)
         {
             _cargado = true;
-            _desde = _hasta = Consulta.Hoy();
+            var inicial = FiltroConsumos.UltimasHoras(Consulta.Ahora(), Consulta.Hoy());
+            (_desde, _hasta) = (inicial.Desde, inicial.Hasta);
             _personas = Consulta.Personas();
             _servicios = Consulta.Servicios();
             _opciones = Consulta.Opciones();
             _entradasPersona = _personas.Select((p, i) => new EntradaLista(i.ToString(CultureInfo.InvariantCulture), p.Nombre + (p.DeBaja ? " (de baja)" : ""))).ToList();
             _entradasServicio = _servicios.Select((s, i) => new EntradaLista(i.ToString(CultureInfo.InvariantCulture), s.Nombre)).ToList();
             _entradasOpcion = _opciones.Select((o, i) => new EntradaLista(i.ToString(CultureInfo.InvariantCulture), o.Nombre)).ToList();
-            Ejecutar(FiltroConsumos.DelDia(_desde));
+            Ejecutar(inicial);
         }
     }
 
-    /// <summary>Los filtros elegidos, con el orden vigente; un rango inválido se avisa y la tabla no cambia.</summary>
+    /// <summary>
+    /// Los filtros elegidos, con el orden vigente: las últimas 24 horas hasta ahora mientras no se elijan fechas (D1). Un rango
+    /// inválido o un código que no es de nadie se avisa y la tabla no cambia; el código se vacía siempre (D3).
+    /// </summary>
     private void Consultar()
     {
-        Ejecutar(new FiltroConsumos(_desde, _hasta,
-            Elegido(_personas.Select(p => p.Id), _persona),
-            Elegido(_servicios.Select(s => s.Id), _servicio),
-            Elegido(_opciones.Select(o => o.Id), _opcion),
-            _aplicado.Orden, _aplicado.Ascendente));
+        var rango = _porInstante ? FiltroConsumos.UltimasHoras(Consulta.Ahora(), Consulta.Hoy()) : new FiltroConsumos(_desde, _hasta);
+        var codigo = _codigo;
+        _codigo = string.Empty;
+        Ejecutar(rango with
+        {
+            PersonaId = Elegido(_personas.Select(p => p.Id), _persona),
+            ServicioId = Elegido(_servicios.Select(s => s.Id), _servicio),
+            OpcionId = Elegido(_opciones.Select(o => o.Id), _opcion),
+            Orden = _aplicado.Orden,
+            Ascendente = _aplicado.Ascendente,
+            Texto = string.IsNullOrWhiteSpace(_texto) ? null : _texto,
+            Codigo = string.IsNullOrWhiteSpace(codigo) ? null : codigo,
+        });
+    }
+
+    /// <summary>«Últimas 24 h»: vuelve al rango por defecto, hasta este instante, con los demás filtros elegidos (D1).</summary>
+    private void UltimasHoras()
+    {
+        _porInstante = true;
+        var inicial = FiltroConsumos.UltimasHoras(Consulta.Ahora(), Consulta.Hoy());
+        (_desde, _hasta) = (inicial.Desde, inicial.Hasta);
+        Consultar();
+    }
+
+    /// <summary>Elegir una fecha pasa al rango de fechas de negocio (D1).</summary>
+    private void ElegirFecha(ChangeEventArgs e, bool desde)
+    {
+        if (desde)
+        {
+            _desde = LeerFecha(e, _desde);
+        }
+        else
+        {
+            _hasta = LeerFecha(e, _hasta);
+        }
+
+        _porInstante = false;
     }
 
     /// <summary>Un toque ordena ascendente por la columna; otro, descendente. Ordena la consulta aplicada, antes del tope.</summary>
@@ -170,7 +220,12 @@
 
         if (resultado.Rechazo is { } rechazo)
         {
-            _aviso = rechazo == ConsultaConsumos.RangoInvertido ? MensajesAtencion.RangoInvertido : MensajesAtencion.RangoDemasiadoLargo;
+            _aviso = rechazo switch
+            {
+                ConsultaConsumos.RangoInvertido => MensajesAtencion.RangoInvertido,
+                ConsultaConsumos.CodigoDesconocido => MensajesAtencion.CodigoDeNadie,
+                _ => MensajesAtencion.RangoDemasiadoLargo,
+            };
             return;
         }
 
@@ -191,7 +246,7 @@
     private string Hora(ConsumoConsultado fila)
     {
         var local = TimeZoneInfo.ConvertTime(fila.ConfirmadoUtc, Zona);
-        return _aplicado.Desde == _aplicado.Hasta
+        return _aplicado.Desde == _aplicado.Hasta && !_aplicado.PorInstante
             ? local.ToString("HH:mm", CultureInfo.InvariantCulture)
             : local.ToString("dd/MM HH:mm", CultureInfo.InvariantCulture);
     }

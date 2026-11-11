@@ -88,6 +88,7 @@ public static class MensajesAtencion
     // La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas).
     public const string SinConsumos = "No hay consumos con estos filtros";
     public const string RangoInvertido = "El inicio no puede ser posterior al fin";
+    public const string CodigoDeNadie = "Ese código no es de ninguna persona";
     public const string RangoDemasiadoLargo = "El rango no puede pasar de 366 días";
     public const string HayMasConsumos = "Se muestran 500 consumos y hay más: acotá los filtros";
 

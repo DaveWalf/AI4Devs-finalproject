@@ -116,6 +116,9 @@ public sealed class ConsultaConsumos
         _reloj = reloj;
     }
 
+    /// <summary>El instante del puesto, el final de las últimas 24 horas (D1 de buscar-y-exportar-consumos).</summary>
+    public DateTimeOffset Ahora() => _reloj.GetUtcNow();
+
     /// <summary>La fecha de negocio actual del puesto, la de los consumos «de hoy».</summary>
     public DateOnly Hoy()
     {

@@ -30,13 +30,21 @@ pegado, para ver que sólo cambian las pruebas existentes de la propuesta. Las p
 
 ## 2. La pestaña Consumos: 24 horas, búsqueda y número
 
-- [ ] 2.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: abre con las últimas 24 horas y la fecha en la hora;
+- [x] 2.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: abre con las últimas 24 horas y la fecha en la hora;
   «Últimas 24 h»; el texto; el código que se vacía y no queda en la pestaña ni en la bitácora; el código que no es de
   nadie; la columna del número. Verifica: rojo antes y verde después.
-- [ ] 2.2 `PestanaConsumos.razor` con la fila de búsqueda y la columna nueva; `CONSUMPTIONS_QUERIED` con `TextSearched` y
+  - `BusquedaEnConsumosTests` (6 casos), contra la pestaña sin los campos nuevos: `total: 6`, `error: 6`
+    (`ElementNotFoundException` de `#consumos-texto`, `#consumos-codigo` y `#ultimas-24h`). Un falso positivo de la prueba
+    del código (el «0001» de la cola del GUID del puesto en la bitácora) se corrigió buscando el código como valor JSON.
+- [x] 2.2 `PestanaConsumos.razor` con la fila de búsqueda y la columna nueva; `CONSUMPTIONS_QUERIED` con `TextSearched` y
   `PersonCode` sin valores. Verifica: 2.1 en verde.
-- [ ] 2.3 Ajustar las pruebas existentes que afirman el día de negocio por defecto, vistas fallar antes. Verifica:
+  - El campo del código es `type="text"` enmascarado con `-webkit-text-security`, no `password`, porque Consumos no pide
+    un código y así lo sigue afirmando `PestanaConsumosTests.En_mantenimiento_sin_ningun_codigo`. La bitácora suma
+    `LastHours`, `TextSearched` y `PersonCode`. Con `PestanaConsumosTests`: `total: 13`, `error: 0`.
+- [x] 2.3 Ajustar las pruebas existentes que afirman el día de negocio por defecto, vistas fallar antes. Verifica:
   `Kiosk.Tests` en verde y la lista de archivos cambiados pegada.
+  - Ninguna hizo falta: `Kiosk.Tests` entero, `total: 406`, `error: 0`, sin pruebas existentes cambiadas en este grupo
+    (los consumos de las pruebas son del instante del reloj, dentro de las 24 horas).
 
 ## 3. Ver, Reimprimir y Recuperar en cada fila, sin Comprobantes
 
