@@ -65,10 +65,10 @@ must y una should; su secuencia y aceptación figuran en el
 
 | ID | Funcionalidad | En el primer corte | Segunda ola, diseñada y no demostrada |
 |---|---|---|---|
-| F01 | Identificación y selección | Identificación simulada por código; catálogo, cancelación y reconfirmación (HU01.1). Should: rechazos de credencial (HU01.2-J). | Biometría 1:N y 1:1. |
+| F01 | Identificación y selección | Identificación simulada por código, o por un lector en puerto serie con su terminador y el relleno de dígitos (RF23, sin homologar equipos); catálogo, cancelación y reconfirmación (HU01.1). Should: rechazos de credencial (HU01.2-J). | Biometría 1:N y 1:1. |
 | F02 | Autorización y registro local | Cupo y fecha de negocio en SQLite (HU01.3); un único consumo ante doble toque, retry o reinicio (HU01.1, HU02.1). | Auditoría de saltos del reloj. |
 | F03 | Comprobante y recuperación | Ticket tras el commit local y reimpresión con permiso, sin registrar otra comida (HU03.1). | — |
-| F04 | Sincronización y supervisión | Outbox y receptor idempotente de lotes (HU02.2). Bitácoras mensuales general e interacciones, fuera de SQLite (HU03.5, recortada). Personas, cupos, opciones y franjas editables en Configuración mientras no haya INWeb, con una versión local por guardado (HU03.3, recortada). | Multipuesto, configuración por snapshot, permisos de operador, importación de INWeb, diagnóstico, cuenta de mantenimiento y lo que los recortes de las bitácoras y de la administración dejan fuera. |
+| F04 | Sincronización y supervisión | Outbox y receptor idempotente de lotes (HU02.2). Bitácoras mensuales general e interacciones, fuera de SQLite (HU03.5, recortada). Personas, cupos, opciones y franjas editables en Configuración mientras no haya INWeb, con una versión local por guardado (HU03.3, recortada). Configuración por pestañas: Consumos con búsqueda, reimpresión y exportación, Pantalla, Red, Lector, el resguardo de la configuración, y la exportación automática y los avisos por correo con envío simulado; cada uno sale de la segunda ola por su change ([`AGENTS.md`](AGENTS.md)). | Multipuesto, configuración por snapshot, permisos de operador, importación de INWeb, diagnóstico, cuenta de mantenimiento y lo que los recortes de las bitácoras y de la administración dejan fuera. |
 
 La segunda ola no se recorta del producto: los párrafos siguientes describen el
 producto completo, y su diseño se conserva en `docs/`.
