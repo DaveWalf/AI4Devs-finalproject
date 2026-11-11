@@ -60,8 +60,9 @@
                         <td>
                             @if (Editable)
                             {
-                                <input class="nombre-persona" type="text" maxlength="@AdministracionLocal.LargoNombrePersona" aria-label="Nombre visible"
-                                       value="@fila.Nombre" aria-invalid="@Marca(indice, "Nombre")" @oninput="e => fila.Nombre = Texto(e)" />
+                                <input class="nombre-persona @(EsElegido(TipoCampo.Nombre, indice) ? "elegido" : null)" type="text" maxlength="@AdministracionLocal.LargoNombrePersona"
+                                       aria-label="Nombre visible" value="@fila.Nombre" aria-invalid="@Marca(indice, "Nombre")"
+                                       @onfocus="() => Elegir(TipoCampo.Nombre, indice)" @oninput="e => fila.Nombre = Texto(e)" />
                             }
                             else
                             {
@@ -79,10 +80,10 @@
                                     {
                                         <span class="usado-hoy">@usado/</span>
                                     }
-                                    <input class="limite @(EsElegido(indice, columna) ? "elegido" : null)" type="number" inputmode="numeric" min="0"
+                                    <input class="limite @(EsElegido(TipoCampo.Limite, indice, columna) ? "elegido" : null)" type="number" inputmode="numeric" min="0"
                                            max="@AdministracionLocal.LimiteMaximo" aria-label="@($"Límite diario de {NombrePar(_pares[columna])}")"
                                            value="@fila.Limites[columna]" aria-invalid="@MarcaCupo(indice, columna)"
-                                           @ref="_referenciasLimite[(indice, columna)]" @onfocus="() => Elegir(indice, columna)"
+                                           @ref="_referenciasLimite[(indice, columna)]" @onfocus="() => Elegir(TipoCampo.Limite, indice, columna)"
                                            @oninput="e => fila.Limites[columna] = Texto(e)" />
                                 }
                                 else if (PuedeEditar && !_vista.SoloLectura)
@@ -107,8 +108,9 @@
                                 @if (fila.Nueva)
                                 {
                                     @* Sin value: lo tipeado no vuelve a dibujarse (D10 de administrar-personas-y-opciones). *@
-                                    <input class="codigo-persona" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Código"
-                                           maxlength="@AdministracionLocal.LargoCodigo" aria-invalid="@Marca(indice, "Codigo")" @oninput="e => fila.Codigo = Texto(e)" />
+                                    <input class="codigo-persona @(EsElegido(TipoCampo.Codigo, indice) ? "elegido" : null)" type="password" inputmode="numeric" pattern="[0-9]*"
+                                           autocomplete="off" aria-label="Código" maxlength="@AdministracionLocal.LargoCodigo" aria-invalid="@Marca(indice, "Codigo")"
+                                           @onfocus="() => Elegir(TipoCampo.Codigo, indice)" @oninput="e => fila.Codigo = Texto(e)" />
                                 }
                             </td>
                             <td>
@@ -143,12 +145,21 @@
         }
     }
 
+    @* El teclado en pantalla escribe en el campo elegido; se muestra al editar y se oculta hasta cerrar Configuración (D4). *@
+    @if (Editable && _tecladoVisible)
+    {
+        <TecladoEnPantalla Tecla="Teclear" />
+    }
+
     @if (Editando)
     {
         <div class="acciones">
             @if (Editable)
             {
                 <button id="agregar-persona" type="button" @onclick="AgregarPersona">Agregar persona</button>
+                <button id="@(_tecladoVisible ? "ocultar-teclado" : "mostrar-teclado")" type="button" @onclick="() => _tecladoVisible = !_tecladoVisible">
+                    @(_tecladoVisible ? "Ocultar teclado" : "Mostrar teclado")
+                </button>
             }
             <button id="cancelar-panel" type="button" @onclick="() => Cerrar.InvokeAsync(null)">Cancelar</button>
             @if (Editable)
@@ -171,7 +182,8 @@
     private string? _ordenColumna;
     private bool _ordenAscendente = true;
     private bool? _editandoCargado;
-    private (int Fila, int Columna)? _elegido;
+    private CampoElegido? _elegido;
+    private bool _tecladoVisible = true;
     private bool _enfocarElegido;
     private readonly Dictionary<(int, int), ElementReference> _referenciasLimite = [];
     private string? _mensajeExportacion;
@@ -241,7 +253,8 @@
     /// <summary>El campo elegido al tocar un cupo recibe el foco cuando la edición ya está dibujada (D2).</summary>
     protected override async Task OnAfterRenderAsync(bool primera)
     {
-        if (_enfocarElegido && Editable && _elegido is { } elegido && _referenciasLimite.TryGetValue(elegido, out var campo))
+        if (_enfocarElegido && Editable && _elegido is { Tipo: TipoCampo.Limite } elegido
+            && _referenciasLimite.TryGetValue((elegido.Fila, elegido.Columna), out var campo))
         {
             _enfocarElegido = false;
             await campo.FocusAsync();
@@ -251,14 +264,72 @@
     /// <summary>Tocar un cupo de la tabla de lectura abre la edición, como «Editar», con ese límite elegido (D2).</summary>
     private async Task TocarCupo(int fila, int columna)
     {
-        _elegido = (fila, columna);
+        _elegido = new CampoElegido(TipoCampo.Limite, fila, columna);
         _enfocarElegido = true;
         await Editar.InvokeAsync();
     }
 
-    private void Elegir(int fila, int columna) => _elegido = (fila, columna);
+    private void Elegir(TipoCampo tipo, int fila, int columna = 0) => _elegido = new CampoElegido(tipo, fila, columna);
 
-    private bool EsElegido(int fila, int columna) => _elegido == (fila, columna);
+    private bool EsElegido(TipoCampo tipo, int fila, int columna = 0) => _elegido == new CampoElegido(tipo, fila, columna);
+
+    /// <summary>
+    /// Una tecla del teclado en pantalla en el campo elegido: agrega el carácter o borra el último; en el límite y el código
+    /// sólo entran dígitos (D4). Sin campo elegido, no hace nada.
+    /// </summary>
+    private void Teclear(string tecla)
+    {
+        if (_elegido is not { } campo || campo.Fila >= _filas.Count)
+        {
+            return;
+        }
+
+        var fila = _filas[campo.Fila];
+        var actual = campo.Tipo switch
+        {
+            TipoCampo.Nombre => fila.Nombre,
+            TipoCampo.Limite => fila.Limites[campo.Columna],
+            _ => fila.Codigo,
+        };
+        string nuevo;
+        if (tecla == TecladoEnPantalla.Borrar)
+        {
+            nuevo = actual.Length == 0 ? actual : actual[..^1];
+        }
+        else
+        {
+            var caracter = tecla == TecladoEnPantalla.Espacio ? " " : tecla;
+            if (campo.Tipo != TipoCampo.Nombre && !(caracter.Length == 1 && char.IsAsciiDigit(caracter[0])))
+            {
+                return;
+            }
+
+            nuevo = actual + caracter;
+        }
+
+        switch (campo.Tipo)
+        {
+            case TipoCampo.Nombre:
+                fila.Nombre = nuevo;
+                break;
+            case TipoCampo.Limite:
+                fila.Limites[campo.Columna] = nuevo;
+                break;
+            default:
+                fila.Codigo = nuevo;
+                break;
+        }
+    }
+
+    private enum TipoCampo
+    {
+        Nombre,
+        Limite,
+        Codigo,
+    }
+
+    /// <summary>El campo en que escribe el teclado: el nombre o el código de una fila, o el límite de una de sus celdas.</summary>
+    private readonly record struct CampoElegido(TipoCampo Tipo, int Fila, int Columna);
 
     /// <summary>Lo usado hoy sobre el límite, «1/2», o «—» sin cupo (D1).</summary>
     private static string Racion(FilaPersona fila, int columna) =>

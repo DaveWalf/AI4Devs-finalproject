@@ -47,9 +47,15 @@
 
 ## 4. El teclado en pantalla
 
-- [ ] 4.1 Pruebas nuevas, vistas fallar antes: escribir «ANA» en un nombre; una letra no entra en el límite; ocultar y
+- [x] 4.1 Pruebas nuevas, vistas fallar antes: escribir «ANA» en un nombre; una letra no entra en el límite; ocultar y
   mostrar el teclado, que sigue oculto al volver a editar (D4). Verifica: rojo antes y verde después.
-- [ ] 4.2 `TecladoEnPantalla.razor` y su uso en `PanelPersonas.razor`. Verifica: 4.1 en verde.
+  - `TecladoEnPersonasTests` (4) contra el panel sin teclado: `total: 4`, `error: 3` (sin `@onfocus` en el nombre y sin
+    `.teclado-en-pantalla`); la cuarta, que no esté en la tabla de lectura, cuida lo que no se toca. Los escenarios del
+    delta se precisaron: «Mayús» antes de «ANA», y borrar, «A» y «1» dejan «1».
+- [x] 4.2 `TecladoEnPantalla.razor` y su uso en `PanelPersonas.razor`. Verifica: 4.1 en verde.
+  - El campo elegido es el nombre, el límite o el código de una fila (`CampoElegido`), al recibir el foco o al tocar su
+    cupo; las teclas no sacan el foco (`@onmousedown:preventDefault`). `Kiosk.Tests`: `total: 443`, `error: 0`, sin pruebas
+    existentes cambiadas en este grupo.
 
 ## 5. El puesto compilado, documentos y verificación integral
 

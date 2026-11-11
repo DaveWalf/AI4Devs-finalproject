@@ -7,7 +7,7 @@ Al editar Personas, el panel SHALL mostrar un teclado en pantalla con letras, la
 #### Scenario: Escribir un nombre con el teclado
 Origen: mejora 5 de David del 10/11/2026 («teclado en pantalla que se muestra u oculta»).
 - **GIVEN** la pestaña Personas en edición
-- **WHEN** se toca el nombre de una fila y se tocan las teclas de «ANA»
+- **WHEN** se toca el nombre de una fila, «Mayús» y las teclas de «ANA»
 - **THEN** el nombre de esa fila termina en «ANA», sin un teclado físico
 
 #### Scenario: Ocultar el teclado
@@ -18,9 +18,9 @@ Origen: mejora 5 de David del 10/11/2026 («que se muestra u oculta»).
 
 #### Scenario: Una letra en el límite
 Origen: «Modificar los cupos y el nombre de una persona» (el límite es un número de 0 a 99), borde.
-- **GIVEN** el campo del límite de una celda elegido
-- **WHEN** se tocan «A» y «1»
-- **THEN** el campo dice sólo el dígito agregado
+- **GIVEN** el campo del límite de una celda elegido, con 2
+- **WHEN** se tocan borrar, «A» y «1»
+- **THEN** el campo dice «1»: la letra no entró
 
 ### Requirement: Exportar Personas a CSV y a Excel
 

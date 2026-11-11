@@ -429,6 +429,13 @@ html, body { overscroll-behavior: none; }
 .tabla-personas .usado-hoy { margin-right: 4px; }
 .tabla-personas input.limite.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
 .exportar-personas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; }
+/* El teclado en pantalla de Personas: filas de teclas de 56 px, del mismo ancho dentro de cada fila (D4 y D6). */
+.teclado-en-pantalla { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.teclado-en-pantalla .fila-teclas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.teclado-en-pantalla .tecla { min-height: 56px; min-width: 0; padding: 0 4px; font-size: 20px; }
+.teclado-en-pantalla .tecla.especial { font-size: 16px; }
+.teclado-en-pantalla .tecla.activa { background: var(--acento); color: var(--sobre-acento); border-color: var(--acento); }
+.tabla-personas input.nombre-persona.elegido, .tabla-personas input.codigo-persona.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
 .exportar-personas button { font-size: 16px; }
 /* La exportación, debajo de la tabla: tres botones del alto táctil de siempre y del mismo ancho, el del más largo (D6 y D8). */
 .exportar-consumos { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; }
