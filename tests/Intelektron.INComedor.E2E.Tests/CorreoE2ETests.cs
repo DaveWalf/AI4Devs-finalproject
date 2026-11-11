@@ -7,7 +7,7 @@ namespace Intelektron.INComedor.E2E.Tests;
 
 /// <summary>
 /// Los avisos por correo, con el puesto compilado (avisar-por-correo, D3 y D7): por CDP y a 1024 × 768, con la tolerancia
-/// de 1 px de la regla de prolijidad. Las diez pestañas en una fila; la pestaña Mails medida contra Impresora; con el
+/// de 1 px de la regla de prolijidad. Las once pestañas en una fila; la pestaña Mails medida contra Impresora; con el
 /// servidor simulado caído, «Enviar una prueba» queda en la cola, y al levantarlo sale con la siguiente como dos `.eml`.
 /// </summary>
 public partial class CorreoE2ETests : IAsyncLifetime
@@ -24,7 +24,7 @@ public partial class CorreoE2ETests : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _escenario.DisposeAsync();
 
-    [Fact(DisplayName = "avisos-correo · El servidor de correo cae y vuelve (puesto compilado): a 1024 × 768 las diez pestañas entran en una fila y la pestaña Mails tiene sus campos en la columna de Impresora y sus botones parejos; con el servidor caído la prueba queda en la cola y, levantado, salen las dos")]
+    [Fact(DisplayName = "avisos-correo · El servidor de correo cae y vuelve (puesto compilado): a 1024 × 768 las once pestañas entran en una fila y la pestaña Mails tiene sus campos en la columna de Impresora y sus botones parejos; con el servidor caído la prueba queda en la cola y, levantado, salen las dos")]
     public async Task Enviar_una_prueba_con_el_servidor_caido_y_levantado()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -35,7 +35,7 @@ public partial class CorreoE2ETests : IAsyncLifetime
             ["width"] = 1024, ["height"] = 768, ["deviceScaleFactor"] = 1, ["mobile"] = false,
         });
         await EntradaConfiguracionE2E.EntrarAsync(pagina);
-        await Assertions.Expect(pagina.Locator("[role=\"tab\"]")).ToHaveCountAsync(10);
+        await Assertions.Expect(pagina.Locator("[role=\"tab\"]")).ToHaveCountAsync(11);
 
         var pestanas = await MedirAsync(pagina, "[role=\"tab\"]");
         _escenario.Registrar("1024 × 768, las pestañas: " + string.Join("; ", pestanas.Select(c => $"{c.Id} desde x {c.Izquierda:F1} con {c.Ancho:F1} px")));

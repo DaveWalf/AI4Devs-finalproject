@@ -41,24 +41,21 @@
                                               TextoVacio="Elegí a una persona…" ValorChanged="ElegirEnSimulacion" />
                         </div>
                     }
-                    <div class="ingreso">
+                    @* Con el simulador interno del lector, sólo en mantenimiento, su fila comparte la grilla del código: los dos campos *@
+                    @* y los dos botones miden lo mismo (D6 de elegir-medio-de-identificacion). Lo tipeado y el terminador recorren el *@
+                    @* mismo armado que el puerto real. *@
+                    <div class="ingreso @(LectorSimuladoVisible ? "con-lector" : null)">
                         <input id="codigo" type="text" inputmode="numeric" autocomplete="off" aria-label="Código"
                                value="@_codigo" @oninput="e => _codigo = e.Value?.ToString() ?? string.Empty" @onkeydown="TeclaCodigo" />
                         <button id="ingresar" type="button" class="principal" @onclick="Ingresar">Ingresar</button>
+                        @if (LectorSimuladoVisible)
+                        {
+                            <label for="lector-simulado" class="rotulo-lector">Lector simulado</label>
+                            <input id="lector-simulado" type="text" autocomplete="off" value="@_lecturaSimulada"
+                                   @oninput="e => _lecturaSimulada = e.Value?.ToString() ?? string.Empty" />
+                            <button id="pasar-por-lector" type="button" @onclick="PasarPorLector">Pasar por el lector</button>
+                        }
                     </div>
-                    @* El simulador interno del lector, sólo en mantenimiento (D6 de elegir-medio-de-identificacion): lo tipeado y el *@
-                    @* terminador recorren el mismo armado que el puerto real. *@
-                    @if (LectorSimuladoVisible)
-                    {
-                        <div class="lector-simulado">
-                            <label for="lector-simulado">Lector simulado</label>
-                            <div class="ingreso">
-                                <input id="lector-simulado" type="text" autocomplete="off" value="@_lecturaSimulada"
-                                       @oninput="e => _lecturaSimulada = e.Value?.ToString() ?? string.Empty" />
-                                <button id="pasar-por-lector" type="button" @onclick="PasarPorLector">Pasar por el lector</button>
-                            </div>
-                        </div>
-                    }
                     @if (Maquina.Aviso is not null)
                     {
                         <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>

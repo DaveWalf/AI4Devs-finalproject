@@ -552,6 +552,22 @@ detrás de la misma cola. Queda pendiente también el aviso de un operador que h
 tiene. La configuración vive en `correo.json` y la fecha de la última señal en `correo-estado.json`; son del equipo y no
 viajan en un resguardo.
 
+**Medio de identificación.** La pestaña Lector, después de Red y sólo con la clave del día, elige cómo llega el código:
+«Teclado» (como siempre, por defecto), «Simulador interno» o «Puerto serie», con el puerto de los que el equipo tiene
+(«Actualizar»), la velocidad, los bits de datos, la paridad y los bits de parada, el terminador de cada lectura (CR LF,
+CR, LF o TAB) y el relleno de dígitos (un código de sólo dígitos más corto se completa con ceros a la izquierda: con el
+relleno 4, una tarjeta que manda `1` identifica a `0001`). En la pantalla de identificación una lectura identifica igual
+que tipear el código y tocar «Ingresar», con los mismos rechazos y mensajes; durante una atención o con un diálogo
+abierto se descarta, sin cola. Las tramas partidas se arman, varias tramas juntas se separan, y el ruido, más de 32
+caracteres o un resto de más de 2 segundos se descartan sin pegar identidades. El código leído no queda en ningún
+registro: la identificación lleva su origen (`Origin`: `SERIAL_PORT` o `SIMULATED_READER`), y la general registra
+`READER_STATE_CHANGED` y `READER_READING_DISCARDED` (a lo sumo uno por motivo y por minuto). Un puerto que falta, está
+ocupado o se desconecta se reintenta cada 5 segundos y la atención sigue por el teclado. **El simulador interno** se ve
+sólo en mantenimiento: la pantalla de reposo muestra «Lector simulado», con su campo y su botón alineados con los del
+código, y lo tipeado recorre el mismo armado que el puerto real. **Para probar el puerto real**: con un lector USB-serie
+(o dos adaptadores unidos por un cable null-modem), elegir su `COMx` y su formato en la pestaña Lector y guardar; la
+pestaña dice si escucha. La configuración vive en `lector.json`; es del equipo y no viaja en un resguardo.
+
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|
 | ![La pestaña Personas en edición: la tabla con una fila por persona, ALMUERZO y REFRIGERIO en columnas y las opciones habilitadas, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |

@@ -33,13 +33,17 @@
 
 ## 4. La pantalla de verdad y los documentos
 
-- [ ] 4.1 E2E nueva a 1024 × 768: la fila de once pestañas entra; la pestaña Lector medida contra Impresora; con el
+- [x] 4.1 E2E nueva a 1024 × 768: la fila de once pestañas entra; la pestaña Lector medida contra Impresora; con el
   simulador interno y el relleno 4, `1` por «Lector simulado» identifica a `0001`, con capturas miradas (D6 y D8).
   Cambian, por la decisión 13, `AccesoOperadorE2ETests`, `ConfiguracionPorPestanasE2ETests`, `ExportacionE2ETests` y
-  `CorreoE2ETests`, que cuentan diez. Verifica: la E2E en verde.
-- [ ] 4.2 `AGENTS.md` (sale de la segunda ola la lectura de tramas serie), `readme.md` (el medio, el simulador y cómo
+  `CorreoE2ETests`, que cuentan diez. Verifica: la E2E en verde. Hecho: `LectorE2ETests` en verde; las once pestañas en una fila
+  hasta x 953,8 con la fila hasta x 975; los campos de Lector desde x 273,5 como `#numero-puesto`; con el simulador y
+  el relleno 4, «1» identifica a la persona de 0001. La primera captura del reposo mostró el campo del lector más angosto
+  que el del código («Pasar por el lector» es más ancho que «Ingresar»): las dos filas pasan a una grilla común, con los
+  dos campos de 369,5 px y los dos botones de 208,5 px. Las cuatro E2E de diez pestañas pasan a once.
+- [x] 4.2 `AGENTS.md` (sale de la segunda ola la lectura de tramas serie), `readme.md` (el medio, el simulador y cómo
   probar el puerto real) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de enlaces con
-  su control negativo, `enlaces rotos: 0`.
+  su control negativo, `enlaces rotos: 0`. Hecho: 0, con el control en 2.
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
   --no-incremental`, el puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c
   Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.

@@ -42,6 +42,11 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
   como una versión nueva, en este puesto o en otro del mismo esquema) sale de la segunda ola por el change
   `resguardar-configuracion`. Siguen ahí la configuración por snapshot que trae INWeb y ver o volver a una versión
   anterior desde la base.
+- La lectura de tramas serie (RF23, AT07) sale de la segunda ola por el change `elegir-medio-de-identificacion`: el medio
+  de identificación con el teclado, un simulador interno o un puerto serie con su terminador y el relleno de dígitos, en
+  la pantalla de identificación. Siguen ahí la biometría, la homologación de cada equipo real (protocolo, DTR y RTS,
+  encabezados) y el diagnóstico de dispositivos. Ninguna prueba ni la CI abren un puerto COM: el puerto real lo registra
+  sólo la ventana, y el doble del lector es el simulador interno.
 - `docs/` describe el producto completo: es antecedente, no requisito. El requisito es la spec viva
   de `openspec/specs/` más el change activo.
 

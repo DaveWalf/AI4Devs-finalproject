@@ -7,7 +7,7 @@ namespace Intelektron.INComedor.E2E.Tests;
 /// La entrada a Configuración con el teclado en pantalla, en el puesto compilado (entrar-a-configuracion-con-teclado, D3 a D6):
 /// por CDP y en un área de 1024 × 768, lo que bUnit no mide. Cada tecla del teclado de la clave mide al menos 56 px y entra en
 /// la ventana, y el campo pide no abrir el teclado táctil del sistema; 9001 abre Configuración con tres pestañas, y la clave
-/// del día, con las diez y el aviso de clave sin validar. Que el teclado táctil de Windows no aparezca lo ve David.
+/// del día, con las once y el aviso de clave sin validar. Que el teclado táctil de Windows no aparezca lo ve David.
 /// </summary>
 public class AccesoOperadorE2ETests : IAsyncLifetime
 {
@@ -21,7 +21,7 @@ public class AccesoOperadorE2ETests : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _escenario.DisposeAsync();
 
-    [Fact(DisplayName = "acceso-puesto · El teclado en pantalla y la entrada de un operador (puesto compilado): en 1024 × 768 cada tecla mide al menos 56 px y entra en la ventana, el campo tiene inputmode none, 9001 abre Configuración con tres pestañas y la clave del día con las diez y el aviso de clave sin validar")]
+    [Fact(DisplayName = "acceso-puesto · El teclado en pantalla y la entrada de un operador (puesto compilado): en 1024 × 768 cada tecla mide al menos 56 px y entra en la ventana, el campo tiene inputmode none, 9001 abre Configuración con tres pestañas y la clave del día con las once y el aviso de clave sin validar")]
     public async Task El_teclado_y_el_operador_en_el_puesto_compilado()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -59,9 +59,9 @@ public class AccesoOperadorE2ETests : IAsyncLifetime
         await pagina.Locator("#cancelar-configuracion").ClickAsync();
 
         await EntradaConfiguracionE2E.EntrarAsync(pagina);
-        await Assertions.Expect(pagina.Locator("[role=\"tab\"]")).ToHaveCountAsync(10);
+        await Assertions.Expect(pagina.Locator("[role=\"tab\"]")).ToHaveCountAsync(11);
         await Assertions.Expect(pagina.Locator("#aviso-clave-sin-validar")).ToHaveTextAsync("Entraste con una clave del día sin validar: esta versión acepta cualquier número.");
-        _escenario.Registrar("clave del día: Configuración con las diez pestañas y el aviso de clave sin validar");
+        _escenario.Registrar("clave del día: Configuración con las once pestañas y el aviso de clave sin validar");
     }
 
     /// <summary>Las cajas de las teclas del teclado de la clave y de «Cancelar», respecto de la ventana.</summary>
