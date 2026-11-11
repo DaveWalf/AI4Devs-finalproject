@@ -1,0 +1,34 @@
+## 1. La presentación de las opciones
+
+- [ ] 1.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: `AlmacenPresentacionOpciones` guarda y lee el color, la
+  imagen (por su huella, en `opciones\`), la transparencia y el precio visible de una opción; descarta un color fuera de
+  la paleta, una transparencia fuera de los cuatro pasos y una imagen que no existe; sin archivo, ninguna opción
+  personalizada (D3). Verifica: rojo antes y verde después.
+- [ ] 1.2 `PresentacionOpciones` y `AlmacenPresentacionOpciones`, registrado en la ventana. Verifica: 1.1 en verde.
+
+## 2. La pestaña Opciones
+
+- [ ] 2.1 Pruebas nuevas, vistas fallar antes: el catálogo a la vista con sus nueve opciones; «Editar» en una opción abre
+  la edición en el lugar y enfoca su nombre; «Personalizar» con un color y 25 %, con una imagen válida y con una que no
+  lo es, con el precio oculto y «Cancelar»; `OPTION_STYLE_CHANGED` en la general con la huella y sin el contenido (D1,
+  D2 y D5). Verifica: rojo antes y verde después.
+- [ ] 2.2 `#catalogo-opciones`, el cartel `#personalizar-opcion` y el registro. Verifica: 2.1 en verde y `Kiosk.Tests`
+  entero en verde, con las pruebas existentes que cambien listadas con su porqué.
+
+## 3. La atención
+
+- [ ] 3.1 Pruebas nuevas, vistas fallar antes: la tarjeta personalizada con su fondo y su transparencia, las demás como
+  siempre; con el precio oculto, ni la tarjeta ni el cartel muestran importe y el comprobante sí (D4). Verifica: rojo
+  antes y verde después.
+- [ ] 3.2 La tarjeta y el cartel de `PantallaAtencion` y `puesto.css`. Verifica: 3.1 en verde y `Kiosk.Tests` entero.
+
+## 4. El puesto compilado, documentos y verificación integral
+
+- [ ] 4.1 E2E nueva a 1024 × 768: el catálogo a la vista, el cartel con sus colores y sus pasos de transparencia medidos,
+  una opción personalizada y otra con el precio oculto en la atención, con capturas miradas (D6). Verifica: `dotnet test
+  tests/Intelektron.INComedor.E2E.Tests` en verde.
+- [ ] 4.2 `readme.md` (Opciones) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
+  enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
+- [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
+  publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
+  los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
