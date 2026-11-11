@@ -68,13 +68,13 @@ Origen: RB21 y `AGENTS.md` (OWASP: la configuración que llega al puesto), borde
 
 ### Requirement: Configuración por pestañas, con Consumos primero
 
-Configuración SHALL organizarse en las pestañas Consumos, Personas, Opciones, Identidad visual, Impresora, Mails, Pantalla, Red, Exportación y General, en ese orden, una visible a la vez y con Consumos elegida al entrar, con la clave del día o con el código de un operador; con un operador, sólo Consumos, Personas e Impresora (`acceso-puesto`). Cada pestaña MUST medir al menos 56 px de alto, operable por toque y teclado. General MUST mostrar el modo, las bitácoras y «Cerrar el puesto».
+Configuración SHALL organizarse en las pestañas Consumos, Personas, Opciones, Identidad visual, Impresora, Mails, Pantalla, Red, Lector, Exportación y General, en ese orden, una visible a la vez y con Consumos elegida al entrar, con la clave del día o con el código de un operador; con un operador, sólo Consumos, Personas e Impresora (`acceso-puesto`). Cada pestaña MUST medir al menos 56 px de alto, operable por toque y teclado. General MUST mostrar el modo, las bitácoras y «Cerrar el puesto».
 
 #### Scenario: Abre en Consumos con todas las pestañas en orden
-Origen: decisión de David del 03/11/2026 («en diferentes pestañas siguiendo el estilo del INWeb»), su pedido del 06/11/2026 (punto 2) y sus mejoras 4 («Consumos primero»), 6 («sin Comprobantes»), 8a («General al final») y 11 («Exportación de consumos, antes de la última») y 10 («pestaña de mails después de Impresora») del 10/11/2026.
+Origen: decisión de David del 03/11/2026 («en diferentes pestañas siguiendo el estilo del INWeb»), su pedido del 06/11/2026 (punto 2) y sus mejoras 4 («Consumos primero»), 6 («sin Comprobantes»), 8a («General al final») y 11 («Exportación de consumos, antes de la última»), 10 («pestaña de mails después de Impresora») y 9a («después de Red, el medio de identificación») del 10/11/2026.
 - **GIVEN** el puesto en mantenimiento y en reposo
 - **WHEN** se toca el engranaje y se entra con la clave del día
-- **THEN** Configuración muestra las pestañas en el orden Consumos, Personas, Opciones, Identidad visual, Impresora, Mails, Pantalla, Red, Exportación y General, con Consumos elegida, y ninguna pestaña Comprobantes
+- **THEN** Configuración muestra las pestañas en el orden Consumos, Personas, Opciones, Identidad visual, Impresora, Mails, Pantalla, Red, Lector, Exportación y General, con Consumos elegida, y ninguna pestaña Comprobantes
 - **AND** al tocar General, la última, muestra el modo, el estado de las dos bitácoras y «Cerrar el puesto»
 
 #### Scenario: Elegir otra pestaña

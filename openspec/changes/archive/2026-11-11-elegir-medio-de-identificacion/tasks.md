@@ -44,9 +44,10 @@
 - [x] 4.2 `AGENTS.md` (sale de la segunda ola la lectura de tramas serie), `readme.md` (el medio, el simulador y cómo
   probar el puerto real) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de enlaces con
   su control negativo, `enlaces rotos: 0`. Hecho: 0, con el control en 2.
-- [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
+- [x] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
   --no-incremental`, el puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c
-  Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+  Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas. Hecho: la primera, sobre `72a4ed8`, dio 1099 de 1100 por una carrera del
+  change 7 al cerrar los avisos, corregida en `19555aa`; la final, sobre el archivado, en el PR.
 
 ## 5. Correcciones de la verificación
 
