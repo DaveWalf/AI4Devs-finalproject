@@ -5,9 +5,11 @@ namespace Intelektron.INComedor.Infrastructure.Sqlite;
 /// <summary>
 /// Lo que recibe la impresora: los datos guardados del comprobante, con el nombre del comensal y sin su código ni su
 /// credencial, la leyenda de la copia y, en una reimpresión, el nombre del operador que la habilitó (D1 y D5 de
-/// enriquecer-comprobante).
+/// enriquecer-comprobante) o, si se hizo con la clave del día, la marca SIN VALIDEZ en su lugar (D2 de
+/// reimprimir-sin-codigo): una copia lleva una de las dos, nunca las dos.
 /// </summary>
-public sealed record ComprobanteAImprimir(Guid TrabajoId, Guid TicketId, int NumeroCopia, string DatosImpresion, string? Leyenda, string? Habilito = null);
+public sealed record ComprobanteAImprimir(
+    Guid TrabajoId, Guid TicketId, int NumeroCopia, string DatosImpresion, string? Leyenda, string? Habilito = null, bool SinValidez = false);
 
 public enum RespuestaEnvio
 {
@@ -74,7 +76,8 @@ public sealed class TrabajosImpresion
             }
 
             var respuesta = _impresora.Enviar(new ComprobanteAImprimir(
-                trabajo.TrabajoId, trabajo.TicketId, trabajo.NumeroCopia, trabajo.DatosImpresion, Leyenda(trabajo.NumeroCopia), trabajo.Habilito));
+                trabajo.TrabajoId, trabajo.TicketId, trabajo.NumeroCopia, trabajo.DatosImpresion, Leyenda(trabajo.NumeroCopia), trabajo.Habilito,
+                trabajo.SinValidez));
 
             var (estado, error) = respuesta.Envio switch
             {
@@ -119,7 +122,12 @@ public sealed class TrabajosImpresion
                          AND lower(json_extract(bit.combitContexto, '$.PrintJobId')) = lower(imp.comimpCodigo)
                        ORDER BY per.comvcCodigo = (SELECT comvcCodigoActiva FROM tbComedorConfiguracionPuestos LIMIT 1) DESC,
                                 ver.comvcVersionConfiguracion DESC
-                       LIMIT 1) END
+                       LIMIT 1) END,
+                   CASE WHEN imp.comimpNumeroCopia > 0 AND EXISTS (
+                       SELECT 1 FROM tbComedorBitacora bit
+                       WHERE bit.combitTipoEvento = 'TICKET_REPRINTED'
+                         AND lower(json_extract(bit.combitContexto, '$.PrintJobId')) = lower(imp.comimpCodigo)
+                         AND json_extract(bit.combitContexto, '$.Access') = 'DAILY_KEY') THEN 1 ELSE 0 END
             FROM tbComedorTrabajosImpresion imp
             JOIN tbComedorComprobantes cmp ON cmp.comcmpCodigo = imp.comcmpCodigo
             WHERE imp.comimpEstado = 'QUEUED'
@@ -130,7 +138,7 @@ public sealed class TrabajosImpresion
         while (lector.Read())
         {
             trabajos.Add(new TrabajoEnCola(lector.GetGuid(0), lector.GetGuid(1), lector.GetInt32(2), lector.GetString(3),
-                lector.IsDBNull(4) ? null : lector.GetString(4)));
+                lector.IsDBNull(4) ? null : lector.GetString(4), lector.GetInt64(5) == 1));
         }
 
         return trabajos;
@@ -168,7 +176,8 @@ public sealed class TrabajosImpresion
 
     /// <summary>
     /// Un trabajo en cola; el de una copia, con el nombre del operador que la habilitó, leído del TICKET_REPRINTED de la
-    /// bitácora de la base, escrito en la misma transacción que el trabajo (D5 de enriquecer-comprobante).
+    /// bitácora de la base, escrito en la misma transacción que el trabajo (D5 de enriquecer-comprobante), o con la marca
+    /// SIN VALIDEZ si ese TICKET_REPRINTED dice Access DAILY_KEY (D2 de reimprimir-sin-codigo).
     /// </summary>
-    private sealed record TrabajoEnCola(Guid TrabajoId, Guid TicketId, int NumeroCopia, string DatosImpresion, string? Habilito);
+    private sealed record TrabajoEnCola(Guid TrabajoId, Guid TicketId, int NumeroCopia, string DatosImpresion, string? Habilito, bool SinValidez);
 }

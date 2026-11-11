@@ -44,7 +44,7 @@ sigue la regla de prolijidad de `config.yaml`.
 
 ## 2. La base: reimprimir y recuperar con la clave del día
 
-- [ ] 2.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests` (`AsistenciaConClaveTests`), vistas fallar antes. Primero,
+- [x] 2.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests` (`AsistenciaConClaveTests`), vistas fallar antes. Primero,
   `ReimprimirConClave` crea la copia siguiente con un `TICKET_REPRINTED` que lleva `ActorPersonId` nulo,
   `NO_AUTHENTICATION`, `Access` `DAILY_KEY`, el motivo, el comprobante y la copia, sin `PersonId` ni `GrantId`, y deja
   consumo, cupo e importe iguales. Después, `RecuperarConClave` reenvía el mismo trabajo, sin copia nueva, con un
@@ -52,14 +52,22 @@ sigue la regla de prolijidad de `config.yaml`.
   un comprobante inexistente da `TICKET_NOT_FOUND`. Verifica:
   `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter-class *AsistenciaConClave*`, en rojo
   antes y en verde después.
-- [ ] 2.2 Los dos métodos de D1 en `Asistencia.cs`, con el cuerpo común extraído de `Actuar`. Verifica: 2.1 en verde, y
+  - Hecho el 11/11 a las 18:03: rojo 4 de 4 por `NotImplementedException` de los dos métodos vacíos, antes de
+    implementarlos.
+- [x] 2.2 Los dos métodos de D1 en `Asistencia.cs`, con el cuerpo común extraído de `Actuar`. Verifica: 2.1 en verde, y
   `AsistenciaTests` y `SalidaAsistenciaTests` sin cambios y en verde.
-- [ ] 2.3 Pruebas nuevas de `TrabajosImpresion`, vistas fallar antes: la copia hecha con la clave del día llega con
+  - Hecho: `CuerpoRecuperar` y `CuerpoReimprimir` comunes, `ActuarConClave` sin persona ni permiso. Las tres clases en
+    verde, 24 de 24.
+- [x] 2.3 Pruebas nuevas de `TrabajosImpresion`, vistas fallar antes: la copia hecha con la clave del día llega con
   `SinValidez` y sin `Habilito`; la del operador, con `Habilito` y sin `SinValidez`; el original recuperado con la clave,
   sin ninguno de los dos (D2 y D3). Verifica: el filtro de la clase, en rojo antes y en verde después.
-- [ ] 2.4 D2 en `TrabajosImpresion.cs`, con `SinValidez` al final de `ComprobanteAImprimir` y con valor por defecto.
+  - Hecho en `MarcaDeLaCopiaTests` (4 pruebas, con una copia de cada acceso sobre el mismo comprobante): con el campo
+    agregado y la consulta sin cambiar, rojo 2 de 4, las dos que exigen la marca; las dos de resguardo ya pasaban.
+- [x] 2.4 D2 en `TrabajosImpresion.cs`, con `SinValidez` al final de `ComprobanteAImprimir` y con valor por defecto.
   Verifica: 2.3 en verde y `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` entero en verde, con el
   `git diff --diff-filter=M` del encabezado pegado.
+  - Hecho: `MarcaDeLaCopiaTests` 4 de 4 y el proyecto entero 306 de 306. `git diff --diff-filter=M --name-only 7b80d45
+    -- tests/` sale vacío: ninguna prueba existente cambió en este grupo.
 
 ## 3. El papel: la marca en lugar de «Habilitó:»
 
