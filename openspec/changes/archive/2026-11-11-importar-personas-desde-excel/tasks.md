@@ -63,9 +63,12 @@
   enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
   - `readme.md` (Personas) y la fila de OWASP del mapa (XXE, topes y todo o nada). Enlaces de los dos y del change:
     `enlaces rotos: 0`; el control negativo, `enlaces rotos: 2`.
-- [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
+- [x] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+  - Sobre `737a8ed`, de 01:56 a 02:04: validate 16 de 16, build sin advertencias, el paquete con su E2E y `total: 923`,
+    `error: 0` (Contracts 23, Domain 91, Sqlite 252, Kiosk 460, Sync.Api 62, E2E 35). Prueba existente cambiada: sólo
+    `PuntoFinalTests`. La integral después de las correcciones y del archivado va en el PR.
 
 ## 5. Correcciones de la verificación
 
