@@ -54,6 +54,34 @@ public sealed record VistaAdministracion(
     IReadOnlyList<OpcionAdministrada> Opciones)
 {
     public bool SoloLectura => Origen == OrigenConfiguracion.INWeb;
+
+    /// <summary>
+    /// Los pares de servicio y categoría que son columnas de Personas: los que usan las cargas de las opciones, en el orden
+    /// del catálogo, y después los de alguna regla que el catálogo no usa; no cada servicio por cada categoría (D4 de
+    /// administrar-personas-y-opciones). La tabla y la exportación de Personas usan los mismos.
+    /// </summary>
+    public IReadOnlyList<(Guid Servicio, Guid Categoria)> ParesDeCupo()
+    {
+        var pares = new List<(Guid, Guid)>();
+        foreach (var par in Opciones.SelectMany(o => o.Cargas.Select(c => (o.ServicioId, c.CategoriaId)))
+                     .Concat(Personas.SelectMany(p => p.Cupos.Select(c => (c.ServicioId, c.CategoriaId)))))
+        {
+            if (!pares.Contains(par))
+            {
+                pares.Add(par);
+            }
+        }
+
+        return pares;
+    }
+
+    /// <summary>El nombre de la columna de un par: el del servicio si coincide con la categoría, o «servicio · categoría».</summary>
+    public string NombrePar((Guid Servicio, Guid Categoria) par)
+    {
+        var nombreServicio = Servicios.FirstOrDefault(s => s.Id == par.Servicio)?.Nombre ?? "?";
+        var nombreCategoria = Categorias.FirstOrDefault(c => c.Id == par.Categoria)?.Nombre ?? "?";
+        return nombreServicio == nombreCategoria ? nombreServicio : $"{nombreServicio} · {nombreCategoria}";
+    }
 }
 
 /// <summary>El límite diario de una persona para un servicio y una categoría, de 0 a 99 (D9).</summary>

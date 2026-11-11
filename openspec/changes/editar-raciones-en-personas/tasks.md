@@ -13,11 +13,17 @@
 
 ## 2. La planilla compartida y la exportación de Personas
 
-- [ ] 2.1 `EscritorPlanilla` con la escritura de CSV y XLSX de `ExportacionConsumos` (D5), sin cambiar su salida.
+- [x] 2.1 `EscritorPlanilla` con la escritura de CSV y XLSX de `ExportacionConsumos` (D5), sin cambiar su salida.
   Verifica: `ExportacionConsumosTests` en verde sin cambios.
-- [ ] 2.2 Pruebas nuevas de `ExportacionPersonas`, vistas fallar antes: el CSV con encabezado, una fila por persona, lo
+  - `EscritorPlanilla` (el temporal con GUID, el nombre libre del segundo, el apóstrofo de las fórmulas, el libro mínimo,
+    con columnas más allá de la Z) y `NumeroPlanilla`; `ExportacionConsumos` arma sus filas y lo llama. Sin tocar sus
+    pruebas: `ExportacionConsumosTests` 13 de 13 y `ExportarConsumosTests` 9 de 9.
+- [x] 2.2 Pruebas nuevas de `ExportacionPersonas`, vistas fallar antes: el CSV con encabezado, una fila por persona, lo
   usado y el límite de cada cupo, sin códigos; el XLSX con números. Después, `ExportacionPersonas`. Verifica: rojo antes y
   verde después.
+  - `ExportacionPersonasTests` (2) contra un esqueleto: `total: 2`, `error: 2` (`NotImplementedException`). Las columnas
+    salen de `VistaAdministracion.ParesDeCupo` y `NombrePar`, que la tabla también usa. `Infrastructure.Sqlite.Tests`:
+    `total: 239`, `error: 0`.
 
 ## 3. La tabla: x/n, tocar para editar y exportar
 
