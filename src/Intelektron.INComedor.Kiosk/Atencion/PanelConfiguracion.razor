@@ -332,6 +332,34 @@
                     </div>
                 </section>
             }
+
+            @* El número y el nombre del puesto y la numeración, desde el próximo comprobante (D7 de enriquecer-comprobante). *@
+            @if (GuardarDatosPuesto is not null)
+            {
+                <section aria-labelledby="titulo-datos-comprobante" class="textos-comprobante datos-comprobante">
+                    <h3 id="titulo-datos-comprobante">Datos del comprobante</h3>
+                    <label for="numero-puesto">Número del puesto</label>
+                    <input id="numero-puesto" type="text" inputmode="numeric" maxlength="3" value="@_numeroPuesto"
+                           aria-invalid="@(_camposDatos.Contains("Numero") ? "true" : null)" @oninput="e => _numeroPuesto = e.Value?.ToString() ?? string.Empty" />
+                    <label for="nombre-puesto">Nombre del puesto</label>
+                    <input id="nombre-puesto" type="text" maxlength="@DatosPuesto.LargoNombre" value="@_nombrePuesto"
+                           aria-invalid="@(_camposDatos.Contains("Nombre") ? "true" : null)" @oninput="e => _nombrePuesto = e.Value?.ToString() ?? string.Empty" />
+                    <span id="titulo-numeracion" class="rotulo">Número del comprobante</span>
+                    <div class="numeracion" role="group" aria-labelledby="titulo-numeracion">
+                        <button id="numeracion-codigo" type="button" aria-pressed="@(_correlativo ? "false" : "true")" @onclick="() => _correlativo = false">El código de siempre</button>
+                        <button id="numeracion-correlativo" type="button" aria-pressed="@(_correlativo ? "true" : "false")" @onclick="() => _correlativo = true">Correlativo desde</button>
+                        <input id="desde-correlativo" type="text" inputmode="numeric" maxlength="9" value="@_desde" aria-label="Desde el número"
+                               aria-invalid="@(_camposDatos.Contains("Desde") ? "true" : null)" @oninput="e => _desde = e.Value?.ToString() ?? string.Empty" />
+                    </div>
+                    @if (_avisoDatos is not null)
+                    {
+                        <p id="aviso-datos-comprobante" class="aviso" role="status">@_avisoDatos</p>
+                    }
+                    <div class="acciones">
+                        <button id="guardar-datos-comprobante" type="button" class="principal" @onclick="GuardarLosDatosDelPuesto">Guardar</button>
+                    </div>
+                </section>
+            }
         </section>
 
         @if (Operador is null)
@@ -1279,6 +1307,20 @@
     private string _pie = string.Empty;
     private IReadOnlyList<string> _camposTextos = [];
     private string? _avisoTextos;
+    private string _numeroPuesto = string.Empty;
+    private string _nombrePuesto = string.Empty;
+    private bool _correlativo;
+    private string _desde = "1";
+    private IReadOnlyList<string> _camposDatos = [];
+    private string? _avisoDatos;
+
+    /// <summary>Los datos del comprobante que son del equipo, que la pestaña Impresora edita (D7 de enriquecer-comprobante).</summary>
+    [Parameter]
+    public DatosPuesto DatosDelPuesto { get; set; } = DatosPuesto.PorDefecto;
+
+    /// <summary>Guarda el número, el nombre, la numeración y el «desde» como se tipearon; la pantalla los valida y registra.</summary>
+    [Parameter]
+    public Func<string, string, bool, string, ResultadoTextos>? GuardarDatosPuesto { get; set; }
     private IReadOnlyList<MonitorDelPuesto> _monitores = [];
     private int _monitorElegido;
     private string? _avisoMonitorError;
@@ -1484,6 +1526,10 @@
         LeerResumen();
         _encabezado = Textos.Encabezado;
         _pie = Textos.Pie;
+        _numeroPuesto = DatosDelPuesto.Numero?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+        _nombrePuesto = DatosDelPuesto.Nombre;
+        _correlativo = DatosDelPuesto.Correlativo;
+        _desde = DatosDelPuesto.Desde.ToString(System.Globalization.CultureInfo.InvariantCulture);
         _monitores = Monitores.Leer();
         var guardado = _monitores.ToList().FindIndex(m => m.Id == MonitorGuardadoId);
         _monitorElegido = guardado >= 0 ? guardado : Math.Max(0, _monitores.ToList().FindIndex(m => m.Principal));
@@ -1515,6 +1561,19 @@
         _camposTextos = resultado.Campos;
         _avisoTextos = resultado.Aviso;
         _avisoGuardado = resultado.Guardado ? MensajesAtencion.TextosGuardados : null;
+    }
+
+    /// <summary>Guarda sólo los datos del comprobante y deja Configuración abierta, como los textos (D7 de enriquecer-comprobante).</summary>
+    private void GuardarLosDatosDelPuesto()
+    {
+        if (GuardarDatosPuesto?.Invoke(_numeroPuesto, _nombrePuesto, _correlativo, _desde) is not { } resultado)
+        {
+            return;
+        }
+
+        _camposDatos = resultado.Campos;
+        _avisoDatos = resultado.Aviso;
+        _avisoGuardado = resultado.Guardado ? MensajesAtencion.DatosPuestoGuardados : null;
     }
 
     protected override async Task OnAfterRenderAsync(bool primera)

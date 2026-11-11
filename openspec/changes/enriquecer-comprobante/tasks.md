@@ -30,11 +30,14 @@
 
 ## 3. En la pantalla
 
-- [ ] 3.1 Pruebas nuevas, vistas fallar antes: «Datos del comprobante» en Impresora guarda el puesto y la numeración, avisa,
+- [x] 3.1 Pruebas nuevas, vistas fallar antes: «Datos del comprobante» en Impresora guarda el puesto y la numeración, avisa,
   deja `CONFIGURATION_CHANGED` de `TICKET_DATA` y vale desde la próxima confirmación; los campos fuera de forma se señalan
-  sin guardar; con un operador, la sección se ve como el resto de Impresora (D7). Verifica: rojo antes y verde después.
-- [ ] 3.2 La sección, sus registros y el cableado del «desde» del correlativo en la ventana. Verifica: 3.1 en verde y
-  `Kiosk.Tests` entero, con las pruebas existentes que cambien listadas con su porqué.
+  sin guardar; con un operador, la sección se ve como el resto de Impresora (D7). Verifica: rojo antes y verde después. Hecho: 3
+  en `DatosDelComprobanteTests`, vistas fallar porque la sección no existía, y en verde.
+- [x] 3.2 La sección, sus registros y el cableado del «desde» del correlativo en la ventana. Verifica: 3.1 en verde y
+  `Kiosk.Tests` entero, con las pruebas existentes que cambien listadas con su porqué. Hecho: Kiosk 523 de 523; el
+  ayudante `PuestoDePrueba` arma el servicio como la ventana, con el «desde» de `puesto.json`, sin cambiar ninguna
+  afirmación.
 
 ## 4. El puesto compilado, documentos y verificación integral
 

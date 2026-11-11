@@ -258,6 +258,7 @@
                             Resguardo="Resguardo" RegistrarResguardo="RegistrarResguardoGuardado"
                             RegistrarRecuperacion="RegistrarRecuperacionDeResguardo" RegistrarRecuperacionRechazada="RegistrarRecuperacionRechazada"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
+                            DatosDelPuesto="_datosPuesto" GuardarDatosPuesto="@(_almacenDatosPuesto is null ? null : GuardarDatosPuesto)"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
                             Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
                             AplicarRed="AplicarRed" DireccionReceptor="@_pruebaConexion?.Direccion"
@@ -1135,6 +1136,94 @@
         RegistrarCambioDeTextos(antes, nuevos, "APPLIED", []);
         return new ResultadoTextos(true, [], null);
     }
+
+    /// <summary>
+    /// Valida y guarda los datos del comprobante como se tipearon: el número del puesto (vacío es ninguno), su nombre, la
+    /// numeración y el «desde» (vacío con el código de siempre deja el de antes). Valen desde el próximo comprobante y quedan
+    /// en la general como TICKET_DATA (D7 de enriquecer-comprobante).
+    /// </summary>
+    private ResultadoTextos GuardarDatosPuesto(string numero, string nombre, bool correlativo, string desde)
+    {
+        var antes = _datosPuesto;
+        var campos = new List<string>();
+        int? puesto = null;
+        if (numero.Trim().Length > 0)
+        {
+            if (numero.Trim().All(char.IsAsciiDigit) && int.TryParse(numero.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var valor))
+            {
+                puesto = valor;
+            }
+            else
+            {
+                campos.Add("Numero");
+            }
+        }
+
+        long inicio = antes.Desde;
+        if (desde.Trim().Length > 0 || correlativo)
+        {
+            if (!long.TryParse(desde.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out inicio))
+            {
+                inicio = 0;
+            }
+        }
+
+        foreach (var campo in DatosPuesto.Validar(puesto, nombre, inicio))
+        {
+            if (!campos.Contains(campo))
+            {
+                campos.Add(campo);
+            }
+        }
+
+        campos = [.. new[] { "Numero", "Nombre", "Desde" }.Where(campos.Contains)];
+        if (campos.Count > 0)
+        {
+            RegistrarCambioDeDatos(antes, null, "REJECTED", campos);
+            return new ResultadoTextos(false, campos, MensajesAtencion.PanelInvalido);
+        }
+
+        var nuevos = new DatosPuesto(puesto, nombre, correlativo, inicio);
+        try
+        {
+            _almacenDatosPuesto!.Guardar(nuevos);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            RegistrarCambioDeDatos(antes, nuevos, "FAILED", []);
+            return new ResultadoTextos(false, [], MensajesAtencion.DatosPuestoNoGuardados);
+        }
+
+        _datosPuesto = nuevos;
+        if (Servicio.Impresora is ImpresoraSimulada simulada)
+        {
+            simulada.Puesto = nuevos;
+        }
+
+        RegistrarCambioDeDatos(antes, nuevos, "APPLIED", []);
+        return new ResultadoTextos(true, [], null);
+    }
+
+    private void RegistrarCambioDeDatos(DatosPuesto antes, DatosPuesto? despues, string resultado, IReadOnlyList<string> campos) =>
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "TICKET_DATA",
+            Before = DatosDelRegistro(antes),
+            After = despues is null ? null : DatosDelRegistro(despues),
+            Result = resultado,
+            Fields = campos,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    private static object DatosDelRegistro(DatosPuesto datos) => new
+    {
+        PostNumber = datos.Numero,
+        PostName = datos.Nombre,
+        Numbering = datos.Correlativo ? "CORRELATIVE" : "TICKET_CODE",
+        From = datos.Desde,
+    };
 
     private void RegistrarCambioDeTextos(TextosComprobante antes, TextosComprobante? despues, string resultado, IReadOnlyList<string> campos) =>
         RegistrarConfiguracion("CONFIGURATION_CHANGED", new

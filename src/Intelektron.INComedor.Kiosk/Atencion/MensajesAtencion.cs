@@ -66,6 +66,8 @@ public static class MensajesAtencion
     public const string PruebaIncierta = "No se sabe si la prueba salió: revisá la impresora.";
     public const string TextosGuardados = "Se guardaron los textos del comprobante.";
     public const string TextosNoGuardados = "No se pudieron guardar los textos: siguen los de antes.";
+    public const string DatosPuestoGuardados = "Se guardaron los datos del comprobante: valen desde el próximo.";
+    public const string DatosPuestoNoGuardados = "No se pudieron guardar los datos del comprobante: siguen los de antes.";
 
     // La pestaña Pantalla (presentacion-puesto de configurar-puesto-por-pestanas, D10).
     public const string MonitorAusente = "El monitor guardado no está conectado: el puesto abrió en el principal.";

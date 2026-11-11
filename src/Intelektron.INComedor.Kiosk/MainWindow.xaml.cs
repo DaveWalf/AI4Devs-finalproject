@@ -35,10 +35,14 @@ public partial class MainWindow : Window
         {
             // El receptor de demostración (D12) deja sus certificados en certificados\; sin ellos, el puesto atiende sin receptor.
             var receptor = ClienteReceptorHttp.DesdeCarpetaDemostracion(entorno.CarpetaCertificados, entorno.DireccionReceptor);
+            // Los datos del comprobante que son del equipo; el «desde» del correlativo se lee en cada confirmación (D2 y D3 de
+            // enriquecer-comprobante).
+            var datosPuesto = new AlmacenDatosPuesto(entorno.Carpeta);
             var atencion = new ServicioAtencion(entorno.RutaBase, TimeProvider.System, new ImpresoraSimulada(entorno.CarpetaComprobantes), receptor,
                 entorno.CatalogoNueve)
             {
                 BitacorasAutomaticas = true,
+                CorrelativoDesde = () => datosPuesto.Leer() is { Correlativo: true } datos ? datos.Desde : null,
             };
             // El contenedor no libera una instancia que recibió armada: el cierre de la ventana es el cierre ordenado del
             // puesto, con KIOSK_STOPPED y la última pasada de las bitácoras (escribir-bitacoras-externas, D4 y D9).
@@ -47,6 +51,7 @@ public partial class MainWindow : Window
             servicios.AddSingleton(new AlmacenModoPuesto(entorno.Carpeta));
             servicios.AddSingleton(new AlmacenSimulacion(entorno.Carpeta));
             servicios.AddSingleton(new AlmacenImpresora(entorno.Carpeta));
+            servicios.AddSingleton(datosPuesto);
             servicios.AddSingleton(PrepararCierre());
             var almacenPantalla = new AlmacenPantalla(entorno.Carpeta);
             servicios.AddSingleton(almacenPantalla);
