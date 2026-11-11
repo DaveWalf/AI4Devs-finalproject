@@ -70,8 +70,8 @@ El trabajo de copia 0 que falló por papel es el comprobante del consumo, que nu
 leyenda, sin «Habilitó:» y sin la marca. Sólo `TICKET_RECOVERED` dice que se hizo con la clave del día.
 
 - *Descartada*: marcarlo «SIN VALIDEZ». El consumo es válido y ése es su único comprobante: marcarlo dejaría al
-  comensal con un papel que dice que no vale. **Para la revisión de David**: la respuesta 1 del gate habla de la copia;
-  si quiere la marca también en el original recuperado, este escenario cambia antes de aplicar.
+  comensal con un papel que dice que no vale. David aprobó D3 y D4 como están el 11/11/2026 a
+  las 17:42 («apruebo la lista 1.1, D3 y D4 como están»).
 
 ### D4. La copia sin validez sigue numerada
 

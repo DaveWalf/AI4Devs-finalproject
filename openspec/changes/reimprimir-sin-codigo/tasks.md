@@ -8,10 +8,12 @@ sigue la regla de prolijidad de `config.yaml`.
 
 ## 1. Las pruebas existentes que el cambio exige tocar
 
-- [ ] 1.1 David aprueba esta lista antes de que se toque una prueba existente (`AGENTS.md`). Sale de un `grep` de los
+- [x] 1.1 David aprueba esta lista antes de que se toque una prueba existente (`AGENTS.md`). Sale de un `grep` de los
   identificadores del pedido (`#codigo-operador`, `#entrar-operador`, `#cancelar-operador`, `#pedido-operador`,
   `PedidoOperador`, `#aviso-comprobantes`, `#salir`) y de los métodos de `SesionOperador` que se van. Verifica: su
   respuesta anotada en esta tarea, y en cada grupo el `git diff --diff-filter=M` sin archivos fuera de la lista.
+  - Aprobada por David el 11/11/2026 a las 17:42, textual: «apruebo la lista 1.1, D3 y D4 como están». Una prueba
+    existente fuera de esta lista necesita otra aprobación suya.
   - `Kiosk.Tests/AccionesEnConsumosTests.cs`: `Reimprimir_pide_el_codigo_con_la_clave` se reescribe como «Con la clave
     del día no se pide un código»; `Recuperar_por_el_pedido`, como «Recuperar con la clave del día»;
     `Salir_no_cierra_la_sesion_adoptada`, como «Cerrar Configuración termina la sesión», sin «Salir».
