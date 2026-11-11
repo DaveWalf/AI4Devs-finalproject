@@ -1,5 +1,7 @@
 @using System.Globalization
 @using Intelektron.INComedor.Infrastructure.Sqlite
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 
 @*
     «Opciones del comedor» (administrar-personas-y-opciones): cada opción con todos sus parámetros (nombre, servicio, importe,
@@ -174,11 +176,30 @@
     [Parameter]
     public EventCallback<string?> Cerrar { get; set; }
 
+    /// <summary>La opción cuyo nombre recibe el foco al abrir, por su lugar en la lista: la del «Editar» tocado (D1 de personalizar-opciones).</summary>
+    [Parameter]
+    public int? Enfocar { get; set; }
+
     private bool Editable => !_vista.SoloLectura;
 
     private string ImporteCero => 0m.ToString("F" + _escala.ToString(CultureInfo.InvariantCulture), Cultura);
 
     protected override void OnInitialized() => Cargar(Administracion.Leer());
+
+    protected override async Task OnAfterRenderAsync(bool primera)
+    {
+        if (primera && Enfocar is { } indice)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("incomedor.enfocar", $"article.opcion-admin[data-indice=\"{indice}\"] input.nombre-opcion");
+            }
+            catch (JSException)
+            {
+                // Sin la función (una página vieja en caché), el foco queda donde estaba.
+            }
+        }
+    }
 
     private void Cargar(VistaAdministracion vista)
     {

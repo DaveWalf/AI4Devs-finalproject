@@ -610,3 +610,46 @@ html, body { overscroll-behavior: none; }
     *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 .numero-pagina { padding: 4px 12px; }
+
+/* La presentación de una opción (D4 de personalizar-opciones): el fondo, de color o de imagen, en una capa debajo del texto
+   con la opacidad que deja la transparencia, así el nombre y el cargo quedan opacos; sobre una imagen llevan un respaldo
+   claro para leerse sobre cualquier foto. La misma tarjeta sirve de muestra en Configuración. */
+.opcion.personalizada { position: relative; isolation: isolate; background: transparent; }
+.opcion.personalizada::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: var(--fondo-opcion, transparent);
+    background-image: var(--imagen-opcion, none);
+    background-size: cover;
+    background-position: center;
+    opacity: var(--opacidad-fondo, 1);
+}
+/* Un halo del papel alrededor de la letra la deja legible sobre una imagen o un fondo muy transparente, sin moverla: el
+   texto queda donde está en las tarjetas hermanas. */
+.opcion.personalizada .nombre, .opcion.personalizada .cargo { text-shadow: 0 0 3px rgb(var(--papel)), 0 0 8px rgb(var(--papel)); }
+.muestra-opcion .cargo { white-space: nowrap; }
+.muestra-opcion { min-height: 64px; padding: 6px 18px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--borde); border-radius: 14px; }
+
+/* El catálogo a la vista en la pestaña Opciones (D1 y D6): tarjetas del mismo ancho, con sus datos, la muestra y dos botones
+   parejos del alto táctil y la letra de «Cerrar». */
+.catalogo-opciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.opcion-catalogo { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--tinta-suave); border-radius: 12px; font-size: 16px; }
+.opcion-catalogo .datos-opcion { display: flex; flex-direction: column; gap: 2px; }
+.opcion-catalogo .nombre-opcion { margin: 0; font-size: 18px; }
+.opcion-catalogo .cargas { margin: 0; padding-left: 20px; }
+.opcion-catalogo .acciones-opcion { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
+.dialogo .opcion-catalogo .acciones-opcion button { min-width: 0; padding: 0 12px; }
+
+/* El cartel de personalización (D2 y D6): la muestra arriba, nueve fondos parejos en dos filas, cuatro pasos de
+   transparencia parejos y el precio, todos del alto táctil. */
+#personalizar-opcion .titulo-cartel { margin: 0; font-size: 20px; font-weight: 700; }
+#personalizar-opcion .rotulo-cartel { margin: 0; font-size: 16px; font-weight: 700; }
+.colores-opcion { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.transparencias-opcion { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.dialogo .colores-opcion button, .dialogo .transparencias-opcion button { min-width: 0; min-height: 56px; padding: 0 8px; font-size: 16px; }
+.dialogo .colores-opcion button.color-opcion { border: 1px solid var(--tinta-suave); }
+.dialogo .colores-opcion button.color-opcion[aria-pressed="true"] { border: 3px solid var(--acento); }
+.imagen-opcion { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 16px; }

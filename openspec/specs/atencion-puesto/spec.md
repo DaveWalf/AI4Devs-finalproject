@@ -79,7 +79,7 @@ Origen: AT52 («sin código en logs») y `AGENTS.md`.
 
 ### Requirement: Catálogo y selección sin consumo hasta confirmar
 
-Con la sesión abierta, el puesto SHALL mostrar las opciones de menú que le ofrece a esa persona, con su nombre y su cargo informado, como botones operables por toque y por teclado (RF04); una opción con importe cero MUST mostrarse sin importe. Cancelar, o 30 s sin actividad antes de confirmar, MUST volver a reposo sin escribir ninguna intención ni consumo (RB05), y la persona siguiente MUST empezar sin rastro de la anterior.
+Con la sesión abierta, el puesto SHALL mostrar las opciones de menú que le ofrece a esa persona, con su nombre y su cargo informado, como botones operables por toque y por teclado (RF04); una opción con importe cero, o con el precio oculto por «Personalizar», MUST mostrarse sin importe. Cancelar, o 30 s sin actividad antes de confirmar, MUST volver a reposo sin escribir ninguna intención ni consumo (RB05), y la persona siguiente MUST empezar sin rastro de la anterior.
 
 #### Scenario: Opción sin cargo
 Origen: decisión de David del 02/11/2026 (subvención total: valor cero, ningún importe visible, confirmación habilitada).
@@ -192,7 +192,7 @@ Origen: TK03.1, trabajo incluido 2, y «Disco lleno/base dañada» de `docs/expe
 
 ### Requirement: Reconfirmación por cambio de catálogo
 
-Si al confirmar la opción elegida tiene otra versión en el snapshot activo, el puesto SHALL mostrar su nombre y su cargo vigentes y pedir reconfirmación, sin escribir nada (RB10). Reconfirmar MUST usar un `IntentId` nuevo con la versión vigente. Si la opción ya no está en el catálogo, MUST volver a la selección avisándolo.
+Si al confirmar la opción elegida tiene otra versión en el snapshot activo, el puesto SHALL mostrar su nombre y su cargo vigentes, sin el cargo si su precio está oculto, y pedir reconfirmación, sin escribir nada (RB10). Reconfirmar MUST usar un `IntentId` nuevo con la versión vigente. Si la opción ya no está en el catálogo, MUST volver a la selección avisándolo.
 
 #### Scenario: Cambio de precio entre la selección y la confirmación
 Origen: AT47 («informa nuevo valor y exige reconfirmación antes de crear consumo/ticket») y HU01-D.
@@ -220,6 +220,12 @@ Origen: AT47, borde: la opción no está en el snapshot activo.
 - **WHEN** toca «Confirmar»
 - **THEN** el puesto vuelve a la selección con el aviso de que la opción ya no está disponible, sin ofrecerla
 - **AND** no se escribió ninguna intención
+
+#### Scenario: Cambio de precio con el precio oculto
+Origen: mejora 16 de David del 11/11/2026 («más allá de lo que esté configurado») y HU01-D, borde.
+- **GIVEN** una opción con el precio oculto que, entre la selección y la confirmación, cambia de importe
+- **WHEN** la persona toca «Confirmar»
+- **THEN** la pantalla de reconfirmación muestra su nombre sin ningún importe y pide reconfirmar, sin escribir nada
 
 ### Requirement: Sólo las opciones disponibles para la persona
 
@@ -346,7 +352,7 @@ Origen: `AGENTS.md` («cada guardado es una versión local») y la decisión 5 d
 
 ### Requirement: Cartel de la elección
 
-Tocar una opción SHALL abrir un cartel que la repite con su cargo informado, con «Confirmar» y «Elegir otra». Sin opción elegida, la selección MUST NOT tener «Confirmar». «Elegir otra» y Escape MUST cerrar el cartel sin escribir nada, con la misma persona y la marca en la opción elegida.
+Tocar una opción SHALL abrir un cartel que la repite con su cargo informado, ninguno si su precio está oculto, con «Confirmar» y «Elegir otra». Sin opción elegida, la selección MUST NOT tener «Confirmar». «Elegir otra» y Escape MUST cerrar el cartel sin escribir nada, con la misma persona y la marca en la opción elegida.
 
 #### Scenario: Elegir abre el cartel con lo elegido
 Origen: mejora 2 de David del 10/11/2026 («un cartel que aparezca recién una vez seleccionada la opción, y te refuerce qué seleccionaste») y TK02.1.
@@ -367,3 +373,25 @@ Origen: mejora 2 de David del 10/11/2026 y AT16 (una atención no se interrumpe 
 - **GIVEN** el cartel abierto con una opción elegida
 - **WHEN** se pulsa Escape
 - **THEN** el cartel se cierra como con «Elegir otra», el puesto sigue abierto con la misma persona y la misma elección, y no se escribió ninguna intención
+
+### Requirement: La tarjeta de una opción con su presentación
+
+Cada opción del catálogo SHALL dibujarse con el fondo y la transparencia que le dio «Personalizar», con el nombre y el cargo legibles sobre él y alineados con los de las tarjetas hermanas. Una opción con el precio oculto MUST mostrarse como una sin cargo en la pantalla; el comprobante y la bitácora MUST conservar su importe.
+
+#### Scenario: Una opción personalizada
+Origen: mejora 7 de David del 10/11/2026.
+- **GIVEN** «Almuerzo opcional» con un fondo de color y 25 % de transparencia
+- **WHEN** `0001` se identifica
+- **THEN** su tarjeta tiene ese fondo con esa transparencia y las demás se ven como siempre, con el nombre desde el mismo borde
+
+#### Scenario: El precio oculto
+Origen: mejora 16 de David del 11/11/2026.
+- **GIVEN** «Almuerzo opcional» con 1.800,00 y el precio oculto
+- **WHEN** `0001` lo elige y confirma
+- **THEN** ni su tarjeta ni el cartel muestran un importe, y el comprobante dice el cargo de 1.800,00
+
+#### Scenario: Una imagen que ya no está
+Origen: `AGENTS.md` (OWASP: la configuración que llega al puesto), borde.
+- **GIVEN** una opción personalizada con una imagen cuyo archivo se borró de la carpeta de datos
+- **WHEN** el puesto abre y `0001` se identifica
+- **THEN** esa tarjeta se ve sin fondo y la atención sigue

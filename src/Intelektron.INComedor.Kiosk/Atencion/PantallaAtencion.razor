@@ -76,16 +76,18 @@
                         @foreach (var opcion in Maquina.PaginaActual)
                         {
                             var elegida = opcion.Id == Maquina.Elegida?.Id;
-                            <button type="button" class="opcion @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
-                                    @onclick="() => ElegirOpcion(opcion.Id)">
+                            @* Con su presentación: el fondo y la transparencia, y sin cargo si el precio está oculto (D4 de personalizar-opciones). *@
+                            var (estiloFondo, claseFondo) = _presentacionOpciones?.EstiloDe(opcion.Id) ?? (null, string.Empty);
+                            <button type="button" class="opcion @claseFondo @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
+                                    style="@estiloFondo" @onclick="() => ElegirOpcion(opcion.Id)">
                                 <span class="nombre">@opcion.Nombre</span>
                                 @if (elegida)
                                 {
                                     <span class="marca-elegida">Elegida</span>
                                 }
-                                @if (opcion.Cargo.Length > 0)
+                                @if (CargoVisible(opcion) is { Length: > 0 } cargoVisible)
                                 {
-                                    <span class="cargo">@opcion.Cargo</span>
+                                    <span class="cargo">@cargoVisible</span>
                                 }
                             </button>
                         }
@@ -108,9 +110,9 @@
                             <h2 id="titulo-cartel">¿Confirmás tu elección?</h2>
                             <p id="eleccion">
                                 <strong class="nombre-eleccion">@eleccion.Nombre</strong>
-                                @if (eleccion.Cargo.Length > 0)
+                                @if (CargoVisible(eleccion) is { Length: > 0 } cargoEleccion)
                                 {
-                                    <span class="cargo-eleccion">Cargo informado: @eleccion.Cargo</span>
+                                    <span class="cargo-eleccion">Cargo informado: @cargoEleccion</span>
                                 }
                             </p>
                             <div class="acciones">
@@ -137,10 +139,10 @@
                 <section class="tarjeta superficie">
                     <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
                     <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
-                    <p id="vigente">Valor vigente: <strong>@Maquina.Vigente?.Nombre</strong>@if (!string.IsNullOrEmpty(Maquina.Vigente?.Cargo))
+                    <p id="vigente">Valor vigente: <strong>@Maquina.Vigente?.Nombre</strong>@if (Maquina.Vigente is { } vigente && CargoVisible(vigente) is { Length: > 0 } cargoVigente)
                     {
-                        @* El separador y el cargo, sólo si hay cargo (D2). *@
-                        <text> · </text><span id="cargo-vigente">@Maquina.Vigente.Cargo</span>
+                        @* El separador y el cargo, sólo si hay cargo (D2) y el precio no está oculto (D4 de personalizar-opciones). *@
+                        <text> · </text><span id="cargo-vigente">@cargoVigente</span>
                     }</p>
                     <div class="acciones">
                         <button id="volver" type="button" @onclick="Maquina.Volver">Volver</button>
@@ -236,6 +238,7 @@
                             AlmacenExportacion="_almacenExportacion" ElectorCarpeta="_electorCarpeta" RegistrarExportacion="RegistrarExportacionDeConsumos"
                             RegistrarExportacionPersonas="RegistrarExportacionDePersonas"
                             ElectorArchivo="_electorArchivo" RegistrarImportacionPersonas="RegistrarImportacionDePersonas"
+                            PresentacionOpciones="_presentacionOpciones" RegistrarPresentacion="RegistrarPresentacionDeOpcion"
                             RegistrarImportacionRechazada="RegistrarImportacionRechazada"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
@@ -278,6 +281,7 @@
     private AlmacenExportacion? _almacenExportacion;
     private IElectorCarpeta? _electorCarpeta;
     private IElectorArchivo? _electorArchivo;
+    private AlmacenPresentacionOpciones? _presentacionOpciones;
     private bool _simulacionGuardada;
     private string? _avisoSimulacion;
     private IReadOnlyList<EntradaSimulacion> _personasSimulacion = [];
@@ -389,6 +393,8 @@
         _electorCarpeta = Proveedor.GetService(typeof(IElectorCarpeta)) as IElectorCarpeta;
         // Sin elector de archivos, Personas no importa (D7 de importar-personas-desde-excel).
         _electorArchivo = Proveedor.GetService(typeof(IElectorArchivo)) as IElectorArchivo;
+        // Sin almacén de la presentación, las opciones se ven como siempre y no se personalizan (D3 de personalizar-opciones).
+        _presentacionOpciones = Proveedor.GetService(typeof(AlmacenPresentacionOpciones)) as AlmacenPresentacionOpciones;
         if (_cierre is not null)
         {
             _cierre.RequiereClave = _modo == ModoPuesto.Operativo;
@@ -930,6 +936,42 @@
             ActorReason = SinAutenticacion,
         });
     }
+
+    /// <summary>La presentación de una opción, o la de siempre sin almacén (D3 de personalizar-opciones).</summary>
+    private PresentacionOpcion PresentacionDe(OpcionCatalogo opcion) => _presentacionOpciones?.De(opcion.Id) ?? PresentacionOpcion.PorDefecto;
+
+    /// <summary>
+    /// El cargo que muestra la pantalla: vacío si el precio está oculto, como una opción sin cargo (D4). El comprobante y la
+    /// bitácora usan el cargo de la opción, que no cambia.
+    /// </summary>
+    private string CargoVisible(OpcionCatalogo opcion) => PresentacionDe(opcion).PrecioVisible ? opcion.Cargo : string.Empty;
+
+    /// <summary>
+    /// Cada guardado de la presentación de una opción queda en la general como los demás ajustes del equipo: un
+    /// CONFIGURATION_CHANGED del ajuste OPTION_STYLE con la opción, el antes, el después, el resultado y lo vigente, la
+    /// imagen por su huella y nunca por su contenido (D5 de personalizar-opciones).
+    /// </summary>
+    private void RegistrarPresentacionDeOpcion(PanelConfiguracion.PresentacionGuardada guardada) =>
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "OPTION_STYLE",
+            OptionId = guardada.Opcion,
+            Before = Presentacion(guardada.Antes, null),
+            After = Presentacion(guardada.Despues, guardada.HuellaPedida),
+            Result = guardada.Resultado,
+            Effective = Presentacion(guardada.Vigente, null),
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    private static object Presentacion(PresentacionOpcion presentacion, string? huella) => new
+    {
+        presentacion.Color,
+        ImageSha256 = huella ?? (presentacion.Imagen is { } imagen ? imagen[..64] : null),
+        Transparency = presentacion.Transparencia,
+        PriceVisible = presentacion.PrecioVisible,
+    };
 
     /// <summary>
     /// Una importación con errores queda en la general con la huella del archivo y cuántos errores hay de cada motivo, sin filas, columnas,
