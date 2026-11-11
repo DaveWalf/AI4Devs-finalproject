@@ -31,12 +31,22 @@
 
 ## 3. En la pantalla
 
-- [ ] 3.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: «Planilla de ejemplo» (y cancelar la carpeta); «Importar
+- [x] 3.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: «Planilla de ejemplo» (y cancelar la carpeta); «Importar
   Excel» con un `IElectorArchivo` de prueba muestra el resumen; «Modificar y agregar», «Reemplazar» y «Cancelar»; una
   importación con errores no deja aplicar; `PEOPLE_IMPORTED` y `PEOPLE_IMPORT_REJECTED` en la general sin nombres ni
   códigos (D4, D7 y D8). Verifica: rojo antes y verde después.
-- [ ] 3.2 `IElectorArchivo` con el `OpenFileDialog` de la ventana, los botones del pie y el cartel del resumen. Verifica:
+  - `ImportarPersonasTests` (10, con un archivo dañado, cancelar la elección del archivo y los consumos de hoy) contra
+    `IElectorArchivo` y los mensajes ya escritos: `total: 10`, `error: 10` (`ElementNotFoundException` de
+    `#importar-personas` y `#planilla-personas`).
+- [x] 3.2 `IElectorArchivo` con el `OpenFileDialog` de la ventana, los botones del pie y el cartel del resumen. Verifica:
   3.1 en verde y `Kiosk.Tests` entero en verde.
+  - `ElectorArchivoWindows` (sólo `.xlsx`, empieza en la carpeta de la exportación), los cuatro botones en el pie, el cartel
+    con los totales o los errores, Escape que cierra el cartel antes que Configuración, la tabla que se vuelve a leer al
+    aplicar y los dos registros en la general. Una credencial sin revocar de una persona activa la reconoce aunque esté
+    vencida (D3: la 0002 de la demostración corrige a su persona en vez de dar «dado de baja»). `Kiosk.Tests`: `total: 460`,
+    `error: 0`; `Infrastructure.Sqlite.Tests`: 252. Prueba existente cambiada (decisión 13): `PuntoFinalTests`, que
+    obliga a clasificar cada método nuevo de `MensajesAtencion` con su ejemplo, suma los siete de la importación (25
+    líneas, sin cambiar ninguna aserción).
 
 ## 4. El puesto compilado, documentos y verificación integral
 

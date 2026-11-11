@@ -112,7 +112,8 @@
                    de todas las personas no quedan en la página mientras se usa otra pestaña. La edición sigue montada (D2). *@
                 @if (_panel == Panel.Personas || _elegida == Pestana.Personas)
                 {
-                    <PanelPersonas Administracion="Administracion" Editando="@(_panel == Panel.Personas)" Cerrar="CerrarPanel"
+                    @* Una importación aplicada cambia la clave y la tabla se vuelve a leer (importar-personas-desde-excel). *@
+                    <PanelPersonas @key="_recargaPersonas" Administracion="Administracion" Editando="@(_panel == Panel.Personas)" Cerrar="CerrarPanel"
                                    PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" Actor="Actor"
                                    TecladoVisible="_tecladoPersonasVisible" TecladoVisibleChanged="v => _tecladoPersonasVisible = v" />
                 }
@@ -309,14 +310,60 @@
         </section>
         }
 
+        @* El resumen de una importación, en un cartel como el de «Ver» en Consumos: los totales y los tres botones, o los
+           errores fila por fila y «Cerrar» (D4 y D9 de importar-personas-desde-excel). *@
+        @if (_revision is { } revision)
+        {
+            <div class="fondo-cartel">
+                <section id="resumen-importacion" class="cartel superficie" role="dialog" aria-modal="true" aria-label="Importar Personas">
+                    @if (revision.Valida)
+                    {
+                        <p id="importacion-totales">@MensajesAtencion.ResumenImportacion(_archivoImportado!, revision.Agregadas, revision.Modificadas, revision.SinCambios)</p>
+                        <p id="importacion-reemplazar">@MensajesAtencion.ImportacionReemplazar(revision.DeBajaAlReemplazar.Count)</p>
+                        <p>@MensajesAtencion.ConsumosDeHoyAlImportar</p>
+                        <div class="acciones">
+                            <button id="importar-modificar" type="button" class="principal" @onclick="() => AplicarImportacion(ModoImportacion.ModificarYAgregar)">Modificar y agregar</button>
+                            <button id="importar-reemplazar" type="button" @onclick="() => AplicarImportacion(ModoImportacion.Reemplazar)">Reemplazar</button>
+                            <button id="importar-cancelar" type="button" @onclick="CerrarImportacion">Cancelar</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <p id="importacion-errores">@MensajesAtencion.ImportacionConErrores(revision.Errores.Count)</p>
+                        <ul id="errores-importacion">
+                            @foreach (var error in revision.Errores)
+                            {
+                                <li>@MensajesAtencion.ErrorDeImportacion(error)</li>
+                            }
+                        </ul>
+                        <div class="acciones">
+                            <button id="importar-cerrar" type="button" class="principal" @onclick="CerrarImportacion">Cerrar</button>
+                        </div>
+                    }
+                </section>
+            </div>
+        }
+
         <div class="acciones pie-dialogo">
-            @* Exportar Personas va en el pie, a la izquierda de «Cerrar», para que la tabla conserve sus diez filas a la vista a
-               1024 × 768 (D5 y D6 de editar-raciones-en-personas). Sólo con Personas en lectura. *@
-            @if (_elegida == Pestana.Personas && _panel is null && Administracion is not null && AlmacenExportacion is not null && ElectorCarpeta is not null)
+            @* Exportar e importar Personas van en el pie, a la izquierda de «Cerrar», para que la tabla conserve sus diez filas a
+               la vista a 1024 × 768 (D5 y D6 de editar-raciones-en-personas, D9 de importar-personas-desde-excel). Sólo con
+               Personas en lectura; los cuatro del mismo ancho. *@
+            @if (_elegida == Pestana.Personas && _panel is null && Administracion is not null && (PuedeExportarPersonas || PuedeImportarPersonas))
             {
                 <div class="exportar-personas">
-                    <button id="exportar-personas-csv" type="button" @onclick="() => ExportarPersonas(FormatoExportacion.Csv)">Exportar CSV</button>
-                    <button id="exportar-personas-xlsx" type="button" @onclick="() => ExportarPersonas(FormatoExportacion.Xlsx)">Exportar Excel</button>
+                    @if (PuedeExportarPersonas)
+                    {
+                        <button id="exportar-personas-csv" type="button" @onclick="() => ExportarPersonas(FormatoExportacion.Csv)">Exportar CSV</button>
+                        <button id="exportar-personas-xlsx" type="button" @onclick="() => ExportarPersonas(FormatoExportacion.Xlsx)">Exportar Excel</button>
+                    }
+                    @if (PuedeImportarPersonas)
+                    {
+                        <button id="importar-personas" type="button" @onclick="ImportarPersonas">Importar Excel</button>
+                    }
+                    @if (PuedeExportarPersonas)
+                    {
+                        <button id="planilla-personas" type="button" @onclick="EscribirPlanillaDeEjemplo">Planilla de ejemplo</button>
+                    }
                 </div>
                 @if (_mensajeExportacionPersonas is not null)
                 {
@@ -380,25 +427,10 @@
     /// </summary>
     private void ExportarPersonas(FormatoExportacion formato)
     {
-        string? avisoCarpeta = null;
-        var carpeta = AlmacenExportacion!.Leer();
-        if (carpeta is null)
+        if (CarpetaDeExportacion(out var avisoCarpeta) is not { } carpeta)
         {
-            carpeta = ElectorCarpeta!.Elegir(null);
-            if (carpeta is null)
-            {
-                (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.SinCarpeta, true);
-                return;
-            }
-
-            try
-            {
-                AlmacenExportacion.Guardar(carpeta);
-            }
-            catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
-            {
-                avisoCarpeta = MensajesAtencion.CarpetaNoGuardada;
-            }
+            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.SinCarpeta, true);
+            return;
         }
 
         ResultadoExportacionPersonas resultado;
@@ -425,6 +457,162 @@
         RegistrarExportacionPersonas?.Invoke(new PanelPersonas.ExportacionPersonasRealizada(
             formato == FormatoExportacion.Csv ? "CSV" : "XLSX", resultado.Archivo, resultado.Filas));
     }
+
+    /// <summary>Una importación aplicada, para la general: el archivo sin su ruta, el modo y cada persona (D8 de importar-personas-desde-excel).</summary>
+    public sealed record ImportacionPersonasRealizada(string Archivo, ModoImportacion Modo, ResultadoImportacion Resultado);
+
+    /// <summary>Una importación con errores, para la general: el archivo sin su ruta y sus errores, de los que se registran sólo los motivos (D8).</summary>
+    public sealed record ImportacionPersonasRechazada(string Archivo, IReadOnlyList<ErrorImportacion> Errores);
+
+    private RevisionImportacion? _revision;
+    private string? _archivoImportado;
+    private int _recargaPersonas;
+
+    private bool PuedeExportarPersonas => AlmacenExportacion is not null && ElectorCarpeta is not null;
+
+    private bool PuedeImportarPersonas => ElectorArchivo is not null && _resumen?.SoloLectura != true;
+
+    /// <summary>
+    /// La carpeta de la exportación de Consumos; sin una guardada, la pide y la guarda, y si no se pudo guardar lo dice en
+    /// <paramref name="avisoCarpeta"/>. Null si se cancela la elección (D5 de editar-raciones-en-personas).
+    /// </summary>
+    private string? CarpetaDeExportacion(out string? avisoCarpeta)
+    {
+        avisoCarpeta = null;
+        if (AlmacenExportacion!.Leer() is { } guardada)
+        {
+            return guardada;
+        }
+
+        if (ElectorCarpeta!.Elegir(null) is not { } carpeta)
+        {
+            return null;
+        }
+
+        try
+        {
+            AlmacenExportacion.Guardar(carpeta);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            avisoCarpeta = MensajesAtencion.CarpetaNoGuardada;
+        }
+
+        return carpeta;
+    }
+
+    /// <summary>
+    /// «Planilla de ejemplo»: la escribe en la carpeta de la exportación, como exportar (D6 de importar-personas-desde-excel).
+    /// No queda en la general: no tiene datos de nadie.
+    /// </summary>
+    private void EscribirPlanillaDeEjemplo()
+    {
+        if (CarpetaDeExportacion(out var avisoCarpeta) is not { } carpeta)
+        {
+            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.SinCarpeta, true);
+            return;
+        }
+
+        string archivo;
+        try
+        {
+            archivo = new ImportacionPersonas(Administracion!).EscribirPlanillaDeEjemplo(carpeta, Zona);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.PlanillaFallida, true);
+            return;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            return;
+        }
+
+        _exportacionPersonasFallida = avisoCarpeta is not null;
+        _mensajeExportacionPersonas = string.Join(' ', new[] { avisoCarpeta, MensajesAtencion.PlanillaDeEjemploHecha(archivo, carpeta) }.OfType<string>());
+    }
+
+    /// <summary>
+    /// «Importar Excel»: pide el archivo, lo revisa sin escribir nada y muestra el resumen (D4 y D7). Una planilla con errores
+    /// queda en la general como PEOPLE_IMPORT_REJECTED (D8); cancelar la elección no hace nada.
+    /// </summary>
+    private void ImportarPersonas()
+    {
+        _mensajeExportacionPersonas = null;
+        if (ElectorArchivo!.Elegir(AlmacenExportacion?.Leer()) is not { } ruta)
+        {
+            return;
+        }
+
+        var archivo = System.IO.Path.GetFileName(ruta);
+        RevisionImportacion revision;
+        try
+        {
+            // Compartido para leer aunque Excel lo tenga abierto.
+            using var flujo = new System.IO.FileStream(ruta, System.IO.FileMode.Open, System.IO.FileAccess.Read,
+                System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete);
+            revision = new ImportacionPersonas(Administracion!).Revisar(flujo);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.ArchivoNoLeido, true);
+            return;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            return;
+        }
+
+        (_revision, _archivoImportado) = (revision, archivo);
+        if (!revision.Valida)
+        {
+            RegistrarImportacionRechazada?.Invoke(new ImportacionPersonasRechazada(archivo, revision.Errores));
+        }
+    }
+
+    /// <summary>
+    /// Aplica el resumen en el modo tocado, con el operador como actor, y vuelve a leer la tabla. Si la configuración cambió
+    /// desde el resumen, el guardado lo rechaza y no se aplica nada (D4).
+    /// </summary>
+    private void AplicarImportacion(ModoImportacion modo)
+    {
+        var (revision, archivo) = (_revision!, _archivoImportado!);
+        CerrarImportacion();
+        ResultadoImportacion resultado;
+        try
+        {
+            resultado = new ImportacionPersonas(Administracion!).Aplicar(revision, modo, Actor);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _avisoGuardado = MensajesAtencion.PanelNoGuardado;
+            return;
+        }
+
+        switch (resultado.Guardado.Tipo)
+        {
+            case TipoGuardado.Aplicado:
+                var dadas = resultado.Personas.Count(p => p.Accion == AccionImportada.DadaDeBaja);
+                _avisoGuardado = revision.Agregadas + revision.Modificadas + dadas > 0
+                    ? MensajesAtencion.ImportacionAplicada(resultado.Guardado.VersionActiva, revision.Agregadas, revision.Modificadas, dadas)
+                    : MensajesAtencion.ImportacionSinCambios(resultado.Guardado.VersionActiva);
+                RegistrarImportacionPersonas?.Invoke(new ImportacionPersonasRealizada(archivo, modo, resultado));
+                break;
+            case TipoGuardado.Denegado:
+                _avisoGuardado = MensajesAtencion.INWebAdministra;
+                break;
+            default:
+                _avisoGuardado = MensajesAtencion.ImportacionRechazada;
+                break;
+        }
+
+        LeerResumen();
+        _recargaPersonas++;
+    }
+
+    private void CerrarImportacion() => (_revision, _archivoImportado) = (null, null);
     private string? _avisoGuardado;
     private string? _avisoEstilo;
     private VistaAdministracion? _resumen;
@@ -574,6 +762,16 @@
 
     [Parameter]
     public Action<PanelPersonas.ExportacionPersonasRealizada>? RegistrarExportacionPersonas { get; set; }
+
+    /// <summary>El elector del <c>.xlsx</c> que se importa a Personas; sin él, Personas no importa (D7 de importar-personas-desde-excel).</summary>
+    [Parameter]
+    public IElectorArchivo? ElectorArchivo { get; set; }
+
+    [Parameter]
+    public Action<ImportacionPersonasRealizada>? RegistrarImportacionPersonas { get; set; }
+
+    [Parameter]
+    public Action<ImportacionPersonasRechazada>? RegistrarImportacionRechazada { get; set; }
 
     /// <summary>La sesión del operador para reimprimir desde Consumos, que la pantalla abre con Configuración y cierra con ella (D8).</summary>
     [Parameter]
@@ -812,7 +1010,22 @@
     }
 
     /// <summary>Escape cierra Configuración como «Cerrar», también con un panel de edición abierto (D3).</summary>
-    private Task Tecla(KeyboardEventArgs e) => e.Key == "Escape" ? Cancelar.InvokeAsync() : Task.CompletedTask;
+    /// <summary>Escape cierra el resumen de una importación si está abierto; si no, Configuración.</summary>
+    private Task Tecla(KeyboardEventArgs e)
+    {
+        if (e.Key != "Escape")
+        {
+            return Task.CompletedTask;
+        }
+
+        if (_revision is not null)
+        {
+            CerrarImportacion();
+            return Task.CompletedTask;
+        }
+
+        return Cancelar.InvokeAsync();
+    }
 
     /// <summary>Abrir una edición elige su pestaña, que queda a la vista con la tabla o el panel.</summary>
     private void AbrirPanel(Panel panel)

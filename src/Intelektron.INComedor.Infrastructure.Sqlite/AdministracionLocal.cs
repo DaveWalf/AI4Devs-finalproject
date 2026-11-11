@@ -85,16 +85,16 @@ public sealed class AdministracionLocal
         var vista = LeerVista(conexion, transaccion, puesto, ahora);
         var activas = vista.Personas.Where(p => p.Activa).Select(p => p.Id).ToHashSet();
 
+        // Una credencial sin revocar de una persona activa la reconoce aunque esté vencida o todavía no rija: la fila corrige
+        // a esa persona; sus fechas no se tocan (D3).
         var vigentes = new Dictionary<string, Guid>(StringComparer.Ordinal);
         var credenciales = Leer(conexion, transaccion,
             """
-            SELECT comperCodigo, comcreValorNormalizado, comcreFechaVigenciaDesdeUtc, comcreFechaVigenciaHastaUtc
-            FROM tbComedorCredencialesPersonas
+            SELECT comperCodigo, comcreValorNormalizado FROM tbComedorCredencialesPersonas
             WHERE comvcCodigo = $vc AND comcreTipo = 'SERIAL_CODE' AND comcreFechaRevocacionUtc IS NULL
             """, [("$vc", puesto.SnapshotId)],
-            l => (Persona: l.GetGuid(0), Valor: l.GetString(1), Desde: LecturaDecision.LeerInstanteOpcional(l, 2), Hasta: LecturaDecision.LeerInstanteOpcional(l, 3)));
-        foreach (var credencial in credenciales.Where(c => activas.Contains(c.Persona)
-                     && (c.Desde is null || c.Desde <= ahora) && (c.Hasta is null || ahora < c.Hasta)))
+            l => (Persona: l.GetGuid(0), Valor: l.GetString(1)));
+        foreach (var credencial in credenciales.Where(c => activas.Contains(c.Persona)))
         {
             vigentes.TryAdd(credencial.Valor, credencial.Persona);
         }

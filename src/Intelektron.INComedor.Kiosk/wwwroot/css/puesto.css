@@ -429,6 +429,10 @@ html, body { overscroll-behavior: none; }
 .tabla-personas .usado-hoy { display: inline-block; min-width: 2.5em; margin-right: 4px; text-align: right; }
 .tabla-personas input.limite.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
 .exportar-personas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; margin-right: auto; }
+/* El resumen de una importación de Personas, en el cartel de «Ver» (D4 y D9 de importar-personas-desde-excel): las oraciones
+   con la letra de la tabla y los errores en una lista que se desplaza dentro del cartel. */
+#resumen-importacion p { margin: 0; font-size: 18px; }
+#errores-importacion { margin: 0; padding-left: 24px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; }
 .pie-dialogo #mensaje-exportacion-personas { flex-basis: 100%; order: -1; margin: 0; font-size: 16px; overflow-wrap: anywhere; }
 /* El teclado en pantalla de Personas: filas de teclas de 56 px, del mismo ancho dentro de cada fila (D4 y D6). */
 .teclado-en-pantalla { display: flex; flex-direction: column; gap: 6px; flex: none; }

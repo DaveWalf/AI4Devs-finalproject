@@ -37,10 +37,10 @@ está lo quita, como vaciar la celda en la tabla. Una planilla sin ninguna perso
 
 ### D3. Quién es quién
 
-Una fila se reconoce por su código, `Trim()` como al identificar: si es la credencial vigente de una persona activa de la
-versión activa, la fila la modifica (nombre y cupos); si el código no existe, la agrega; si es de una persona dada de baja
-o revocado, es un error de la fila (RB25: el código no se reasigna ni se reactiva acá). Un código repetido en el archivo
-es error de las dos filas.
+Una fila se reconoce por su código, `Trim()` como al identificar: si es una credencial sin revocar de una persona activa
+de la versión activa, aunque esté vencida o todavía no rija, la fila la modifica (nombre y cupos, sin tocar las fechas
+de la credencial); si el código no existe, la agrega; si es de una persona dada de baja o revocado, es un error de la
+fila (RB25: el código no se reasigna ni se reactiva acá). Un código repetido en el archivo es error de las dos filas.
 
 - **Descartada: reconocer por el nombre.** Dos personas pueden llamarse igual, y el nombre se corrige; el código no.
 

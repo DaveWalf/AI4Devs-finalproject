@@ -235,6 +235,8 @@
                             Consumos="Servicio.Consumos" RegistrarConsulta="RegistrarConsultaDeConsumos"
                             AlmacenExportacion="_almacenExportacion" ElectorCarpeta="_electorCarpeta" RegistrarExportacion="RegistrarExportacionDeConsumos"
                             RegistrarExportacionPersonas="RegistrarExportacionDePersonas"
+                            ElectorArchivo="_electorArchivo" RegistrarImportacionPersonas="RegistrarImportacionDePersonas"
+                            RegistrarImportacionRechazada="RegistrarImportacionRechazada"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
                             Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
@@ -275,6 +277,7 @@
     private AlmacenSimulacion? _almacenSimulacion;
     private AlmacenExportacion? _almacenExportacion;
     private IElectorCarpeta? _electorCarpeta;
+    private IElectorArchivo? _electorArchivo;
     private bool _simulacionGuardada;
     private string? _avisoSimulacion;
     private IReadOnlyList<EntradaSimulacion> _personasSimulacion = [];
@@ -384,6 +387,8 @@
         // Sin almacén de la exportación o sin elector (las pruebas que no los usan), Consumos no exporta (D6 de buscar-y-exportar-consumos).
         _almacenExportacion = Proveedor.GetService(typeof(AlmacenExportacion)) as AlmacenExportacion;
         _electorCarpeta = Proveedor.GetService(typeof(IElectorCarpeta)) as IElectorCarpeta;
+        // Sin elector de archivos, Personas no importa (D7 de importar-personas-desde-excel).
+        _electorArchivo = Proveedor.GetService(typeof(IElectorArchivo)) as IElectorArchivo;
         if (_cierre is not null)
         {
             _cierre.RequiereClave = _modo == ModoPuesto.Operativo;
@@ -887,6 +892,54 @@
             Format = exportacion.Formato,
             Rows = exportacion.Filas,
             File = exportacion.Archivo,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    /// <summary>
+    /// Cada importación aplicada queda en la general con el modo, el archivo sin su ruta, la versión, los totales y, persona
+    /// por persona, su PersonId y lo que pasó, sin nombres ni códigos; con un operador, él es el actor (D8 de
+    /// importar-personas-desde-excel). Cada persona cambiada tiene además su CONFIGURATION_CHANGED, como un guardado a mano.
+    /// </summary>
+    private void RegistrarImportacionDePersonas(PanelConfiguracion.ImportacionPersonasRealizada importacion)
+    {
+        var personas = importacion.Resultado.Personas;
+        RegistrarConfiguracion("PEOPLE_IMPORTED", new
+        {
+            Mode = importacion.Modo == ModoImportacion.Reemplazar ? "REPLACE" : "MERGE",
+            File = importacion.Archivo,
+            Version = importacion.Resultado.Guardado.VersionActiva,
+            Added = personas.Count(p => p.Accion == AccionImportada.Agregada),
+            Updated = personas.Count(p => p.Accion == AccionImportada.Modificada),
+            Unchanged = personas.Count(p => p.Accion == AccionImportada.SinCambios),
+            Deactivated = personas.Count(p => p.Accion == AccionImportada.DadaDeBaja),
+            People = personas.Select(p => new
+            {
+                PersonId = p.PersonaId,
+                Result = p.Accion switch
+                {
+                    AccionImportada.Agregada => "ADDED",
+                    AccionImportada.Modificada => "UPDATED",
+                    AccionImportada.SinCambios => "UNCHANGED",
+                    _ => "DEACTIVATED",
+                },
+            }).ToList(),
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+    }
+
+    /// <summary>
+    /// Una importación con errores queda en la general con el archivo y cuántos errores hay de cada motivo, sin filas, columnas,
+    /// nombres ni códigos: el título de una columna lo escribe cualquiera (D8 de importar-personas-desde-excel).
+    /// </summary>
+    private void RegistrarImportacionRechazada(PanelConfiguracion.ImportacionPersonasRechazada rechazo) =>
+        RegistrarConfiguracion("PEOPLE_IMPORT_REJECTED", new
+        {
+            File = rechazo.Archivo,
+            Errors = rechazo.Errores.GroupBy(e => e.Motivo).OrderBy(g => g.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count()),
             Access = _acceso,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,
