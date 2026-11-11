@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Intelektron.INComedor.Kiosk.Atencion;
 using Microsoft.Data.Sqlite;
 
@@ -15,6 +16,7 @@ public class CoberturaDeLaOfertaTests : IDisposable
     private static readonly Guid Ambito = Guid.Parse("00000000-0000-4000-8000-000000000006");
     private static readonly Guid CategoriaAlmuerzo = Guid.Parse("00000000-0000-4000-8000-000000000007");
     private static readonly Guid CategoriaRefrigerio = Guid.Parse("00000000-0000-4000-8000-000000000026");
+    private static readonly Regex Uuid = new("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
     private static readonly string[] Refrigerios = ["Gaseosa solamente", "Merienda", "Refrigerio", "Refrigerio opcional", "Yogurt"];
 
     private readonly ArchivoTemporal _archivo = new();
@@ -37,11 +39,14 @@ public class CoberturaDeLaOfertaTests : IDisposable
 
         Assert.Equal(EstadoAtencion.SinOpciones, maquina.Estado);
         Assert.Null(maquina.Elegida);
+        Assert.Null(maquina.Aviso);
         Assert.Empty(maquina.PaginaActual);
         Assert.Equal("Hoy ya usaste: almuerzo 1 de 1 · refrigerio 2 de 2", maquina.UsoDelDia);
         Assert.Equal(0L, Contar("tbComedorConsumos"));
+        Assert.Equal(0L, Contar("tbComedorIntencionesConsumo"));
         maquina.Listo();
         Assert.Equal(EstadoAtencion.Reposo, maquina.Estado);
+        Assert.Equal(nameof(MensajesAtencion.SinOpciones), Registros("SESSION_CLOSED")[^1].GetProperty("MessageCode").GetString());
     }
 
     [Fact(DisplayName = "atencion-puesto · La oferta recalculada se registra otra vez: OPTIONS_OFFERED de nuevo en la misma sesión, sin la opción retirada, con los refrigerios y la categoría del almuerzo agotada")]
@@ -62,6 +67,9 @@ public class CoberturaDeLaOfertaTests : IDisposable
         Assert.Contains(Ofrecidas(ofertas[0]), o => o.Id == elegida);
         Assert.DoesNotContain(Ofrecidas(ofertas[1]), o => o.Id == elegida);
         Assert.Equal(Refrigerios, Ofrecidas(ofertas[1]).Select(o => o.Nombre).Order());
+        var retenida = Assert.Single(ofertas[1].GetProperty("Withheld").EnumerateArray(), r => r.GetProperty("MenuItemId").GetGuid() == elegida);
+        Assert.Equal("LOCAL_LIMIT_REACHED", retenida.GetProperty("ReasonCode").GetString());
+        Assert.All(ofertas, o => Assert.DoesNotContain("0001", Uuid.Replace(o.GetRawText(), ""), StringComparison.Ordinal));
         var agotada = Assert.Single(ofertas[1].GetProperty("Exhausted").EnumerateArray());
         Assert.Equal((CategoriaAlmuerzo, 1, 1),
             (agotada.GetProperty("CategoryId").GetGuid(), agotada.GetProperty("Used").GetInt32(), agotada.GetProperty("Limit").GetInt32()));

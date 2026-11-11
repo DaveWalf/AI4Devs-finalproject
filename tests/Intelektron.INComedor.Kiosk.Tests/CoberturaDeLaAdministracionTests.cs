@@ -80,7 +80,10 @@ public class CoberturaDeLaAdministracionTests
         Assert.Equal(EstadoAtencion.Reconfirmacion, maquina.Estado);
         Assert.Contains(Almuerzo, pantalla.Find("#vigente").TextContent, StringComparison.Ordinal);
         Assert.Contains("1.800,00", pantalla.Find("#cargo-vigente").TextContent, StringComparison.Ordinal);
+        Assert.Equal(MensajesAtencion.CatalogoCambiado, pantalla.Find("#aviso").TextContent.Trim());
+        Assert.NotNull(pantalla.Find("#reconfirmar"));
         Assert.Equal(0L, Contar(puesto, "tbComedorConsumos"));
+        Assert.Equal(0L, Contar(puesto, "tbComedorIntencionesConsumo"));
     }
 
     private static PuestoDePrueba Preparar()
