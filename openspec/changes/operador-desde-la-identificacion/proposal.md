@@ -27,6 +27,8 @@ Origen: historias HU03.1 (el operador con permiso) y HU01.1 (identificarse y ele
    operador que entra desde la identificación abre la misma sesión y recibe el mismo aviso.
 6. La mejora entra en `final-project-dw` antes del Typeform del 12/11/2026 (decisión de las 17:55).
 
+El delta lo aprobó David el 11/11/2026 a las 18:50 («aprobados los deltas»), con el aviso por correo de un operador sin comidas como hoy (riesgo del design).
+
 ## What Changes
 
 - **«Configuración» en la atención** de quien tiene un permiso `OPERATOR` vigente: en la selección junto a «Cancelar»,

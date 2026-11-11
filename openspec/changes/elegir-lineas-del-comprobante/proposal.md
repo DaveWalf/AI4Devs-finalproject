@@ -25,6 +25,8 @@ y RB08; ticket TK02.1 (interfaz).
    «Ver» en Consumos lo sigue mostrando.
 5. La mejora entra en `final-project-dw` antes del Typeform del 12/11/2026 (decisión de las 17:55).
 
+El delta lo aprobó David el 11/11/2026 a las 18:50 («aprobados los deltas»).
+
 ## What Changes
 
 - **Tres elecciones en Impresora**: «Nombre del comensal», «Aviso de reimpresión» y «Operador que habilitó», cada una
