@@ -276,8 +276,7 @@ locales, pero no admite nuevos consumos hasta recuperar la comunicación. Sin ni
 que requiere provisionamiento y mantendrá deshabilitadas las confirmaciones.
 
 Ya existen las versiones exactas, los comandos probados, la carga del conjunto sintético y el paquete del
-puesto (el EXE autocontenido en un zip, en «Cómo revisar»). Siguen pendientes la recuperación, un script de
-verificación del entorno, el provisionamiento por sincronización o paquete local y un instalador.
+puesto (el EXE autocontenido en un zip, en «Cómo revisar»). Siguen pendientes la recuperación de un puesto entero (la configuración ya se resguarda y se recupera desde General, más abajo), un script de verificación del entorno, el provisionamiento por sincronización o paquete local y un instalador.
 
 #### Cómo ver la demostración
 
