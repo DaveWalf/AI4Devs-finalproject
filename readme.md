@@ -1033,6 +1033,25 @@ como la declarada al empezar y la cobertura al día. CI en verde en el push y en
 ([41236547866](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236547866),
 [41236552616](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236552616)).
 
+**Del #8 al #35**, integrados en `final-project-dw` del 01/11 al 11/11, cada uno con su CI en verde en el PR y en su
+integración. Los de changes llevan la salida de `/openspec-verify-change`.
+
+- [#8](https://github.com/DaveWalf/AI4Devs-finalproject/pull/8) y [#9](https://github.com/DaveWalf/AI4Devs-finalproject/pull/9): el mapa, el §7 y la cobertura al día, y .NET 11 rc.3 (D-C26).
+- Del [#10](https://github.com/DaveWalf/AI4Devs-finalproject/pull/10) al [#14](https://github.com/DaveWalf/AI4Devs-finalproject/pull/14), el 09/11: `presentar-atencion-tactil` con `mover-engranaje-al-pie`,
+  `ofrecer-solo-opciones-disponibles`, `escribir-bitacoras-externas`, `administrar-personas-y-opciones` y
+  `configurar-puesto-por-pestanas`.
+- [#15](https://github.com/DaveWalf/AI4Devs-finalproject/pull/15) y [#19](https://github.com/DaveWalf/AI4Devs-finalproject/pull/19), el 10/11: la rc.3 hasta el MVP (D-C27) y .NET 11 estable (D-C28).
+- Del [#16](https://github.com/DaveWalf/AI4Devs-finalproject/pull/16) al [#18](https://github.com/DaveWalf/AI4Devs-finalproject/pull/18), el 10/11: `simular-identificacion-por-lista`, `confirmar-eleccion-en-cartel` y
+  `entrar-a-configuracion-con-teclado`.
+- Del [#20](https://github.com/DaveWalf/AI4Devs-finalproject/pull/20) al [#32](https://github.com/DaveWalf/AI4Devs-finalproject/pull/32), del 10/11 al 11/11: `ordenar-configuracion`, `buscar-y-exportar-consumos`,
+  `puntuar-la-interfaz`, `editar-raciones-en-personas`, `importar-personas-desde-excel`, `personalizar-opciones`,
+  `importar-opciones-desde-excel`, `resguardar-configuracion`, `enriquecer-comprobante`,
+  `exportar-consumos-automaticamente`, `avisar-por-correo`, `elegir-medio-de-identificacion` y
+  `operar-solo-con-la-pantalla`.
+- [#33](https://github.com/DaveWalf/AI4Devs-finalproject/pull/33), el 11/11: las 18 capturas, el README y el guion del video.
+- [#34](https://github.com/DaveWalf/AI4Devs-finalproject/pull/34), el 11/11: `cubrir-pruebas-de-las-verificaciones`, las pruebas que dejaron pendientes las verificaciones.
+- [#35](https://github.com/DaveWalf/AI4Devs-finalproject/pull/35), el 11/11: el escaneo de secretos de la CI cuenta los commits que sólo renombran y cambian líneas.
+
 ## 8. Uso de IA y cobertura
 
 [Registro de IA](prompts.md), en las cinco partes que pide el curso: herramientas por fase,
