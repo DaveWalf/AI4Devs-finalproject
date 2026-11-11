@@ -708,8 +708,7 @@ src/
 tests/                                         [existe] un proyecto de pruebas por proyecto de src, más el E2E
 ```
 
-De ese árbol, hoy el Kiosk implementa la atención con identificación simulada por código, la asistencia
-con impresora simulada y la pantalla de demostración; `Infrastructure.Sqlite`, el primer corte de la
+De ese árbol, hoy el Kiosk implementa la atención con identificación simulada por código o por el lector, el comprobante con impresora simulada, Configuración por pestañas y la pantalla de demostración; `Infrastructure.Sqlite`, el primer corte de la
 transacción, la identificación, la impresión, el outbox, la cola de lotes y el escritor de las bitácoras mensuales, y `Sync.Api`
 la ingesta idempotente de lotes sobre SQL Server, sin el adaptador INWeb. Contracts hoy contiene los eventos de
 outbox, el lote, el acuse y el JSON canónico RFC 8785, no todo el JSON versionado.
