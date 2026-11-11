@@ -21,7 +21,8 @@ public sealed record ResultadoAsistencia(Guid? SesionId, Guid? PersonId, string?
 
 /// <summary>
 /// Un comprobante con el estado de su último trabajo de impresión: los del día que listaba Comprobantes y, desde
-/// buscar-y-exportar-consumos, el de cualquier fila de Consumos que se reimprime.
+/// buscar-y-exportar-consumos, el de cualquier fila de Consumos que se reimprime, con el número que muestra su fila (el
+/// correlativo o los ocho caracteres, D2 de enriquecer-comprobante).
 /// </summary>
 public sealed record ComprobanteDelDia(
     Guid TicketId,
@@ -31,7 +32,8 @@ public sealed record ComprobanteDelDia(
     Guid TrabajoOriginalId,
     EstadoTrabajoImpresion EstadoOriginal,
     int UltimaCopia,
-    EstadoTrabajoImpresion EstadoUltimoTrabajo);
+    EstadoTrabajoImpresion EstadoUltimoTrabajo,
+    string? Numero = null);
 
 /// <summary>Una acción del operador: hecha, con su envío, o denegada con su motivo.</summary>
 public sealed record ResultadoAccion(bool Realizada, string? ReasonCode, ResultadoEnvio? Envio);

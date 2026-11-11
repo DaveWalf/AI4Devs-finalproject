@@ -92,7 +92,7 @@
                             {
                                 <p id="aviso-incertidumbre" class="aviso" role="alert">@MensajesAtencion.Incertidumbre</p>
                             }
-                            <p>@MensajesAtencion.PedidoMotivo(pedida.TicketId.ToString("D")[..8], pedida.Opcion)</p>
+                            <p>@MensajesAtencion.PedidoMotivo(pedida.Numero ?? pedida.TicketId.ToString("D")[..8], pedida.Opcion)</p>
                             <div class="acciones">
                                 @foreach (var motivo in Enum.GetValues<MotivoReimpresion>())
                                 {
@@ -182,12 +182,17 @@
                 <section id="comprobante-en-pantalla" class="cartel superficie" role="dialog" aria-modal="true" aria-label="Comprobante en pantalla">
                     <div class="comprobante comprobante-visto">
                         <span class="leyenda">@papel.Leyenda · N.º @papel.Numero</span>
+                        @if (papel.Comensal is { } comensal)
+                        {
+                            <span class="comensal-comprobante">@comensal</span>
+                        }
                         <span class="opcion-comprobante">@papel.Opcion</span>
                         <span>Fecha: @papel.FechaNegocio</span>
                         @if (papel.Cargo.Length > 0)
                         {
                             <span>Cargo informado: @papel.Cargo</span>
                         }
+                        <span class="frase-comprobante">@papel.Frase</span>
                     </div>
                     <div class="acciones">
                         <button id="cerrar-comprobante" type="button" class="principal" @onclick="() => _enPantalla = null">Cerrar</button>
@@ -413,7 +418,7 @@
 
         Sesion!.PedirReimpresion(new ComprobanteDelDia(fila.TicketId!.Value, fila.ConfirmadoUtc, fila.Opcion, fila.Persona,
             fila.TrabajoOriginalId ?? Guid.Empty, fila.EstadoOriginal ?? EstadoTrabajoImpresion.Queued, 0,
-            fila.EstadoComprobante ?? EstadoTrabajoImpresion.Queued));
+            fila.EstadoComprobante ?? EstadoTrabajoImpresion.Queued, fila.Numero));
     }
 
     /// <summary>El código del operador se vacía apenas se envía y no se vuelve a mostrar.</summary>

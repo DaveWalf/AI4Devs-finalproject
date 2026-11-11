@@ -15,7 +15,7 @@ public class AccionesEnConsumosTests
 {
     private const string Operador = "Operador sintético 01";
 
-    [Fact(DisplayName = "comprobante-local · Ver un comprobante: «Ver» lo muestra con la marca COPIA EN PANTALLA, su número y la opción, sin pedir un operador, y al cerrarlo Consumos sigue igual")]
+    [Fact(DisplayName = "comprobante-local · Ver un comprobante: «Ver» lo muestra con la marca COPIA EN PANTALLA, su número, el comensal y la opción, sin el código y sin pedir un operador, y al cerrarlo Consumos sigue igual")]
     public async Task Ver_un_comprobante()
     {
         using var puesto = new PuestoDePrueba();
@@ -35,7 +35,8 @@ public class AccionesEnConsumosTests
         Assert.Contains(opcion, comprobante.TextContent);
         Assert.Contains(cargo, comprobante.TextContent);
         Assert.Contains("06/11/2026", comprobante.TextContent);
-        Assert.DoesNotContain("Persona sintética", comprobante.TextContent);
+        Assert.Contains("Persona sintética", comprobante.TextContent);
+        Assert.DoesNotContain("0001", comprobante.TextContent);
         Assert.Empty(pantalla.FindAll("#codigo-operador"));
         await pantalla.Find("#cerrar-comprobante").ClickAsync(new());
         Assert.Empty(pantalla.FindAll("#comprobante-en-pantalla"));

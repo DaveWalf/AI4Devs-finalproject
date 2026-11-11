@@ -23,7 +23,7 @@ public static class MensajesAtencion
     public const string SesionVencida = "Tu sesión venció. Identificate de nuevo.";
     public const string OpcionRetirada = "La opción elegida ya no está disponible. Elegí otra.";
     public const string CatalogoCambiado = "La opción cambió. Revisá el valor vigente y confirmá de nuevo.";
-    public const string Incertidumbre = "El papel pudo haber salido. La copia nueva va a decir DUPLICADO.";
+    public const string Incertidumbre = "El papel pudo haber salido. La copia nueva va a decir REIMPRESIÓN.";
     public const string ErrorAlmacenamiento = "Error de almacenamiento: la base no es de una versión conocida.";
     public const string NoConfirmado = "No se pudo confirmar. Identificate de nuevo.";
     public const string EstiloNoGuardado = "No se pudo guardar el estilo: queda el anterior.";
@@ -66,6 +66,8 @@ public static class MensajesAtencion
     public const string PruebaIncierta = "No se sabe si la prueba salió: revisá la impresora.";
     public const string TextosGuardados = "Se guardaron los textos del comprobante.";
     public const string TextosNoGuardados = "No se pudieron guardar los textos: siguen los de antes.";
+    public const string DatosPuestoGuardados = "Se guardaron los datos del comprobante: valen desde el próximo comprobante.";
+    public const string DatosPuestoNoGuardados = "No se pudieron guardar los datos del comprobante: siguen los de antes.";
 
     // La pestaña Pantalla (presentacion-puesto de configurar-puesto-por-pestanas, D10).
     public const string MonitorAusente = "El monitor guardado no está conectado: el puesto abrió en el principal.";
@@ -343,7 +345,7 @@ public static class MensajesAtencion
         $"{opciones.ToString(CultureInfo.InvariantCulture)} opciones en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración";
 
     public static string CopiaEnviada(int numeroCopia) =>
-        $"Copia {numeroCopia.ToString(CultureInfo.InvariantCulture)} enviada con la leyenda DUPLICADO.";
+        $"Copia {numeroCopia.ToString(CultureInfo.InvariantCulture)} enviada con la leyenda REIMPRESIÓN.";
 
     public static string RedCanceladaEnPaso(int? paso, int pasos) =>
         $"No se dio el permiso de administrador del paso {paso?.ToString(CultureInfo.InvariantCulture)} de {pasos.ToString(CultureInfo.InvariantCulture)}: quedaron aplicados los anteriores.";

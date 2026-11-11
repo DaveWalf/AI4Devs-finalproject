@@ -78,6 +78,12 @@ public sealed class ServicioAtencion : IDisposable
     /// </summary>
     public bool BitacorasAutomaticas { get; init; }
 
+    /// <summary>
+    /// El «desde» de la numeración correlativa, leído en cada confirmación; sin él, el código de siempre (D2 de
+    /// enriquecer-comprobante). La ventana lo lee de los datos del puesto.
+    /// </summary>
+    public Func<long?>? CorrelativoDesde { get; init; }
+
     /// <summary>Cómo se lee la versión de la aplicación para KIOSK_STARTED y KIOSK_STOPPED; una excepción o null la dejan nula.</summary>
     public Func<string?> LeerVersionAplicacion { get; init; } = VersionDeLaAplicacion;
 
@@ -108,7 +114,7 @@ public sealed class ServicioAtencion : IDisposable
             Identificacion = new IdentificacionPorCodigo(baseComedor, Reloj);
             Catalogo = new ConsultaCatalogo(baseComedor);
             Disponibilidad = new ConsultaDisponibilidad(baseComedor, Reloj);
-            Unidad = new UnidadConfirmacion(baseComedor, Reloj);
+            Unidad = new UnidadConfirmacion(baseComedor, Reloj) { CorrelativoDesde = CorrelativoDesde ?? (() => null) };
             Trabajos = new TrabajosImpresion(baseComedor, Reloj, Impresora);
             Asistencia = new Asistencia(baseComedor, Reloj, Trabajos);
             Administracion = new AdministracionLocal(baseComedor, Reloj);

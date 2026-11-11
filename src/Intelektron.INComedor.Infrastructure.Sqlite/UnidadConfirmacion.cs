@@ -16,6 +16,9 @@ public sealed class UnidadConfirmacion
         Converters = { new JsonStringEnumConverter() },
     };
 
+    /// <summary>Los datos de impresión sin las propiedades nulas: sin correlativo, no hay TicketNumber.</summary>
+    private static readonly JsonSerializerOptions SinNulos = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+
     private readonly BaseComedor _baseComedor;
     private readonly TimeProvider _reloj;
     private readonly IPuntosDeFalla _puntosDeFalla;
@@ -32,6 +35,12 @@ public sealed class UnidadConfirmacion
         _reloj = reloj;
         _puntosDeFalla = puntosDeFalla;
     }
+
+    /// <summary>
+    /// El «desde» de la numeración correlativa, leído en cada confirmación; null con el código de siempre (D2 de
+    /// enriquecer-comprobante).
+    /// </summary>
+    public Func<long?> CorrelativoDesde { get; init; } = () => null;
 
     public ResultadoConfirmacion Confirmar(SolicitudConfirmacion solicitud)
     {
@@ -176,6 +185,22 @@ public sealed class UnidadConfirmacion
                 ("$fecha", fechaTexto), ("$unidades", carga.Unidades));
         }
 
+        // El nombre visible del comensal y, con la numeración correlativa, el número, en la misma transacción: dos
+        // confirmaciones no pueden tomar el mismo, y una copia repite los de su original (D1 y D2 de enriquecer-comprobante).
+        string? nombre;
+        using (var comandoNombre = ComandosSqlite.Crear(conexion, transaccion,
+                   "SELECT comperNombreVisible FROM tbComedorPersonas WHERE comvcCodigo = $vc AND comperCodigo = $per",
+                   ("$vc", puesto.SnapshotId), ("$per", solicitud.PersonId)))
+        {
+            nombre = comandoNombre.ExecuteScalar() as string;
+        }
+
+        // El mayor emitido recorre los comprobantes: unos 95 ms cada 100.000, medido el 11/11 con SQLite 3.50; leer sólo
+        // el último pediría un índice, una migración y otro esquema (deuda de enriquecer-comprobante).
+        long? numero = CorrelativoDesde() is { } desde
+            ? Math.Max(desde, ComandosSqlite.EscalarLong(conexion, transaccion,
+                "SELECT COALESCE(MAX(json_extract(comcmpDatosImpresion, '$.TicketNumber')), 0) + 1 FROM tbComedorComprobantes"))
+            : null;
         var datosImpresion = JsonSerializer.Serialize(new
         {
             TicketId = comprobanteId,
@@ -187,7 +212,9 @@ public sealed class UnidadConfirmacion
             precio.Currency,
             precio.Scale,
             precio.EmployeeChargeMinor,
-        });
+            PersonName = nombre,
+            TicketNumber = numero,
+        }, SinNulos);
         ComandosSqlite.Ejecutar(conexion, transaccion,
             "INSERT INTO tbComedorComprobantes (comcmpCodigo, comconCodigo, comcmpDatosImpresion, comcmpFechaCreacionUtc) VALUES ($tk, $con, $datos, $ahora)",
             ("$tk", comprobanteId), ("$con", consumoId), ("$datos", datosImpresion), ("$ahora", ahoraTexto));

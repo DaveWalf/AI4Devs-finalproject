@@ -32,7 +32,7 @@ public class ComprobanteEnPantallaTests : IDisposable
         }
     }
 
-    [Fact(DisplayName = "comprobante-local · AT06 · Autorización con la impresora disponible: la impresora y el comprobante con la opción y el cargo, sin el nombre")]
+    [Fact(DisplayName = "comprobante-local · AT06 · Autorización con la impresora disponible: la impresora y el comprobante con la opción, el cargo y el nombre, sin el código")]
     public async Task Disponible_muestra_la_impresora_y_el_comprobante()
     {
         var pantalla = Dibujar(new ImpresoraSimulada(_carpeta));
@@ -49,7 +49,7 @@ public class ComprobanteEnPantallaTests : IDisposable
         Assert.Contains("ARS 1.500,00", comprobante.TextContent);
         Assert.Contains("ORIGINAL", comprobante.TextContent);
         Assert.Contains("30/10/2026", comprobante.TextContent);
-        Assert.DoesNotContain(Persona, comprobante.TextContent);
+        Assert.Contains(Persona, comprobante.TextContent);
         Assert.DoesNotContain("0001", comprobante.TextContent);
         var archivo = Assert.Single(Directory.GetFiles(_carpeta));
         var numero = Path.GetFileName(archivo)[..8];
@@ -122,6 +122,30 @@ public class ComprobanteEnPantallaTests : IDisposable
         Assert.Equal("Listo", pantalla.Find("#listo").TextContent.Trim());
         Assert.Empty(pantalla.FindAll(".impresora"));
         Assert.Empty(pantalla.FindAll(".comprobante"));
+    }
+
+    [Fact(DisplayName = "comprobante-local · Un comprobante con el puesto y la frase: en pantalla, el puesto guardado, el comensal y la frase de ese comprobante, y el archivo de la impresora dice lo mismo")]
+    public async Task El_comprobante_con_el_puesto_y_la_frase()
+    {
+        var datos = Directory.CreateDirectory(Path.Combine(_carpeta, "datos")).FullName;
+        new AlmacenDatosPuesto(datos).Guardar(new DatosPuesto(3, "Comedor Norte", false, 1));
+        _contexto.Services.AddSingleton(new AlmacenDatosPuesto(datos));
+        var impresora = new ImpresoraSimulada(Path.Combine(_carpeta, "papel"));
+        var pantalla = Dibujar(impresora);
+
+        await Confirmar(pantalla);
+
+        pantalla.WaitForAssertion(() => Assert.NotNull(pantalla.Find(".comprobante")));
+        var texto = pantalla.Find(".comprobante").TextContent;
+        var archivo = Assert.Single(Directory.GetFiles(Path.Combine(_carpeta, "papel")));
+        var ticket = Guid.Parse(Path.GetFileName(archivo)[..36]);
+        Assert.Contains("Puesto 3 · Comedor Norte", texto);
+        Assert.Contains(Persona, texto);
+        Assert.Contains(FrasesComprobante.Para(ticket), texto);
+        var lineas = File.ReadAllLines(archivo);
+        Assert.Contains("Puesto 3 · Comedor Norte", lineas);
+        Assert.Contains("Comensal: " + Persona, lineas);
+        Assert.Contains(FrasesComprobante.Para(ticket), lineas);
     }
 
     private IRenderedComponent<PantallaAtencion> Dibujar(IImpresoraComprobantes impresora)

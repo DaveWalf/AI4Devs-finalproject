@@ -32,6 +32,9 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
     /// <summary>El encabezado y el pie que lleva cada comprobante desde el próximo que sale (D13 de configurar-puesto-por-pestanas).</summary>
     public TextosComprobante Textos { get; set; } = TextosComprobante.PorDefecto;
 
+    /// <summary>El número y el nombre del puesto que lleva cada comprobante desde el próximo (D3 de enriquecer-comprobante).</summary>
+    public DatosPuesto Puesto { get; set; } = DatosPuesto.PorDefecto;
+
     /// <summary>El último comprobante que aceptó como enviado, para mostrarlo en pantalla (D7 de presentar-atencion-tactil).</summary>
     public ComprobanteAImprimir? UltimoEnviado { get; private set; }
 
@@ -45,12 +48,33 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
         try
         {
             Directory.CreateDirectory(Carpeta);
-            var texto = new StringBuilder()
-                .AppendLine(Textos.Encabezado + " (demostración, datos sintéticos)")
-                .AppendLine(comprobante.Leyenda ?? "ORIGINAL")
-                .AppendLine("Comprobante: " + comprobante.TicketId)
-                .AppendLine("Copia: " + comprobante.NumeroCopia)
-                .AppendLine(comprobante.DatosImpresion);
+            // El puesto debajo del encabezado; el número y el comensal de los datos guardados, si los tiene; el operador de
+            // una copia; y al pie la frase del comprobante, antes del pie configurable (D6 de enriquecer-comprobante).
+            var texto = new StringBuilder().AppendLine(Textos.Encabezado + " (demostración, datos sintéticos)");
+            if (Puesto.Linea is { } puesto)
+            {
+                texto.AppendLine(puesto);
+            }
+
+            texto.AppendLine(comprobante.Leyenda ?? "ORIGINAL")
+                .AppendLine("Comprobante: " + comprobante.TicketId);
+            if (ComprobanteEnPantalla.LeerDatos(comprobante) is { } datos)
+            {
+                texto.AppendLine("Número: " + datos.Numero);
+                if (datos.Comensal is { } comensal)
+                {
+                    texto.AppendLine("Comensal: " + comensal);
+                }
+            }
+
+            texto.AppendLine("Copia: " + comprobante.NumeroCopia);
+            if (comprobante.Habilito is { } habilito)
+            {
+                texto.AppendLine("Habilitó: " + habilito);
+            }
+
+            texto.AppendLine(comprobante.DatosImpresion)
+                .AppendLine(FrasesComprobante.Para(comprobante.TicketId));
             if (Textos.Pie.Length > 0)
             {
                 texto.AppendLine(Textos.Pie);

@@ -179,13 +179,26 @@
                             <div class="boca" aria-hidden="true"></div>
                             <button id="listo" type="button" class="comprobante" aria-label="Retirar el comprobante" @onclick="Maquina.Listo">
                                 <span class="encabezado-comprobante">@_textos.Encabezado</span>
+                                @if (_datosPuesto.Linea is { } lineaPuesto)
+                                {
+                                    <span class="puesto-comprobante">@lineaPuesto</span>
+                                }
                                 <span class="leyenda">@papel.Leyenda · N.º @papel.Numero</span>
+                                @if (papel.Comensal is { } comensal)
+                                {
+                                    <span class="comensal-comprobante">@comensal</span>
+                                }
                                 <span class="opcion-comprobante">@papel.Opcion</span>
                                 <span>Fecha: @papel.FechaNegocio</span>
                                 @if (papel.Cargo.Length > 0)
                                 {
                                     <span>Cargo informado: @papel.Cargo</span>
                                 }
+                                @if (papel.Habilito is { } habilito)
+                                {
+                                    <span>Habilitó: @habilito</span>
+                                }
+                                <span class="frase-comprobante">@papel.Frase</span>
                                 @if (_textos.Pie.Length > 0)
                                 {
                                     <span class="pie-comprobante">@_textos.Pie</span>
@@ -245,6 +258,7 @@
                             Resguardo="Resguardo" RegistrarResguardo="RegistrarResguardoGuardado"
                             RegistrarRecuperacion="RegistrarRecuperacionDeResguardo" RegistrarRecuperacionRechazada="RegistrarRecuperacionRechazada"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
+                            DatosDelPuesto="_datosPuesto" GuardarDatosPuesto="@(_almacenDatosPuesto is null ? null : GuardarDatosPuesto)"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
                             Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
                             AplicarRed="AplicarRed" DireccionReceptor="@_pruebaConexion?.Direccion"
@@ -295,6 +309,8 @@
     private SesionOperador? _sesionOperador;
     private AlmacenImpresora? _almacenImpresora;
     private TextosComprobante _textos = TextosComprobante.PorDefecto;
+    private AlmacenDatosPuesto? _almacenDatosPuesto;
+    private DatosPuesto _datosPuesto = DatosPuesto.PorDefecto;
     private AlmacenPantalla? _almacenPantalla;
     private PantallaDelPuesto? _pantallaDelPuesto;
     private EjecutorNetsh? _ejecutorNetsh;
@@ -382,9 +398,13 @@
         // Sin almacén de la impresora registrado, los textos por defecto; la simulada los usa desde el próximo comprobante (D13).
         _almacenImpresora = Proveedor.GetService(typeof(AlmacenImpresora)) as AlmacenImpresora;
         _textos = _almacenImpresora?.Leer() ?? TextosComprobante.PorDefecto;
+        // Sin almacén de los datos del puesto, el comprobante sale sin puesto (D3 de enriquecer-comprobante).
+        _almacenDatosPuesto = Proveedor.GetService(typeof(AlmacenDatosPuesto)) as AlmacenDatosPuesto;
+        _datosPuesto = _almacenDatosPuesto?.Leer() ?? DatosPuesto.PorDefecto;
         if (Servicio.Impresora is ImpresoraSimulada simulada)
         {
             simulada.Textos = _textos;
+            simulada.Puesto = _datosPuesto;
         }
 
         _almacenPantalla = Proveedor.GetService(typeof(AlmacenPantalla)) as AlmacenPantalla;
@@ -1116,6 +1136,95 @@
         RegistrarCambioDeTextos(antes, nuevos, "APPLIED", []);
         return new ResultadoTextos(true, [], null);
     }
+
+    /// <summary>
+    /// Valida y guarda los datos del comprobante como se tipearon: el número del puesto (vacío es ninguno), su nombre, la
+    /// numeración y el «desde» (vacío con el código de siempre deja el de antes). Valen desde el próximo comprobante y quedan
+    /// en la general como TICKET_DATA (D7 de enriquecer-comprobante).
+    /// </summary>
+    private ResultadoTextos GuardarDatosPuesto(string numero, string nombre, bool correlativo, string desde)
+    {
+        var antes = _datosPuesto;
+        // Sin espacios de más: un nombre sólo de espacios es ninguno, y no deja «Puesto 3 ·» con un blanco.
+        nombre = nombre.Trim();
+        var campos = new List<string>();
+        int? puesto = null;
+        if (numero.Trim().Length > 0)
+        {
+            if (numero.Trim().All(char.IsAsciiDigit) && int.TryParse(numero.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var valor))
+            {
+                puesto = valor;
+            }
+            else
+            {
+                campos.Add("Numero");
+            }
+        }
+
+        // Con el código de siempre, el «desde» no se usa: uno inválido se ignora y queda el de antes.
+        var desdeValido = long.TryParse(desde.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var inicio)
+            && inicio is >= 1 and <= DatosPuesto.DesdeMaximo;
+        if (!desdeValido)
+        {
+            inicio = correlativo ? 0 : antes.Desde;
+        }
+
+        foreach (var campo in DatosPuesto.Validar(puesto, nombre, inicio))
+        {
+            if (!campos.Contains(campo))
+            {
+                campos.Add(campo);
+            }
+        }
+
+        campos = [.. new[] { "Numero", "Nombre", "Desde" }.Where(campos.Contains)];
+        if (campos.Count > 0)
+        {
+            RegistrarCambioDeDatos(antes, null, "REJECTED", campos);
+            return new ResultadoTextos(false, campos, MensajesAtencion.PanelInvalido);
+        }
+
+        var nuevos = new DatosPuesto(puesto, nombre, correlativo, inicio);
+        try
+        {
+            _almacenDatosPuesto!.Guardar(nuevos);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            RegistrarCambioDeDatos(antes, nuevos, "FAILED", []);
+            return new ResultadoTextos(false, [], MensajesAtencion.DatosPuestoNoGuardados);
+        }
+
+        _datosPuesto = nuevos;
+        if (Servicio.Impresora is ImpresoraSimulada simulada)
+        {
+            simulada.Puesto = nuevos;
+        }
+
+        RegistrarCambioDeDatos(antes, nuevos, "APPLIED", []);
+        return new ResultadoTextos(true, [], null);
+    }
+
+    private void RegistrarCambioDeDatos(DatosPuesto antes, DatosPuesto? despues, string resultado, IReadOnlyList<string> campos) =>
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "TICKET_DATA",
+            Before = DatosDelRegistro(antes),
+            After = despues is null ? null : DatosDelRegistro(despues),
+            Result = resultado,
+            Fields = campos,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    private static object DatosDelRegistro(DatosPuesto datos) => new
+    {
+        PostNumber = datos.Numero,
+        PostName = datos.Nombre,
+        Numbering = datos.Correlativo ? "CORRELATIVE" : "TICKET_CODE",
+        From = datos.Desde,
+    };
 
     private void RegistrarCambioDeTextos(TextosComprobante antes, TextosComprobante? despues, string resultado, IReadOnlyList<string> campos) =>
         RegistrarConfiguracion("CONFIGURATION_CHANGED", new

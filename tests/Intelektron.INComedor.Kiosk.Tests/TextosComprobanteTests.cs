@@ -76,7 +76,7 @@ public class TextosComprobanteTests
         Assert.False(File.Exists(Path.Combine(puesto.Carpeta, "impresora.json")));
     }
 
-    [Fact(DisplayName = "comprobante-local · Una copia lleva los textos vigentes: impreso con los de siempre, la copia de un operador después de guardar un encabezado nuevo lleva ese encabezado, DUPLICADO y los mismos datos")]
+    [Fact(DisplayName = "comprobante-local · Una copia lleva los textos vigentes: impreso con los de siempre, la copia de un operador después de guardar un encabezado nuevo lleva ese encabezado, REIMPRESIÓN y los mismos datos")]
     public async Task Una_copia_lleva_los_textos_vigentes()
     {
         using var puesto = new PuestoDePrueba();
@@ -98,8 +98,12 @@ public class TextosComprobanteTests
 
         var copia = File.ReadAllLines(Assert.Single(Directory.GetFiles(impresora.Carpeta, "*-1.txt")));
         Assert.StartsWith("Comedor de planta", copia[0]);
-        Assert.Contains(copia, l => l.Contains("DUPLICADO", StringComparison.Ordinal));
-        Assert.Equal(original.Skip(4).Take(1), copia.Skip(4).Take(1));
+        Assert.Contains(copia, l => l.Contains("REIMPRESIÓN", StringComparison.Ordinal));
+        // Los mismos datos del comprobante: la línea de los datos guardados, el número y el comensal, dondequiera que caigan.
+        static IEnumerable<string> Datos(IEnumerable<string> lineas) =>
+            lineas.Where(l => l.StartsWith('{') || l.StartsWith("Número:", StringComparison.Ordinal) || l.StartsWith("Comensal:", StringComparison.Ordinal));
+        Assert.Equal(Datos(original), Datos(copia));
+        Assert.Single(Datos(original), l => l.StartsWith('{'));
     }
 
     [Fact(DisplayName = "comprobante-local · Un archivo de textos ilegible: con un encabezado de 300 caracteres, el comprobante empieza con «INComedor · comprobante» y no tiene pie")]

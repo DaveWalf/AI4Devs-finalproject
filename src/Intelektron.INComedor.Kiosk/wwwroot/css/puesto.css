@@ -469,10 +469,18 @@ html, body { overscroll-behavior: none; }
 .tabla-consumos th[aria-sort="ascending"] button.ordenar::after { content: " ▲"; }
 .tabla-consumos th[aria-sort="descending"] button.ordenar::after { content: " ▼"; }
 .modo-puesto { font-size: 18px; font-weight: 600; }
-.textos-comprobante { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px 12px; font-size: 17px; }
+/* Los rótulos en una columna del mismo ancho en las dos secciones de Impresora, así sus campos empiezan en el mismo borde
+   (D8 de enriquecer-comprobante): entra «Número del comprobante». */
+.textos-comprobante { display: grid; grid-template-columns: 12.5em 1fr; align-items: center; gap: 8px 12px; font-size: 17px; }
 .textos-comprobante h3, .textos-comprobante p, .textos-comprobante .acciones { grid-column: 1 / -1; }
 .textos-comprobante input { min-height: 56px; padding: 0 12px; font: inherit; font-size: 18px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel)); }
 .textos-comprobante input[aria-invalid="true"] { outline: 3px solid #b3261e; outline-offset: 2px; }
+/* Los datos del comprobante (D7 y D8 de enriquecer-comprobante): la grilla de los textos; la numeración, sus dos botones
+   y el «desde» en una fila, con el alto táctil y la letra de los campos, y el «desde» hasta el borde de los de arriba. */
+.datos-comprobante .rotulo { align-self: center; }
+.datos-comprobante .numeracion { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.datos-comprobante .numeracion button { min-height: 56px; font-size: 18px; }
+.datos-comprobante .numeracion input { flex: 1 1 8em; min-width: 8em; }
 .pie-comprobante { font-style: italic; }
 .lista-monitores { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .lista-monitores .monitor { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 12px; font-size: 17px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel) / .6); }
@@ -605,6 +613,10 @@ html, body { overscroll-behavior: none; }
 
 .comprobante .encabezado-comprobante { font-weight: 700; }
 .comprobante .opcion-comprobante { font-size: 18px; font-weight: 700; }
+/* El puesto, el comensal y la frase del comprobante (D6 de enriquecer-comprobante): la letra de las demás líneas; el
+   comensal en negrita, como la opción, y la frase en cursiva, como el pie. */
+.comprobante .comensal-comprobante { font-weight: 700; }
+.comprobante .frase-comprobante { font-style: italic; }
 .comprobante .retirar { margin-top: 8px; font-family: "Segoe UI", sans-serif; font-size: 15px; color: var(--tinta-suave); }
 
 @keyframes salir-comprobante {

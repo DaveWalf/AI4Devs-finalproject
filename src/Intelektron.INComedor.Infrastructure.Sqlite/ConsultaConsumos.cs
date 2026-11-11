@@ -70,10 +70,14 @@ public sealed record ConsumoConsultado(
     EstadoTrabajoImpresion? EstadoComprobante,
     Guid? TicketId = null,
     Guid? TrabajoOriginalId = null,
-    EstadoTrabajoImpresion? EstadoOriginal = null)
+    EstadoTrabajoImpresion? EstadoOriginal = null,
+    long? NumeroCorrelativo = null)
 {
-    /// <summary>El número del comprobante, como lo muestra el papel: los primeros ocho caracteres del comprobante.</summary>
-    public string? Numero => TicketId?.ToString("D")[..8];
+    /// <summary>
+    /// El número del comprobante, como lo muestra el papel: el correlativo si lo tiene, o los primeros ocho caracteres del
+    /// comprobante (D2 de enriquecer-comprobante).
+    /// </summary>
+    public string? Numero => NumeroCorrelativo?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? TicketId?.ToString("D")[..8];
 }
 
 /// <summary>Hasta 500 filas, si hay más, o el motivo por el que el filtro se rechazó sin consultar.</summary>
@@ -174,7 +178,7 @@ public sealed class ConsultaConsumos
             $"""
             SELECT con.comconCodigo, con.comconFechaConfirmacionLocalUtc, con.comconFechaNegocio, con.comperCodigo, per.comperNombreVisible,
                    con.commenCodigo, men.commenNombre, men.comsrvCodigo, srv.comsrvNombre, con.comconPrecioAplicado, ult.comimpEstado,
-                   cmp.comcmpCodigo, ori.comimpCodigo, ori.comimpEstado
+                   cmp.comcmpCodigo, ori.comimpCodigo, ori.comimpEstado, json_extract(cmp.comcmpDatosImpresion, '$.TicketNumber')
             FROM tbComedorConsumos con
             JOIN tbComedorPersonas per ON per.comvcCodigo = con.comvcCodigo AND per.comperCodigo = con.comperCodigo
             JOIN tbComedorOpcionesMenu men ON men.comvcCodigo = con.comvcCodigo AND men.commenCodigo = con.commenCodigo
@@ -190,7 +194,8 @@ public sealed class ConsultaConsumos
                     SELECT cre.comperCodigo FROM tbComedorCredencialesPersonas cre
                     WHERE cre.comcreTipo = 'SERIAL_CODE' AND cre.comcreValorNormalizado = $cod))
               AND ($patron IS NULL OR normalizar(per.comperNombreVisible || ' ' || men.commenNombre || ' ' || srv.comsrvNombre || ' '
-                    || COALESCE(substr(cmp.comcmpCodigo, 1, 8), '')) LIKE $patron ESCAPE '\')
+                    || COALESCE(substr(cmp.comcmpCodigo, 1, 8), '') || ' '
+                    || COALESCE(json_extract(cmp.comcmpDatosImpresion, '$.TicketNumber'), '')) LIKE $patron ESCAPE '\')
               AND ($srv IS NULL OR men.comsrvCodigo = $srv)
               AND ($men IS NULL OR con.commenCodigo = $men)
             ORDER BY {Expresiones[filtro.Orden]} {sentido}, con.comconFechaConfirmacionLocalUtc DESC, con.comconSecuenciaCliente DESC
@@ -215,7 +220,8 @@ public sealed class ConsultaConsumos
                 lector.IsDBNull(10) ? null : TrabajosImpresion.Estado(lector.GetString(10)),
                 lector.IsDBNull(11) ? null : lector.GetGuid(11),
                 lector.IsDBNull(12) ? null : lector.GetGuid(12),
-                lector.IsDBNull(13) ? null : TrabajosImpresion.Estado(lector.GetString(13))));
+                lector.IsDBNull(13) ? null : TrabajosImpresion.Estado(lector.GetString(13)),
+                lector.IsDBNull(14) ? null : lector.GetInt64(14)));
         }
 
         var hayMas = filas.Count > tope;

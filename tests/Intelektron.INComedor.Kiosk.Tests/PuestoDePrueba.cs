@@ -51,7 +51,11 @@ public sealed class PuestoDePrueba : IDisposable
 
     public IRenderedComponent<PantallaAtencion> Dibujar(IImpresoraComprobantes? impresora = null)
     {
-        Servicio = new ServicioAtencion(RutaBase, Reloj, impresora ?? new ImpresoraDePrueba());
+        // Como la ventana: el «desde» del correlativo sale de los datos del puesto, si una prueba los guardó (enriquecer-comprobante).
+        Servicio = new ServicioAtencion(RutaBase, Reloj, impresora ?? new ImpresoraDePrueba())
+        {
+            CorrelativoDesde = () => new AlmacenDatosPuesto(Carpeta).Leer() is { Correlativo: true } datos ? datos.Desde : null,
+        };
         Contexto.Services.AddSingleton(Servicio);
         Contexto.Services.AddSingleton(new MaquinaAtencion(Servicio));
         Contexto.Services.AddSingleton(new AlmacenEstiloVisual(Carpeta));
