@@ -20,9 +20,10 @@
   hasta 1,5 s antes y la prueba lo mostró: ahora manda el último puntero). Ninguna prueba existente cambió.
 - [x] 2.2 `readme.md` y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de enlaces con su
   control negativo, `enlaces rotos: 0`. Hecho: 0, con el control en 2.
-- [ ] 2.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
+- [x] 2.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
   --no-incremental`, el puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c
-  Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+  Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas. Hecho: la
+  primera, sobre `e694189`, dio 1112 de 1112; la final, sobre el archivado, en el PR.
 
 ## 3. Correcciones de la verificación
 
