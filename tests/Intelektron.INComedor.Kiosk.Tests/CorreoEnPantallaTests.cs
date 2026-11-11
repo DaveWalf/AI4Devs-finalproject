@@ -155,7 +155,20 @@ public class CorreoEnPantallaTests
 
         // El aviso se encola fuera del hilo de la pantalla: se espera por tiempo, no por un dibujo.
         var carpeta = Path.Combine(puesto.Carpeta, ColaCorreo.Carpeta);
-        bool HayAviso() => Directory.Exists(carpeta) && Directory.GetFiles(carpeta, "*.json").Select(File.ReadAllText).Any(t =>
+        // Un pendiente recién creado puede estar tomado un instante (el antivirus): se vuelve a mirar, como hace la cola.
+        static string? Leer(string archivo)
+        {
+            try
+            {
+                return File.ReadAllText(archivo);
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+        }
+
+        bool HayAviso() => Directory.Exists(carpeta) && Directory.GetFiles(carpeta, "*.json").Select(Leer).OfType<string>().Any(t =>
             System.Text.Json.JsonSerializer.Deserialize<MensajeCorreo>(t) is { Situacion: SituacionCorreo.Exportacion } m && m.Para.SequenceEqual(["admin@ejemplo.com"]));
         Assert.True(SpinWait.SpinUntil(HayAviso, TimeSpan.FromSeconds(10)), "No llegó el aviso de «Exportación» a la cola.");
     }
