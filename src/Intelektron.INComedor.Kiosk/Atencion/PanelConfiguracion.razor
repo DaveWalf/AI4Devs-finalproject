@@ -316,7 +316,7 @@
             @* El encabezado y el pie del comprobante, desde el próximo que sale (D13). *@
             @if (GuardarTextos is not null)
             {
-                <section aria-labelledby="titulo-textos" class="textos-comprobante">
+                <section aria-labelledby="titulo-textos" class="textos-comprobante datos-comprobante">
                     <h3 id="titulo-textos">Textos del comprobante</h3>
                     <label for="encabezado-comprobante">Encabezado</label>
                     <input id="encabezado-comprobante" type="text" maxlength="@TextosComprobante.LargoEncabezado" value="@_encabezado"
@@ -324,6 +324,24 @@
                     <label for="pie-comprobante">Pie</label>
                     <input id="pie-comprobante" type="text" maxlength="@TextosComprobante.LargoPie" value="@_pie"
                            aria-invalid="@(_camposTextos.Contains("Pie") ? "true" : null)" @oninput="e => _pie = e.Value?.ToString() ?? string.Empty" />
+                    @* Las líneas que imprime el comprobante, con el par «Imprimir» y «No imprimir» de cada una, que se guardan con los *@
+                    @* textos (D2 de elegir-lineas-del-comprobante): los rótulos en la columna de los de arriba y los pares en la de *@
+                    @* los campos, con los botones de los pares de Mails. La marca de la clave del día no tiene elección. *@
+                    <span id="rotulo-linea-comensal" class="rotulo">Nombre del comensal</span>
+                    <div class="numeracion lineas-comprobante" role="group" aria-labelledby="rotulo-linea-comensal">
+                        <button id="comensal-imprimir" type="button" aria-pressed="@Presionado(_lineaComensal)" @onclick="() => _lineaComensal = true">Imprimir</button>
+                        <button id="comensal-no-imprimir" type="button" aria-pressed="@Presionado(!_lineaComensal)" @onclick="() => _lineaComensal = false">No imprimir</button>
+                    </div>
+                    <span id="rotulo-linea-aviso" class="rotulo">Aviso de reimpresión</span>
+                    <div class="numeracion lineas-comprobante" role="group" aria-labelledby="rotulo-linea-aviso">
+                        <button id="aviso-reimpresion-imprimir" type="button" aria-pressed="@Presionado(_lineaAviso)" @onclick="() => _lineaAviso = true">Imprimir</button>
+                        <button id="aviso-reimpresion-no-imprimir" type="button" aria-pressed="@Presionado(!_lineaAviso)" @onclick="() => _lineaAviso = false">No imprimir</button>
+                    </div>
+                    <span id="rotulo-linea-operador" class="rotulo">Operador que habilitó</span>
+                    <div class="numeracion lineas-comprobante" role="group" aria-labelledby="rotulo-linea-operador">
+                        <button id="operador-imprimir" type="button" aria-pressed="@Presionado(_lineaOperador)" @onclick="() => _lineaOperador = true">Imprimir</button>
+                        <button id="operador-no-imprimir" type="button" aria-pressed="@Presionado(!_lineaOperador)" @onclick="() => _lineaOperador = false">No imprimir</button>
+                    </div>
                     @if (_avisoTextos is not null)
                     {
                         <p id="aviso-textos" class="aviso" role="status">@_avisoTextos</p>
@@ -1514,8 +1532,11 @@
         if (_releerTextos)
         {
             (_encabezado, _pie, _releerTextos) = (Textos.Encabezado, Textos.Pie, false);
+            (_lineaComensal, _lineaAviso, _lineaOperador) = (Textos.Comensal, Textos.AvisoReimpresion, Textos.Operador);
         }
     }
+
+    private static string Presionado(bool presionado) => presionado ? "true" : "false";
 
     private void CerrarImportacion() => (_revision, _archivoImportado, _huellaImportada) = (null, null, null);
     private string? _avisoGuardado;
@@ -1524,6 +1545,9 @@
     private string? _resultadoPrueba;
     private string _encabezado = string.Empty;
     private string _pie = string.Empty;
+    private bool _lineaComensal = true;
+    private bool _lineaAviso = true;
+    private bool _lineaOperador = true;
     private IReadOnlyList<string> _camposTextos = [];
     private string? _avisoTextos;
     private string _numeroPuesto = string.Empty;
@@ -1658,8 +1682,9 @@
     [Parameter]
     public Func<string>? ImprimirPrueba { get; set; }
 
+    /// <summary>Guarda los textos y las tres líneas elegidas juntos, con un solo «Guardar» (D2 de elegir-lineas-del-comprobante).</summary>
     [Parameter]
-    public Func<string, string, ResultadoTextos>? GuardarTextos { get; set; }
+    public Func<TextosComprobante, ResultadoTextos>? GuardarTextos { get; set; }
 
     /// <summary>La consulta de consumos; la ve quien entró a Configuración, sin el código de un operador (D9).</summary>
     [Parameter]
@@ -1745,6 +1770,7 @@
         LeerResumen();
         _encabezado = Textos.Encabezado;
         _pie = Textos.Pie;
+        (_lineaComensal, _lineaAviso, _lineaOperador) = (Textos.Comensal, Textos.AvisoReimpresion, Textos.Operador);
         LeerConfiguracionExportacion();
         LeerConfiguracionCorreo();
         LeerConfiguracionLector();
@@ -1775,7 +1801,7 @@
     /// <summary>Guarda sólo los textos y deja Configuración abierta: con el aviso de lo guardado o los campos señalados (D3).</summary>
     private void GuardarLosTextos()
     {
-        if (GuardarTextos?.Invoke(_encabezado, _pie) is not { } resultado)
+        if (GuardarTextos?.Invoke(new TextosComprobante(_encabezado, _pie, _lineaComensal, _lineaAviso, _lineaOperador)) is not { } resultado)
         {
             return;
         }

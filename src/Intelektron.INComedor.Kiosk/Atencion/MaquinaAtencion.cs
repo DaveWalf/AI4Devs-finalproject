@@ -426,9 +426,10 @@ public sealed class MaquinaAtencion
 
                 _codigoMensaje = ComprobantePendiente ? nameof(MensajesAtencion.ComprobantePendiente) : nameof(MensajesAtencion.Exito);
                 _decisionId = resultado.DecisionId;
-                ComprobanteEnPantalla = !ComprobantePendiente && _servicio.Impresora is ImpresoraSimulada { UltimoEnviado: { } enviado }
+                // El comprobante en pantalla sigue las líneas elegidas en Impresora, como el papel (D3 de elegir-lineas-del-comprobante).
+                ComprobanteEnPantalla = !ComprobantePendiente && _servicio.Impresora is ImpresoraSimulada { UltimoEnviado: { } enviado } simulada
                                         && enviado.TicketId == resultado.TicketId
-                    ? ComprobanteEnPantalla.Desde(enviado)
+                    ? ComprobanteEnPantalla.Desde(enviado, simulada.Textos)
                     : null;
                 Estado = EstadoAtencion.Resultado;
                 break;

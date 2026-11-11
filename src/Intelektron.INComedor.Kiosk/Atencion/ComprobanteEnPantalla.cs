@@ -21,7 +21,11 @@ public sealed record ComprobanteEnPantalla(
     /// </summary>
     public const string MarcaSinValidez = "SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD";
 
-    public static ComprobanteEnPantalla Desde(ComprobanteAImprimir comprobante)
+    /// <summary>
+    /// El comprobante en pantalla. Con <paramref name="lineas"/>, el de la confirmación, que sigue las líneas elegidas en
+    /// Impresora como el papel (D3 de elegir-lineas-del-comprobante); sin ellas, el de «Ver», con todas.
+    /// </summary>
+    public static ComprobanteEnPantalla Desde(ComprobanteAImprimir comprobante, TextosComprobante? lineas = null)
     {
         using var datos = JsonDocument.Parse(comprobante.DatosImpresion);
         var raiz = datos.RootElement;
@@ -40,9 +44,9 @@ public sealed record ComprobanteEnPantalla(
             raiz.GetProperty("MenuLabel").GetString() ?? string.Empty,
             fechaVisible,
             cargo,
-            comensal,
+            lineas is { Comensal: false } ? null : comensal,
             FrasesComprobante.Para(comprobante.TicketId),
-            comprobante.SinValidez ? null : comprobante.Habilito,
+            comprobante.SinValidez || lineas is { Operador: false } ? null : comprobante.Habilito,
             comprobante.SinValidez);
     }
 

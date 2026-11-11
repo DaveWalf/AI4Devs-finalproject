@@ -56,12 +56,18 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
                 texto.AppendLine(puesto);
             }
 
-            texto.AppendLine(comprobante.Leyenda ?? "ORIGINAL")
-                .AppendLine("Comprobante: " + comprobante.TicketId);
+            // Las líneas elegidas en Impresora valen desde este envío (D3 de elegir-lineas-del-comprobante): una copia sin el aviso
+            // no lleva leyenda, tampoco «ORIGINAL», que queda sólo para la copia 0; conserva su «Copia: N» (RB08).
+            if (comprobante.NumeroCopia == 0 || Textos.AvisoReimpresion)
+            {
+                texto.AppendLine(comprobante.Leyenda ?? "ORIGINAL");
+            }
+
+            texto.AppendLine("Comprobante: " + comprobante.TicketId);
             if (ComprobanteEnPantalla.LeerDatos(comprobante) is { } datos)
             {
                 texto.AppendLine("Número: " + datos.Numero);
-                if (datos.Comensal is { } comensal)
+                if (Textos.Comensal && datos.Comensal is { } comensal)
                 {
                     texto.AppendLine("Comensal: " + comensal);
                 }
@@ -69,12 +75,13 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
 
             texto.AppendLine("Copia: " + comprobante.NumeroCopia);
             // Una copia lleva quién la habilitó o, si se hizo con la clave del día, la marca en su lugar (D2 de
-            // reimprimir-sin-codigo); nunca las dos.
+            // reimprimir-sin-codigo); nunca las dos. La marca sale siempre, antes de mirar la elección del operador: un técnico
+            // con la clave del día no puede sacar una copia que parezca válida (D3 de elegir-lineas-del-comprobante).
             if (comprobante.SinValidez)
             {
                 texto.AppendLine(ComprobanteEnPantalla.MarcaSinValidez);
             }
-            else if (comprobante.Habilito is { } habilito)
+            else if (Textos.Operador && comprobante.Habilito is { } habilito)
             {
                 texto.AppendLine("Habilitó: " + habilito);
             }

@@ -110,8 +110,6 @@ Origen: RB26 («comprobar el permiso en cada acción») y AT54 («siguiente acci
 - **THEN** la acción se deniega con `PERMISSION_EXPIRED`, sin trabajo nuevo, y la pestaña muestra el aviso de ese motivo sin pedir un código
 - **AND** la acción siguiente desde Consumos también se deniega, sin trabajo nuevo
 
-## REMOVED Requirements
-
 #### Scenario: Una copia sin aviso ni operador
 Origen: mejora 4 de David del 11/11/2026 («si se imprimirá un aviso visual en caso de tratarse de la reimpresión del ticket, y qué operador lo hizo») y su respuesta 2 al gate, con RB08: la copia sigue numerada.
 - **GIVEN** «Aviso de reimpresión» y «Operador que habilitó» en «No imprimir», y Configuración abierta con el código de un operador con permiso vigente

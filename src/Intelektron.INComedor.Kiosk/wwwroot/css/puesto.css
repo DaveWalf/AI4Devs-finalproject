@@ -548,6 +548,9 @@ html, body { overscroll-behavior: none; }
 .datos-comprobante .numeracion { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .datos-comprobante .numeracion button { min-height: 56px; font-size: 18px; }
 .datos-comprobante .numeracion input { flex: 1 1 8em; min-width: 8em; }
+/* Los pares de las líneas del comprobante (D2 de elegir-lineas-del-comprobante): los seis botones del mismo ancho, el de «No
+   imprimir» presionado, en negrita y con su borde de 3 px, así los bordes caen en la misma vertical en las tres filas. */
+.datos-comprobante .lineas-comprobante button { min-width: 9em; }
 .pie-comprobante { font-style: italic; }
 .lista-monitores { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .lista-monitores .monitor { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 12px; font-size: 17px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel) / .6); }

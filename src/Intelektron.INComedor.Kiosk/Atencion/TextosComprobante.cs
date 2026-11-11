@@ -7,9 +7,10 @@ namespace Intelektron.INComedor.Kiosk.Atencion;
 /// <summary>
 /// El encabezado y el pie del comprobante (D13 de configurar-puesto-por-pestanas): son de la impresora, no del comprobante
 /// guardado, así que se aplican desde el próximo que sale, también a una copia. Sin textos guardados, el encabezado de
-/// siempre y ningún pie.
+/// siempre y ningún pie. Junto a ellos, las líneas que el papel imprime: el comensal, el aviso de reimpresión y el operador
+/// que habilitó una copia, todas encendidas por defecto (D1 de elegir-lineas-del-comprobante).
 /// </summary>
-public sealed record TextosComprobante(string Encabezado, string Pie)
+public sealed record TextosComprobante(string Encabezado, string Pie, bool Comensal = true, bool AvisoReimpresion = true, bool Operador = true)
 {
     public const string EncabezadoPorDefecto = "INComedor · comprobante";
     public const int LargoEncabezado = 40;
@@ -78,11 +79,16 @@ public sealed class AlmacenImpresora
         {
             using var documento = JsonDocument.Parse(contenido);
             var raiz = documento.RootElement;
+            // Las tres elecciones son opcionales: un archivo de antes no las tiene y las imprime. Una presente que no es un
+            // booleano JSON deja el archivo entero fuera de forma, como un encabezado demasiado largo (D1).
             return raiz.ValueKind == JsonValueKind.Object
                 && raiz.TryGetProperty("encabezado", out var encabezado) && encabezado.ValueKind == JsonValueKind.String
                 && raiz.TryGetProperty("pie", out var pie) && pie.ValueKind == JsonValueKind.String
                 && TextosComprobante.Validar(encabezado.GetString(), pie.GetString()).Count == 0
-                ? new TextosComprobante(encabezado.GetString()!, pie.GetString()!)
+                && Eleccion(raiz, "comensal") is { } comensal
+                && Eleccion(raiz, "avisoReimpresion") is { } aviso
+                && Eleccion(raiz, "operador") is { } operador
+                ? new TextosComprobante(encabezado.GetString()!, pie.GetString()!, comensal, aviso, operador)
                 : null;
         }
         catch (JsonException)
@@ -91,9 +97,22 @@ public sealed class AlmacenImpresora
         }
     }
 
-    /// <summary>El contenido del archivo para unos textos, el que escribe <see cref="Guardar"/>.</summary>
+    /// <summary>Una elección: ausente vale «Imprimir»; un booleano JSON, su valor; cualquier otra cosa, null (fuera de forma).</summary>
+    private static bool? Eleccion(JsonElement raiz, string nombre) =>
+        !raiz.TryGetProperty(nombre, out var valor) ? true
+        : valor.ValueKind is JsonValueKind.True or JsonValueKind.False ? valor.GetBoolean()
+        : null;
+
+    /// <summary>El contenido del archivo para unos textos y sus elecciones, el que escribe <see cref="Guardar"/>.</summary>
     public static string Serializar(TextosComprobante textos) =>
-        JsonSerializer.Serialize(new { encabezado = textos.Encabezado, pie = textos.Pie });
+        JsonSerializer.Serialize(new
+        {
+            encabezado = textos.Encabezado,
+            pie = textos.Pie,
+            comensal = textos.Comensal,
+            avisoReimpresion = textos.AvisoReimpresion,
+            operador = textos.Operador,
+        });
 
     /// <summary>Borra el archivo: vuelven los textos por defecto (D3 de resguardar-configuracion).</summary>
     public void VolverAlPorDefecto() => File.Delete(Ruta);

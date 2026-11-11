@@ -52,6 +52,10 @@ Alineación: las tres filas son una grilla de dos columnas. A la izquierda va el
 encabezado y el pie. A la derecha va el par de botones, que comparten ancho, alto táctil, borde y tipografía con los
 pares de Mails; el borde izquierdo de cada par cae en la misma vertical en las tres filas.
 
+Ajuste al aplicar (11/11/2026), medido por CDP: los dos botones de Mails no comparten ancho entre sí (120 y 130 px, según
+su texto y la negrita del presionado). Los seis de las líneas comparten uno, `min-width: 9em` (162 px a 18 px), que alcanza
+a «No imprimir» presionado, y llevan el alto, la letra, el radio y el borde de cada estado de Mails.
+
 - *Descartada*: casillas de verificación (`checkbox`). La pestaña no las usa, y su área de toque es más chica que la de
   los pares de botones que ya tiene.
 - *Descartada*: un «Guardar» propio para las elecciones. Serían dos guardados para una misma sección y un mismo archivo.

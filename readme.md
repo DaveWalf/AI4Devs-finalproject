@@ -487,14 +487,19 @@ prueba», que manda a la impresora del puesto un comprobante con la leyenda PRUE
 salió, si no tiene papel o si quedó incierto, y no crea ninguna fila en la base ni se confunde con el comprobante de
 una atención; y los **textos del comprobante**: el encabezado (de 1 a 40 caracteres, «INComedor · comprobante» por
 defecto) y el pie (hasta 60), en `impresora.json` de la carpeta de datos, que se aplican desde el próximo comprobante,
-en la impresora y en pantalla, también a una copia. Cada prueba (`PRINTER_TESTED`) y cada guardado (`TICKET_TEXTS`)
-quedan en la general.
+en la impresora y en pantalla, también a una copia. Debajo del pie, tres líneas se eligen con «Imprimir» o «No imprimir»:
+«Nombre del comensal», «Aviso de reimpresión» y «Operador que habilitó», las tres en «Imprimir» por defecto y guardadas
+con los textos; valen desde el próximo comprobante, en el papel y en el que sale en pantalla al confirmar, y «Ver» en
+Consumos las muestra siempre. Una copia sin el aviso no lleva REIMPRESIÓN ni «ORIGINAL», pero conserva su «Copia: N». La
+marca «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD» de una copia hecha con la clave del día no se apaga: quien configura con la
+clave del día no puede sacar un comprobante que parezca válido. Cada prueba (`PRINTER_TESTED`) y cada guardado
+(`TICKET_TEXTS`, con las tres elecciones antes y después) quedan en la general.
 
 **El comprobante.** De arriba abajo: el encabezado; el número y el nombre del puesto, si se guardaron en «Datos del
-comprobante» de Impresora; «ORIGINAL» o «REIMPRESIÓN · copia N» con el número del comprobante; el nombre del comensal,
-tomado al confirmar y guardado con el comprobante, así una copia repite el de ese día; la opción, la fecha y el cargo;
-en una copia, «Habilitó:» con el nombre del operador que la pidió o, si se pidió con la clave del día, «SIN VALIDEZ:
-PRUEBA DE FUNCIONALIDAD»; una de 50 frases cálidas, siempre la misma para el
+comprobante» de Impresora; «ORIGINAL» o «REIMPRESIÓN · copia N» (si Impresora imprime el aviso) con el número del
+comprobante; el nombre del comensal (si Impresora lo imprime), tomado al confirmar y guardado con el comprobante, así una
+copia repite el de ese día; la opción, la fecha y el cargo; en una copia, «Habilitó:» con el nombre del operador que la
+pidió (si Impresora lo imprime) o, si se pidió con la clave del día, siempre «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD»; una de 50 frases cálidas, siempre la misma para el
 mismo comprobante; y el pie. Nunca el código de identificación. **El número del comprobante** se elige en «Datos del
 comprobante»: «El código de siempre» o «Correlativo desde» un número de 1 a 999.999.999. El código de siempre sale así:
 al confirmar, el puesto crea el identificador del comprobante con un GUID versión 4 (122 bits al azar) y el comprobante
