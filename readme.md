@@ -413,7 +413,15 @@ puesto, en `presentacion-opciones.json` y `opciones\` de la carpeta de datos: no
 administre los datos; la atención dibuja cada tarjeta con su fondo y, con el precio oculto, la muestra como una sin
 cargo, también en la reconfirmación por cambio de precio, mientras el comprobante conserva su importe. Cada guardado,
 también uno fallido, queda en la general como `CONFIGURATION_CHANGED` del ajuste `OPTION_STYLE`, con el antes y el después
-y la huella de la imagen, no su contenido.
+y la huella de la imagen, no su contenido. El pie de Opciones tiene «Exportar Excel» (el catálogo en el formato que se
+importa: Nombre, Servicio, Importe, Franjas y las unidades de cada categoría), «Planilla base» (las mismas columnas con
+dos filas de ejemplo e instrucciones) e «Importar Excel», que **reemplaza el catálogo**: cada fila se reconoce por su
+nombre, la que coincide modifica su opción, la nueva se agrega y la que falta se quita sin tocar sus consumos; una columna
+de categoría que falta deja esas cargas como estaban. Antes de aplicar, un resumen cuenta las nuevas y las modificadas,
+nombra las que se quitan y avisa si quedan filas de ejemplo, con «Cancelar» destacado; una fila con error no deja aplicar
+nada y se lista con su motivo. Queda
+en la general como `MENU_OPTIONS_EXPORTED`, `MENU_OPTIONS_IMPORTED` (opción por opción, con la huella del archivo) o
+`MENU_OPTIONS_IMPORT_REJECTED`.
 
 Cada guardado es una **versión de configuración nueva** y completa, que se activa en la misma transacción y conserva
 las anteriores; los consumos siguen apuntando a la versión en que se registraron. Un dato inválido no cambia nada y

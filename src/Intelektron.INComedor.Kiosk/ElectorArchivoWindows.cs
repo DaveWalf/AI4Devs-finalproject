@@ -12,8 +12,11 @@ namespace Intelektron.INComedor.Kiosk;
 /// </summary>
 public sealed class ElectorArchivoWindows : IElectorArchivo
 {
-    /// <summary>El título del diálogo, que la prueba de punta a punta busca para elegir el archivo.</summary>
+    /// <summary>El título del diálogo de Personas, que la prueba de punta a punta busca para elegir el archivo.</summary>
     public const string Titulo = "Planilla de Personas para importar";
+
+    /// <summary>El título del diálogo de Opciones (D6 de importar-opciones-desde-excel).</summary>
+    public const string TituloOpciones = IElectorArchivo.TituloOpciones;
 
     private readonly Window _ventana;
 
@@ -22,13 +25,15 @@ public sealed class ElectorArchivoWindows : IElectorArchivo
         _ventana = ventana;
     }
 
-    public string? Elegir(string? carpeta)
+    public string? Elegir(string? carpeta) => Elegir(carpeta, Titulo);
+
+    public string? Elegir(string? carpeta, string titulo)
     {
         string? Mostrar()
         {
             var dialogo = new OpenFileDialog
             {
-                Title = Titulo,
+                Title = titulo,
                 Filter = "Libro de Excel (*.xlsx)|*.xlsx",
                 Multiselect = false,
                 CheckFileExists = true,

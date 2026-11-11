@@ -185,6 +185,58 @@ public static class MensajesAtencion
 
     public static string PresentacionGuardada(string opcion) => $"Se guardó la presentación de «{opcion}».";
 
+    // Exportar e importar Opciones (D4 y D5 de importar-opciones-desde-excel).
+    public const string ReemplazarOpciones = "«Reemplazar» deja el catálogo como la planilla: las opciones que se quitan no se ofrecen más, y sus consumos siguen registrados.";
+
+    public static string ExportacionOpcionesHecha(string archivo, int filas, string carpeta) =>
+        $"Exportado {archivo} con {Cantidad(filas, "opción", "opciones")} en {carpeta}.";
+
+    public static string PlanillaBaseHecha(string archivo, string carpeta) => $"Planilla base guardada como {archivo} en {carpeta}.";
+
+    public static string ResumenImportacionOpciones(string archivo, int agregadas, int modificadas, int sinCambios, int quitadas) =>
+        $"{archivo}: {Cantidad(agregadas, "opción nueva", "opciones nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")}, "
+        + $"{Cantidad(sinCambios, "sin cambios", "sin cambios")} y {Cantidad(quitadas, "que se quita", "que se quitan")}.";
+
+    public static string ImportacionOpcionesConFilasDeEjemplo(int filas) =>
+        $"La planilla todavía tiene {Cantidad(filas, "fila de ejemplo", "filas de ejemplo")}: si no se {(filas == 1 ? "borra, se agrega" : "borran, se agregan")} como {(filas == 1 ? "una opción" : "opciones")} del catálogo.";
+
+    /// <summary>
+    /// Un error de la importación de Opciones en palabras, con los rangos de Opciones: del archivo (fila 0), del encabezado
+    /// (fila 1) o de una fila (D3 de importar-opciones-desde-excel); nunca el valor de la celda.
+    /// </summary>
+    public static string ErrorDeImportacionOpciones(ErrorImportacion error) => error.Fila switch
+    {
+        0 when error.Motivo == CodigosAdministracion.Requerido => "La hoja «Opciones» no tiene ninguna opción.",
+        0 => ErrorDeImportacion(error),
+        1 => error.Motivo switch
+        {
+            CodigosAdministracion.Requerido => $"Falta la columna «{error.Campo}».",
+            CodigosAdministracion.Repetido => $"La columna {error.Campo} repite el título de otra.",
+            ImportacionPersonas.ColumnaDesconocida => $"La columna {error.Campo} no es «Nombre», «Servicio», «Importe», «Franjas» ni las unidades de una categoría.",
+            _ => $"La columna {error.Campo} no es válida.",
+        },
+        _ => $"Fila {error.Fila.ToString(CultureInfo.InvariantCulture)}: " + (error.Campo, error.Motivo) switch
+        {
+            (ImportacionOpciones.ColumnaCargas, _) => "la opción no tiene ninguna carga: completá las unidades de al menos una categoría.",
+            (_, CodigosAdministracion.Requerido) => $"falta «{error.Campo}».",
+            (_, CodigosAdministracion.Repetido) => "el nombre se repite en otra fila.",
+            (ImportacionOpciones.ColumnaServicio, CodigosAdministracion.Desconocido) => "el servicio no es uno del puesto.",
+            (ImportacionOpciones.ColumnaImporte, CodigosAdministracion.NoSonDigitos) => "el importe no es un número: escribilo como 1.800,00 o como número de Excel.",
+            (ImportacionOpciones.ColumnaImporte, CodigosAdministracion.FueraDeRango) => "el importe tiene que ser de 0 a 9.999.999,99, con hasta dos decimales.",
+            (_, CodigosAdministracion.NoSonDigitos) => $"«{error.Campo}» lleva sólo dígitos.",
+            (_, CodigosAdministracion.FueraDeRango) => $"«{error.Campo}» tiene que ser de 0 a {AdministracionLocal.UnidadesMaximas.ToString(CultureInfo.InvariantCulture)}.",
+            (_, CodigosAdministracion.HoraInvalida) => "las franjas van como «11:00 a 14:00», separadas por punto y coma.",
+            (_, CodigosAdministracion.FranjaVacia) => "una franja empieza y termina a la misma hora.",
+            (_, CodigosAdministracion.DemasiadoLargo) => $"«{error.Campo}» es demasiado largo.",
+            (_, CodigosAdministracion.CaracterDeControl) => $"«{error.Campo}» tiene caracteres que no se pueden guardar.",
+            _ => $"«{error.Campo}» no es válido.",
+        },
+    };
+
+    public static string ImportacionOpcionesAplicada(int version, int agregadas, int modificadas, int quitadas) =>
+        $"Se importó la planilla en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración: "
+        + $"{Cantidad(agregadas, "opción nueva", "opciones nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")} y {Cantidad(quitadas, "quitada", "quitadas")}.";
+
     private static string Cantidad(int cantidad, string uno, string varios) =>
         $"{cantidad.ToString(CultureInfo.InvariantCulture)} {(cantidad == 1 ? uno : varios)}";
 

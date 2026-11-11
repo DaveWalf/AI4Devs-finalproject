@@ -465,6 +465,53 @@
             </div>
         }
 
+        @* El resumen de una importación de Opciones: los totales con «Reemplazar» y «Cancelar», o los errores fila por fila y
+           «Cerrar» (D4 de importar-opciones-desde-excel). *@
+        @if (_revisionOpciones is { } revisionOpciones)
+        {
+            <div class="fondo-cartel">
+                <section id="resumen-importacion-opciones" class="cartel superficie" role="dialog" aria-modal="true" aria-label="Importar Opciones">
+                    @if (revisionOpciones.Valida)
+                    {
+                        <p id="importacion-opciones-totales">@MensajesAtencion.ResumenImportacionOpciones(_archivoOpciones!, revisionOpciones.Agregadas, revisionOpciones.Modificadas, revisionOpciones.SinCambios, revisionOpciones.Quitadas)</p>
+                        @* Las que se quitan, por su nombre: un cambio de nombre es una quitada y una agregada (D2). *@
+                        @if (revisionOpciones.Quitadas > 0)
+                        {
+                            <ul id="opciones-que-se-quitan">
+                                @foreach (var quitada in revisionOpciones.Opciones.Where(o => o.Accion == AccionOpcionImportada.Quitada))
+                                {
+                                    <li>@quitada.Nombre</li>
+                                }
+                            </ul>
+                        }
+                        @if (revisionOpciones.FilasDeEjemplo > 0)
+                        {
+                            <p id="importacion-opciones-ejemplo" class="aviso">@MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo(revisionOpciones.FilasDeEjemplo)</p>
+                        }
+                        <p>@MensajesAtencion.ReemplazarOpciones</p>
+                        @* «Reemplazar» quita opciones: el botón destacado y el foco van a «Cancelar». *@
+                        <div class="acciones">
+                            <button id="importar-opciones-reemplazar" type="button" @onclick="AplicarImportacionOpciones">Reemplazar</button>
+                            <button id="importar-opciones-cancelar" type="button" class="principal" @onclick="CerrarImportacionOpciones">Cancelar</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <p>@MensajesAtencion.ImportacionConErrores(revisionOpciones.Errores.Count)</p>
+                        <ul id="errores-importacion-opciones">
+                            @foreach (var error in revisionOpciones.Errores)
+                            {
+                                <li>@MensajesAtencion.ErrorDeImportacionOpciones(error)</li>
+                            }
+                        </ul>
+                        <div class="acciones">
+                            <button id="importar-opciones-cerrar" type="button" class="principal" @onclick="CerrarImportacionOpciones">Cerrar</button>
+                        </div>
+                    }
+                </section>
+            </div>
+        }
+
         <div class="acciones pie-dialogo">
             @* Exportar e importar Personas van en el pie, a la izquierda de «Cerrar», para que la tabla conserve sus diez filas a
                la vista a 1024 × 768 (D5 y D6 de editar-raciones-en-personas, D9 de importar-personas-desde-excel). Sólo con
@@ -489,6 +536,28 @@
                 @if (_mensajeExportacionPersonas is not null)
                 {
                     <p id="mensaje-exportacion-personas" class="@(_exportacionPersonasFallida ? "aviso" : "mensaje-exportacion")" role="status">@_mensajeExportacionPersonas</p>
+                }
+            }
+            @* Exportar, importar y la planilla base de Opciones, en el pie como los de Personas (D6 de importar-opciones-desde-excel). *@
+            @if (_elegida == Pestana.Opciones && _panel is null && Operador is null && Administracion is not null && (PuedeExportarPersonas || PuedeImportarPersonas))
+            {
+                <div class="exportar-personas archivos-opciones">
+                    @if (PuedeExportarPersonas)
+                    {
+                        <button id="exportar-opciones" type="button" @onclick="ExportarOpciones">Exportar Excel</button>
+                    }
+                    @if (PuedeImportarPersonas)
+                    {
+                        <button id="importar-opciones" type="button" @onclick="ImportarOpciones">Importar Excel</button>
+                    }
+                    @if (PuedeExportarPersonas)
+                    {
+                        <button id="planilla-opciones" type="button" @onclick="EscribirPlanillaOpciones">Planilla base</button>
+                    }
+                </div>
+                @if (_mensajeArchivosOpciones is not null)
+                {
+                    <p id="mensaje-archivos-opciones" class="@(_archivosOpcionesFallido ? "aviso" : "mensaje-exportacion")" role="status">@_mensajeArchivosOpciones</p>
                 }
             }
             @* «Cerrar»: cada pestaña guarda lo suyo, así que el pie cierra y descarta lo no guardado; el id se conserva (D2 de ordenar-configuracion). *@
@@ -853,6 +922,158 @@
         CerrarPersonalizacion();
     }
 
+    /// <summary>Una exportación de Opciones, para la general: el archivo sin su ruta y las filas (D5 de importar-opciones-desde-excel).</summary>
+    public sealed record ExportacionOpcionesRealizada(string Archivo, int Filas);
+
+    /// <summary>Una importación de Opciones aplicada, para la general: la huella del archivo y cada opción (D6).</summary>
+    public sealed record ImportacionOpcionesRealizada(string? Huella, ResultadoImportacionOpciones Resultado);
+
+    /// <summary>Una importación de Opciones con errores, para la general: la huella y los errores, de los que se registran los motivos (D6).</summary>
+    public sealed record ImportacionOpcionesRechazada(string? Huella, IReadOnlyList<ErrorImportacion> Errores);
+
+    private string? _mensajeArchivosOpciones;
+    private bool _archivosOpcionesFallido;
+    private RevisionOpciones? _revisionOpciones;
+    private string? _archivoOpciones;
+    private string? _huellaOpciones;
+    private bool _enfocarCartelOpciones;
+
+    /// <summary>«Exportar Excel» de Opciones: el catálogo en la carpeta de la exportación, en el formato que se importa (D5).</summary>
+    private void ExportarOpciones()
+    {
+        if (CarpetaDeExportacion(out var avisoCarpeta) is not { } carpeta)
+        {
+            (_mensajeArchivosOpciones, _archivosOpcionesFallido) = (MensajesAtencion.SinCarpeta, true);
+            return;
+        }
+
+        ResultadoExportacionOpciones resultado;
+        try
+        {
+            resultado = new ImportacionOpciones(Administracion!).Exportar(carpeta, Zona);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            (_mensajeArchivosOpciones, _archivosOpcionesFallido) = (MensajesAtencion.ExportacionPersonasFallida, true);
+            return;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeArchivosOpciones, _archivosOpcionesFallido) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            return;
+        }
+
+        _archivosOpcionesFallido = avisoCarpeta is not null;
+        _mensajeArchivosOpciones = string.Join(' ', new[] { avisoCarpeta, MensajesAtencion.ExportacionOpcionesHecha(resultado.Archivo, resultado.Filas, carpeta) }.OfType<string>());
+        RegistrarExportacionOpciones?.Invoke(new ExportacionOpcionesRealizada(resultado.Archivo, resultado.Filas));
+    }
+
+    /// <summary>«Planilla base»: el encabezado, dos filas de ejemplo y las instrucciones, en la carpeta de la exportación (D5).</summary>
+    private void EscribirPlanillaOpciones()
+    {
+        if (CarpetaDeExportacion(out var avisoCarpeta) is not { } carpeta)
+        {
+            (_mensajeArchivosOpciones, _archivosOpcionesFallido) = (MensajesAtencion.SinCarpeta, true);
+            return;
+        }
+
+        string archivo;
+        try
+        {
+            archivo = new ImportacionOpciones(Administracion!).EscribirPlanillaBase(carpeta, Zona);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            (_mensajeArchivosOpciones, _archivosOpcionesFallido) = (MensajesAtencion.PlanillaFallida, true);
+            return;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeArchivosOpciones, _archivosOpcionesFallido) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            return;
+        }
+
+        _archivosOpcionesFallido = avisoCarpeta is not null;
+        _mensajeArchivosOpciones = string.Join(' ', new[] { avisoCarpeta, MensajesAtencion.PlanillaBaseHecha(archivo, carpeta) }.OfType<string>());
+    }
+
+    /// <summary>
+    /// «Importar Excel» de Opciones: pide el archivo, lo revisa sin escribir nada y muestra el resumen (D4); con errores, deja
+    /// MENU_OPTIONS_IMPORT_REJECTED (D6). Cancelar la elección no hace nada.
+    /// </summary>
+    private void ImportarOpciones()
+    {
+        _mensajeArchivosOpciones = null;
+        if (ElectorArchivo!.Elegir(AlmacenExportacion?.Leer(), IElectorArchivo.TituloOpciones) is not { } ruta)
+        {
+            return;
+        }
+
+        RevisionOpciones revision;
+        string? huella;
+        try
+        {
+            using var flujo = new System.IO.FileStream(ruta, System.IO.FileMode.Open, System.IO.FileAccess.Read,
+                System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete);
+            huella = flujo.Length <= LectorPlanilla.TamanoMaximo ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(flujo)) : null;
+            flujo.Position = 0;
+            revision = new ImportacionOpciones(Administracion!).Revisar(flujo);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            (_mensajeArchivosOpciones, _archivosOpcionesFallido) = (MensajesAtencion.ArchivoNoLeido, true);
+            return;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeArchivosOpciones, _archivosOpcionesFallido) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            return;
+        }
+
+        (_revisionOpciones, _archivoOpciones, _huellaOpciones, _enfocarCartelOpciones) = (revision, System.IO.Path.GetFileName(ruta), huella, true);
+        if (!revision.Valida)
+        {
+            RegistrarImportacionOpcionesRechazada?.Invoke(new ImportacionOpcionesRechazada(huella, revision.Errores));
+        }
+    }
+
+    /// <summary>«Reemplazar»: aplica el resumen en una sola versión, con el actor, y vuelve a leer el catálogo a la vista (D4).</summary>
+    private void AplicarImportacionOpciones()
+    {
+        var (revision, huella) = (_revisionOpciones!, _huellaOpciones);
+        CerrarImportacionOpciones();
+        ResultadoImportacionOpciones resultado;
+        try
+        {
+            resultado = new ImportacionOpciones(Administracion!).Aplicar(revision, Actor);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _avisoGuardado = MensajesAtencion.PanelNoGuardado;
+            return;
+        }
+
+        switch (resultado.Guardado.Tipo)
+        {
+            case TipoGuardado.Aplicado:
+                _avisoGuardado = revision.Agregadas + revision.Modificadas + revision.Quitadas > 0
+                    ? MensajesAtencion.ImportacionOpcionesAplicada(resultado.Guardado.VersionActiva, revision.Agregadas, revision.Modificadas, revision.Quitadas)
+                    : MensajesAtencion.ImportacionSinCambios(resultado.Guardado.VersionActiva);
+                RegistrarImportacionOpciones?.Invoke(new ImportacionOpcionesRealizada(huella, resultado));
+                break;
+            case TipoGuardado.Denegado:
+                _avisoGuardado = MensajesAtencion.INWebAdministra;
+                break;
+            default:
+                _avisoGuardado = MensajesAtencion.ImportacionRechazada;
+                break;
+        }
+
+        LeerResumen();
+    }
+
+    private void CerrarImportacionOpciones() => (_revisionOpciones, _archivoOpciones, _huellaOpciones) = (null, null, null);
+
     private void CerrarImportacion() => (_revision, _archivoImportado, _huellaImportada) = (null, null, null);
     private string? _avisoGuardado;
     private string? _avisoEstilo;
@@ -1021,6 +1242,15 @@
     [Parameter]
     public Action<ImportacionPersonasRechazada>? RegistrarImportacionRechazada { get; set; }
 
+    [Parameter]
+    public Action<ExportacionOpcionesRealizada>? RegistrarExportacionOpciones { get; set; }
+
+    [Parameter]
+    public Action<ImportacionOpcionesRealizada>? RegistrarImportacionOpciones { get; set; }
+
+    [Parameter]
+    public Action<ImportacionOpcionesRechazada>? RegistrarImportacionOpcionesRechazada { get; set; }
+
     /// <summary>La sesión del operador para reimprimir desde Consumos, que la pantalla abre con Configuración y cierra con ella (D8).</summary>
     [Parameter]
     public SesionOperador? SesionOperador { get; set; }
@@ -1125,6 +1355,20 @@
             try
             {
                 await JS.InvokeVoidAsync("incomedor.enfocar", "#personalizar-opcion button.color-opcion");
+            }
+            catch (JSException)
+            {
+                // Sin la función (una página vieja en caché), el foco queda donde estaba.
+            }
+        }
+
+        // El foco entra al resumen de una importación de Opciones, en su primer botón (D4 de importar-opciones-desde-excel).
+        if (_enfocarCartelOpciones && _revisionOpciones is not null)
+        {
+            _enfocarCartelOpciones = false;
+            try
+            {
+                await JS.InvokeVoidAsync("incomedor.enfocar", "#resumen-importacion-opciones .acciones button.principal");
             }
             catch (JSException)
             {

@@ -435,9 +435,9 @@ html, body { overscroll-behavior: none; }
 .dialogo .pie-dialogo button { padding: 0 16px; }
 /* El resumen de una importación de Personas, en el cartel de «Ver» (D4 y D9 de importar-personas-desde-excel): las oraciones
    con la letra de la tabla y los errores en una lista que se desplaza dentro del cartel. */
-#resumen-importacion p { margin: 0; font-size: 18px; }
-#errores-importacion { margin: 0; padding-left: 24px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; }
-.pie-dialogo #mensaje-exportacion-personas { flex-basis: 100%; order: -1; margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+#resumen-importacion p, #resumen-importacion-opciones p { margin: 0; font-size: 18px; }
+#errores-importacion, #errores-importacion-opciones, #opciones-que-se-quitan { margin: 0; padding-left: 24px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; }
+.pie-dialogo #mensaje-exportacion-personas, .pie-dialogo #mensaje-archivos-opciones { flex-basis: 100%; order: -1; margin: 0; font-size: 16px; overflow-wrap: anywhere; }
 /* El teclado en pantalla de Personas: filas de teclas de 56 px, del mismo ancho dentro de cada fila (D4 y D6). */
 .teclado-en-pantalla { display: flex; flex-direction: column; gap: 6px; flex: none; }
 .teclado-en-pantalla .fila-teclas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
