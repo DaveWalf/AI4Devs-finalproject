@@ -599,9 +599,9 @@ Muestra una persona y una opción sintéticas fijas y el botón «Confirmar». C
 intención nueva: el primero del día muestra `AUTHORIZED` con los identificadores de consumo y de
 comprobante, y el segundo `DENIED` con `LOCAL_LIMIT_REACHED`.
 
-Las dos pantallas comparten la base `%LOCALAPPDATA%\INComedor\demo\incomedor.db`, en la versión de esquema 3.
+Las dos pantallas comparten la base `%LOCALAPPDATA%\INComedor\demo\incomedor.db`, en la versión de esquema 4.
 Se crea y se siembra con datos sintéticos al abrir la ventana por primera vez, y una base que ya tiene datos
-no se vuelve a sembrar. Una base de la versión 1 o 2 se actualiza sin perder sus consumos. Para repetir la
+no se vuelve a sembrar. Una base de las versiones 1 a 3 se actualiza sin perder sus consumos. Para repetir la
 demostración, cerrar la ventana y borrar la carpeta `%LOCALAPPDATA%\INComedor\demo\`.
 
 **Receptor de lotes y puesto conectados.** En dos terminales, primero el receptor y después el puesto:
