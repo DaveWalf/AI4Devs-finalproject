@@ -57,6 +57,18 @@ public class PuntoFinalTests
             MensajesAtencion.CarpetaElegida(@"C:\Exportaciones"),
             MensajesAtencion.ExportacionHecha("INComedor-consumos-20261110-120000.csv", 2, @"C:\Exportaciones"),
             MensajesAtencion.ExportacionPersonasHecha("INComedor-personas-20261110-120000.csv", 9, @"C:\Exportaciones"),
+            MensajesAtencion.PlanillaDeEjemploHecha("INComedor-planilla-personas-20261111-120000.xlsx", @"C:\Exportaciones"),
+            MensajesAtencion.ResumenImportacion("personas.xlsx", 1, 2, 0),
+            MensajesAtencion.ImportacionReemplazar(0),
+            MensajesAtencion.ImportacionReemplazar(3),
+            MensajesAtencion.ImportacionConErrores(1),
+            MensajesAtencion.ImportacionAplicada(2, 1, 1, 0),
+            MensajesAtencion.ImportacionSinCambios(2),
+            MensajesAtencion.ImportacionConFilasDeEjemplo(1),
+            MensajesAtencion.ImportacionConFilasDeEjemplo(2),
+            MensajesAtencion.ImportacionCodigosComoNumero(1),
+            MensajesAtencion.ImportacionCodigosComoNumero(3),
+            .. ErroresDeImportacion.Select(MensajesAtencion.ErrorDeImportacion),
         ];
 
         var sinPunto = armados.Where(m => !m.EndsWith('.')).ToList();
@@ -74,6 +86,25 @@ public class PuntoFinalTests
         nameof(MensajesAtencion.DeMotivo), nameof(MensajesAtencion.VersionGuardada), nameof(MensajesAtencion.CopiaEnviada),
         nameof(MensajesAtencion.RedCanceladaEnPaso), nameof(MensajesAtencion.RedFallo), nameof(MensajesAtencion.PedidoOperadorPara),
         nameof(MensajesAtencion.CarpetaElegida), nameof(MensajesAtencion.ExportacionHecha), nameof(MensajesAtencion.ExportacionPersonasHecha),
+        nameof(MensajesAtencion.PlanillaDeEjemploHecha), nameof(MensajesAtencion.ResumenImportacion), nameof(MensajesAtencion.ImportacionReemplazar),
+        nameof(MensajesAtencion.ImportacionConErrores), nameof(MensajesAtencion.ImportacionAplicada), nameof(MensajesAtencion.ImportacionSinCambios),
+        nameof(MensajesAtencion.ErrorDeImportacion), nameof(MensajesAtencion.ImportacionConFilasDeEjemplo),
+        nameof(MensajesAtencion.ImportacionCodigosComoNumero),
+    ];
+
+    /// <summary>Un error de cada clase: del archivo, del encabezado y de una fila, con cada motivo y uno desconocido.</summary>
+    private static readonly ErrorImportacion[] ErroresDeImportacion =
+    [
+        new(0, "Archivo", PlanillaInvalidaException.NoEsUnLibro), new(0, "Archivo", PlanillaInvalidaException.SinHojas),
+        new(0, "Archivo", PlanillaInvalidaException.Demasiado), new(0, "Archivo", PlanillaInvalidaException.DemasiadasFilas),
+        new(0, "Archivo", CodigosAdministracion.INWebAdministra), new(0, "Personas", CodigosAdministracion.Requerido), new(0, "Archivo", "OTRO"),
+        new(1, "Código", CodigosAdministracion.Requerido), new(1, "Nombre", CodigosAdministracion.Repetido),
+        new(1, "Postre: límite", ImportacionPersonas.ColumnaDesconocida), new(1, "X", "OTRO"),
+        new(2, "Código", CodigosAdministracion.Requerido), new(3, "Código", CodigosAdministracion.Repetido),
+        new(4, "Código", ImportacionPersonas.CodigoDadoDeBaja), new(5, "ALMUERZO: límite", CodigosAdministracion.FueraDeRango),
+        new(4, "Código", ImportacionPersonas.CodigoComoNumero), new(4, "Código", ImportacionPersonas.MismaPersona),
+        new(6, "ALMUERZO: límite", CodigosAdministracion.NoSonDigitos), new(7, "Nombre", CodigosAdministracion.DemasiadoLargo),
+        new(8, "Nombre", CodigosAdministracion.CaracterDeControl), new(9, "Nombre", "OTRO"),
     ];
 
     private static readonly string[] MetodosSinPunto =

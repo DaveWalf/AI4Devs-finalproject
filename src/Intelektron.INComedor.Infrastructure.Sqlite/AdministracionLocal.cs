@@ -72,6 +72,47 @@ public sealed class AdministracionLocal
     }
 
     /// <summary>
+    /// Lo que una importación necesita además de la vista, leído en la misma transacción (D3 y D4 de
+    /// importar-personas-desde-excel): el código vigente de cada persona activa, los códigos usados en cualquier versión, que
+    /// no se reasignan (RB25), y las personas con un permiso de operador o de administrador sin revocar.
+    /// </summary>
+    internal PadronImportacion LeerParaImportar()
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        using var transaccion = conexion.BeginTransaction(deferred: true);
+        var puesto = PuestoLocal.Leer(conexion, transaccion);
+        var ahora = _reloj.GetUtcNow();
+        var vista = LeerVista(conexion, transaccion, puesto, ahora);
+        var activas = vista.Personas.Where(p => p.Activa).Select(p => p.Id).ToHashSet();
+
+        // Una credencial sin revocar de una persona activa la reconoce aunque esté vencida o todavía no rija: la fila corrige
+        // a esa persona; sus fechas no se tocan (D3).
+        var vigentes = new Dictionary<string, Guid>(StringComparer.Ordinal);
+        var credenciales = Leer(conexion, transaccion,
+            """
+            SELECT comperCodigo, comcreValorNormalizado FROM tbComedorCredencialesPersonas
+            WHERE comvcCodigo = $vc AND comcreTipo = 'SERIAL_CODE' AND comcreFechaRevocacionUtc IS NULL
+            """, [("$vc", puesto.SnapshotId)],
+            l => (Persona: l.GetGuid(0), Valor: l.GetString(1)));
+        foreach (var credencial in credenciales.Where(c => activas.Contains(c.Persona)))
+        {
+            vigentes.TryAdd(credencial.Valor, credencial.Persona);
+        }
+
+        var usados = Leer(conexion, transaccion,
+                "SELECT DISTINCT comcreValorNormalizado FROM tbComedorCredencialesPersonas WHERE comcreTipo = 'SERIAL_CODE'", [], l => l.GetString(0))
+            .ToHashSet(StringComparer.Ordinal);
+        var conPermiso = Leer(conexion, transaccion,
+                """
+                SELECT DISTINCT comperCodigo FROM tbComedorPermisosOperadores
+                WHERE comvcCodigo = $vc AND compopRol IN ('OPERATOR', 'SYSTEM_ADMINISTRATOR') AND compopFechaRevocacionUtc IS NULL
+                """, [("$vc", puesto.SnapshotId)], l => l.GetGuid(0))
+            .ToHashSet();
+        transaccion.Commit();
+        return new PadronImportacion(vista, vigentes, usados, conPermiso);
+    }
+
+    /// <summary>
     /// Guarda las personas. Con <paramref name="actor"/>, el operador que entró a Configuración con su código, cada registro lo
     /// lleva como actor; sin él, el nulo con NO_AUTHENTICATION (D7 de entrar-a-configuracion-con-teclado).
     /// </summary>

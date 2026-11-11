@@ -114,6 +114,75 @@ public static class MensajesAtencion
     public static string ExportacionHecha(string archivo, int filas, string carpeta) =>
         $"Exportado {archivo} con {filas} {(filas == 1 ? "consumo" : "consumos")} en {carpeta}.";
 
+    // La planilla de ejemplo y la importación de Personas (D4, D5, D6 y D8 de importar-personas-desde-excel).
+    public const string ConsumosDeHoyAlImportar = "Lo consumido hoy sigue contando contra los límites nuevos.";
+    public const string ArchivoNoLeido = "No se pudo leer el archivo elegido: si está abierto en otro programa, cerralo y volvé a importarlo.";
+    public const string PlanillaFallida = "No se pudo guardar la planilla: la carpeta no se puede escribir. Cambiala con «Cambiar carpeta» en Consumos.";
+    public const string ImportacionRechazada = "No se aplicó la importación: la configuración cambió después del resumen. Volvé a importar la planilla.";
+
+    public static string PlanillaDeEjemploHecha(string archivo, string carpeta) => $"Planilla de ejemplo guardada como {archivo} en {carpeta}.";
+
+    public static string ResumenImportacion(string archivo, int agregadas, int modificadas, int sinCambios) =>
+        $"{archivo}: {Cantidad(agregadas, "persona nueva", "personas nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")} y {Cantidad(sinCambios, "sin cambios", "sin cambios")}.";
+
+    public static string ImportacionReemplazar(int deBaja) => deBaja == 0
+        ? "«Reemplazar» no da de baja a nadie: todas las personas activas están en la planilla, son operadores o son el administrador."
+        : $"«Reemplazar» además da de baja a {Cantidad(deBaja, "persona", "personas")} que no {(deBaja == 1 ? "está" : "están")} en la planilla y revoca sus códigos, sin vuelta atrás; los operadores y el administrador siguen activos.";
+
+    public static string ImportacionConFilasDeEjemplo(int filas) =>
+        $"La planilla todavía tiene {Cantidad(filas, "fila de ejemplo", "filas de ejemplo")}: si no se {(filas == 1 ? "borra, se agrega" : "borran, se agregan")} como {(filas == 1 ? "una persona" : "personas")}.";
+
+    public static string ImportacionCodigosComoNumero(int codigos) =>
+        $"{Cantidad(codigos, "código estaba guardado", "códigos estaban guardados")} como número en Excel: si {(codigos == 1 ? "tenía" : "tenían")} ceros a la izquierda, Excel se los quitó y {(codigos == 1 ? "cuenta" : "cuentan")} como {(codigos == 1 ? "otro código" : "otros códigos")}.";
+
+    public static string ImportacionConErrores(int errores) =>
+        $"La planilla tiene {Cantidad(errores, "error", "errores")}: no se aplicó nada. Corregila y volvé a importarla.";
+
+    public static string ImportacionAplicada(int version, int agregadas, int modificadas, int dadasDeBaja) =>
+        $"Se importó la planilla en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración: "
+        + $"{Cantidad(agregadas, "persona nueva", "personas nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")} y {Cantidad(dadasDeBaja, "dada de baja", "dadas de baja")}.";
+
+    public static string ImportacionSinCambios(int version) =>
+        $"La planilla no cambia nada: la configuración sigue en la versión {version.ToString(CultureInfo.InvariantCulture)}.";
+
+    /// <summary>Un error de la importación en palabras: del archivo (fila 0), del encabezado (fila 1) o de una fila; nunca el valor.</summary>
+    public static string ErrorDeImportacion(ErrorImportacion error) => error.Fila switch
+    {
+        0 => error.Motivo switch
+        {
+            PlanillaInvalidaException.NoEsUnLibro => "El archivo no es un libro de Excel (.xlsx).",
+            PlanillaInvalidaException.SinHojas => "El libro no tiene ninguna hoja.",
+            PlanillaInvalidaException.Demasiado => "El archivo es demasiado grande: puede tener hasta 5 MB.",
+            PlanillaInvalidaException.DemasiadasFilas => "La planilla tiene más de 2000 filas.",
+            CodigosAdministracion.INWebAdministra => INWebAdministra,
+            CodigosAdministracion.Requerido => $"La hoja «{error.Campo}» no tiene ninguna persona.",
+            _ => "El archivo no se puede importar.",
+        },
+        1 => error.Motivo switch
+        {
+            CodigosAdministracion.Requerido => $"Falta la columna «{error.Campo}».",
+            CodigosAdministracion.Repetido => $"La columna {error.Campo} repite el título de otra.",
+            ImportacionPersonas.ColumnaDesconocida => $"La columna {error.Campo} no es «Nombre», «Código» ni el límite de un cupo.",
+            _ => $"La columna {error.Campo} no es válida.",
+        },
+        _ => $"Fila {error.Fila.ToString(CultureInfo.InvariantCulture)}: " + error.Motivo switch
+        {
+            CodigosAdministracion.Requerido => $"falta «{error.Campo}».",
+            CodigosAdministracion.Repetido => $"«{error.Campo}» está repetido en otra fila.",
+            ImportacionPersonas.CodigoDadoDeBaja => "el código es de una persona dada de baja o fue revocado, y no se reasigna.",
+            ImportacionPersonas.CodigoComoNumero => "el código tiene más de 15 dígitos y Excel lo guardó como número, así que cambió los últimos: escribilo como texto.",
+            ImportacionPersonas.MismaPersona => "la misma persona ya está en otra fila con otro código.",
+            CodigosAdministracion.FueraDeRango => $"«{error.Campo}» tiene que ser de 0 a {AdministracionLocal.LimiteMaximo.ToString(CultureInfo.InvariantCulture)}.",
+            CodigosAdministracion.NoSonDigitos => $"«{error.Campo}» lleva sólo dígitos.",
+            CodigosAdministracion.DemasiadoLargo => $"«{error.Campo}» es demasiado largo.",
+            CodigosAdministracion.CaracterDeControl => $"«{error.Campo}» tiene caracteres que no se pueden guardar.",
+            _ => $"«{error.Campo}» no es válido.",
+        },
+    };
+
+    private static string Cantidad(int cantidad, string uno, string varios) =>
+        $"{cantidad.ToString(CultureInfo.InvariantCulture)} {(cantidad == 1 ? uno : varios)}";
+
     // Las oraciones que vivían en los componentes y en otras clases, para que una sola prueba las vea (D1 de
     // puntuar-la-interfaz).
     public const string Confirmando = "Confirmando: el puesto está ocupado.";

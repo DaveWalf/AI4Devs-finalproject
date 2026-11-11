@@ -1,0 +1,97 @@
+## 1. Leer y escribir planillas
+
+- [x] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: `LectorPlanilla` lee un libro del puesto
+  (cadenas en línea y números) y uno con cadenas compartidas (como lo guarda Excel), ubica las celdas por su referencia
+  aunque falten, y rechaza un archivo que no es un zip, uno sin hojas y uno con una parte de más de 20 MB; `EscritorPlanilla`
+  escribe un libro de dos hojas con una columna de texto. Verifica: rojo antes y verde después.
+  - `PlanillasTests` (6) contra esqueletos: `total: 6`, `error: 6` (`NotImplementedException`).
+- [x] 1.2 `LectorPlanilla` y `EscritorPlanilla` con varias hojas y columnas de texto (D1 y D6). Verifica: 1.1 en verde y
+  las pruebas de las exportaciones sin cambios.
+  - `LectorPlanilla` con `XmlReader` sin DTD, topes de 5 MB, 20 MB por parte y 2 000 filas; `EscritorPlanilla` arma el
+    libro con N hojas y, sólo si alguna pide columnas de texto, un `styles.xml` mínimo con el formato «@» y las columnas con
+    su ancho. `Infrastructure.Sqlite.Tests`: `total: 246`, `error: 0`, con las de exportación sin cambios.
+
+## 2. Revisar y aplicar la importación
+
+- [x] 2.1 Pruebas nuevas, vistas fallar antes: el resumen de «Modificar y agregar» y de «Reemplazar» (que conserva a los
+  operadores y al administrador); las filas con error (sin código, repetido, de una persona dada de baja, nombre inválido,
+  límite fuera de rango) y las columnas que faltan o sobran; aplicar crea una sola versión con un `CONFIGURATION_CHANGED`
+  por persona; lo usado hoy no cambia; la planilla de ejemplo con su encabezado, el código como texto y ningún código de la
+  base (D2 a D6). Verifica: rojo antes y verde después.
+  - `ImportacionPersonasTests` (6) contra el esqueleto: `total: 6`, `error: 6` (`NotImplementedException`). Suman la
+    planilla sin personas, que es un error del archivo (D2, agregado al aplicar).
+- [x] 2.2 `ImportacionPersonas` (`Revisar`, `Aplicar` y la planilla de ejemplo). Verifica: 2.1 en verde y
+  `Infrastructure.Sqlite.Tests` entero en verde.
+  - `AdministracionLocal.LeerParaImportar` (interno) lee en una transacción la vista, los códigos vigentes de las
+    personas activas, los usados en cualquier versión y las personas con un permiso sin revocar. `Infrastructure.Sqlite.Tests`:
+    `total: 252`, `error: 0`, sin pruebas existentes cambiadas; build con `-warnaserror` sin advertencias. La planilla de
+    ejemplo escrita sobre una copia de la base de la demostración se abrió con Excel por COM: hojas «Personas» e
+    «Instrucciones», encabezado `Nombre | Código | ALMUERZO: límite | REFRIGERIO: límite`, la columna B con formato `@`
+    y un «0105» escrito después en B10 queda «0105».
+
+## 3. En la pantalla
+
+- [x] 3.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: «Planilla de ejemplo» (y cancelar la carpeta); «Importar
+  Excel» con un `IElectorArchivo` de prueba muestra el resumen; «Modificar y agregar», «Reemplazar» y «Cancelar»; una
+  importación con errores no deja aplicar; `PEOPLE_IMPORTED` y `PEOPLE_IMPORT_REJECTED` en la general sin nombres ni
+  códigos (D4, D7 y D8). Verifica: rojo antes y verde después.
+  - `ImportarPersonasTests` (10, con un archivo dañado, cancelar la elección del archivo y los consumos de hoy) contra
+    `IElectorArchivo` y los mensajes ya escritos: `total: 10`, `error: 10` (`ElementNotFoundException` de
+    `#importar-personas` y `#planilla-personas`).
+- [x] 3.2 `IElectorArchivo` con el `OpenFileDialog` de la ventana, los botones del pie y el cartel del resumen. Verifica:
+  3.1 en verde y `Kiosk.Tests` entero en verde.
+  - `ElectorArchivoWindows` (sólo `.xlsx`, empieza en la carpeta de la exportación), los cuatro botones en el pie, el cartel
+    con los totales o los errores, Escape que cierra el cartel antes que Configuración, la tabla que se vuelve a leer al
+    aplicar y los dos registros en la general. Una credencial sin revocar de una persona activa la reconoce aunque esté
+    vencida (D3: la 0002 de la demostración corrige a su persona en vez de dar «dado de baja»). `Kiosk.Tests`: `total: 460`,
+    `error: 0`; `Infrastructure.Sqlite.Tests`: 252. Prueba existente cambiada (decisión 13): `PuntoFinalTests`, que
+    obliga a clasificar cada método nuevo de `MensajesAtencion` con su ejemplo, suma los siete de la importación (25
+    líneas, sin cambiar ninguna aserción).
+
+## 4. El puesto compilado, documentos y verificación integral
+
+- [x] 4.1 E2E nueva a 1024 × 768: la planilla de ejemplo descargada y vuelta a importar con un cambio, el resumen y
+  «Modificar y agregar»; los cuatro botones del pie y los del resumen medidos, con capturas miradas. Verifica: `dotnet test
+  tests/Intelektron.INComedor.E2E.Tests` en verde.
+  - `ImportarPersonasE2ETests`: la primera medición mostró los cuatro botones de 192,1 px y «Cerrar» en otro renglón (el
+    diálogo deja 928 px útiles); con 16 px de relleno lateral miden 184,1 y entran con «Cerrar» desde 679 px, con su alto
+    de 56 y su letra de 18 px. El diálogo de archivos se contesta con mensajes de ventana (la ruta en el cuadro del nombre,
+    releída con `WM_GETTEXT`, e IDOK): el diálogo vacía las dos primeras escrituras, así que se reescribe hasta leerla.
+    Tres corridas seguidas en verde. Resumen: «Modificar y agregar» 197,4, «Reemplazar» 134,2 y «Cancelar» 120 px, los tres
+    de 56 px desde 440, y el cartel termina en 521 de 768. Capturas miradas: el pie, el resumen y la tabla importada.
+- [x] 4.2 `readme.md` (Personas) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
+  enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
+  - `readme.md` (Personas) y la fila de OWASP del mapa (XXE, topes y todo o nada). Enlaces de los dos y del change:
+    `enlaces rotos: 0`; el control negativo, `enlaces rotos: 2`.
+- [x] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
+  publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
+  los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+  - Sobre `737a8ed`, de 01:56 a 02:04: validate 16 de 16, build sin advertencias, el paquete con su E2E y `total: 923`,
+    `error: 0` (Contracts 23, Domain 91, Sqlite 252, Kiosk 460, Sync.Api 62, E2E 35). Prueba existente cambiada: sólo
+    `PuntoFinalTests`. La integral después de las correcciones y del archivado va en el PR.
+
+## 5. Correcciones de la verificación
+
+- [x] 5.1 Lo que marcó el agente de sólo lectura sobre `737a8ed` (2 críticos, 11 advertencias y 10 sugerencias), con
+  pruebas nuevas vistas fallar antes. Verifica: `Infrastructure.Sqlite.Tests` y `Kiosk.Tests` enteros en verde.
+  - El lector: una referencia de más de tres letras o más allá de XFD y una fila repetida no son una planilla (antes,
+    `ZZZZZZZ1` tiraba `ArgumentOutOfRangeException` y `AAAAAAA1` pedía 2,5 GB); las filas sin valor no cuentan; el tope de
+    20 MB, sólo en las partes que se leen; marca las celdas numéricas. `PlanillasTests` suma 5: dos vistas fallar
+    (`error: 2`) y tres fijan lo que ya andaba (DTD, 5 MB y 2 002 filas, que el mapa del curso citaba sin prueba).
+  - La importación: el encabezado sin tildes; la columna que sobra o se repite, por su letra (su título puede ser un
+    código); `SAME_PERSON` para dos códigos de una persona; `NUMERIC_CODE` para un código de más de 15 dígitos guardado
+    como número; el resumen cuenta los códigos numéricos y las filas de ejemplo. `ImportacionPersonasTests` suma 6 y
+    cambia 2 propias del change: cinco vistas fallar (`error: 5`); celda vacía, columna ausente, fila sin cambios sin
+    versión y permisos vencidos o revocados fijan lo que ya andaba. La planilla de ejemplo, probada con su formato de
+    texto en B2 y B3 y salteando un código usado.
+  - La pantalla: Escape vuelve a cerrar Configuración (la spec viva lo pide; nada se aplica); la bitácora lleva
+    `FileSha256` y no el nombre del archivo; los avisos de filas de ejemplo y de códigos numéricos; «Reemplazar» dice que
+    revoca los códigos sin vuelta atrás; el foco entra al cartel; el pie entero con 16 px de relleno. `ImportarPersonasTests`
+    suma 4 y extiende 3 propias: en un worktree de `737a8ed` con sólo la superficie, `total: 14`, `error: 4` (la huella en
+    las dos bitácoras, Escape y los avisos); la oferta sin almuerzos, 0002 y 0004 sin tocar sus fechas, las cinco bajas
+    exactas de «Reemplazar» y el operador como actor fijan lo que ya andaba.
+  - La spec: el archivo inválido lo lista el resumen, la credencial vencida, el escenario del código numérico y la huella;
+    el diseño, las «Descartada» que faltaban en D2, D5, D6, D7, D8 y D9; el proposal, `PuntoFinalTests` y las opciones 7
+    a 9 del gate. `PuntoFinalTests` suma los dos mensajes nuevos y los dos motivos.
+  - Quedan sin cambiar, con su porqué: el cartel no deja inerte lo de atrás (como el de «Ver» en Consumos); el diálogo de
+    archivos expone el menú del shell, como el de carpetas; un archivo que no se pudo abrir no se registra (D8).

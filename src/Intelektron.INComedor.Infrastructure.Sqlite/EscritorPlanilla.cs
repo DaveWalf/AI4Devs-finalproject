@@ -8,6 +8,9 @@ namespace Intelektron.INComedor.Infrastructure.Sqlite;
 /// <summary>Un número de una planilla: en el CSV, con coma decimal y sus decimales; en el libro, como número.</summary>
 public readonly record struct NumeroPlanilla(decimal Valor, int Decimales);
 
+/// <summary>Una hoja de un libro: su nombre, su encabezado, sus filas y las columnas (desde 0) con formato de texto.</summary>
+public sealed record HojaPlanilla(string Nombre, IReadOnlyList<string> Encabezado, IEnumerable<IReadOnlyList<object>> Filas, IReadOnlyCollection<int>? ColumnasTexto = null);
+
 /// <summary>
 /// La escritura de una planilla de la pantalla, compartida por las exportaciones de Consumos y de Personas (D6 de
 /// buscar-y-exportar-consumos y D5 de editar-raciones-en-personas). Escribe a un temporal con un GUID en la carpeta elegida
@@ -33,23 +36,27 @@ public static class EscritorPlanilla
     /// de E/S después de borrar el temporal.
     /// </summary>
     public static string Escribir(
-        string carpeta, string raiz, FormatoExportacion formato, string hoja, IReadOnlyList<string> encabezado, IEnumerable<IReadOnlyList<object>> filas)
+        string carpeta, string raiz, FormatoExportacion formato, string hoja, IReadOnlyList<string> encabezado, IEnumerable<IReadOnlyList<object>> filas) =>
+        formato == FormatoExportacion.Csv
+            ? EscribirArchivo(carpeta, raiz, ".csv", flujo => EscribirCsv(flujo, encabezado, filas))
+            : EscribirArchivo(carpeta, raiz, ".xlsx", flujo => EscribirXlsx(flujo, [new HojaPlanilla(hoja, encabezado, filas)]));
+
+    /// <summary>
+    /// Un libro de varias hojas, siempre <c>.xlsx</c>, con columnas de texto donde se pidan: Excel les deja ese formato a las
+    /// celdas que se escriban después, así que un código no pierde los ceros del principio (D6 de importar-personas-desde-excel).
+    /// </summary>
+    public static string EscribirLibro(string carpeta, string raiz, IReadOnlyList<HojaPlanilla> hojas) =>
+        EscribirArchivo(carpeta, raiz, ".xlsx", flujo => EscribirXlsx(flujo, hojas));
+
+    private static string EscribirArchivo(string carpeta, string raiz, string extension, Action<Stream> escribir)
     {
-        var extension = formato == FormatoExportacion.Csv ? ".csv" : ".xlsx";
         var temporal = Path.Combine(carpeta, $"{raiz}-{Guid.NewGuid():N}.tmp");
         var renombrado = false;
         try
         {
             using (var flujo = new FileStream(temporal, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
-                if (formato == FormatoExportacion.Csv)
-                {
-                    EscribirCsv(flujo, encabezado, filas);
-                }
-                else
-                {
-                    EscribirXlsx(flujo, hoja, encabezado, filas);
-                }
+                escribir(flujo);
             }
 
             var nombre = Renombrar(temporal, carpeta, raiz, extension);
@@ -117,40 +124,91 @@ public static class EscritorPlanilla
 
     private static string Comillas(string texto) => "\"" + texto.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 
-    private static void EscribirXlsx(Stream flujo, string hoja, IReadOnlyList<string> encabezado, IEnumerable<IReadOnlyList<object>> filas)
+    private static void EscribirXlsx(Stream flujo, IReadOnlyList<HojaPlanilla> hojas)
     {
+        var conTexto = hojas.Any(h => h.ColumnasTexto is { Count: > 0 });
         using var libro = new ZipArchive(flujo, ZipArchiveMode.Create);
+        var hojasTipos = string.Concat(hojas.Select((_, i) =>
+            $"""<Override PartName="/xl/worksheets/sheet{i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>"""));
+        var estilosTipo = conTexto ? """<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>""" : string.Empty;
         Parte(libro, "[Content_Types].xml",
-            """
+            $"""
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-            <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>
+            <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>{hojasTipos}{estilosTipo}</Types>
             """);
         Parte(libro, "_rels/.rels",
             $"""
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
             <Relationships xmlns="{Relaciones}"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>
             """);
+        var hojasLibro = string.Concat(hojas.Select((h, i) => $"""<sheet name="{SecurityElementEscape(h.Nombre)}" sheetId="{i + 1}" r:id="rId{i + 1}"/>"""));
         Parte(libro, "xl/workbook.xml",
             $"""
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-            <workbook xmlns="{Principal}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="{SecurityElementEscape(hoja)}" sheetId="1" r:id="rId1"/></sheets></workbook>
+            <workbook xmlns="{Principal}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>{hojasLibro}</sheets></workbook>
             """);
+        var relacionesHojas = string.Concat(hojas.Select((_, i) =>
+            $"""<Relationship Id="rId{i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet{i + 1}.xml"/>"""));
+        var relacionEstilos = conTexto
+            ? $"""<Relationship Id="rId{hojas.Count + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>"""
+            : string.Empty;
         Parte(libro, "xl/_rels/workbook.xml.rels",
             $"""
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-            <Relationships xmlns="{Relaciones}"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>
+            <Relationships xmlns="{Relaciones}">{relacionesHojas}{relacionEstilos}</Relationships>
             """);
+        if (conTexto)
+        {
+            // El estilo 1 es el formato de texto («@», numFmtId 49); el 0, el de siempre.
+            Parte(libro, "xl/styles.xml",
+                $"""
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <styleSheet xmlns="{Principal}"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>
+                """);
+        }
 
-        using var parte = libro.CreateEntry("xl/worksheets/sheet1.xml", CompressionLevel.Optimal).Open();
+        for (var i = 0; i < hojas.Count; i++)
+        {
+            EscribirHoja(libro, $"xl/worksheets/sheet{i + 1}.xml", hojas[i]);
+        }
+    }
+
+    private static void EscribirHoja(ZipArchive libro, string ruta, HojaPlanilla hoja)
+    {
+        var texto = hoja.ColumnasTexto ?? [];
+        using var parte = libro.CreateEntry(ruta, CompressionLevel.Optimal).Open();
         using var xml = XmlWriter.Create(parte, new XmlWriterSettings { Encoding = new UTF8Encoding(false) });
         xml.WriteStartDocument(standalone: true);
         xml.WriteStartElement("worksheet", Principal);
-        xml.WriteStartElement("sheetData", Principal);
-        var numero = 1;
-        EscribirFila(xml, numero, encabezado.Cast<object>().ToList());
-        foreach (var fila in filas)
+        if (texto.Count > 0)
         {
-            EscribirFila(xml, ++numero, fila);
+            // Las columnas con el ancho de su encabezado y, las de texto, con su formato para lo que se escriba después.
+            xml.WriteStartElement("cols", Principal);
+            for (var c = 0; c < hoja.Encabezado.Count; c++)
+            {
+                xml.WriteStartElement("col", Principal);
+                var numero = (c + 1).ToString(CultureInfo.InvariantCulture);
+                xml.WriteAttributeString("min", numero);
+                xml.WriteAttributeString("max", numero);
+                xml.WriteAttributeString("width", Math.Max(14, hoja.Encabezado[c].Length + 4).ToString(CultureInfo.InvariantCulture));
+                xml.WriteAttributeString("customWidth", "1");
+                if (texto.Contains(c))
+                {
+                    xml.WriteAttributeString("style", "1");
+                }
+
+                xml.WriteEndElement();
+            }
+
+            xml.WriteEndElement();
+        }
+
+        xml.WriteStartElement("sheetData", Principal);
+        var numeroFila = 1;
+        EscribirFila(xml, numeroFila, hoja.Encabezado.Cast<object>().ToList(), texto);
+        foreach (var fila in hoja.Filas)
+        {
+            EscribirFila(xml, ++numeroFila, fila, texto);
         }
 
         xml.WriteEndElement();
@@ -160,7 +218,7 @@ public static class EscritorPlanilla
 
     private static string SecurityElementEscape(string texto) => System.Security.SecurityElement.Escape(texto) ?? string.Empty;
 
-    private static void EscribirFila(XmlWriter xml, int numero, IReadOnlyList<object> celdas)
+    private static void EscribirFila(XmlWriter xml, int numero, IReadOnlyList<object> celdas, IReadOnlyCollection<int> texto)
     {
         var fila = numero.ToString(CultureInfo.InvariantCulture);
         xml.WriteStartElement("row", Principal);
@@ -169,6 +227,11 @@ public static class EscritorPlanilla
         {
             xml.WriteStartElement("c", Principal);
             xml.WriteAttributeString("r", Columna(i) + fila);
+            if (texto.Contains(i))
+            {
+                xml.WriteAttributeString("s", "1");
+            }
+
             if (celdas[i] is NumeroPlanilla valor)
             {
                 xml.WriteElementString("v", Principal, valor.Valor.ToString(CultureInfo.InvariantCulture));
