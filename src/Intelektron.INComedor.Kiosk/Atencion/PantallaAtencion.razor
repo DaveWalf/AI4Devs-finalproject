@@ -5,10 +5,12 @@
 @inject MaquinaAtencion Maquina
 @inject ServicioAtencion Servicio
 @inject IServiceProvider Proveedor
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 
 @* La presentación táctil (D3 de presentar-atencion-tactil): los estilos están en wwwroot/css/puesto.css. *@
 @* Escape en reposo pide el cierre del puesto según el modo (D7 de configurar-puesto-por-pestanas). *@
-<div class="puesto" style="@_vista.VariablesCss" tabindex="-1" @ref="_raiz" @onkeydown="TeclaRaiz">
+<div class="puesto @(TecladoGeneralVisible ? "con-teclado" : null)" style="@_vista.VariablesCss" tabindex="-1" @ref="_raiz" @onkeydown="TeclaRaiz">
     @* Con Configuración abierta, el resto de la página es inerte: el foco no sale del diálogo (D5). *@
     <header class="cabecera" inert="@(HayDialogo || CartelVisible)">
         <img class="logo-empresa" src="@_logos.Empresa" alt="Logo de la empresa" />
@@ -287,6 +289,15 @@
         <DialogoClaveDelDia Validador="_validador" Fecha="FechaLocal" Motivo="@MotivoClave(pedido)" Resultado="ResultadoClave"
                             Cancelada="() => _pedidoClave = null" ProbarCodigo="ProbarCodigo" />
     }
+
+    @* El teclado general, abajo de la pantalla, cuando un campo de texto se tocó con el dedo (D1 a D5 de *@
+    @* operar-solo-con-la-pantalla); en Configuración se puede ocultar por la sesión. *@
+    @if (TecladoGeneralVisible)
+    {
+        <div class="teclado-general superficie" data-teclado-propio>
+            <TecladoEnPantalla ConSimbolos="true" Ocultable="ConfiguracionAbierta" Tecla="TeclearGeneral" />
+        </div>
+    }
 </div>
 
 @code {
@@ -330,6 +341,42 @@
     private ExportacionAutomatica? _exportacion;
     private AlmacenConfiguracionCorreo? _almacenCorreo;
     private LectorIdentificacion? _lector;
+    private bool _campoTocado;
+    private bool _tecladoOculto;
+
+    /// <summary>El teclado general: un campo de texto tocado con el dedo y no oculto en esta sesión de Configuración (D2 y D4).</summary>
+    private bool TecladoGeneralVisible => _campoTocado && !(_tecladoOculto && ConfiguracionAbierta);
+
+    /// <summary>
+    /// Lo que avisa puesto.js por <see cref="TecladoGeneral"/>: un campo de texto recibió el foco por un toque, o el foco salió
+    /// de los campos (D2). Llega en otro hilo y se aplica en el de la pantalla.
+    /// </summary>
+    public Task CampoEnfocado(bool enfocado) => InvokeAsync(() =>
+    {
+        _campoTocado = enfocado;
+        StateHasChanged();
+    });
+
+    private void AlTocarUnCampo(bool enfocado) => _ = CampoEnfocado(enfocado);
+
+    /// <summary>Una tecla del teclado general: la escribe puesto.js en el campo con el foco; «Ocultar teclado», por la sesión (D3 y D4).</summary>
+    private async Task TeclearGeneral(string tecla)
+    {
+        if (tecla == TecladoEnPantalla.Ocultar)
+        {
+            _tecladoOculto = true;
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("incomedor.teclear", tecla);
+        }
+        catch (JSException)
+        {
+            // Sin la función (una página vieja en caché), la tecla no escribe: el campo sigue con lo que tenía.
+        }
+    }
     private AlmacenLector? _almacenLector;
     private string _lecturaSimulada = string.Empty;
 
@@ -567,6 +614,7 @@
         // Los correos antes que la exportación: su primera pasada ya puede avisar una falla.
         IniciarCorreos();
         IniciarLector();
+        TecladoGeneral.CampoTocado += AlTocarUnCampo;
         IniciarExportacion();
         LeerPersonasSimulacion();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
@@ -799,6 +847,8 @@
         // El estado se leyó al tocar el engranaje (AbrirConfiguracion): muestra lo que había entonces, sin la clave ni la apertura.
         RegistrarConfiguracion("CONFIGURATION_OPENED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
         _sesionOperador = Servicio.Asistencia is { } asistencia ? new SesionOperador(asistencia, Servicio.Reloj) : null;
+        // Una sesión de Configuración nueva vuelve a mostrar el teclado general (D4 de operar-solo-con-la-pantalla).
+        _tecladoOculto = false;
         _configuracion = true;
     }
 
@@ -1704,6 +1754,7 @@
     /// </summary>
     protected override async Task OnAfterRenderAsync(bool primera)
     {
+
         var enReposo = Maquina.Estado == EstadoAtencion.Reposo && !HayDialogo;
         var estado = HayDialogo ? (EstadoAtencion?)null : Maquina.Estado;
         var volvioAReposo = enReposo && !primera && _estadoDibujado != EstadoAtencion.Reposo;
@@ -1736,6 +1787,7 @@
 
     public void Dispose()
     {
+        TecladoGeneral.CampoTocado -= AlTocarUnCampo;
         if (_cierre is not null)
         {
             _cierre.ClavePedida -= PedirClaveDeLaVentana;

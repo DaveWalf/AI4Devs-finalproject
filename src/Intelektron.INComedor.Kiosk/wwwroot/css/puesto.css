@@ -450,6 +450,18 @@ html, body { overscroll-behavior: none; }
 .teclado-en-pantalla .tecla { min-height: 56px; min-width: 0; padding: 0 4px; font-size: 20px; }
 .teclado-en-pantalla .tecla.especial { font-size: 16px; }
 .teclado-en-pantalla .tecla.activa { background: var(--acento); color: var(--sobre-acento); border-color: var(--acento); }
+
+/* El teclado general, abajo y del ancho de la pantalla; con él, Configuración y la atención se acortan para que el campo
+   tocado quede arriba (D1 y D5 de operar-solo-con-la-pantalla). Cinco filas de 56 px con sus espacios. */
+.puesto { --alto-teclado-general: 328px; }
+.teclado-general {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    height: var(--alto-teclado-general); box-sizing: border-box; padding: 8px 16px 12px;
+    border-radius: 0; border-top: 2px solid var(--tinta-suave);
+}
+.puesto.con-teclado .fondo-dialogo { bottom: var(--alto-teclado-general); }
+.puesto.con-teclado .dialogo.ancho { height: min(760px, calc(100vh - var(--alto-teclado-general) - 32px)); }
+.puesto.con-teclado .atencion { padding-bottom: var(--alto-teclado-general); }
 .tabla-personas input.nombre-persona.elegido, .tabla-personas input.codigo-persona.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
 /* Un campo elegido que el guardado rechazó se marca como los demás rechazados, no con el acento (D6). */
 .tabla-personas input.elegido[aria-invalid="true"] { outline-color: #b3261e; }

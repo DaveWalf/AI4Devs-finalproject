@@ -5,7 +5,7 @@
     (la letra, el número, BORRAR o ESPACIO); quien lo usa decide en qué campo escribe. Las teclas no sacan el foco del campo.
 *@
 <div class="teclado-en-pantalla" role="group" aria-label="Teclado en pantalla">
-    @foreach (var fila in Filas)
+    @foreach (var fila in FilasVisibles)
     {
         <div class="fila-teclas">
             @foreach (var tecla in fila)
@@ -22,6 +22,10 @@
     public const string Borrar = "BORRAR";
     public const string Espacio = "ESPACIO";
     public const string Mayus = "MAYUS";
+    public const string Ocultar = "OCULTAR";
+
+    /// <summary>La fila de los símbolos de las casillas, los servidores y las carpetas (D1 de operar-solo-con-la-pantalla).</summary>
+    private static readonly string[] Simbolos = [".", "-", "_", "@", ":", "/", "\\"];
 
     private static readonly string[][] Filas =
     [
@@ -33,7 +37,18 @@
 
     private bool _mayusculas;
 
-    /// <summary>Cada tecla tocada: la letra (en mayúscula o minúscula según «Mayús»), el número, BORRAR o ESPACIO.</summary>
+    /// <summary>Con la fila de los símbolos: el teclado general la muestra; Personas, no.</summary>
+    [Parameter]
+    public bool ConSimbolos { get; set; }
+
+    /// <summary>Con la tecla «Ocultar teclado» al final de los símbolos, que avisa OCULTAR (D4 de operar-solo-con-la-pantalla).</summary>
+    [Parameter]
+    public bool Ocultable { get; set; }
+
+    private IEnumerable<string[]> FilasVisibles =>
+        ConSimbolos ? [.. Filas, Ocultable ? [.. Simbolos, Ocultar] : Simbolos] : Filas;
+
+    /// <summary>Cada tecla tocada: la letra (en mayúscula o minúscula según «Mayús»), el número, BORRAR, ESPACIO u OCULTAR.</summary>
     [Parameter]
     public EventCallback<string> Tecla { get; set; }
 
@@ -53,6 +68,7 @@
         Borrar => "⌫",
         Espacio => "Espacio",
         Mayus => "Mayús",
+        Ocultar => "Ocultar teclado",
         _ when char.IsLetter(tecla[0]) && !_mayusculas => tecla.ToLowerInvariant(),
         _ => tecla,
     };
@@ -62,6 +78,7 @@
         Borrar => "Borrar",
         Espacio => "Espacio",
         Mayus => "Mayúsculas",
+        Ocultar => "Ocultar teclado",
         _ => tecla,
     };
 }

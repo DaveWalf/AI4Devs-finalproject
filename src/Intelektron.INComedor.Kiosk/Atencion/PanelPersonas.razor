@@ -13,7 +13,7 @@
     «Guardar» y «Cancelar» actúan como en C. Ordenar cambia sólo la vista: la edición se arma en el orden de lectura y los
     campos rechazados vuelven a su fila por esa posición. Nunca muestra un código; el servicio valida y decide (D10, D11).
 *@
-<section id="@(Editando ? "panel-personas" : "tabla-personas")" class="panel-administracion tabla-administracion" aria-label="Personas habilitadas">
+<section id="@(Editando ? "panel-personas" : "tabla-personas")" class="panel-administracion tabla-administracion" aria-label="Personas habilitadas" data-teclado-propio>
     @* Con el teclado a la vista, el título cede su alto a la tabla (D6 de editar-raciones-en-personas). *@
     @if (Editando && !(Editable && TecladoVisible))
     {
