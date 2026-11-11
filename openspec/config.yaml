@@ -30,9 +30,11 @@ rules:
   design:
     - Cada decisión nombra la alternativa descartada y el porqué.
     - "Prolijidad visual: los controles hermanos de una misma tarjeta o fila comparten ancho o bordes alineados, tipografía y relleno, además del alto táctil. Toda decisión que toque una pantalla dice cómo quedan alineados sus controles hermanos."
+    - "Puntuación de la interfaz (pedido de David del 10/11/2026): toda oración que la pantalla muestra (un aviso, un mensaje, una explicación) termina en punto; un título, un rótulo, un botón, una opción o un estado de una o pocas palabras no. Una spec que cita un mensaje entre comillas latinas deja el punto final fuera de las comillas, como pide la RAE."
   tasks:
     - Cada tarea nombra la prueba o el comando que la verifica.
     - Las pruebas de un grupo van dentro del grupo, no al final.
     - Ninguna tarea modifica un test existente sin aprobación de David.
+    - "Puntuación de la interfaz: toda tarea que agregue o cambie un texto de la pantalla lo deja con el punto final si es una oración, y su prueba lo compara con el mensaje entero."
     - "Prolijidad visual: toda tarea que toque una pantalla mide por CDP, a 1024 × 768, los bordes izquierdo y derecho, el alto y el tamaño de letra de sus controles hermanos (tolerancia de 1 px), pega las medidas y deja una captura que la verificación mira."
     - "La última tarea del change agrega su evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` y, si deja un workflow o un ajuste humano nuevo, su entrada en `prompts.md`; se verifica con el chequeo de enlaces relativos."

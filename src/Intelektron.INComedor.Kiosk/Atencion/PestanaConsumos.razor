@@ -15,6 +15,9 @@
         <div class="filtros-consumos">
             <label>Desde <input id="consumos-desde" type="date" value="@Fecha(_desde)" @onchange="e => ElegirFecha(e, desde: true)" /></label>
             <label>Hasta <input id="consumos-hasta" type="date" value="@Fecha(_hasta)" @onchange="e => ElegirFecha(e, desde: false)" /></label>
+            @* «Últimas 24 h» va con las fechas, que es su grupo, y «Consultar» cierra los filtros: a 1024 × 768 son dos renglones *@
+            @* sin un control solo (D8). *@
+            <button id="ultimas-24h" type="button" @onclick="UltimasHoras">Últimas 24 h</button>
             @* El texto busca en persona, opción, servicio y número; el código de una persona va enmascarado y se vacía al *@
             @* consultar, y ninguno de los dos llega a la bitácora (D2 y D3 de buscar-y-exportar-consumos). *@
             <label>Buscar <input id="consumos-texto" type="search" autocomplete="off" value="@_texto" @oninput="e => _texto = e.Value?.ToString() ?? string.Empty" /></label>
@@ -38,7 +41,6 @@
                 <ListaDesplegable Id="consumos-opcion" Etiqueta="etiqueta-consumos-opcion" Entradas="_entradasOpcion" Valor="@_opcion" ValorChanged="v => _opcion = v"
                                   TextoVacio="Todas" OpcionVacia="true" />
             </div>
-            <button id="ultimas-24h" type="button" @onclick="UltimasHoras">Últimas 24 h</button>
             <button id="consultar-consumos" type="button" class="principal" @onclick="Consultar">Consultar</button>
         </div>
 
@@ -297,7 +299,7 @@
 
         _exportacionFallida = false;
         _mensajeExportacion = MensajesAtencion.ExportacionHecha(archivo, resultado.Filas, carpeta)
-            + (resultado.HayMas ? ". " + MensajesAtencion.ExportacionTopada : string.Empty);
+            + (resultado.HayMas ? " " + MensajesAtencion.ExportacionTopada : string.Empty);
         RegistrarExportacion?.Invoke(new ExportacionRealizada(formato == FormatoExportacion.Csv ? "CSV" : "XLSX", archivo, resultado.Filas, resultado.HayMas));
     }
 

@@ -208,10 +208,12 @@ receptor, en la ventana:
 4. El engranaje pide la clave del día: cualquier número de 1 a 12 dígitos en el teclado en pantalla y «ENTER», y
    Configuración avisa arriba que no se validó. En su pestaña Impresora, «Sin papel»; `0001` con «Café con leche», un
    REFRIGERIO: «Tu consumo está registrado. El comprobante queda pendiente».
-5. La impresora en «Disponible» y, en la pestaña Comprobantes, `9001` e «Ingresar»: los comprobantes del día.
-   «Recuperar» saca el pendiente del paso 4 como el mismo trabajo, y «Reimprimir», con un motivo, saca una copia con
-   la leyenda DUPLICADO. «Salir», cerrar Configuración o 30 s sin tocar la pestaña terminan la sesión del operador.
-6. En la pestaña Comprobantes, `9002` e «Ingresar»: «Tu permiso de operador está vencido».
+5. La impresora en «Disponible» y, en Consumos, «Ver» en la fila del paso 4: el comprobante en pantalla, marcado COPIA
+   EN PANTALLA, sin pedir un operador ni imprimir. «Recuperar» en esa fila pide el código de un operador: `9001` e
+   «Ingresar» lo saca como el mismo trabajo. «Reimprimir», con un motivo, saca una copia con la leyenda DUPLICADO.
+   «Salir», cerrar Configuración o 30 s sin tocar la pestaña terminan la sesión del operador.
+6. En Consumos, «Reimprimir» en una fila y `9002` e «Ingresar»: «Tu permiso de operador está vencido». «Buscar» con el
+   número de una fila y «Consultar» dejan sólo esa; «Exportar CSV» pide la carpeta la primera vez y deja ahí el archivo.
 7. En reposo, el engranaje y «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
    `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión
    2 de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
@@ -308,19 +310,21 @@ Códigos sintéticos:
 | `0002` | Credencial vencida: «Esta credencial está vencida» |
 | `0003` | Credencial revocada: «Esta credencial ya no está habilitada» |
 | `0004` | Credencial todavía no vigente: «No pudimos identificarte» |
-| `9001` | Operador con permiso `OPERATOR` vigente, en la pestaña Comprobantes |
-| `9002` | Operador con el permiso vencido: Comprobantes lo deniega |
-| `9003` | Operador con el permiso revocado: Comprobantes lo deniega |
-| `9004` | Administrador sin `OPERATOR`: Comprobantes lo deniega |
+| `9001` | Operador con permiso `OPERATOR` vigente: reimprime y recupera en Consumos |
+| `9002` | Operador con el permiso vencido: Consumos no lo deja reimprimir |
+| `9003` | Operador con el permiso revocado: Consumos no lo deja reimprimir |
+| `9004` | Administrador sin `OPERATOR`: Consumos no lo deja reimprimir |
 
 El comprobante sale después del commit hacia una impresora simulada, que escribe un archivo de texto por
 copia en `%LOCALAPPDATA%\INComedor\demo\comprobantes\` (`<TicketId>-<copia>.txt`). Cuando sale, la pantalla
 muestra además una impresora de la que sale el comprobante, con la opción, la fecha y el cargo y sin el nombre;
 tocarlo equivale a «Listo», y con movimiento reducido aparece sin animación. Los modos de la impresora
 (Disponible, Sin papel o Incierta) están en Configuración. Con «Sin papel», el consumo queda registrado y el
-comprobante, pendiente, sin comprobante en pantalla. La pantalla de reposo ya no tiene «Asistencia»: en la pestaña
-Comprobantes de Configuración, un operador con `9001` ve los comprobantes del día. Puede recuperar el original que falló, que es el mismo trabajo y no una copia nueva. También puede
-reimprimir con un motivo de una lista fija, y la copia sale con la leyenda DUPLICADO y su número.
+comprobante, pendiente, sin comprobante en pantalla. La pantalla de reposo ya no tiene «Asistencia»: en Consumos de
+Configuración, cada fila tiene «Ver», que muestra el comprobante en pantalla marcado COPIA EN PANTALLA, sin imprimir ni
+crear una copia, y «Reimprimir», que pide el código de un operador con `OPERATOR` vigente, salvo que ese operador haya
+entrado a Configuración con su código. Reimprime con un motivo de una lista fija, y la copia sale con la leyenda
+DUPLICADO y su número. Si el original falló, «Recuperar» lo saca otra vez como el mismo trabajo y no como una copia nueva.
 
 Todo lo que pasa en el puesto queda primero en la base y después, fuera de la atención, en dos bitácoras de texto
 por mes en `%LOCALAPPDATA%\INComedor\demo\bitacoras\<KioskId>\`: `INComedor-interacciones-AAAAMM.log` (cada
@@ -350,7 +354,7 @@ ve sobre una cuadrícula antes de guardarlo, con las mismas reglas (lo que no si
 borra. Cada guardado queda en la general por la huella SHA-256 del archivo, su tamaño y su formato, nunca su contenido.
 
 El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre
-**Configuración por pestañas**: Consumos, donde abre, Personas, Opciones, Comprobantes, Identidad visual, Impresora,
+**Configuración por pestañas**: Consumos, donde abre, Personas, Opciones, Identidad visual, Impresora,
 Pantalla, Red y, al final, General (el modo y el estado de las bitácoras), en una fila de botones de 56 px que entra en
 1024 × 768.
 Todas quedan montadas, así que lo editado en una pestaña sobrevive al pasar a otra hasta cerrar. Cada «Guardar»
@@ -438,13 +442,19 @@ defecto) y el pie (hasta 60), en `impresora.json` de la carpeta de datos, que se
 en la impresora y en pantalla, también a una copia. Cada prueba (`PRINTER_TESTED`) y cada guardado (`TICKET_TEXTS`)
 quedan en la general.
 
-**Consumos en Configuración.** La pestaña Consumos muestra los consumos registrados en el puesto en la fecha de
-negocio actual, del más reciente al más antiguo, con la hora, la persona y la opción como eran al consumir, el
-servicio, el cargo y el estado del comprobante. Filtra por un rango de hasta 366 días, por persona (también las dadas
-de baja), por servicio y por opción, y cada encabezado ordena la consulta antes del tope de 500 filas, que avisa si
-hay más. La ve quien entra a Configuración con la clave del día o con el código de un operador, que abre en ella; los
-rechazos no son consumos y no aparecen, y ningún código se muestra. Cada consulta queda en la general como
-`CONSUMPTIONS_QUERIED`.
+**Consumos en Configuración.** La pestaña Consumos muestra los consumos de las últimas 24 horas, del más reciente al
+más antiguo, con la fecha y la hora, el número del comprobante, la persona y la opción como eran al consumir, el
+servicio, el cargo y el estado del comprobante. Elegir fechas pasa a un rango de fechas de negocio de hasta 366 días, y
+«Últimas 24 h» vuelve al de siempre. Filtra también por un texto, que busca sin distinguir mayúsculas ni acentos en la
+persona, la opción, el servicio y el número; por el código de una persona, que se tipea enmascarado, se vacía al
+consultar y no se registra; y por persona (también las dadas de baja), servicio y opción. Cada encabezado ordena la
+consulta antes del tope de 500 filas, que avisa si hay más. La ve quien entra a Configuración con la clave del día o con
+el código de un operador, que abre en ella; los rechazos no son consumos y no aparecen, y ningún código se muestra.
+«Exportar CSV» y «Exportar Excel» guardan lo consultado, con su orden y hasta 10 000 filas, en una carpeta que se elige
+la primera vez y se recuerda en `exportacion.json` de la carpeta de datos; «Cambiar carpeta» la vuelve a pedir. El CSV
+va en UTF-8 con punto y coma, como lo abre Excel en español, y una celda que empieza como una fórmula lleva un apóstrofo
+delante. Cada consulta queda en la general como `CONSUMPTIONS_QUERIED` y cada exportación como `CONSUMPTIONS_EXPORTED`,
+con el nombre del archivo y sin nombres ni códigos.
 
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|

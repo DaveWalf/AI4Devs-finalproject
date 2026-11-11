@@ -99,7 +99,15 @@ Las pruebas de `PestanaComprobantesTests` pasan a Consumos con lo mismo que afir
 
 La fila de búsqueda (el texto, el código, «Últimas 24 h» y «Consultar») y las acciones de cada fila siguen la regla de
 `config.yaml`: los hermanos de una fila comparten alto (56 px en los filtros, 44 px en las acciones de la tabla) y bordes,
-medidos por CDP a 1024 × 768 con captura.
+medidos por CDP a 1024 × 768 con captura. «Últimas 24 h» va con las fechas, que es su grupo, y «Consultar» cierra los
+filtros, así que a 1024 × 768 son dos renglones sin un control solo; los botones de la pestaña usan la letra de 16 px de
+sus campos, y los tres de la exportación miden lo mismo, el ancho del más largo.
+
+- **Descartada: «Últimas 24 h» y «Consultar» al final de los filtros.** Con los dos campos nuevos, «Consultar» quedaba
+  solo en un tercer renglón, y con 18 px de letra al lado de campos de 16 px: lo mostró la primera medición de la E2E.
+
+Las oraciones que la pestaña muestra terminan en punto (decisión 15 del plan del cierre, regla de `config.yaml`); el resto
+de la interfaz lo sigue el change `puntuar-la-interfaz`.
 
 ## Risks / Trade-offs
 

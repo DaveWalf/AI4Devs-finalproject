@@ -95,12 +95,32 @@ pegado, para ver que sólo cambian las pruebas existentes de la propuesta. Las p
 
 ## 5. El puesto compilado, documentos y verificación integral
 
-- [ ] 5.1 E2E nueva contra el puesto compilado, a 1024 × 768: un consumo, la tabla con las 24 horas y el número, la
+- [x] 5.1 E2E nueva contra el puesto compilado, a 1024 × 768: un consumo, la tabla con las 24 horas y el número, la
   búsqueda, «Ver», la tabla sin desplazamiento horizontal y las medidas de la fila de búsqueda y de las acciones, con
   capturas miradas. Ajustar las E2E existentes que cuentan nueve pestañas. Verifica: `dotnet test
   tests/Intelektron.INComedor.E2E.Tests` en verde, con las medidas pegadas.
-- [ ] 5.2 `readme.md` (Consumos, la reimpresión y la exportación) y la fila de `docs/aplicacion-del-curso.md` que
+  - `BuscarYExportarConsumosE2ETests`. La primera corrida pasó, pero sus medidas mostraron «Consultar» solo en un tercer
+    renglón (de 325,5 a 381,5 px), «Últimas 24 h» y «Consultar» con letra de 18 px al lado de campos de 16 px, y los
+    tres botones de exportar de 145,1, 152,7 y 172,0 px: la prueba sumó esas tres afirmaciones (ningún renglón con un
+    control solo, una sola letra, el mismo ancho), que fallan con esas medidas, y el CSS y el orden se corrigieron (D8).
+  - Medidas finales, a 1024 × 768: filtros en dos renglones, de 172,0 a 228,0 px (`#consumos-desde`, `#consumos-hasta`,
+    `#ultimas-24h`, `#consumos-texto`, `#consumos-codigo`) y de 261,5 a 317,5 px (`#consumos-persona`,
+    `#consumos-servicio`, `#consumos-opcion`, `#consultar-consumos`), todos de 56 px y letra de 16 px; acciones de la
+    fila `.ver` y `.reimprimir` de 44 px y 15 px; exportar de 611,0 a 667,0 px, tres de 157,6 px y 16 px; la tabla de
+    924 px en su caja de 924 px; el diálogo termina en 752 px de 768. Capturas miradas: `consumos-busqueda-1024x768`,
+    `consumos-ver-1024x768` y `consumos-exportado-1024x768`, en `TestResults/e2e/20261110-212937-buscar-exportar-84931ad6`.
+  - `AccesoOperadorE2ETests` y `ConfiguracionPorPestanasE2ETests` cuentan ocho pestañas en lugar de nueve.
+    `dotnet test tests/Intelektron.INComedor.E2E.Tests`: `total: 32`, `error: 0` (21:30 a 21:33).
+- [x] 5.2 `readme.md` (Consumos, la reimpresión y la exportación) y la fila de `docs/aplicacion-del-curso.md` que
   corresponda. Verifica: el chequeo de enlaces de D8 con su control negativo, `enlaces rotos: 0`.
+  - `readme.md`: los pasos 5 y 6 de la demostración y la tabla de códigos pasan de la pestaña Comprobantes a las filas de
+    Consumos; la asistencia con «Ver», «Reimprimir» y «Recuperar»; las pestañas sin Comprobantes; Consumos con las 24
+    horas, la búsqueda, el código y la exportación. La fila de OWASP de `docs/aplicacion-del-curso.md` suma el `LIKE`
+    escapado y el apóstrofo de las fórmulas; `prompts.md` §5, el criterio humano 16 (el punto final de la interfaz). Las
+    capturas 10 y 15 siguen mostrando nueve pestañas y los filtros de antes hasta que la tanda 3 las rehaga.
+  - El chequeo de enlaces de D8 de `mostrar-aplicacion-del-curso`: el control negativo da `ROTO`, `ANCLA` y
+    `enlaces rotos: 2`; sobre `readme.md`, `prompts.md`, `docs/aplicacion-del-curso.md` y `docs/cobertura-entrega.md`,
+    `enlaces rotos: 0`; el mapa, `filas del mapa: 82 · defectuosas: 0`.
 - [ ] 5.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
