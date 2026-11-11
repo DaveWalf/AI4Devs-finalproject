@@ -741,8 +741,7 @@ La integración física y el despliegue productivo requieren homologación.
 - [`ci.yml`](.github/workflows/ci.yml), en cada pull request y en cada push a `feature/**` y a `final-project-*`:
   en `windows-latest`, restore, auditoría de dependencias vulnerables, build con `-warnaserror`, arranque de
   LocalDB y todas las pruebas, con el E2E; en `ubuntu-latest`, `openspec validate --all --strict` y gitleaks sobre
-  la historia. La integración del #5 en `final-project-dw` quedó en verde en la
-  [corrida 41154943372](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41154943372).
+  la historia. La punta de `final-project-dw` está en verde en la [corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063), con 1122 pruebas.
 - [`release.yml`](.github/workflows/release.yml), sólo con un tag `v*`: un job de sólo lectura compila, publica el
   puesto autocontenido para Windows x64 con [`publicar-puesto.ps1`](.github/scripts/publicar-puesto.ps1), corre el
   E2E contra ese EXE y recién entonces arma el zip y su suma; otro job, el único con escritura, comprueba la suma y
@@ -783,10 +782,7 @@ El [plan de pruebas](docs/pruebas.md) cubre dominio, SQLite real, sincronizació
 contratos, E2E y dispositivos. Casos centrales: arranque offline, cupo local,
 doble confirmación, caída tras commit, reimpresión, snapshot parcial, acuse perdido
 y ambos modos biométricos. Incluye también saltos del reloj, cálculo del día de
-negocio y vigencias. Al 31/10/2026 corren 358 pruebas, todas en verde, con
-`dotnet test INComedor.sln` desde la raíz del repositorio: 68 de Domain, 117 de
-Infrastructure.Sqlite sobre un archivo SQLite real temporal, 82 del Kiosk, 62 del receptor, 23 de Contracts y
-6 del E2E. Las del receptor, las del envío integrado y el E2E necesitan una instancia de SQL Server:
+negocio y vigencias. Al 11/11/2026 corren 1122 pruebas, todas en verde en la CI de la punta de `final-project-dw` ([corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063)), con `dotnet test INComedor.sln` desde la raíz del repositorio: 91 de Domain, 298 de Infrastructure.Sqlite sobre un archivo SQLite real temporal, 604 del Kiosk, 62 del receptor, 23 de Contracts y 44 del E2E. Las del receptor, las del envío integrado y el E2E necesitan una instancia de SQL Server:
 `(localdb)\MSSQLLocalDB` por defecto, u otra en la variable `INCOMEDOR_SQLSERVER`; cada clase crea su base y la
 borra al terminar. Cubren la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después
 del commit, la concurrencia por el último cupo, la atención y el comprobante, y el envío de lotes: el acuse
