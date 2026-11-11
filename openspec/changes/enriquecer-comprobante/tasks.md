@@ -1,15 +1,18 @@
 ## 1. La base
 
-- [ ] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: los datos del comprobante llevan el nombre
+- [x] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: los datos del comprobante llevan el nombre
   visible del comensal y nunca el código; con correlativo desde 1000, dos confirmaciones dan 1000 y 1001, y bajar el
   «desde» no reusa; sin correlativo no hay número guardado; una reimpresión llega con «REIMPRESIÓN · copia N» y el nombre
   del operador, y un original recuperado sin leyenda ni operador; Consumos muestra el correlativo y lo encuentra (D1, D2
   y D5). Cambian, por la decisión 13, las afirmaciones de «DUPLICADO» de `AsistenciaTests` y `TrabajosImpresionTests` y
   la de ninguna propiedad de la persona en los datos de `TrabajosImpresionTests`, que sigue exigiendo que no estén el
-  código ni la credencial. Verifica: rojo antes y verde después.
-- [ ] 1.2 `UnidadConfirmacion` (el nombre y el correlativo), `TrabajosImpresion` (la leyenda y el operador),
+  código ni la credencial. Verifica: rojo antes y verde después. Hecho: 6 nuevas (4 en `ComprobanteEnriquecidoTests`,
+  2 en `AsistenciaTests`), 4 vistas fallar (el código de siempre y el original recuperado ya andaban), y las 4 existentes
+  cambiadas, vistas fallar con «DUPLICADO» y la persona ausente.
+- [x] 1.2 `UnidadConfirmacion` (el nombre y el correlativo), `TrabajosImpresion` (la leyenda y el operador),
   `ComprobanteAImprimir.Habilito` y `ConsultaConsumos` (el número y la búsqueda). Verifica: 1.1 en verde y
-  `Infrastructure.Sqlite.Tests` entero.
+  `Infrastructure.Sqlite.Tests` entero. Hecho: Sqlite 289 de 289, dos veces; una corrida intermedia tuvo una caída
+  aislada de `ConsultaDisponibilidadTests` que no se repitió en cinco corridas de la clase.
 
 ## 2. El comprobante en el puesto
 

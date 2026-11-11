@@ -142,7 +142,7 @@ public class AsistenciaTests : ConfirmacionTestBase
         Assert.Equal("SESSION_NOT_USABLE", despues.ReasonCode);
     }
 
-    [Fact(DisplayName = "AT54 · RB08 · Reimpresión con motivo: copia 1 con DUPLICADO y su número; consumo, cupo e importe iguales; la bitácora registra motivo, comprobante, copia, PersonId y GrantId")]
+    [Fact(DisplayName = "AT54 · RB08 · Reimpresión con motivo: copia 1 con REIMPRESIÓN y su número; consumo, cupo e importe iguales; la bitácora registra motivo, comprobante, copia, PersonId y GrantId")]
     public void Reimpresion_con_motivo_crea_la_copia_1()
     {
         var ticket = AutorizarYEnviar();
@@ -158,7 +158,7 @@ public class AsistenciaTests : ConfirmacionTestBase
         var copia = _impresora.Recibidos[^1];
         Assert.Equal(ticket, copia.TicketId);
         Assert.Equal(1, copia.NumeroCopia);
-        Assert.Equal("DUPLICADO · copia 1", copia.Leyenda);
+        Assert.Equal("REIMPRESIÓN · copia 1", copia.Leyenda);
         Assert.Equal(antes, FotoDelConsumo());
         using (var conexion = Abrir())
         {
@@ -173,6 +173,40 @@ public class AsistenciaTests : ConfirmacionTestBase
         Assert.Equal(permiso, contexto.GetProperty("GrantId").GetGuid());
     }
 
+    [Fact(DisplayName = "comprobante-local · Reimpresión con motivo: la copia llega con el nombre visible del operador que la habilitó; el original, sin él")]
+    public void La_reimpresion_dice_quien_la_habilito()
+    {
+        var ticket = AutorizarYEnviar();
+        InsertarOperador(CodigoOperador, "OPERATOR", null, null, null);
+        var sesion = _asistencia.Entrar(CodigoOperador).SesionId!.Value;
+
+        Assert.True(_asistencia.Reimprimir(sesion, ticket, MotivoReimpresion.PapelIlegible).Realizada);
+
+        Assert.Null(_impresora.Recibidos[0].Habilito);
+        Assert.Equal("Operador sintético", _impresora.Recibidos[^1].Habilito);
+    }
+
+    [Fact(DisplayName = "comprobante-local · Trabajo fallido por papel: el original recuperado sale sin leyenda ni operador, porque es el original")]
+    public void El_original_recuperado_no_lleva_operador()
+    {
+        _impresora.Modo = ModoImpresoraDePrueba.SinPapel;
+        var ticket = AutorizarYEnviar();
+        Guid original;
+        using (var conexion = Abrir())
+        {
+            original = Sql.EscalarGuid(conexion, "SELECT comimpCodigo FROM tbComedorTrabajosImpresion WHERE comcmpCodigo = $tk", ("$tk", ticket));
+        }
+
+        InsertarOperador(CodigoOperador, "OPERATOR", null, null, null);
+        var sesion = _asistencia.Entrar(CodigoOperador).SesionId!.Value;
+        _impresora.Modo = ModoImpresoraDePrueba.Disponible;
+
+        Assert.True(_asistencia.Recuperar(sesion, original).Realizada);
+
+        Assert.Null(_impresora.Recibidos[^1].Leyenda);
+        Assert.Null(_impresora.Recibidos[^1].Habilito);
+    }
+
     [Fact(DisplayName = "RB08 · Segunda reimpresión: la copia nueva es la 2")]
     public void Segunda_reimpresion_es_la_copia_2()
     {
@@ -184,7 +218,7 @@ public class AsistenciaTests : ConfirmacionTestBase
         var segunda = _asistencia.Reimprimir(sesion, ticket, MotivoReimpresion.Otro);
 
         Assert.Equal(2, segunda.Envio!.NumeroCopia);
-        Assert.Equal("DUPLICADO · copia 2", _impresora.Recibidos[^1].Leyenda);
+        Assert.Equal("REIMPRESIÓN · copia 2", _impresora.Recibidos[^1].Leyenda);
     }
 
     [Fact(DisplayName = "HU03-A · AT06 · Trabajo fallido por papel: recuperar envía otra vez el mismo trabajo de copia 0, queda en SUBMITTED, sin trabajo nuevo y con TICKET_RECOVERED")]
@@ -219,7 +253,7 @@ public class AsistenciaTests : ConfirmacionTestBase
         Assert.Equal(original, UnicoRegistro("TICKET_RECOVERED").GetProperty("PrintJobId").GetGuid());
     }
 
-    [Fact(DisplayName = "HU03-B · Resultado incierto: el último trabajo figura en UNKNOWN y, al reimprimir, la copia nueva lleva su número y DUPLICADO")]
+    [Fact(DisplayName = "HU03-B · Resultado incierto: el último trabajo figura en UNKNOWN y, al reimprimir, la copia nueva lleva su número y REIMPRESIÓN")]
     public void Resultado_incierto_se_reimprime_como_copia_marcada()
     {
         _impresora.Modo = ModoImpresoraDePrueba.Incierta;
@@ -233,7 +267,7 @@ public class AsistenciaTests : ConfirmacionTestBase
 
         Assert.True(resultado.Realizada);
         Assert.Equal(1, resultado.Envio!.NumeroCopia);
-        Assert.Equal("DUPLICADO · copia 1", _impresora.Recibidos[^1].Leyenda);
+        Assert.Equal("REIMPRESIÓN · copia 1", _impresora.Recibidos[^1].Leyenda);
     }
 
     [Fact(DisplayName = "RB26 · AT54 · El permiso vence durante la sesión: reimprimir se deniega con PERMISSION_EXPIRED, sin trabajo nuevo y con PRIVILEGED_ACTION_DENIED")]

@@ -10,7 +10,7 @@ public class TrabajosImpresionTests : ConfirmacionTestBase
 
     private TrabajosImpresion NuevosTrabajos() => new(Base, Reloj, _impresora);
 
-    [Fact(DisplayName = "AT01 · RB17 · Impresora disponible: la copia 0 queda en SUBMITTED, la impresora la recibe sin DUPLICADO ni código, y la bitácora registra el cambio")]
+    [Fact(DisplayName = "AT01 · RB17 · Impresora disponible: la copia 0 queda en SUBMITTED, la impresora la recibe sin REIMPRESIÓN ni código, con el nombre del comensal, y la bitácora registra el cambio")]
     public void Impresora_disponible_deja_el_original_enviado()
     {
         var ticket = Autorizar();
@@ -25,10 +25,12 @@ public class TrabajosImpresionTests : ConfirmacionTestBase
         Assert.Equal(ticket, recibido.TicketId);
         Assert.Equal(0, recibido.NumeroCopia);
         Assert.Null(recibido.Leyenda);
-        Assert.DoesNotContain("DUPLICADO", recibido.DatosImpresion, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("REIMPRESIÓN", recibido.DatosImpresion, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(FixtureSintetico.CodigoSintetico, recibido.DatosImpresion);
         var propiedades = JsonDocument.Parse(recibido.DatosImpresion).RootElement.EnumerateObject().Select(p => p.Name).ToList();
-        Assert.DoesNotContain(propiedades, p => p.Contains("Person", StringComparison.OrdinalIgnoreCase) || p.Contains("Credential", StringComparison.OrdinalIgnoreCase) || p.Contains("Code", StringComparison.OrdinalIgnoreCase));
+        // El nombre del comensal sí, por la mejora 9b de David (enriquecer-comprobante); el código y la credencial, nunca.
+        Assert.DoesNotContain(propiedades, p => p.Contains("Credential", StringComparison.OrdinalIgnoreCase) || p.Contains("Code", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("Persona habilitada", JsonDocument.Parse(recibido.DatosImpresion).RootElement.GetProperty("PersonName").GetString());
         var registros = RegistrosDeImpresion();
         Assert.Equal(["QUEUED>UNKNOWN", "UNKNOWN>SUBMITTED"], registros);
     }

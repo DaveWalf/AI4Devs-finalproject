@@ -3,7 +3,11 @@ using System.Globalization;
 namespace Intelektron.INComedor.Infrastructure.Sqlite;
 
 /// <summary>Lo que recibe la impresora: el JSON del comprobante, sin persona ni código, y la leyenda de una copia.</summary>
-public sealed record ComprobanteAImprimir(Guid TrabajoId, Guid TicketId, int NumeroCopia, string DatosImpresion, string? Leyenda);
+/// <summary>
+/// Lo que recibe la impresora: los datos guardados del comprobante, la leyenda de la copia y, en una reimpresión, el nombre
+/// del operador que la habilitó (D5 de enriquecer-comprobante).
+/// </summary>
+public sealed record ComprobanteAImprimir(Guid TrabajoId, Guid TicketId, int NumeroCopia, string DatosImpresion, string? Leyenda, string? Habilito = null);
 
 public enum RespuestaEnvio
 {
@@ -70,7 +74,7 @@ public sealed class TrabajosImpresion
             }
 
             var respuesta = _impresora.Enviar(new ComprobanteAImprimir(
-                trabajo.TrabajoId, trabajo.TicketId, trabajo.NumeroCopia, trabajo.DatosImpresion, Leyenda(trabajo.NumeroCopia)));
+                trabajo.TrabajoId, trabajo.TicketId, trabajo.NumeroCopia, trabajo.DatosImpresion, Leyenda(trabajo.NumeroCopia), trabajo.Habilito));
 
             var (estado, error) = respuesta.Envio switch
             {
@@ -85,9 +89,11 @@ public sealed class TrabajosImpresion
         return resultados;
     }
 
-    /// <summary>La copia 0 es el original y no lleva leyenda; las demás, «DUPLICADO · copia N» (RB08).</summary>
+    /// <summary>
+    /// La copia 0 es el original y no lleva leyenda; las demás, «REIMPRESIÓN · copia N» (RB08, D5 de enriquecer-comprobante).
+    /// </summary>
     internal static string? Leyenda(int numeroCopia) =>
-        numeroCopia == 0 ? null : string.Create(CultureInfo.InvariantCulture, $"DUPLICADO · copia {numeroCopia}");
+        numeroCopia == 0 ? null : string.Create(CultureInfo.InvariantCulture, $"REIMPRESIÓN · copia {numeroCopia}");
 
     internal static EstadoTrabajoImpresion Estado(string estado) => estado switch
     {
@@ -103,7 +109,15 @@ public sealed class TrabajosImpresion
         using var conexion = _baseComedor.AbrirConexion();
         using var comando = ComandosSqlite.Crear(conexion, null,
             """
-            SELECT imp.comimpCodigo, imp.comcmpCodigo, imp.comimpNumeroCopia, cmp.comcmpDatosImpresion
+            SELECT imp.comimpCodigo, imp.comcmpCodigo, imp.comimpNumeroCopia, cmp.comcmpDatosImpresion,
+                   CASE WHEN imp.comimpNumeroCopia > 0 THEN (
+                       SELECT per.comperNombreVisible
+                       FROM tbComedorBitacora bit
+                       JOIN tbComedorPersonas per ON lower(per.comperCodigo) = lower(json_extract(bit.combitContexto, '$.PersonId'))
+                       WHERE bit.combitTipoEvento = 'TICKET_REPRINTED'
+                         AND lower(json_extract(bit.combitContexto, '$.PrintJobId')) = lower(imp.comimpCodigo)
+                       ORDER BY per.comvcCodigo = (SELECT comvcCodigoActiva FROM tbComedorConfiguracionPuestos LIMIT 1) DESC
+                       LIMIT 1) END
             FROM tbComedorTrabajosImpresion imp
             JOIN tbComedorComprobantes cmp ON cmp.comcmpCodigo = imp.comcmpCodigo
             WHERE imp.comimpEstado = 'QUEUED'
@@ -113,7 +127,8 @@ public sealed class TrabajosImpresion
         var trabajos = new List<TrabajoEnCola>();
         while (lector.Read())
         {
-            trabajos.Add(new TrabajoEnCola(lector.GetGuid(0), lector.GetGuid(1), lector.GetInt32(2), lector.GetString(3)));
+            trabajos.Add(new TrabajoEnCola(lector.GetGuid(0), lector.GetGuid(1), lector.GetInt32(2), lector.GetString(3),
+                lector.IsDBNull(4) ? null : lector.GetString(4)));
         }
 
         return trabajos;
@@ -149,5 +164,9 @@ public sealed class TrabajosImpresion
         return true;
     }
 
-    private sealed record TrabajoEnCola(Guid TrabajoId, Guid TicketId, int NumeroCopia, string DatosImpresion);
+    /// <summary>
+    /// Un trabajo en cola; el de una copia, con el nombre del operador que la habilitó, leído del TICKET_REPRINTED de la
+    /// bitácora de la base, escrito en la misma transacción que el trabajo (D5 de enriquecer-comprobante).
+    /// </summary>
+    private sealed record TrabajoEnCola(Guid TrabajoId, Guid TicketId, int NumeroCopia, string DatosImpresion, string? Habilito);
 }
