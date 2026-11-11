@@ -123,20 +123,38 @@ sigue la regla de prolijidad de `config.yaml`.
 
 ## 5. Documentación, decisión y verificación completa
 
-- [ ] 5.1 `readme.md` (la reimpresión en Consumos, hoy en las líneas 324 a 326): sin código, con «Habilitó:» para el
+- [x] 5.1 `readme.md` (la reimpresión en Consumos, hoy en las líneas 324 a 326): sin código, con «Habilitó:» para el
   operador y «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD» con la clave del día. Verifica: `git grep -n "pide el código de un
   operador" -- readme.md` vacío.
-- [ ] 5.2 `docs/decisiones.md`: D-C29, la desviación de RB26 y de HU03-C con la clave del día, decidida por David el
+  - Hecho: el párrafo de la reimpresión, la línea del comprobante y los pasos 5 y 6 de la demostración, que tipeaban
+    `9001` y `9002` en Consumos (ahora el paso 6 entra por el engranaje con `9001`). El `git grep` sale vacío.
+- [x] 5.2 `docs/decisiones.md`: D-C29, la desviación de RB26 y de HU03-C con la clave del día, decidida por David el
   11/11/2026, que enlaza este change. Verifica: el chequeo de enlaces relativos con su control negativo,
   `enlaces rotos: 0`.
-- [ ] 5.3 `docs/guion-video.md`: confirmar que ningún paso muestra el pedido de código en Consumos (el paso 6 entra con
+  - Hecho: la fila D-C29, que enlaza `proposal.md` en su ruta activa; al archivar el change, ese enlace pasa a la carpeta
+    de `archive/`. El chequeo de D8 sobre `docs/decisiones.md` y `readme.md`: `enlaces rotos: 0`; su control negativo, un
+    `.md` con un archivo inexistente, un ancla falsa y una válida, dio `ROTO`, `ANCLA` y `enlaces rotos: 2`.
+- [x] 5.3 `docs/guion-video.md`: confirmar que ningún paso muestra el pedido de código en Consumos (el paso 6 entra con
   `9001`, que no cambia) y, si alguno lo muestra, avisarle a David, porque el video es suyo. Verifica: el paso citado.
-- [ ] 5.4 La verificación completa: `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y
+  - Hecho: `docs/guion-video.md:39`, el paso 6, entra con «El engranaje con el código `9001`» y reimprime y recupera sin
+    tipear otro código; ningún paso muestra el pedido. No hay nada que avisarle a David.
+- [x] 5.4 La verificación completa: `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y
   `openspec validate --all --strict`, sin errores. Verifica: las tres salidas pegadas, con el total de pruebas.
-- [ ] 5.5 La evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` (un change desde el pedido textual
+  - Hecho el 11/11 de 18:14 a 18:19, con `INCOMEDOR_SQLSERVER=INMO-DW-AR` y el E2E en primer plano:
+    `dotnet build INComedor.sln -warnaserror`: «Compilación correcta. 0 Advertencia(s) 0 Errores».
+    `dotnet test INComedor.sln`: exit 0, «total: 1128 error: 0 correcto: 1128 omitido: 0» (Contracts 23, Domain 91,
+    Sync.Api 62, Infrastructure.Sqlite 306, Kiosk 602 y E2E 44): 1122 de `7b80d45`, más 15 nuevas, menos las 9 bajas
+    aprobadas en 1.1.
+    `openspec validate --all --strict`: «Totals: 20 passed, 0 failed (20 items)».
+- [x] 5.5 La evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` (un change desde el pedido textual
   de David, con su gate respondido y las pruebas existentes aprobadas antes de tocarlas) y, si deja un workflow o un
   ajuste humano nuevo, su entrada en `prompts.md`. Verifica: el chequeo de enlaces relativos con su control negativo,
   `enlaces rotos: 0`.
+  - Hecho: la fila «No reemplazar la revisión humana por el revisor del agente» de `docs/aplicacion-del-curso.md` suma el
+    change, y `prompts.md` suma el punto 17 de «Criterio humano», el gate de David con la desviación de RB26. Sin workflow
+    nuevo. El chequeo de enlaces de D8 sobre `docs/aplicacion-del-curso.md`, `prompts.md`, `docs/decisiones.md` y
+    `readme.md`: `enlaces rotos: 0` (el control negativo, en 5.2); el del mapa: `filas del mapa: 82 · defectuosas: 0`.
+    Los enlaces a `openspec/changes/reimprimir-sin-codigo/` pasan a `archive/` al archivar el change.
 
 ## Workflow follow-up
 
