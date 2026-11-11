@@ -10,13 +10,15 @@
 
 ## 2. La exportación en el puesto
 
-- [ ] 2.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: la configuración y su validación (`exportacion-automatica.json`);
+- [x] 2.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: la configuración y su validación (`exportacion-automatica.json`);
   una pasada escribe el archivo que crece y el archivo por día, con el encabezado una vez; una pasada sin consumos nuevos
   no cambia nada; el SFTP simulado en «Caído» conserva su marca y la carpeta avanza, y al volver recibe lo que le faltó
   una sola vez; las marcas sobreviven a otro arranque; los registros, sin nombres ni códigos (D2 a D5). Verifica: rojo
-  antes y verde después.
-- [ ] 2.2 `ConfiguracionExportacion`, `EstadoExportacion`, los dos destinos y `ExportacionAutomatica`. Verifica: 2.1 en
-  verde.
+  antes y verde después. Hecho: 6 en `ExportacionAutomaticaTests` (con el reloj de las pasadas, con
+  un `TimeProvider` que anota sus temporizadores), vistas fallar con `NotImplementedException`.
+- [x] 2.2 `ConfiguracionExportacion`, `EstadoExportacion`, los dos destinos y `ExportacionAutomatica`. Verifica: 2.1 en
+  verde. Hecho: Kiosk 532 de 532; cada tramo del mismo archivo mueve la marca, así una falla en el segundo
+  archivo de una pasada no vuelve a escribir el primero.
 
 ## 3. En la pantalla
 
