@@ -568,6 +568,15 @@ código, y lo tipeado recorre el mismo armado que el puerto real. **Para probar 
 (o dos adaptadores unidos por un cable null-modem), elegir su `COMx` y su formato en la pestaña Lector y guardar; la
 pestaña dice si escucha. La configuración vive en `lector.json`; es del equipo y no viaja en un resguardo.
 
+**Operar sólo con la pantalla.** Un puesto de autoservicio no tiene teclado físico: al tocar con el dedo un campo de
+texto de Configuración o el código de la pantalla de reposo, aparece abajo un teclado en pantalla con números, letras
+con la Ñ, «Mayús», espacio, borrar y los símbolos de las casillas, los servidores y las carpetas (`@ . - _ : / \`). Escribe
+en el campo tocado como un teclado físico, sin sacarle el foco, y Configuración se acorta para que el campo quede arriba
+del teclado. En Configuración, «Ocultar teclado» lo oculta hasta cerrarla (un técnico con un teclado físico sigue
+escribiendo como siempre); al volver a abrirla, aparece otra vez. En la pantalla de reposo no se oculta. Con un mouse o
+un teclado físico el teclado en pantalla no aparece: lo abre sólo un toque de la pantalla. La clave del día y Personas
+conservan sus propios teclados.
+
 | Personas habilitadas | Opciones del comedor con una franja |
 |---|---|
 | ![La pestaña Personas en edición: la tabla con una fila por persona, ALMUERZO y REFRIGERIO en columnas y las opciones habilitadas, sin ningún código](docs/capturas/13-personas-habilitadas.jpg) | ![«Opciones del comedor» con «Almuerzo común», su importe, su carga y la franja «11:00 a 14:00»](docs/capturas/14-opciones-con-franja.jpg) |

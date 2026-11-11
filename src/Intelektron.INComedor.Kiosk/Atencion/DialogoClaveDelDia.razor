@@ -7,7 +7,7 @@
     guarda ni se registra, y se vacía al aceptar, al rechazar y al cancelar. Escape cancela sin que la tecla siga hasta la
     pantalla de atrás.
 *@
-<div class="fondo-dialogo fondo-clave">
+<div class="fondo-dialogo fondo-clave" data-teclado-propio>
     <div id="dialogo-clave" class="dialogo superficie" role="dialog" aria-modal="true" aria-labelledby="titulo-clave" tabindex="-1"
          @ref="_dialogo" @onkeydown="Tecla" @onkeydown:stopPropagation="true">
         <h2 id="titulo-clave">Clave del día</h2>
