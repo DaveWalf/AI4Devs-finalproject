@@ -6,9 +6,9 @@ La pestaña Opciones SHALL mostrar el catálogo activo, cada opción con su nomb
 
 #### Scenario: El catálogo a la vista
 Origen: mejora 7 de David del 10/11/2026 («Opciones editables en el lugar»).
-- **GIVEN** el catálogo de nueve de la demostración
+- **GIVEN** el catálogo de la demostración
 - **WHEN** se elige la pestaña Opciones
-- **THEN** se ven las nueve opciones con su servicio, su importe y sus cargas, sin abrir la edición
+- **THEN** se ven todas sus opciones con su servicio, su importe y sus cargas, sin abrir la edición
 
 #### Scenario: Editar desde una opción
 Origen: mejora 7 de David del 10/11/2026, borde.

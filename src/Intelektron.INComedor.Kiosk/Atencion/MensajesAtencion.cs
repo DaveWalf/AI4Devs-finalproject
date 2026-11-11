@@ -180,6 +180,11 @@ public static class MensajesAtencion
         },
     };
 
+    // La personalización de una opción (D2 de personalizar-opciones).
+    public const string PresentacionNoGuardada = "No se pudo guardar la presentación: la carpeta de datos no se puede escribir. No cambió nada.";
+
+    public static string PresentacionGuardada(string opcion) => $"Se guardó la presentación de «{opcion}».";
+
     private static string Cantidad(int cantidad, string uno, string varios) =>
         $"{cantidad.ToString(CultureInfo.InvariantCulture)} {(cantidad == 1 ? uno : varios)}";
 

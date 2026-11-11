@@ -236,6 +236,7 @@
                             AlmacenExportacion="_almacenExportacion" ElectorCarpeta="_electorCarpeta" RegistrarExportacion="RegistrarExportacionDeConsumos"
                             RegistrarExportacionPersonas="RegistrarExportacionDePersonas"
                             ElectorArchivo="_electorArchivo" RegistrarImportacionPersonas="RegistrarImportacionDePersonas"
+                            PresentacionOpciones="_presentacionOpciones" RegistrarPresentacion="RegistrarPresentacionDeOpcion"
                             RegistrarImportacionRechazada="RegistrarImportacionRechazada"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
@@ -278,6 +279,7 @@
     private AlmacenExportacion? _almacenExportacion;
     private IElectorCarpeta? _electorCarpeta;
     private IElectorArchivo? _electorArchivo;
+    private AlmacenPresentacionOpciones? _presentacionOpciones;
     private bool _simulacionGuardada;
     private string? _avisoSimulacion;
     private IReadOnlyList<EntradaSimulacion> _personasSimulacion = [];
@@ -389,6 +391,8 @@
         _electorCarpeta = Proveedor.GetService(typeof(IElectorCarpeta)) as IElectorCarpeta;
         // Sin elector de archivos, Personas no importa (D7 de importar-personas-desde-excel).
         _electorArchivo = Proveedor.GetService(typeof(IElectorArchivo)) as IElectorArchivo;
+        // Sin almacén de la presentación, las opciones se ven como siempre y no se personalizan (D3 de personalizar-opciones).
+        _presentacionOpciones = Proveedor.GetService(typeof(AlmacenPresentacionOpciones)) as AlmacenPresentacionOpciones;
         if (_cierre is not null)
         {
             _cierre.RequiereClave = _modo == ModoPuesto.Operativo;
@@ -930,6 +934,23 @@
             ActorReason = SinAutenticacion,
         });
     }
+
+    /// <summary>
+    /// Cada presentación guardada queda en la general con la opción, el color, la huella de la imagen y no su contenido, la
+    /// transparencia y si muestra el precio, como un ajuste de la clave del día (D5 de personalizar-opciones).
+    /// </summary>
+    private void RegistrarPresentacionDeOpcion(PanelConfiguracion.PresentacionGuardada guardada) =>
+        RegistrarConfiguracion("OPTION_STYLE_CHANGED", new
+        {
+            OptionId = guardada.Opcion,
+            Color = guardada.Presentacion.Color,
+            ImageSha256 = guardada.Presentacion.Imagen is { } imagen ? imagen[..64] : null,
+            Transparency = guardada.Presentacion.Transparencia,
+            PriceVisible = guardada.Presentacion.PrecioVisible,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
 
     /// <summary>
     /// Una importación con errores queda en la general con la huella del archivo y cuántos errores hay de cada motivo, sin filas, columnas,

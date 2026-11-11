@@ -19,6 +19,35 @@ public sealed record PresentacionOpcion(string? Color, string? Imagen, int Trans
     public static readonly IReadOnlyList<int> Transparencias = [0, 25, 50, 75];
 
     public bool Personalizada => Color is not null || Imagen is not null;
+
+    /// <summary>
+    /// Las variables de puesto.css para la tarjeta (D4): el color, la imagen como URI data: y la opacidad del fondo, que es 1
+    /// menos la transparencia; null sin fondo. <paramref name="uriImagen"/> es la imagen ya leída, o la elegida sin guardar.
+    /// </summary>
+    public static string? EstiloCss(PresentacionOpcion presentacion, string? uriImagen)
+    {
+        var partes = new List<string>();
+        if (uriImagen is not null)
+        {
+            partes.Add($"--imagen-opcion: url('{uriImagen}')");
+        }
+        else if (presentacion.Color is { } color)
+        {
+            partes.Add($"--fondo-opcion: {color}");
+        }
+
+        if (partes.Count == 0)
+        {
+            return null;
+        }
+
+        partes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"--opacidad-fondo: {(100 - presentacion.Transparencia) / 100m:0.00}"));
+        return string.Join("; ", partes);
+    }
+
+    /// <summary>La clase de la tarjeta: «personalizada», y además «con-imagen» si el fondo es una imagen.</summary>
+    public static string Clase(PresentacionOpcion presentacion, string? uriImagen) =>
+        uriImagen is not null ? "personalizada con-imagen" : presentacion.Color is not null ? "personalizada" : string.Empty;
 }
 
 /// <summary>

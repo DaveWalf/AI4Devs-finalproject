@@ -68,6 +68,7 @@ public class PuntoFinalTests
             MensajesAtencion.ImportacionConFilasDeEjemplo(2),
             MensajesAtencion.ImportacionCodigosComoNumero(1),
             MensajesAtencion.ImportacionCodigosComoNumero(3),
+            MensajesAtencion.PresentacionGuardada("Almuerzo opcional"),
             .. ErroresDeImportacion.Select(MensajesAtencion.ErrorDeImportacion),
         ];
 
@@ -89,7 +90,7 @@ public class PuntoFinalTests
         nameof(MensajesAtencion.PlanillaDeEjemploHecha), nameof(MensajesAtencion.ResumenImportacion), nameof(MensajesAtencion.ImportacionReemplazar),
         nameof(MensajesAtencion.ImportacionConErrores), nameof(MensajesAtencion.ImportacionAplicada), nameof(MensajesAtencion.ImportacionSinCambios),
         nameof(MensajesAtencion.ErrorDeImportacion), nameof(MensajesAtencion.ImportacionConFilasDeEjemplo),
-        nameof(MensajesAtencion.ImportacionCodigosComoNumero),
+        nameof(MensajesAtencion.ImportacionCodigosComoNumero), nameof(MensajesAtencion.PresentacionGuardada),
     ];
 
     /// <summary>Un error de cada clase: del archivo, del encabezado y de una fila, con cada motivo y uno desconocido.</summary>

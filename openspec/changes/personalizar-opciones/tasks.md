@@ -11,12 +11,20 @@
 
 ## 2. La pestaña Opciones
 
-- [ ] 2.1 Pruebas nuevas, vistas fallar antes: el catálogo a la vista con sus nueve opciones; «Editar» en una opción abre
+- [x] 2.1 Pruebas nuevas, vistas fallar antes: el catálogo a la vista con todas sus opciones; «Editar» en una opción abre
   la edición en el lugar y enfoca su nombre; «Personalizar» con un color y 25 %, con una imagen válida y con una que no
   lo es, con el precio oculto y «Cancelar»; `OPTION_STYLE_CHANGED` en la general con la huella y sin el contenido (D1,
   D2 y D5). Verifica: rojo antes y verde después.
-- [ ] 2.2 `#catalogo-opciones`, el cartel `#personalizar-opcion` y el registro. Verifica: 2.1 en verde y `Kiosk.Tests`
+  - `OpcionesEnElLugarTests` (6) contra el almacén y `MensajesAtencion.PresentacionGuardada`: `total: 6`, `error: 6` (sin
+    `#catalogo-opciones`). La primera corrida en verde contó 15 y no 9: el puesto de prueba siembra el catálogo de
+    quince; la prueba y el escenario cuentan las del catálogo activo.
+- [x] 2.2 `#catalogo-opciones`, el cartel `#personalizar-opcion` y el registro. Verifica: 2.1 en verde y `Kiosk.Tests`
   entero en verde, con las pruebas existentes que cambien listadas con su porqué.
+  - El catálogo con su muestra (`PresentacionOpcion.EstiloCss` y `Clase`, compartidas con la atención), «Editar» que abre
+    `PanelOpciones` con el foco en el nombre (por `data-indice`, sin `@ref`), el cartel con nueve fondos, la imagen con
+    `LogosLocales.Validar`, cuatro pasos y el precio, y `OPTION_STYLE_CHANGED`. `Kiosk.Tests`: `total: 475`, `error: 0`;
+    build con `-warnaserror` sin advertencias. Prueba existente cambiada (decisión 13): `PuntoFinalTests`, que suma
+    `PresentacionGuardada` con su ejemplo; `PanelOpcionesTests` y las demás de Opciones, sin cambios.
 
 ## 3. La atención
 
