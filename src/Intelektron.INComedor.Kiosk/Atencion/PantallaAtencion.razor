@@ -259,6 +259,8 @@
                             RegistrarRecuperacion="RegistrarRecuperacionDeResguardo" RegistrarRecuperacionRechazada="RegistrarRecuperacionRechazada"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             DatosDelPuesto="_datosPuesto" GuardarDatosPuesto="@(_almacenDatosPuesto is null ? null : GuardarDatosPuesto)"
+                            Exportacion="_exportacion" ConfiguracionExportacion="@(_almacenExportacionAutomatica?.Leer() ?? ConfiguracionExportacion.PorDefecto)"
+                            GuardarExportacion="@(_exportacion is null ? null : GuardarExportacion)" CambiarSftpSimulado="CambiarSftpSimulado"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
                             Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
                             AplicarRed="AplicarRed" DireccionReceptor="@_pruebaConexion?.Direccion"
@@ -310,6 +312,8 @@
     private AlmacenImpresora? _almacenImpresora;
     private TextosComprobante _textos = TextosComprobante.PorDefecto;
     private AlmacenDatosPuesto? _almacenDatosPuesto;
+    private AlmacenConfiguracionExportacion? _almacenExportacionAutomatica;
+    private ExportacionAutomatica? _exportacion;
     private DatosPuesto _datosPuesto = DatosPuesto.PorDefecto;
     private AlmacenPantalla? _almacenPantalla;
     private PantallaDelPuesto? _pantallaDelPuesto;
@@ -426,6 +430,7 @@
         }
 
         Maquina.Iniciar();
+        IniciarExportacion();
         LeerPersonasSimulacion();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
@@ -1601,5 +1606,103 @@
 
         Servicio.SincronizacionCambiada -= RefrescarSincronizacion;
         _temporizador?.Dispose();
+        if (_exportacion is not null)
+        {
+            _exportacion.PasadaTerminada -= RefrescarExportacion;
+            _exportacion.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// La exportación automática, con la base preparada y su almacén registrado (las pruebas que no la usan no lo
+    /// registran): su reloj corre las pasadas mientras el puesto está abierto (D4 de exportar-consumos-automaticamente).
+    /// </summary>
+    private void IniciarExportacion()
+    {
+        _almacenExportacionAutomatica = Proveedor.GetService(typeof(AlmacenConfiguracionExportacion)) as AlmacenConfiguracionExportacion;
+        if (_almacenExportacionAutomatica is null || Servicio.Consumos is null || Servicio.RegistroConfiguracion is null)
+        {
+            return;
+        }
+
+        _exportacion = new ExportacionAutomatica(Servicio.Consumos, Servicio.RegistroConfiguracion, Servicio.Reloj, ZonaDelPuesto,
+            _almacenExportacionAutomatica.CarpetaDatos, _almacenExportacionAutomatica);
+        _exportacion.PasadaTerminada += RefrescarExportacion;
+        _exportacion.Programar();
+    }
+
+    /// <summary>Una pasada del reloj puede terminar en otro hilo: la pestaña se vuelve a dibujar con el estado nuevo.</summary>
+    private void RefrescarExportacion() => _ = InvokeAsync(StateHasChanged);
+
+    /// <summary>
+    /// Guarda la configuración de la exportación, reprograma el reloj y lo registra como CONFIGURATION_CHANGED de
+    /// CONSUMPTION_EXPORT, con el antes, el después y el resultado, sin la carpeta ni el servidor (D6).
+    /// </summary>
+    private ResultadoTextos GuardarExportacion(ConfiguracionExportacion pedida)
+    {
+        var antes = _almacenExportacionAutomatica!.Leer();
+        var campos = ConfiguracionExportacion.Validar(pedida);
+        if (campos.Count > 0)
+        {
+            RegistrarCambioDeExportacion(antes, null, "REJECTED", campos);
+            return new ResultadoTextos(false, campos, MensajesAtencion.PanelInvalido);
+        }
+
+        try
+        {
+            _almacenExportacionAutomatica.Guardar(pedida);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            RegistrarCambioDeExportacion(antes, pedida, "FAILED", []);
+            return new ResultadoTextos(false, [], MensajesAtencion.ExportacionNoGuardada);
+        }
+
+        _exportacion!.Programar();
+        RegistrarCambioDeExportacion(antes, pedida, "APPLIED", []);
+        return new ResultadoTextos(true, [], null);
+    }
+
+    private void RegistrarCambioDeExportacion(ConfiguracionExportacion antes, ConfiguracionExportacion? despues, string resultado, IReadOnlyList<string> campos) =>
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "CONSUMPTION_EXPORT",
+            Before = DatosDeExportacion(antes),
+            After = despues is null ? null : DatosDeExportacion(despues),
+            Result = resultado,
+            Fields = campos,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    private static object DatosDeExportacion(ConfiguracionExportacion c) => new
+    {
+        Active = c.Activa,
+        Minutes = c.Minutos,
+        File = c.Archivo == ArchivoExportacion.PorDia ? "DAILY" : "GROWING",
+        Folder = c.Carpeta is not null,
+        Sftp = c.SftpActivo,
+    };
+
+    /// <summary>El modo del SFTP simulado, en el acto y en la general, como el de la impresora simulada (D3).</summary>
+    private void CambiarSftpSimulado(bool caido)
+    {
+        if (_exportacion is null || _exportacion.SftpCaido == caido)
+        {
+            return;
+        }
+
+        _exportacion.SftpCaido = caido;
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
+        {
+            Setting = "SIMULATED_SFTP",
+            Before = caido ? "AVAILABLE" : "DOWN",
+            After = caido ? "DOWN" : "AVAILABLE",
+            Result = "APPLIED",
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
     }
 }

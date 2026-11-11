@@ -318,6 +318,55 @@ public static class MensajesAtencion
     public static string ResguardoRecuperado(int version) =>
         $"Se recuperó el resguardo en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración, con sus ajustes locales.";
 
+    public const string ExportacionGuardada = "Se guardó la exportación automática: vale desde la próxima pasada.";
+    public const string ExportacionNoGuardada = "No se pudo guardar la exportación: sigue la de antes.";
+    public const string SinCarpetaExportacion = "No se eligió una carpeta: queda la de antes.";
+
+    /// <summary>
+    /// Lo que hizo «Exportar ahora» (D4 de exportar-consumos-automaticamente): los consumos exportados, que no había nuevos,
+    /// o cada destino que falló con su motivo.
+    /// </summary>
+    public static string ExportacionAhora(IReadOnlyList<ResultadoDestino> resultados)
+    {
+        var fallas = resultados.Where(r => r.Error is not null).ToList();
+        if (fallas.Count > 0)
+        {
+            return string.Join(" ", fallas.Select(f => $"No se pudo exportar a {NombreDestino(f.Destino)}: {MotivoExportacion(f.Error!)}."))
+                + " Reintenta en la próxima pasada.";
+        }
+
+        var filas = resultados.Count == 0 ? 0 : resultados.Max(r => r.Filas);
+        return filas == 0
+            ? "No había consumos nuevos para exportar."
+            : $"Se exportaron {Cantidad(filas, "consumo", "consumos")}.";
+    }
+
+    /// <summary>
+    /// El estado de un destino, sin punto, como el de una bitácora (D5): todavía sin exportar, al día desde su último envío,
+    /// o la hora y el motivo de su última falla.
+    /// </summary>
+    public static string EstadoExportacion(string destino, EstadoDestino? estado, TimeZoneInfo zona)
+    {
+        var nombre = char.ToUpper(NombreDestino(destino)[0], CultureInfo.GetCultureInfo("es-AR")) + NombreDestino(destino)[1..];
+        string Hora(DateTimeOffset instante) => TimeZoneInfo.ConvertTime(instante, zona).ToString("HH:mm", CultureInfo.InvariantCulture);
+        return estado switch
+        {
+            { Error: { } error, UltimoIntento: { } intento } => $"{nombre}: falló a las {Hora(intento)}, {MotivoExportacion(error)}; reintenta en la próxima pasada",
+            { UltimoExito: { } exito } => $"{nombre}: al día, último envío a las {Hora(exito)}",
+            _ => $"{nombre}: todavía sin exportar",
+        };
+    }
+
+    private static string NombreDestino(string destino) => destino == ExportacionAutomatica.Sftp ? "el SFTP simulado" : "la carpeta";
+
+    private static string MotivoExportacion(string motivo) => motivo switch
+    {
+        "SERVER_UNREACHABLE" => "el servidor no responde",
+        "FOLDER_NOT_FOUND" => "la carpeta no existe",
+        "ACCESS_DENIED" => "no hay permiso para escribir",
+        _ => "no se pudo escribir",
+    };
+
     private static string Cantidad(int cantidad, string uno, string varios) =>
         $"{cantidad.ToString(CultureInfo.InvariantCulture)} {(cantidad == 1 ? uno : varios)}";
 

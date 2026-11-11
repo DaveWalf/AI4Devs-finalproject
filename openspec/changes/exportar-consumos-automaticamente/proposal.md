@@ -49,7 +49,9 @@ ticket TK03.1.
 - **Código**: `Infrastructure.Sqlite` (los consumos desde una marca, la línea CSV de la exportación) y `Kiosk` (la
   configuración, el estado, los destinos, el motor y su reloj, la pestaña). Sin migración.
 - **Pruebas**: nuevas en `Infrastructure.Sqlite.Tests`, `Kiosk.Tests` y una E2E a 1024 × 768. Pruebas existentes que
-  cambian (decisión 13): las que fijan las ocho pestañas y su orden, porque David pidió una más antes de General.
+  cambian (decisión 13): las que fijan las ocho pestañas y su orden, porque David pidió una más antes de General
+  (`PestanasConfiguracionTests`, `AccesoOperadorTests`, `AccionesEnConsumosTests` y `AccesoOperadorE2ETests`), y
+  `PuntoFinalTests`, que clasifica los métodos nuevos de `MensajesAtencion`.
 - **Documentos**: `readme.md` (la exportación automática) y la fila que corresponda de `docs/aplicacion-del-curso.md`.
 
 ## Gate (decisión 13 del plan: dado, con límites)

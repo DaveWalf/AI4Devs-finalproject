@@ -96,6 +96,9 @@ public sealed class AlmacenConfiguracionExportacion
 
     private string Ruta => Path.Combine(_carpeta, Nombre);
 
+    /// <summary>La carpeta de datos del puesto, donde también viven el estado y el SFTP simulado.</summary>
+    public string CarpetaDatos => _carpeta;
+
     /// <summary>Lo guardado; sin archivo, ilegible o fuera de forma, lo de fábrica: apagada.</summary>
     public ConfiguracionExportacion Leer()
     {

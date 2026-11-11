@@ -119,7 +119,7 @@ public class AccionesEnConsumosTests
         Assert.Equal(1L, Escalar(puesto, "SELECT COUNT(*) FROM tbComedorBitacora WHERE combitTipoEvento = 'TICKET_RECOVERED'"));
     }
 
-    [Fact(DisplayName = "configuracion-puesto · Abre en Consumos con todas las pestañas en orden: ocho pestañas, sin Comprobantes")]
+    [Fact(DisplayName = "configuracion-puesto · Abre en Consumos con todas las pestañas en orden: nueve pestañas, sin Comprobantes")]
     public async Task Sin_la_pestana_comprobantes()
     {
         using var puesto = new PuestoDePrueba();
@@ -127,7 +127,7 @@ public class AccionesEnConsumosTests
 
         await EntradaConfiguracion.Entrar(pantalla);
 
-        Assert.Equal(8, pantalla.FindAll("[role=\"tablist\"] [role=\"tab\"]").Count);
+        Assert.Equal(9, pantalla.FindAll("[role=\"tablist\"] [role=\"tab\"]").Count);
         Assert.Empty(pantalla.FindAll("#pestana-comprobantes"));
         Assert.Empty(pantalla.FindAll("#seccion-comprobantes"));
     }

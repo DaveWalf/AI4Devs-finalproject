@@ -22,12 +22,15 @@
 
 ## 3. En la pantalla
 
-- [ ] 3.1 Pruebas nuevas, vistas fallar antes: la pestaña Exportación antes de General guarda y valida, registra
+- [x] 3.1 Pruebas nuevas, vistas fallar antes: la pestaña Exportación antes de General guarda y valida, registra
   `CONSUMPTION_EXPORT`, muestra el estado de cada destino y «Exportar ahora» corre una pasada; con un operador no existe;
-  el reloj corre las pasadas con la exportación activa (D4 y D6). Cambian, por la decisión 13, la lista de ocho pestañas
-  y los siete paneles ocultos de `PestanasConfiguracionTests`. Verifica: rojo antes y verde después.
-- [ ] 3.2 La pestaña, sus registros, el reloj y el cableado en la ventana. Verifica: 3.1 en verde y `Kiosk.Tests` entero,
-  con las pruebas existentes que cambien listadas con su porqué.
+  el reloj corre las pasadas con la exportación activa (D4 y D6). Cambian, por la decisión 13, la lista de ocho pestañas,
+  sus `aria-selected` y los siete paneles ocultos de `PestanasConfiguracionTests`, la cuenta de ocho de
+  `AccesoOperadorTests` y `AccionesEnConsumosTests`, y `PuntoFinalTests` con los dos métodos nuevos. Verifica: rojo antes
+  y verde después. Hecho: 4 en `ExportacionEnPantallaTests`, 3 vistas fallar porque la pestaña
+  no existía (la del operador fija que no aparezca); el reloj se prueba en `ExportacionAutomaticaTests`.
+- [x] 3.2 La pestaña, sus registros, el reloj y el cableado en la ventana. Verifica: 3.1 en verde y `Kiosk.Tests` entero,
+  con las pruebas existentes que cambien listadas con su porqué. Hecho: Kiosk 536 de 536.
 
 ## 4. El puesto compilado, documentos y verificación integral
 
