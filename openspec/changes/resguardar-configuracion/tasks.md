@@ -10,11 +10,14 @@
 
 ## 2. El resguardo en el puesto
 
-- [ ] 2.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: `ResguardoPuesto` guarda el `.zip` con el manifiesto, la
+- [x] 2.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: `ResguardoPuesto` guarda el `.zip` con el manifiesto, la
   configuración y los ajustes locales que existen, sin certificados; `Revisar` rechaza un zip dañado, una parte alterada,
   una desconocida o con `..`, otro formato o esquema y una parte local inválida, y resume uno válido; `Recuperar` crea la
-  versión nueva y reemplaza los ajustes locales (D1 a D3). Verifica: rojo antes y verde después.
-- [ ] 2.2 `ResguardoPuesto`. Verifica: 2.1 en verde.
+  versión nueva y reemplaza los ajustes locales (D1 a D3). Verifica: rojo antes y verde después. Hecho: 4 pruebas en
+  `ResguardoPuestoTests` (guardar, revisar uno válido, recuperar en otro puesto y ocho resguardos alterados), vistas fallar
+  con `NotImplementedException` y en verde.
+- [x] 2.2 `ResguardoPuesto`. Verifica: 2.1 en verde. Hecho: con `Interpretar`, `Serializar` y `VolverAlPorDefecto` en los
+  almacenes de estilo y textos, y `Serializar`, `ImagenDe` y `Reemplazar` en el de presentación; Kiosk 501 de 501.
 
 ## 3. En la pantalla
 

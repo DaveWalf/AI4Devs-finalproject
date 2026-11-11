@@ -47,23 +47,41 @@ public sealed class AlmacenEstiloVisual
     {
         try
         {
-            using var documento = JsonDocument.Parse(File.ReadAllText(Ruta));
-            var raiz = documento.RootElement;
-            if (raiz.ValueKind == JsonValueKind.Object
-                && raiz.TryGetProperty("opacidad", out var opacidad) && opacidad.ValueKind == JsonValueKind.Number && opacidad.TryGetInt32(out var o)
-                && raiz.TryGetProperty("desenfoque", out var desenfoque) && desenfoque.ValueKind == JsonValueKind.Number && desenfoque.TryGetInt32(out var d)
-                && new EstiloVisual(o, d) is { EnRango: true } estilo)
-            {
-                return estilo;
-            }
+            return Interpretar(File.ReadAllText(Ruta)) ?? EstiloVisual.PorDefecto;
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             // Sin archivo, o ilegible: los valores por defecto.
+            return EstiloVisual.PorDefecto;
         }
-
-        return EstiloVisual.PorDefecto;
     }
+
+    /// <summary>El estilo de un contenido con la forma del archivo, o null si no la tiene o está fuera de rango.</summary>
+    public static EstiloVisual? Interpretar(string contenido)
+    {
+        try
+        {
+            using var documento = JsonDocument.Parse(contenido);
+            var raiz = documento.RootElement;
+            return raiz.ValueKind == JsonValueKind.Object
+                && raiz.TryGetProperty("opacidad", out var opacidad) && opacidad.ValueKind == JsonValueKind.Number && opacidad.TryGetInt32(out var o)
+                && raiz.TryGetProperty("desenfoque", out var desenfoque) && desenfoque.ValueKind == JsonValueKind.Number && desenfoque.TryGetInt32(out var d)
+                && new EstiloVisual(o, d) is { EnRango: true } estilo
+                ? estilo
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>El contenido del archivo para un estilo, el que escribe <see cref="Guardar"/>.</summary>
+    public static string Serializar(EstiloVisual estilo) =>
+        JsonSerializer.Serialize(new { opacidad = estilo.Opacidad, desenfoque = estilo.Desenfoque });
+
+    /// <summary>Borra el archivo: vuelven los valores por defecto (D3 de resguardar-configuracion).</summary>
+    public void VolverAlPorDefecto() => File.Delete(Ruta);
 
     public void Guardar(EstiloVisual estilo)
     {
@@ -76,7 +94,7 @@ public sealed class AlmacenEstiloVisual
         var temporal = Ruta + ".tmp";
         try
         {
-            File.WriteAllText(temporal, JsonSerializer.Serialize(new { opacidad = estilo.Opacidad, desenfoque = estilo.Desenfoque }));
+            File.WriteAllText(temporal, Serializar(estilo));
             File.Move(temporal, Ruta, overwrite: true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

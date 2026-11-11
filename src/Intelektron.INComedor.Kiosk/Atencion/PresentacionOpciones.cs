@@ -137,14 +137,45 @@ public sealed partial class AlmacenPresentacionOpciones
 
         var todas = new Dictionary<Guid, PresentacionOpcion>(Leer()) { [opcion] = presentacion };
         Directory.CreateDirectory(_carpeta);
-        var contenido = JsonSerializer.Serialize(new
+        var contenido = Serializar(todas);
+        EscribirAtomico(Ruta, ruta => File.WriteAllText(ruta, contenido));
+        _leidas = null;
+        _estilos.Clear();
+    }
+
+    /// <summary>El contenido del archivo para unas presentaciones, el que escribe <see cref="Guardar"/>.</summary>
+    public static string Serializar(IReadOnlyDictionary<Guid, PresentacionOpcion> todas) =>
+        JsonSerializer.Serialize(new
         {
             opciones = todas.ToDictionary(
                 p => p.Key.ToString("D"),
                 p => new { color = p.Value.Color, imagen = p.Value.Imagen, transparencia = p.Value.Transparencia, precioVisible = p.Value.PrecioVisible }),
         });
+
+    /// <summary>La imagen de opciones\ con ese nombre, si existe y valida, como al dibujar.</summary>
+    public LogoElegido? ImagenDe(string nombre) => Imagen(nombre);
+
+    /// <summary>
+    /// Reemplaza todas las presentaciones y escribe las imágenes que usan, con su huella como nombre (D3 de
+    /// resguardar-configuracion): lo que valida <see cref="Serializar"/> al leer, ya revisado por quien llama.
+    /// </summary>
+    public void Reemplazar(IReadOnlyDictionary<Guid, PresentacionOpcion> todas, IEnumerable<LogoElegido> imagenes)
+    {
+        foreach (var imagen in imagenes)
+        {
+            Directory.CreateDirectory(Imagenes);
+            var nombre = imagen.Sha256 + imagen.Extension;
+            if (LeerImagen(nombre) is null)
+            {
+                EscribirAtomico(Path.Combine(Imagenes, nombre), ruta => File.WriteAllBytes(ruta, imagen.Contenido));
+            }
+        }
+
+        Directory.CreateDirectory(_carpeta);
+        var contenido = Serializar(todas);
         EscribirAtomico(Ruta, ruta => File.WriteAllText(ruta, contenido));
         _leidas = null;
+        _imagenes.Clear();
         _estilos.Clear();
     }
 
