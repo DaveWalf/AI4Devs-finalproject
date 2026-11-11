@@ -8,4 +8,10 @@ namespace Intelektron.INComedor.Kiosk.Atencion;
 public interface IElectorArchivo
 {
     string? Elegir(string? carpeta);
+
+    /// <summary>
+    /// Con el título del diálogo, que dice qué se importa (D6 de importar-opciones-desde-excel); un elector que no lo usa,
+    /// como los dobles de las pruebas, elige igual.
+    /// </summary>
+    string? Elegir(string? carpeta, string titulo) => Elegir(carpeta);
 }

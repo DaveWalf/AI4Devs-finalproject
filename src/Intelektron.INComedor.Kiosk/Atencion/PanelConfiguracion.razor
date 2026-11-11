@@ -989,7 +989,7 @@
     private void ImportarOpciones()
     {
         _mensajeArchivosOpciones = null;
-        if (ElectorArchivo!.Elegir(AlmacenExportacion?.Leer()) is not { } ruta)
+        if (ElectorArchivo!.Elegir(AlmacenExportacion?.Leer(), "Planilla de Opciones para importar") is not { } ruta)
         {
             return;
         }

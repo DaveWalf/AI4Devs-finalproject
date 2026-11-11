@@ -32,11 +32,20 @@
 
 ## 3. El puesto compilado, documentos y verificación integral
 
-- [ ] 3.1 E2E nueva a 1024 × 768: exportar, cambiar un importe en el archivo, importarlo con el diálogo de archivos, el
+- [x] 3.1 E2E nueva a 1024 × 768: exportar, cambiar un importe en el archivo, importarlo con el diálogo de archivos, el
   resumen y «Reemplazar»; los tres botones del pie y los del resumen medidos, con capturas miradas (D7). Verifica: `dotnet
   test tests/Intelektron.INComedor.E2E.Tests` en verde.
-- [ ] 3.2 `readme.md` (Opciones) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
+  - `ImportarOpcionesE2ETests`: el cambio del archivo es el nombre escrito de «Almuerzo común» («Almuerzo Común»), la
+    misma opción, que se modifica sin perder su id; se ubica más fácil en el XML que un número. Los tres botones del pie
+    miden 147,6 × 56 px desde 679, con la letra de 18 px de «Cerrar»; el resumen, «Reemplazar» 134,2 y «Cancelar» 120 px,
+    los dos de 56 px desde 432, y el cartel termina en 513 de 768; «Reemplazar» deja la versión 2. El diálogo de archivos
+    tiene su título propio, «Planilla de Opciones para importar» (`IElectorArchivo.Elegir` con título, con la versión
+    sin título por defecto: los dobles existentes no cambian), y lo contesta `DialogoDeArchivosE2E`, compartido, sin
+    tocar la E2E de Personas. Capturas miradas: el pie, el resumen y el catálogo importado.
+- [x] 3.2 `readme.md` (Opciones) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
   enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
+  - `readme.md` (Opciones) y la fila de OWASP del mapa. Enlaces de los dos y del change: `enlaces rotos: 0`; el control
+    negativo, `enlaces rotos: 2`.
 - [ ] 3.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
