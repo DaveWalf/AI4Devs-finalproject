@@ -76,9 +76,12 @@ public class ImportarOpcionesE2ETests : IAsyncLifetime
 
         await pagina.Locator("#importar-opciones-reemplazar").ClickAsync();
 
-        await Assertions.Expect(resumen).ToHaveCountAsync(0);
-        await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToContainTextAsync("versión 2");
-        await Assertions.Expect(pagina.Locator("#catalogo-opciones .nombre-opcion", new() { HasTextString = "Almuerzo Común" })).ToHaveCountAsync(1);
+        // «Reemplazar» guarda una versión, relee el catálogo y redibuja sus tarjetas: en un runner lento pasa de los 5 s de
+        // siempre (la corrida 42981161057 venció ahí con el diálogo de archivos tardando 4,1 s), como la apertura del resumen.
+        var despues = new LocatorAssertionsToHaveCountOptions { Timeout = 15000 };
+        await Assertions.Expect(resumen).ToHaveCountAsync(0, despues);
+        await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToContainTextAsync("versión 2", new() { Timeout = 15000 });
+        await Assertions.Expect(pagina.Locator("#catalogo-opciones .nombre-opcion", new() { HasTextString = "Almuerzo Común" })).ToHaveCountAsync(1, despues);
         await _escenario.CapturarAsync(pagina, "opciones-importadas-1024x768");
     }
 
