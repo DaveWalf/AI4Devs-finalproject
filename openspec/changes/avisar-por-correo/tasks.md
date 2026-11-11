@@ -1,12 +1,13 @@
 ## 1. La base: la persona de un rechazo y el resumen del día
 
-- [ ] 1.1 `ResultadoIdentificacionCodigo` devuelve la persona y su nombre visible cuando la credencial existe pero no está
+- [x] 1.1 `ResultadoIdentificacionCodigo` devuelve la persona y su nombre visible cuando la credencial existe pero no está
   vigente, sin abrir la sesión ni cambiar el registro (D9); un código desconocido sigue sin persona. Pruebas nuevas vistas
   fallar primero. Verifica: `dotnet test --project tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests` en verde, sin
   cambiar `IdentificacionPorCodigoTests` ni `IdentificacionPorCredencialTests`.
-- [ ] 1.2 `ResumenDelDia`: consumos autorizados, rechazos (identificación rechazada y consumo denegado) y eventos de
+- [x] 1.2 `ResumenDelDia`: consumos autorizados, rechazos (identificación rechazada y consumo denegado) y eventos de
   advertencia o error de la bitácora general entre dos instantes (D5). Pruebas nuevas vistas fallar primero. Verifica: lo
-  mismo que 1.1.
+  mismo que 1.1. Hecho: `AvisosDesdeLaBaseTests` (3), dos vistas fallar contra el esqueleto (la persona nula y
+  `NotImplementedException`); Sqlite 296 de 296, sin cambiar ninguna prueba existente.
 
 ## 2. Los correos en el puesto
 

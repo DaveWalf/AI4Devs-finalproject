@@ -133,7 +133,8 @@ public sealed class IdentificacionPorCodigo
                     ("InternalCause", clasificacion.Causa is { } causa ? CodigoDe(causa) : null),
                     ("PersonId", credencial?.PersonaId),
                     ("Origin", origen)));
-            resultado = new(null, null, null, motivo);
+            // La persona de una credencial conocida, para el aviso por correo; la sesión no se abre (D9 de avisar-por-correo).
+            resultado = new(null, credencial?.PersonaId, credencial?.NombreVisible, motivo);
         }
 
         transaccion.Commit();
