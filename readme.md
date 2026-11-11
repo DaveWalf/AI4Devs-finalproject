@@ -65,10 +65,10 @@ must y una should; su secuencia y aceptación figuran en el
 
 | ID | Funcionalidad | En el primer corte | Segunda ola, diseñada y no demostrada |
 |---|---|---|---|
-| F01 | Identificación y selección | Identificación simulada por código; catálogo, cancelación y reconfirmación (HU01.1). Should: rechazos de credencial (HU01.2-J). | Biometría 1:N y 1:1. |
+| F01 | Identificación y selección | Identificación simulada por código, o por un lector en puerto serie con su terminador y el relleno de dígitos (RF23, sin homologar equipos); catálogo, cancelación y reconfirmación (HU01.1). Should: rechazos de credencial (HU01.2-J). | Biometría 1:N y 1:1. |
 | F02 | Autorización y registro local | Cupo y fecha de negocio en SQLite (HU01.3); un único consumo ante doble toque, retry o reinicio (HU01.1, HU02.1). | Auditoría de saltos del reloj. |
 | F03 | Comprobante y recuperación | Ticket tras el commit local y reimpresión con permiso, sin registrar otra comida (HU03.1). | — |
-| F04 | Sincronización y supervisión | Outbox y receptor idempotente de lotes (HU02.2). Bitácoras mensuales general e interacciones, fuera de SQLite (HU03.5, recortada). Personas, cupos, opciones y franjas editables en Configuración mientras no haya INWeb, con una versión local por guardado (HU03.3, recortada). | Multipuesto, configuración por snapshot, permisos de operador, importación de INWeb, diagnóstico, cuenta de mantenimiento y lo que los recortes de las bitácoras y de la administración dejan fuera. |
+| F04 | Sincronización y supervisión | Outbox y receptor idempotente de lotes (HU02.2). Bitácoras mensuales general e interacciones, fuera de SQLite (HU03.5, recortada). Personas, cupos, opciones y franjas editables en Configuración mientras no haya INWeb, con una versión local por guardado (HU03.3, recortada). Configuración por pestañas: Consumos con búsqueda, reimpresión y exportación, Pantalla, Red, Lector, el resguardo de la configuración, y la exportación automática y los avisos por correo con envío simulado; cada uno sale de la segunda ola por su change ([`AGENTS.md`](AGENTS.md)). | Multipuesto, configuración por snapshot, permisos de operador, importación de INWeb, diagnóstico, cuenta de mantenimiento y lo que los recortes de las bitácoras y de la administración dejan fuera. |
 
 La segunda ola no se recorta del producto: los párrafos siguientes describen el
 producto completo, y su diseño se conserva en `docs/`.
@@ -115,7 +115,7 @@ local → ticket → reposo**. La sincronización ocurre aparte.
 Los [bocetos de pantallas](docs/experiencia.md) son diseños, no capturas de software.
 Incluyen cancelación, rechazo por cupo, huella no coincidente, falta de papel y
 recuperación. Una nueva lectura no sustituye la identidad de una sesión ocupada.
-Las capturas del puesto real, tomadas por el E2E en cada paso del flujo principal, están en
+Las capturas del puesto real, tomadas por CDP sobre el EXE publicado y siguiendo el escenario del E2E, están en
 [«Capturas del flujo principal»](#capturas-del-flujo-principal).
 
 ### 1.4. Instrucciones de instalación
@@ -176,8 +176,7 @@ del WebView2):
 - la franja cuenta 1 pendiente;
 - al volver el receptor, queda al día, con el consumo consolidado una sola vez.
 
-Suma cinco pruebas de las costuras del puesto. Tarda cerca de 1 min 45 s, porque espera el ciclo real de envío,
-de 30 s, y mientras corre abre la ventana del puesto. Necesita el WebView2 Runtime, SQL Server y una sesión con
+Suma las cinco pruebas de las costuras del puesto y las E2E de los changes que tocan la pantalla: 44 en total, que en la CI tardan cerca de 10 min (10 min 10 s en la [corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063)), porque cada una abre la ventana del puesto y el flujo principal espera el ciclo real de envío, de 30 s. Necesita el WebView2 Runtime, SQL Server y una sesión con
 escritorio: si falta algo, falla nombrándolo. Cada prueba usa su carpeta temporal, sus puertos y su base, y no
 toca `%LOCALAPPDATA%\INComedor\demo\`. Las capturas de cada paso quedan en
 `tests/Intelektron.INComedor.E2E.Tests/bin/Debug/net11.0-windows10.0.17763.0/TestResults/e2e/`.
@@ -277,8 +276,7 @@ locales, pero no admite nuevos consumos hasta recuperar la comunicación. Sin ni
 que requiere provisionamiento y mantendrá deshabilitadas las confirmaciones.
 
 Ya existen las versiones exactas, los comandos probados, la carga del conjunto sintético y el paquete del
-puesto (el EXE autocontenido en un zip, en «Cómo revisar»). Siguen pendientes la recuperación, un script de
-verificación del entorno, el provisionamiento por sincronización o paquete local y un instalador.
+puesto (el EXE autocontenido en un zip, en «Cómo revisar»). Siguen pendientes la recuperación de un puesto entero (la configuración ya se resguarda y se recupera desde General, más abajo), un script de verificación del entorno, el provisionamiento por sincronización o paquete local y un instalador.
 
 #### Cómo ver la demostración
 
@@ -292,7 +290,7 @@ Requisitos: Windows 11 con WebView2 Runtime y el SDK de .NET que fija `global.js
 dotnet run --project src/Intelektron.INComedor.Kiosk
 ```
 
-La ventana abre maximizada con la atención del comensal, sin red. La identificación es simulada por código: el
+La ventana abre a pantalla completa, sin bordes, con la atención del comensal, sin red. La identificación es simulada por código: el
 código solo abre la sesión, sin huella, porque la biometría es de la segunda ola (D-C24). Se tipea el código,
 se elige una opción y se confirma con la transacción de RB06. Hasta diez opciones van juntas, sin páginas: hasta
 ocho en una columna y nueve o diez en dos columnas de hasta cinco; desde once, en páginas de diez. El catálogo
@@ -527,7 +525,7 @@ todavía no le llegó: cada uno lleva su marca, el último consumo que recibió,
 cada escritura deja el archivo de antes o el completo. Si un destino falla, la pestaña dice cuándo y por qué, la
 general lo registra como `CONSUMPTIONS_AUTO_EXPORT_FAILED`, el otro destino sigue, y la pasada siguiente reintenta desde
 su marca, sin perder ni repetir consumos; cada pasada que escribe queda como `CONSUMPTIONS_AUTO_EXPORTED`. **El SFTP es
-simulado** (decisión 11 del plan del cierre): escribe en `sftp-simulado\<servidor>\<carpeta remota>` de la carpeta de
+simulado** (decisión de David del 10/11/2026: «Todo, envíos simulados»): escribe en `sftp-simulado\<servidor>\<carpeta remota>` de la carpeta de
 datos, y su modo «Caído» falla como un servidor que no responde, para ver la falla y la recuperación. **Queda pendiente
 la conexión real**: un cliente SFTP con la clave guardada en el almacén de credenciales de Windows y su prueba de
 conexión, detrás del mismo destino. La configuración vive en `exportacion-automatica.json` y las marcas en
@@ -544,7 +542,7 @@ estado técnico (una exportación automática que falla y una bitácora que se d
 elegida, la señal de vida con el resumen del día anterior. El asunto siempre es «Cliente · Puesto N Nombre · Situación»,
 y un mismo aviso no se repite antes de 15 minutos. Cada correo pasa por una cola (`correo-pendiente\`, hasta 500) y un
 reloj de cada minuto la envía en orden; la general registra `NOTIFICATION_QUEUED`, `NOTIFICATION_SENT` y
-`NOTIFICATION_FAILED`, sin direcciones. **El envío es simulado** (decisión 11 del plan del cierre): cada correo queda
+`NOTIFICATION_FAILED`, sin direcciones. **El envío es simulado** (decisión de David del 10/11/2026: «Todo, envíos simulados»): cada correo queda
 como un `.eml` en `correo-simulado\` de la carpeta de datos, que se abre con cualquier cliente de correo, y el servidor
 simulado «Caído» deja la cola esperando hasta que vuelve; «Enviar una prueba» manda un correo a todas las casillas.
 **Queda pendiente el envío real**: un cliente SMTP con la clave o el token en el almacén de credenciales de Windows,
@@ -600,9 +598,9 @@ Muestra una persona y una opción sintéticas fijas y el botón «Confirmar». C
 intención nueva: el primero del día muestra `AUTHORIZED` con los identificadores de consumo y de
 comprobante, y el segundo `DENIED` con `LOCAL_LIMIT_REACHED`.
 
-Las dos pantallas comparten la base `%LOCALAPPDATA%\INComedor\demo\incomedor.db`, en la versión de esquema 3.
+Las dos pantallas comparten la base `%LOCALAPPDATA%\INComedor\demo\incomedor.db`, en la versión de esquema 4.
 Se crea y se siembra con datos sintéticos al abrir la ventana por primera vez, y una base que ya tiene datos
-no se vuelve a sembrar. Una base de la versión 1 o 2 se actualiza sin perder sus consumos. Para repetir la
+no se vuelve a sembrar. Una base de las versiones 1 a 3 se actualiza sin perder sus consumos. Para repetir la
 demostración, cerrar la ventana y borrar la carpeta `%LOCALAPPDATA%\INComedor\demo\`.
 
 **Receptor de lotes y puesto conectados.** En dos terminales, primero el receptor y después el puesto:
@@ -709,8 +707,7 @@ src/
 tests/                                         [existe] un proyecto de pruebas por proyecto de src, más el E2E
 ```
 
-De ese árbol, hoy el Kiosk implementa la atención con identificación simulada por código, la asistencia
-con impresora simulada y la pantalla de demostración; `Infrastructure.Sqlite`, el primer corte de la
+De ese árbol, hoy el Kiosk implementa la atención con identificación simulada por código o por el lector, el comprobante con impresora simulada, Configuración por pestañas y la pantalla de demostración; `Infrastructure.Sqlite`, el primer corte de la
 transacción, la identificación, la impresión, el outbox, la cola de lotes y el escritor de las bitácoras mensuales, y `Sync.Api`
 la ingesta idempotente de lotes sobre SQL Server, sin el adaptador INWeb. Contracts hoy contiene los eventos de
 outbox, el lote, el acuse y el JSON canónico RFC 8785, no todo el JSON versionado.
@@ -741,8 +738,7 @@ La integración física y el despliegue productivo requieren homologación.
 - [`ci.yml`](.github/workflows/ci.yml), en cada pull request y en cada push a `feature/**` y a `final-project-*`:
   en `windows-latest`, restore, auditoría de dependencias vulnerables, build con `-warnaserror`, arranque de
   LocalDB y todas las pruebas, con el E2E; en `ubuntu-latest`, `openspec validate --all --strict` y gitleaks sobre
-  la historia. La integración del #5 en `final-project-dw` quedó en verde en la
-  [corrida 41154943372](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41154943372).
+  la historia. La punta de `final-project-dw` está en verde en la [corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063), con 1122 pruebas.
 - [`release.yml`](.github/workflows/release.yml), sólo con un tag `v*`: un job de sólo lectura compila, publica el
   puesto autocontenido para Windows x64 con [`publicar-puesto.ps1`](.github/scripts/publicar-puesto.ps1), corre el
   E2E contra ese EXE y recién entonces arma el zip y su suma; otro job, el único con escritura, comprueba la suma y
@@ -783,10 +779,7 @@ El [plan de pruebas](docs/pruebas.md) cubre dominio, SQLite real, sincronizació
 contratos, E2E y dispositivos. Casos centrales: arranque offline, cupo local,
 doble confirmación, caída tras commit, reimpresión, snapshot parcial, acuse perdido
 y ambos modos biométricos. Incluye también saltos del reloj, cálculo del día de
-negocio y vigencias. Al 31/10/2026 corren 358 pruebas, todas en verde, con
-`dotnet test INComedor.sln` desde la raíz del repositorio: 68 de Domain, 117 de
-Infrastructure.Sqlite sobre un archivo SQLite real temporal, 82 del Kiosk, 62 del receptor, 23 de Contracts y
-6 del E2E. Las del receptor, las del envío integrado y el E2E necesitan una instancia de SQL Server:
+negocio y vigencias. Al 11/11/2026 corren 1122 pruebas, todas en verde en la CI de la punta de `final-project-dw` ([corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063)), con `dotnet test INComedor.sln` desde la raíz del repositorio: 91 de Domain, 298 de Infrastructure.Sqlite sobre un archivo SQLite real temporal, 604 del Kiosk, 62 del receptor, 23 de Contracts y 44 del E2E. Las del receptor, las del envío integrado y el E2E necesitan una instancia de SQL Server:
 `(localdb)\MSSQLLocalDB` por defecto, u otra en la variable `INCOMEDOR_SQLSERVER`; cada clase crea su base y la
 borra al terminar. Cubren la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después
 del commit, la concurrencia por el último cupo, la atención y el comprobante, y el envío de lotes: el acuse
@@ -796,7 +789,7 @@ El E2E (`tests/Intelektron.INComedor.E2E.Tests`) recorre el escenario E2E del pl
 apagado y luego recuperado (AT01, AT02 y AT27), sobre los EXE compilados del puesto y del receptor. Lo maneja
 Playwright por CDP, sin bajar navegadores: el navegador es el WebView2 del equipo. Suma las costuras del puesto
 (`INCOMEDOR_DEMO_DIR`, `INCOMEDOR_RECEPTOR_URL` e `INCOMEDOR_CDP_PORT`): el puerto de depuración sólo abre con un
-valor válido y sólo en loopback. Además de SQL Server, necesita el WebView2 Runtime y una sesión con escritorio,
+valor válido y sólo en loopback. Con las de los changes que tocan la pantalla, medidas en la ventana real, son 44. Además de SQL Server, necesita el WebView2 Runtime y una sesión con escritorio,
 y si falta algo falla con un mensaje que lo nombra, nunca con un salto. Con `INCOMEDOR_E2E_KIOSK_EXE`, corre
 contra el EXE del paquete publicado, sin .NET a la vista: es lo que hace el script del Release antes de armar
 el zip. El resto de los casos del plan sigue especificado, no ejecutado.
@@ -1032,6 +1025,25 @@ documentación, de la revisión del #6: la cifra de pruebas con fecha en la [§2
 como la declarada al empezar y la cobertura al día. CI en verde en el push y en el PR
 ([41236547866](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236547866),
 [41236552616](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236552616)).
+
+**Del #8 al #35**, integrados en `final-project-dw` del 01/11 al 11/11, cada uno con su CI en verde en el PR y en su
+integración. Los de changes llevan la salida de `/openspec-verify-change`.
+
+- [#8](https://github.com/DaveWalf/AI4Devs-finalproject/pull/8) y [#9](https://github.com/DaveWalf/AI4Devs-finalproject/pull/9): el mapa, el §7 y la cobertura al día, y .NET 11 rc.3 (D-C26).
+- Del [#10](https://github.com/DaveWalf/AI4Devs-finalproject/pull/10) al [#14](https://github.com/DaveWalf/AI4Devs-finalproject/pull/14), el 09/11: `presentar-atencion-tactil` con `mover-engranaje-al-pie`,
+  `ofrecer-solo-opciones-disponibles`, `escribir-bitacoras-externas`, `administrar-personas-y-opciones` y
+  `configurar-puesto-por-pestanas`.
+- [#15](https://github.com/DaveWalf/AI4Devs-finalproject/pull/15) y [#19](https://github.com/DaveWalf/AI4Devs-finalproject/pull/19), el 10/11: la rc.3 hasta el MVP (D-C27) y .NET 11 estable (D-C28).
+- Del [#16](https://github.com/DaveWalf/AI4Devs-finalproject/pull/16) al [#18](https://github.com/DaveWalf/AI4Devs-finalproject/pull/18), el 10/11: `simular-identificacion-por-lista`, `confirmar-eleccion-en-cartel` y
+  `entrar-a-configuracion-con-teclado`.
+- Del [#20](https://github.com/DaveWalf/AI4Devs-finalproject/pull/20) al [#32](https://github.com/DaveWalf/AI4Devs-finalproject/pull/32), del 10/11 al 11/11: `ordenar-configuracion`, `buscar-y-exportar-consumos`,
+  `puntuar-la-interfaz`, `editar-raciones-en-personas`, `importar-personas-desde-excel`, `personalizar-opciones`,
+  `importar-opciones-desde-excel`, `resguardar-configuracion`, `enriquecer-comprobante`,
+  `exportar-consumos-automaticamente`, `avisar-por-correo`, `elegir-medio-de-identificacion` y
+  `operar-solo-con-la-pantalla`.
+- [#33](https://github.com/DaveWalf/AI4Devs-finalproject/pull/33), el 11/11: las 18 capturas, el README y el guion del video.
+- [#34](https://github.com/DaveWalf/AI4Devs-finalproject/pull/34), el 11/11: `cubrir-pruebas-de-las-verificaciones`, las pruebas que dejaron pendientes las verificaciones.
+- [#35](https://github.com/DaveWalf/AI4Devs-finalproject/pull/35), el 11/11: el escaneo de secretos de la CI cuenta los commits que sólo renombran y cambian líneas.
 
 ## 8. Uso de IA y cobertura
 

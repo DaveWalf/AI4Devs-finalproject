@@ -1,6 +1,6 @@
 # Decisiones de producto y arquitectura
 
-Versión documental: 1.4 · Fecha: 01/11/2026.
+Versión documental: 1.6 · Fecha: 10/11/2026.
 
 Este registro distingue decisiones del MVP académico y condiciones necesarias
 para una futura integración productiva. Los identificadores no se reutilizan:
