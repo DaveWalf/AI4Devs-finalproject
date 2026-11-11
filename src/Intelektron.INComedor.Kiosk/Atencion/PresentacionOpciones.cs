@@ -1,4 +1,5 @@
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -53,16 +54,22 @@ public sealed record PresentacionOpcion(string? Color, string? Imagen, int Trans
 /// <summary>
 /// Lee y escribe presentacion-opciones.json y las imágenes de opciones\ en la carpeta de datos (D3), con la escritura atómica
 /// de <see cref="AlmacenEstiloVisual"/>. Al leer descarta, campo por campo, lo que no valide: un color fuera de la paleta,
-/// una transparencia que no es un paso, una imagen cuyo nombre no es una huella con su extensión, que no existe o cuyo
-/// contenido no pasa las reglas de los logos. Un archivo ilegible deja todas las opciones sin personalizar (OWASP A05).
+/// una transparencia que no es un paso, una imagen cuyo nombre no es una huella con su extensión, que no existe, cuyo
+/// contenido no tiene esa huella o no pasa las reglas de los logos. Un archivo ilegible o de más de 1 MB deja todas las
+/// opciones sin personalizar (OWASP A05). La imagen y el estilo de cada opción se leen una vez y se recuerdan hasta el
+/// próximo guardado: el estilo con una imagen puede pesar megabytes y la atención lo dibuja en cada toque.
 /// </summary>
 public sealed partial class AlmacenPresentacionOpciones
 {
     private const string Nombre = "presentacion-opciones.json";
 
+    /// <summary>El tamaño máximo del archivo de presentación: quince opciones caben en unos pocos KB.</summary>
+    public const long TamanoMaximo = 1024 * 1024;
+
     private readonly string _carpeta;
     private Dictionary<Guid, PresentacionOpcion>? _leidas;
-    private readonly Dictionary<string, string?> _uris = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, LogoElegido?> _imagenes = new(StringComparer.Ordinal);
+    private readonly Dictionary<Guid, (string? Estilo, string Clase)> _estilos = [];
 
     public AlmacenPresentacionOpciones(string carpetaDatos)
     {
@@ -79,20 +86,21 @@ public sealed partial class AlmacenPresentacionOpciones
     public PresentacionOpcion De(Guid opcion) => Leer().GetValueOrDefault(opcion, PresentacionOpcion.PorDefecto);
 
     /// <summary>La imagen como URI data:, como la de un logo, o null si no tiene o ya no valida.</summary>
-    public string? UriImagen(PresentacionOpcion presentacion)
+    public string? UriImagen(PresentacionOpcion presentacion) =>
+        presentacion.Imagen is { } nombre ? Imagen(nombre)?.UriData : null;
+
+    /// <summary>El estilo y la clase de la tarjeta de una opción (D4), armados una vez por guardado.</summary>
+    public (string? Estilo, string Clase) EstiloDe(Guid opcion)
     {
-        if (presentacion.Imagen is not { } nombre)
+        if (!_estilos.TryGetValue(opcion, out var estilo))
         {
-            return null;
+            var presentacion = De(opcion);
+            var uri = UriImagen(presentacion);
+            estilo = (PresentacionOpcion.EstiloCss(presentacion, uri), PresentacionOpcion.Clase(presentacion, uri));
+            _estilos[opcion] = estilo;
         }
 
-        if (!_uris.TryGetValue(nombre, out var uri))
-        {
-            uri = LeerImagen(nombre)?.UriData;
-            _uris[nombre] = uri;
-        }
-
-        return uri;
+        return estilo;
     }
 
     /// <summary>
@@ -116,10 +124,13 @@ public sealed partial class AlmacenPresentacionOpciones
             Directory.CreateDirectory(Imagenes);
             var nombre = imagenNueva.Sha256 + imagenNueva.Extension;
             var destino = Path.Combine(Imagenes, nombre);
-            if (!File.Exists(destino))
+            // Un archivo con ese nombre y otro contenido (dañado) se reescribe.
+            if (LeerImagen(nombre) is null)
             {
                 EscribirAtomico(destino, ruta => File.WriteAllBytes(ruta, imagenNueva.Contenido));
             }
+
+            _imagenes.Remove(nombre);
 
             presentacion = presentacion with { Imagen = nombre, Color = null };
         }
@@ -134,6 +145,7 @@ public sealed partial class AlmacenPresentacionOpciones
         });
         EscribirAtomico(Ruta, ruta => File.WriteAllText(ruta, contenido));
         _leidas = null;
+        _estilos.Clear();
     }
 
     private Dictionary<Guid, PresentacionOpcion> LeerArchivo()
@@ -141,6 +153,11 @@ public sealed partial class AlmacenPresentacionOpciones
         var leidas = new Dictionary<Guid, PresentacionOpcion>();
         try
         {
+            if (new FileInfo(Ruta) is { Exists: true, Length: > TamanoMaximo })
+            {
+                return leidas;
+            }
+
             using var documento = JsonDocument.Parse(File.ReadAllText(Ruta));
             if (!documento.RootElement.TryGetProperty("opciones", out var opciones) || opciones.ValueKind != JsonValueKind.Object)
             {
@@ -156,7 +173,7 @@ public sealed partial class AlmacenPresentacionOpciones
 
                 var valor = propiedad.Value;
                 var color = Texto(valor, "color") is { } c && PresentacionOpcion.Paleta.Contains(c) ? c : null;
-                var imagen = Texto(valor, "imagen") is { } i && NombreDeImagen().IsMatch(i) && LeerImagen(i) is not null ? i : null;
+                var imagen = Texto(valor, "imagen") is { } i && Imagen(i) is not null ? i : null;
                 var transparencia = valor.TryGetProperty("transparencia", out var t) && t.ValueKind == JsonValueKind.Number
                     && t.TryGetInt32(out var paso) && PresentacionOpcion.Transparencias.Contains(paso) ? paso : 0;
                 var precio = !valor.TryGetProperty("precioVisible", out var p) || p.ValueKind != JsonValueKind.False;
@@ -172,7 +189,22 @@ public sealed partial class AlmacenPresentacionOpciones
         return leidas;
     }
 
-    /// <summary>La imagen de opciones\, si su nombre es una huella con su extensión y su contenido pasa las reglas de los logos.</summary>
+    /// <summary>La imagen de opciones\ ya leída, o leída ahora y recordada.</summary>
+    private LogoElegido? Imagen(string nombre)
+    {
+        if (!_imagenes.TryGetValue(nombre, out var imagen))
+        {
+            imagen = LeerImagen(nombre);
+            _imagenes[nombre] = imagen;
+        }
+
+        return imagen;
+    }
+
+    /// <summary>
+    /// La imagen de opciones\, si su nombre es una huella con su extensión, su contenido tiene esa huella y pasa las reglas de
+    /// los logos. Se lee con un tope, para no cargar un archivo que creció entre medio.
+    /// </summary>
     private LogoElegido? LeerImagen(string nombre)
     {
         if (!NombreDeImagen().IsMatch(nombre))
@@ -182,14 +214,18 @@ public sealed partial class AlmacenPresentacionOpciones
 
         try
         {
-            var ruta = Path.Combine(Imagenes, nombre);
-            var tamano = new FileInfo(ruta).Length;
-            if (tamano > LogosLocales.TamanoMaximo)
+            using var flujo = new FileStream(Path.Combine(Imagenes, nombre), FileMode.Open, FileAccess.Read, FileShare.Read);
+            if (flujo.Length > LogosLocales.TamanoMaximo)
             {
                 return null;
             }
 
-            return LogosLocales.Validar(nombre, tamano, File.ReadAllBytes(ruta)).Logo;
+            var contenido = new byte[flujo.Length];
+            flujo.ReadExactly(contenido);
+            var huella = Path.GetFileNameWithoutExtension(nombre);
+            return Convert.ToHexString(SHA256.HashData(contenido)) == huella
+                ? LogosLocales.Validar(nombre, contenido.Length, contenido).Logo
+                : null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -224,6 +260,6 @@ public sealed partial class AlmacenPresentacionOpciones
         }
     }
 
-    [GeneratedRegex("^[0-9A-F]{64}\\.(png|webp|svg)$")]
+    [GeneratedRegex("^[0-9A-F]{64}\\.(png|webp|svg)\\z")]
     private static partial Regex NombreDeImagen();
 }

@@ -12,8 +12,9 @@ Hoy la pestaña Opciones muestra sólo una línea («9 opciones en la versión 1
 opción hay que abrir su edición. Todas las tarjetas de la atención se ven iguales, y el precio se muestra siempre que la
 opción tenga importe.
 
-Origen: RF04 (catálogo operable por toque), la decisión del 02/11/2026 sobre el cargo cero sin importe y D5 de
-`presentar-atencion-tactil` (la presentación es local del puesto); ticket TK02.1.
+Origen: historia HU01.1 (la selección y la confirmación) y HU01-D (no cambiar el importe en silencio), RF04 (catálogo
+operable por toque), la decisión del 02/11/2026 sobre el cargo cero sin importe y D5 de `presentar-atencion-tactil` (la
+presentación es local del puesto); ticket TK02.1.
 
 ## What Changes
 
@@ -24,11 +25,12 @@ Origen: RF04 (catálogo operable por toque), la decisión del 02/11/2026 sobre e
   imagen PNG, WebP o SVG con las reglas de los logos, o ninguno), la transparencia (0, 25, 50 o 75 %) y «Mostrar el
   precio», con «Guardar» y «Cancelar».
 - **La atención con la presentación**: cada tarjeta se dibuja con su fondo y su transparencia; una opción con el precio
-  oculto se muestra como una sin cargo, en la tarjeta y en el cartel de la elección. El comprobante no cambia: el importe
-  es su registro.
+  oculto se muestra como una sin cargo, en la tarjeta, en el cartel de la elección y en la reconfirmación por cambio de
+  precio. El comprobante no cambia: el importe es su registro.
 - **Presentación local**: se guarda en `presentacion-opciones.json` de la carpeta de datos, con las imágenes en
   `opciones\`, no en la configuración versionada: no crea versión y vale aunque INWeb administre los datos. Cada guardado
-  queda en la general como `OPTION_STYLE_CHANGED`, con la huella de la imagen y no su contenido.
+  queda en la general como un `CONFIGURATION_CHANGED` del ajuste `OPTION_STYLE`, con el antes, el después y el resultado,
+  también si falla, y la huella de la imagen y no su contenido.
 
 ## Non-goals
 
@@ -45,7 +47,8 @@ Ninguna.
 ### Modified Capabilities
 
 - `administracion-local`: las opciones a la vista en su pestaña y su personalización.
-- `atencion-puesto`: la tarjeta de una opción con su presentación y el precio oculto.
+- `atencion-puesto`: la tarjeta de una opción con su presentación; el catálogo, el cartel de la elección y la
+  reconfirmación, sin el cargo de una opción con el precio oculto.
 
 ## Impact
 
@@ -71,5 +74,10 @@ Opciones recomendadas, aplicadas sin esperar:
 4. La presentación es local del puesto y no versionada, como el estilo visual (D5 de `presentar-atencion-tactil`): vale
    con INWeb como dueño («más allá de lo que esté configurado») y el resguardo del change 4 la va a incluir.
 5. Personalizar se ofrece con la clave del día, como el resto de la pestaña Opciones; un operador no la ve.
+6. (Agregada por la verificación.) Con el precio oculto, la reconfirmación por cambio de precio dice que la opción cambió
+   sin mostrar el importe: la mejora 16 pide no mostrarlo «más allá de lo que esté configurado». La bitácora sigue
+   registrando el cargo informado de la elección, porque es el registro.
+7. (Agregada por la verificación.) La bitácora usa `CONFIGURATION_CHANGED` del ajuste `OPTION_STYLE`, como el estilo y los
+   logos, con el guardado fallido incluido.
 
 Talla: L. Si una prueba existente falla por otra razón, se para (cláusula del plan).

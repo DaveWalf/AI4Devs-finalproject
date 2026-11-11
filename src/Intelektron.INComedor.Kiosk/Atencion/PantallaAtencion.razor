@@ -77,10 +77,9 @@
                         {
                             var elegida = opcion.Id == Maquina.Elegida?.Id;
                             @* Con su presentación: el fondo y la transparencia, y sin cargo si el precio está oculto (D4 de personalizar-opciones). *@
-                            var presentacion = PresentacionDe(opcion);
-                            var uriFondo = _presentacionOpciones?.UriImagen(presentacion);
-                            <button type="button" class="opcion @PresentacionOpcion.Clase(presentacion, uriFondo) @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
-                                    style="@PresentacionOpcion.EstiloCss(presentacion, uriFondo)" @onclick="() => ElegirOpcion(opcion.Id)">
+                            var (estiloFondo, claseFondo) = _presentacionOpciones?.EstiloDe(opcion.Id) ?? (null, string.Empty);
+                            <button type="button" class="opcion @claseFondo @(elegida ? "elegida" : "")" aria-pressed="@(elegida ? "true" : "false")"
+                                    style="@estiloFondo" @onclick="() => ElegirOpcion(opcion.Id)">
                                 <span class="nombre">@opcion.Nombre</span>
                                 @if (elegida)
                                 {
@@ -140,10 +139,10 @@
                 <section class="tarjeta superficie">
                     <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
                     <p id="aviso" class="aviso" role="status">@Maquina.Aviso</p>
-                    <p id="vigente">Valor vigente: <strong>@Maquina.Vigente?.Nombre</strong>@if (!string.IsNullOrEmpty(Maquina.Vigente?.Cargo))
+                    <p id="vigente">Valor vigente: <strong>@Maquina.Vigente?.Nombre</strong>@if (Maquina.Vigente is { } vigente && CargoVisible(vigente) is { Length: > 0 } cargoVigente)
                     {
-                        @* El separador y el cargo, sólo si hay cargo (D2). *@
-                        <text> · </text><span id="cargo-vigente">@Maquina.Vigente.Cargo</span>
+                        @* El separador y el cargo, sólo si hay cargo (D2) y el precio no está oculto (D4 de personalizar-opciones). *@
+                        <text> · </text><span id="cargo-vigente">@cargoVigente</span>
                     }</p>
                     <div class="acciones">
                         <button id="volver" type="button" @onclick="Maquina.Volver">Volver</button>
@@ -948,21 +947,31 @@
     private string CargoVisible(OpcionCatalogo opcion) => PresentacionDe(opcion).PrecioVisible ? opcion.Cargo : string.Empty;
 
     /// <summary>
-    /// Cada presentación guardada queda en la general con la opción, el color, la huella de la imagen y no su contenido, la
-    /// transparencia y si muestra el precio, como un ajuste de la clave del día (D5 de personalizar-opciones).
+    /// Cada guardado de la presentación de una opción queda en la general como los demás ajustes del equipo: un
+    /// CONFIGURATION_CHANGED del ajuste OPTION_STYLE con la opción, el antes, el después, el resultado y lo vigente, la
+    /// imagen por su huella y nunca por su contenido (D5 de personalizar-opciones).
     /// </summary>
     private void RegistrarPresentacionDeOpcion(PanelConfiguracion.PresentacionGuardada guardada) =>
-        RegistrarConfiguracion("OPTION_STYLE_CHANGED", new
+        RegistrarConfiguracion("CONFIGURATION_CHANGED", new
         {
+            Setting = "OPTION_STYLE",
             OptionId = guardada.Opcion,
-            Color = guardada.Presentacion.Color,
-            ImageSha256 = guardada.Presentacion.Imagen is { } imagen ? imagen[..64] : null,
-            Transparency = guardada.Presentacion.Transparencia,
-            PriceVisible = guardada.Presentacion.PrecioVisible,
+            Before = Presentacion(guardada.Antes, null),
+            After = Presentacion(guardada.Despues, guardada.HuellaPedida),
+            Result = guardada.Resultado,
+            Effective = Presentacion(guardada.Vigente, null),
             Access = _acceso,
             ActorPersonId = (Guid?)null,
             ActorReason = SinAutenticacion,
         });
+
+    private static object Presentacion(PresentacionOpcion presentacion, string? huella) => new
+    {
+        presentacion.Color,
+        ImageSha256 = huella ?? (presentacion.Imagen is { } imagen ? imagen[..64] : null),
+        Transparency = presentacion.Transparencia,
+        PriceVisible = presentacion.PrecioVisible,
+    };
 
     /// <summary>
     /// Una importación con errores queda en la general con la huella del archivo y cuántos errores hay de cada motivo, sin filas, columnas,

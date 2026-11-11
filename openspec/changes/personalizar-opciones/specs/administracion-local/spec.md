@@ -18,13 +18,13 @@ Origen: mejora 7 de David del 10/11/2026, borde.
 
 ### Requirement: Personalizar una opción
 
-«Personalizar» SHALL abrir un cartel con la muestra de la tarjeta, un fondo de color de una paleta de ocho o una imagen PNG, WebP o SVG con las reglas de los logos, la transparencia (0, 25, 50 o 75 %) y «Mostrar el precio». Lo guardado MUST quedar en el puesto, sin crear versión ni depender del dueño de los datos, y en la general como `OPTION_STYLE_CHANGED`.
+«Personalizar» SHALL abrir un cartel con la muestra de la tarjeta, un fondo de color de una paleta de ocho o una imagen PNG, WebP o SVG con las reglas de los logos, la transparencia (0, 25, 50 o 75 %) y «Mostrar el precio». Lo guardado MUST quedar en el puesto, sin crear versión ni depender del dueño de los datos, y en la general como un ajuste del equipo, también si falla.
 
 #### Scenario: Un fondo de color con transparencia
 Origen: mejora 7 de David del 10/11/2026 («color o imagen de fondo y transparencias»).
 - **GIVEN** el catálogo a la vista
 - **WHEN** se personaliza «Almuerzo opcional» con el tercer color, 25 % de transparencia, y se guarda
-- **THEN** la versión activa no cambia, la general tiene `OPTION_STYLE_CHANGED` con ese color y 25, y al reabrir Configuración la muestra conserva el fondo
+- **THEN** la versión activa no cambia, la general tiene `CONFIGURATION_CHANGED` del ajuste `OPTION_STYLE` con el antes, ese color y 25 después y el resultado, y al reabrir Configuración la muestra conserva el fondo
 
 #### Scenario: Una imagen de fondo
 Origen: mejora 7 de David del 10/11/2026, y las reglas de los logos de `configurar-puesto-por-pestanas`.
@@ -37,12 +37,24 @@ Origen: mejora 7 de David del 10/11/2026, y las reglas de los logos de `configur
 Origen: mejora 16 de David del 11/11/2026 («configurar si mostrar el precio de cada elemento o no, más allá de lo que esté configurado»).
 - **GIVEN** «Almuerzo opcional» con un importe de 1.800,00
 - **WHEN** se apaga «Mostrar el precio» y se guarda
-- **THEN** su muestra no tiene importe y la general registra `PriceVisible` en falso
+- **THEN** su muestra no tiene importe y la general registra `PriceVisible` en falso después
+
+#### Scenario: Guardar sin poder escribir
+Origen: el estilo visual de `configuracion-puesto` («un guardado fallido también se reconstruye»), borde.
+- **GIVEN** una carpeta de datos donde no se puede escribir la presentación
+- **WHEN** se elige un color y se toca «Guardar»
+- **THEN** el cartel sigue abierto con el aviso de que no se pudo guardar, nada cambia y la general tiene el resultado fallido con lo vigente
+
+#### Scenario: Con INWeb como dueño
+Origen: mejora 16 de David del 11/11/2026 («más allá de lo que esté configurado»), borde.
+- **GIVEN** la configuración activa administrada por INWeb
+- **WHEN** se personaliza una opción
+- **THEN** su «Editar» dice «Ver» y la presentación se guarda igual
 
 #### Scenario: Cancelar la personalización
 Origen: mejora 7 de David del 10/11/2026, borde.
 - **GIVEN** el cartel con un color elegido y sin guardar
-- **WHEN** se toca «Cancelar»
+- **WHEN** se toca «Cancelar», o Escape, que cierra Configuración entera
 - **THEN** la muestra vuelve a como estaba y no se escribe nada
 
 #### Scenario: Un archivo de presentación roto

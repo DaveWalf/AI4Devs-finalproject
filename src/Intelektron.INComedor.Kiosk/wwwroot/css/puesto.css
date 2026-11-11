@@ -627,7 +627,9 @@ html, body { overscroll-behavior: none; }
     background-position: center;
     opacity: var(--opacidad-fondo, 1);
 }
-.opcion.con-imagen .nombre, .opcion.con-imagen .cargo { padding: 0 6px; border-radius: 6px; background: rgb(var(--papel) / .85); }
+/* Un halo del papel alrededor de la letra la deja legible sobre una imagen o un fondo muy transparente, sin moverla: el
+   texto queda donde está en las tarjetas hermanas. */
+.opcion.personalizada .nombre, .opcion.personalizada .cargo { text-shadow: 0 0 3px rgb(var(--papel)), 0 0 8px rgb(var(--papel)); }
 .muestra-opcion .cargo { white-space: nowrap; }
 .muestra-opcion { min-height: 64px; padding: 6px 18px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--borde); border-radius: 14px; }
 

@@ -411,8 +411,9 @@ esa edición en el mismo lugar, y «Personalizar»: un fondo de color de una pal
 con las reglas de los logos, la transparencia (0, 25, 50 o 75 %) y «Mostrar el precio». Esa presentación es local del
 puesto, en `presentacion-opciones.json` y `opciones\` de la carpeta de datos: no crea versión y vale aunque INWeb
 administre los datos; la atención dibuja cada tarjeta con su fondo y, con el precio oculto, la muestra como una sin
-cargo, mientras el comprobante conserva su importe. Cada guardado queda en la general como `OPTION_STYLE_CHANGED`, con
-la huella de la imagen y no su contenido.
+cargo, también en la reconfirmación por cambio de precio, mientras el comprobante conserva su importe. Cada guardado,
+también uno fallido, queda en la general como `CONFIGURATION_CHANGED` del ajuste `OPTION_STYLE`, con el antes y el después
+y la huella de la imagen, no su contenido.
 
 Cada guardado es una **versión de configuración nueva** y completa, que se activa en la misma transacción y conserva
 las anteriores; los consumos siguen apuntando a la versión en que se registraron. Un dato inválido no cambia nada y

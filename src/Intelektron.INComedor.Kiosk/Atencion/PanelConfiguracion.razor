@@ -156,7 +156,7 @@
                                 var indice = i;
                                 var opcion = catalogo.Opciones[indice];
                                 var presentacion = PresentacionOpciones?.De(opcion.Id) ?? PresentacionOpcion.PorDefecto;
-                                var uri = PresentacionOpciones?.UriImagen(presentacion);
+                                var (estilo, clase) = PresentacionOpciones?.EstiloDe(opcion.Id) ?? (null, string.Empty);
                                 var cargo = MensajesAtencion.Cargo(opcion.Moneda, opcion.Escala, opcion.ImporteUnidadesMenores);
                                 <article class="opcion-catalogo" data-indice="@indice">
                                     <div class="datos-opcion">
@@ -171,7 +171,7 @@
                                         </ul>
                                         <span class="franjas-opcion">@Franjas(opcion)</span>
                                     </div>
-                                    <span class="opcion muestra-opcion @PresentacionOpcion.Clase(presentacion, uri)" style="@PresentacionOpcion.EstiloCss(presentacion, uri)">
+                                    <span class="opcion muestra-opcion @clase" style="@estilo">
                                         <span class="nombre">@opcion.Nombre</span>
                                         @if (presentacion.PrecioVisible && cargo.Length > 0)
                                         {
@@ -182,7 +182,7 @@
                                         <button type="button" class="editar-opcion" disabled="@(_panel is not null)" @onclick="() => EditarOpcion(indice)">@Editar</button>
                                         @if (PresentacionOpciones is not null)
                                         {
-                                            <button type="button" class="personalizar-opcion" @onclick="() => AbrirPersonalizacion(opcion)">Personalizar</button>
+                                            <button type="button" class="personalizar-opcion" @onclick="() => AbrirPersonalizacion(opcion, indice)">Personalizar</button>
                                         }
                                     </div>
                                 </article>
@@ -443,11 +443,20 @@
                         @foreach (var paso in PresentacionOpcion.Transparencias)
                         {
                             <button type="button" class="transparencia-opcion" aria-pressed="@(_borrador.Transparencia == paso ? "true" : "false")"
+                                    disabled="@(uriBorrador is null && _borrador.Color is null)"
                                     @onclick="() => _borrador = _borrador with { Transparencia = paso }">@paso %</button>
                         }
                     </div>
-                    <button type="button" id="precio-visible" aria-pressed="@(_borrador.PrecioVisible ? "true" : "false")"
-                            @onclick="() => _borrador = _borrador with { PrecioVisible = !_borrador.PrecioVisible }">Mostrar el precio</button>
+                    @* Sin cargo no hay precio que mostrar u ocultar. *@
+                    @if (cargoBorrador.Length > 0)
+                    {
+                        <button type="button" id="precio-visible" aria-pressed="@(_borrador.PrecioVisible ? "true" : "false")"
+                                @onclick="() => _borrador = _borrador with { PrecioVisible = !_borrador.PrecioVisible }">Mostrar el precio</button>
+                    }
+                    @if (_avisoPresentacion is not null)
+                    {
+                        <p id="aviso-presentacion" class="aviso" role="alert">@_avisoPresentacion</p>
+                    }
                     <div class="acciones">
                         <button id="guardar-presentacion" type="button" class="principal" @onclick="GuardarPresentacion">Guardar</button>
                         <button id="cancelar-presentacion" type="button" @onclick="CerrarPersonalizacion">Cancelar</button>
@@ -733,15 +742,22 @@
         _recargaPersonas++;
     }
 
-    /// <summary>Una presentación guardada, para la general: la opción y cómo quedó, con la huella de la imagen (D5 de personalizar-opciones).</summary>
-    public sealed record PresentacionGuardada(Guid Opcion, PresentacionOpcion Presentacion);
+    /// <summary>
+    /// Un guardado de la presentación, para la general (D5 de personalizar-opciones): la opción, cómo estaba, cómo se pidió
+    /// (con la huella de una imagen elegida y todavía no guardada), el resultado y cómo quedó vigente.
+    /// </summary>
+    public sealed record PresentacionGuardada(
+        Guid Opcion, PresentacionOpcion Antes, PresentacionOpcion Despues, string? HuellaPedida, string Resultado, PresentacionOpcion Vigente);
 
     private int? _opcionAEnfocar;
     private OpcionAdministrada? _personalizando;
     private PresentacionOpcion _borrador = PresentacionOpcion.PorDefecto;
     private LogoElegido? _imagenNueva;
     private string? _avisoImagen;
+    private string? _avisoPresentacion;
     private bool _enfocarPersonalizacion;
+    private int? _devolverFocoA;
+    private int _indicePersonalizado;
 
     /// <summary>«Editar» en una opción abre la edición de siempre en el lugar del catálogo, con el nombre de esa opción enfocado (D1).</summary>
     private void EditarOpcion(int indice)
@@ -755,14 +771,19 @@
         : string.Join(", ", opcion.Franjas.Select(f =>
             $"{f.Inicio.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture)} a {f.Fin.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture)}"));
 
-    private void AbrirPersonalizacion(OpcionAdministrada opcion)
+    private void AbrirPersonalizacion(OpcionAdministrada opcion, int indice)
     {
         _avisoGuardado = null;
-        (_personalizando, _borrador, _imagenNueva, _avisoImagen, _enfocarPersonalizacion) =
-            (opcion, PresentacionOpciones!.De(opcion.Id), null, null, true);
+        (_personalizando, _borrador, _imagenNueva, _avisoImagen, _avisoPresentacion, _enfocarPersonalizacion, _indicePersonalizado) =
+            (opcion, PresentacionOpciones!.De(opcion.Id), null, null, null, true, indice);
     }
 
-    private void CerrarPersonalizacion() => (_personalizando, _imagenNueva, _avisoImagen) = (null, null, null);
+    /// <summary>Cierra el cartel y devuelve el foco al «Personalizar» que lo abrió.</summary>
+    private void CerrarPersonalizacion()
+    {
+        (_personalizando, _imagenNueva, _avisoImagen, _avisoPresentacion) = (null, null, null, null);
+        _devolverFocoA = _indicePersonalizado;
+    }
 
     /// <summary>Un color de la paleta, o ninguno con null; cualquiera de los dos quita la imagen (D2).</summary>
     private void ElegirColor(string? color)
@@ -775,7 +796,9 @@
     /// <summary>Una imagen de fondo, con las reglas de los logos; la válida quita el color, la inválida deja el aviso (D2).</summary>
     private async Task ElegirImagen(InputFileChangeEventArgs e)
     {
+        // Un archivo nuevo reemplaza al elegido antes, también si es inválido, como un logo.
         _avisoImagen = null;
+        _imagenNueva = null;
         var archivo = e.File;
         byte[] contenido = [];
         if (archivo.Size <= LogosLocales.TamanoMaximo)
@@ -805,21 +828,27 @@
         _borrador = _borrador with { Color = null, Imagen = null };
     }
 
-    /// <summary>Guarda la presentación local, sin crear versión, y la deja en la general (D3 y D5).</summary>
+    /// <summary>
+    /// Guarda la presentación local, sin crear versión, y la deja en la general con el antes, el después y el resultado,
+    /// también si no se pudo escribir: entonces el cartel sigue abierto con el aviso (D3 y D5).
+    /// </summary>
     private void GuardarPresentacion()
     {
         var opcion = _personalizando!;
+        var antes = PresentacionOpciones!.De(opcion.Id);
+        var pedida = _imagenNueva is not null ? _borrador with { Color = null } : _borrador;
         try
         {
-            PresentacionOpciones!.Guardar(opcion.Id, _borrador, _imagenNueva);
+            PresentacionOpciones.Guardar(opcion.Id, _borrador, _imagenNueva);
         }
         catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
         {
-            _avisoImagen = MensajesAtencion.PresentacionNoGuardada;
+            RegistrarPresentacion?.Invoke(new PresentacionGuardada(opcion.Id, antes, pedida, _imagenNueva?.Sha256, "FAILED", antes));
+            _avisoPresentacion = MensajesAtencion.PresentacionNoGuardada;
             return;
         }
 
-        RegistrarPresentacion?.Invoke(new PresentacionGuardada(opcion.Id, PresentacionOpciones.De(opcion.Id)));
+        RegistrarPresentacion?.Invoke(new PresentacionGuardada(opcion.Id, antes, pedida, _imagenNueva?.Sha256, "APPLIED", PresentacionOpciones.De(opcion.Id)));
         _avisoGuardado = MensajesAtencion.PresentacionGuardada(opcion.Nombre);
         CerrarPersonalizacion();
     }
@@ -1073,6 +1102,20 @@
         {
             _enfocarPestana = false;
             await _botones[(int)_elegida].FocusAsync();
+        }
+
+        // Al cerrar el cartel, el foco vuelve al «Personalizar» de esa opción (D2 de personalizar-opciones).
+        if (_devolverFocoA is { } indice && _personalizando is null)
+        {
+            _devolverFocoA = null;
+            try
+            {
+                await JS.InvokeVoidAsync("incomedor.enfocar", $"#catalogo-opciones article.opcion-catalogo[data-indice=\"{indice}\"] button.personalizar-opcion");
+            }
+            catch (JSException)
+            {
+                // Sin la función (una página vieja en caché), el foco queda donde estaba.
+            }
         }
 
         // El foco entra al cartel de personalización, en el primer color (D2 de personalizar-opciones).

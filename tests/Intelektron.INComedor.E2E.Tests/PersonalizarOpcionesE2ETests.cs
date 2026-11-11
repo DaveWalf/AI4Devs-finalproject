@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 
 namespace Intelektron.INComedor.E2E.Tests;
@@ -11,6 +12,10 @@ public class PersonalizarOpcionesE2ETests : IAsyncLifetime
 {
     private const double Tolerancia = 1;
 
+    /// <summary>Un PNG sintético de un punto, que la tarjeta estira de fondo.</summary>
+    private static readonly byte[] Png = Convert.FromBase64String(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+
     private EscenarioE2E _escenario = null!;
 
     public ValueTask InitializeAsync()
@@ -21,7 +26,7 @@ public class PersonalizarOpcionesE2ETests : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _escenario.DisposeAsync();
 
-    [Fact(DisplayName = "administracion-local · Personalizar una opción (puesto compilado): a 1024 × 768, las tarjetas del catálogo miden lo mismo con sus botones parejos; el cartel tiene sus nueve fondos y cuatro pasos parejos; la atención de 0001 dibuja el fondo elegido y oculta el precio de otra")]
+    [Fact(DisplayName = "administracion-local · Personalizar una opción (puesto compilado): a 1024 × 768, las tarjetas del catálogo miden lo mismo con sus botones parejos y «Editar» enfoca el nombre; el cartel tiene sus nueve fondos y cuatro pasos parejos; la atención de 0001 dibuja un color a 75 % y una imagen, oculta el precio de otra y deja el texto alineado con las hermanas")]
     public async Task Catalogo_cartel_y_atencion()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -36,8 +41,11 @@ public class PersonalizarOpcionesE2ETests : IAsyncLifetime
         await pagina.Locator("#codigo").FillAsync("0001");
         await pagina.Locator("#ingresar").ClickAsync();
         await Assertions.Expect(pagina.Locator(".opcion").First).ToBeVisibleAsync();
-        var conFondo = (await pagina.Locator(".opcion .nombre").First.TextContentAsync())!.Trim();
-        var sinPrecio = (await pagina.Locator(".opcion:has(.cargo) .nombre").AllTextContentsAsync()).Select(n => n.Trim()).First(n => n != conFondo);
+        var nombres = (await pagina.Locator(".opcion .nombre").AllTextContentsAsync()).Select(n => n.Trim()).ToList();
+        var conFondo = nombres[0];
+        var conImagen = nombres[1];
+        var sinPrecio = (await pagina.Locator(".opcion:has(.cargo) .nombre").AllTextContentsAsync()).Select(n => n.Trim())
+            .First(n => n != conFondo && n != conImagen);
         await pagina.Locator("#cancelar").ClickAsync();
         await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
 
@@ -63,6 +71,12 @@ public class PersonalizarOpcionesE2ETests : IAsyncLifetime
         var botones = catalogo.Where(c => !c.Id.StartsWith("tarjeta-", StringComparison.Ordinal)).ToList();
         Assert.All(botones, c => Assert.True(Math.Abs(c.Alto - cerrar.Alto) <= Tolerancia && c.Letra == cerrar.Letra && Math.Abs(c.Ancho - botones[0].Ancho) <= Tolerancia,
             $"{c.Id}: {c.Ancho} × {c.Alto} px, letra {c.Letra}, contra «Cerrar» de {cerrar.Alto} y {cerrar.Letra}"));
+
+        // «Editar» en una opción deja el foco en su nombre, en la edición de siempre.
+        await Tarjeta(pagina, conFondo).Locator("button.editar-opcion").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#panel-opciones")).ToBeVisibleAsync();
+        await Assertions.Expect(pagina.Locator("article.opcion-admin input.nombre-opcion:focus")).ToHaveValueAsync(conFondo);
+        await pagina.Locator("#cancelar-panel").ClickAsync();
 
         await Tarjeta(pagina, conFondo).Locator("button.personalizar-opcion").ClickAsync();
         await Assertions.Expect(pagina.Locator("#personalizar-opcion")).ToBeVisibleAsync();
@@ -91,9 +105,18 @@ public class PersonalizarOpcionesE2ETests : IAsyncLifetime
         Assert.True(cartel.Abajo <= cartel.AltoVentana, $"El cartel termina en {cartel.Abajo} px, fuera de la ventana");
 
         await pagina.Locator("#personalizar-opcion button.color-opcion").Nth(2).ClickAsync();
-        await pagina.Locator("#personalizar-opcion button.transparencia-opcion", new() { HasText = "25 %" }).ClickAsync();
+        await pagina.Locator("#personalizar-opcion button.transparencia-opcion", new() { HasText = "75 %" }).ClickAsync();
         await pagina.Locator("#guardar-presentacion").ClickAsync();
         await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToContainTextAsync(conFondo);
+
+        var imagen = Path.Combine(_escenario.Carpeta, "fondo-sintetico.png");
+        File.WriteAllBytes(imagen, Png);
+        await Tarjeta(pagina, conImagen).Locator("button.personalizar-opcion").ClickAsync();
+        await pagina.Locator("#archivo-imagen-opcion").SetInputFilesAsync(imagen);
+        await Assertions.Expect(pagina.Locator("#personalizar-opcion .muestra-opcion.con-imagen")).ToHaveCountAsync(1);
+        await pagina.Locator("#personalizar-opcion button.transparencia-opcion", new() { HasText = "25 %" }).ClickAsync();
+        await pagina.Locator("#guardar-presentacion").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToContainTextAsync(conImagen);
 
         await Tarjeta(pagina, sinPrecio).Locator("button.personalizar-opcion").ClickAsync();
         await pagina.Locator("#precio-visible").ClickAsync();
@@ -106,17 +129,42 @@ public class PersonalizarOpcionesE2ETests : IAsyncLifetime
         await pagina.Locator("#codigo").FillAsync("0001");
         await pagina.Locator("#ingresar").ClickAsync();
         await Assertions.Expect(pagina.Locator(".opcion").First).ToBeVisibleAsync();
-        var tarjeta = pagina.Locator(".opcion", new() { Has = pagina.Locator(".nombre", new() { HasTextString = conFondo }) }).First;
-        await Assertions.Expect(tarjeta).ToHaveClassAsync(new System.Text.RegularExpressions.Regex("personalizada"));
+        var tarjeta = Opcion(pagina, conFondo);
+        await Assertions.Expect(tarjeta).ToHaveClassAsync(new Regex("personalizada"));
         var fondo = await tarjeta.EvaluateAsync<string>("e => getComputedStyle(e, '::before').backgroundColor + ' · ' + getComputedStyle(e, '::before').opacity");
         _escenario.Registrar($"1024 × 768, la tarjeta de «{conFondo}» en la atención: fondo {fondo}");
-        Assert.EndsWith("0.75", fondo, StringComparison.Ordinal);
-        await Assertions.Expect(pagina.Locator(".opcion", new() { Has = pagina.Locator(".nombre", new() { HasTextString = sinPrecio }) }).First.Locator(".cargo")).ToHaveCountAsync(0);
+        Assert.EndsWith("0.25", fondo, StringComparison.Ordinal);
+        await Assertions.Expect(Opcion(pagina, conImagen)).ToHaveClassAsync(new Regex("con-imagen"));
+        await Assertions.Expect(Opcion(pagina, sinPrecio).Locator(".cargo")).ToHaveCountAsync(0);
+
+        // La prolijidad de las tarjetas hermanas: en cada columna, el mismo alto y el nombre desde el mismo borde,
+        // personalizadas o no.
+        var enAtencion = JsonSerializer.Deserialize<Caja[]>(await pagina.EvaluateAsync<string>(
+            """
+            () => JSON.stringify([...document.querySelectorAll('.opcion')].map(e => {
+              const b = e.getBoundingClientRect(), n = e.querySelector('.nombre').getBoundingClientRect();
+              return { Id: e.querySelector('.nombre').textContent.trim(), Arriba: b.top, Alto: b.height, Ancho: b.width, Izquierda: n.left, Derecha: b.left, Letra: getComputedStyle(e.querySelector('.nombre')).fontSize };
+            }))
+            """))!;
+        _escenario.Registrar("1024 × 768, las tarjetas de 0001: " + string.Join("; ", enAtencion.Select(c => $"{c.Id} de {c.Ancho:F1} × {c.Alto:F1}, nombre desde {c.Izquierda:F1}, letra {c.Letra}")));
+        foreach (var columna in enAtencion.GroupBy(c => Math.Round(c.Derecha)))
+        {
+            var primera = columna.First();
+            Assert.All(columna, c => Assert.True(Math.Abs(c.Alto - primera.Alto) <= Tolerancia && Math.Abs(c.Izquierda - primera.Izquierda) <= Tolerancia && c.Letra == primera.Letra,
+                $"«{c.Id}»: {c.Alto} px, nombre desde {c.Izquierda}, contra «{primera.Id}»: {primera.Alto} px desde {primera.Izquierda}"));
+        }
+
         await _escenario.CapturarAsync(pagina, "atencion-personalizada-1024x768");
     }
 
     private static ILocator Tarjeta(IPage pagina, string nombre) =>
-        pagina.Locator("#catalogo-opciones article.opcion-catalogo", new() { Has = pagina.Locator(".nombre-opcion", new() { HasTextString = nombre }) }).First;
+        pagina.Locator("#catalogo-opciones article.opcion-catalogo", new() { Has = pagina.Locator(".nombre-opcion", new() { HasTextRegex = Exacto(nombre) }) });
+
+    private static ILocator Opcion(IPage pagina, string nombre) =>
+        pagina.Locator(".opcion", new() { Has = pagina.Locator(".nombre", new() { HasTextRegex = Exacto(nombre) }) });
+
+    /// <summary>El nombre entero: «Almuerzo» no tiene que encontrar «Almuerzo común».</summary>
+    private static Regex Exacto(string nombre) => new($"^\\s*{Regex.Escape(nombre)}\\s*$");
 
     private sealed record Caja(string Id, double Arriba, double Alto, double Ancho, double Izquierda, double Derecha, string Letra);
 

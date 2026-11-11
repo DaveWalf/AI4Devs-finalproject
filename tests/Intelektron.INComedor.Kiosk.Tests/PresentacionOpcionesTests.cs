@@ -82,6 +82,53 @@ public sealed class PresentacionOpcionesTests : IDisposable
         Assert.Empty(new AlmacenPresentacionOpciones(_carpeta).Leer());
     }
 
+    [Fact(DisplayName = "administracion-local · Un archivo de presentación roto: una imagen con «..» en el nombre no abre otro archivo aunque exista y sea válido")]
+    public void Una_ruta_con_puntos_no_abre_otro_archivo()
+    {
+        File.WriteAllBytes(Path.Combine(_carpeta, "secreto.png"), Png);
+        Directory.CreateDirectory(Path.Combine(_carpeta, "opciones"));
+        File.WriteAllText(Path.Combine(_carpeta, "presentacion-opciones.json"),
+            $$$"""{"opciones": {"{{{_opcion}}}": {"color": null, "imagen": "..\\secreto.png", "transparencia": 0, "precioVisible": true} } }""");
+
+        var almacen = new AlmacenPresentacionOpciones(_carpeta);
+
+        Assert.Null(almacen.De(_opcion).Imagen);
+        Assert.Null(almacen.UriImagen(new PresentacionOpcion(null, "..\\secreto.png", 0, true)));
+    }
+
+    [Fact(DisplayName = "administracion-local · Un archivo de presentación roto: una imagen de opciones\\ que no es una imagen válida o cuyo contenido no tiene la huella de su nombre se descarta al leerla")]
+    public void Una_imagen_que_no_corresponde()
+    {
+        var opciones = Directory.CreateDirectory(Path.Combine(_carpeta, "opciones")).FullName;
+        var texto = "esto no es una imagen"u8.ToArray();
+        var falsa = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(texto)) + ".png";
+        File.WriteAllBytes(Path.Combine(opciones, falsa), texto);
+        var cambiada = new string('B', 64) + ".png";
+        File.WriteAllBytes(Path.Combine(opciones, cambiada), Png);
+        var otra = Guid.NewGuid();
+        File.WriteAllText(Path.Combine(_carpeta, "presentacion-opciones.json"),
+            $$$"""
+            {"opciones": {
+              "{{{_opcion}}}": {"imagen": "{{{falsa}}}", "transparencia": 0, "precioVisible": true},
+              "{{{otra}}}": {"imagen": "{{{cambiada}}}", "transparencia": 0, "precioVisible": true}
+            }}
+            """);
+
+        var almacen = new AlmacenPresentacionOpciones(_carpeta);
+
+        Assert.Null(almacen.De(_opcion).Imagen);
+        Assert.Null(almacen.De(otra).Imagen);
+    }
+
+    [Fact(DisplayName = "administracion-local · Un archivo de presentación roto: uno de más de 1 MB no se lee y ninguna opción queda personalizada")]
+    public void Un_archivo_de_presentacion_demasiado_grande()
+    {
+        File.WriteAllText(Path.Combine(_carpeta, "presentacion-opciones.json"),
+            $$$"""{"opciones": {"{{{_opcion}}}": {"color": "{{{PresentacionOpcion.Paleta[0]}}}", "transparencia": 0, "precioVisible": true} } }""" + new string(' ', 1024 * 1024));
+
+        Assert.Empty(new AlmacenPresentacionOpciones(_carpeta).Leer());
+    }
+
     [Fact(DisplayName = "administracion-local · Personalizar una opción: guardar un color fuera de la paleta o una transparencia que no es un paso se rechaza sin escribir")]
     public void Guardar_fuera_de_rango()
     {

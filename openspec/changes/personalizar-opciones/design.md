@@ -33,9 +33,11 @@ el catálogo no se dibuja: la edición ocupa su lugar y, al cerrarla, vuelve le�
 
 `#personalizar-opcion`, un cartel como el de «Ver» en Consumos, con la muestra de la tarjeta, «Fondo» (ocho colores de una
 paleta fija y «Sin fondo»), «Imagen» (`InputFile` con PNG, WebP o SVG, validado con `LogosLocales.Validar`, y «Quitar
-imagen»), «Transparencia» (0, 25, 50 y 75 %) y «Mostrar el precio» (`aria-pressed`). Elegir un color quita la imagen y
-elegir una imagen quita el color. «Guardar» escribe y deja el aviso «Se guardó la presentación de «X».»; «Cancelar» y
-Escape no escriben nada.
+imagen»), «Transparencia» (0, 25, 50 y 75 %, sin efecto ni habilitada sin fondo) y «Mostrar el precio» (`aria-pressed`,
+sólo si la opción tiene cargo). Elegir un color quita la imagen, elegir una imagen quita el color, y un archivo nuevo,
+válido o no, reemplaza al elegido antes, como un logo. «Guardar» escribe y deja el aviso «Se guardó la presentación de
+“X”»; si no puede escribir, el cartel sigue abierto con su aviso. «Cancelar» no escribe nada y devuelve el foco a
+«Personalizar»; Escape cierra Configuración entera, como siempre, sin escribir.
 
 La paleta: `#F4E3C1`, `#EBCB9F`, `#DDB089`, `#E6B8B7`, `#D8C7E8`, `#BFD7EA`, `#C8D5B9`, `#A9C5A0`, tonos claros que se
 leen con la tinta oscura del puesto.
@@ -50,7 +52,8 @@ leen con la tinta oscura del puesto.
 `PresentacionOpciones` (por opción: color, imagen, transparencia y precio visible) y `AlmacenPresentacionOpciones`, que
 lee y escribe `presentacion-opciones.json` en la carpeta de datos con escritura atómica, como `AlmacenEstiloVisual`, y
 guarda cada imagen en `opciones\<SHA-256>.<extensión>`. Al leer, descarta lo que no valide (un color fuera de la paleta,
-una transparencia que no sea 0, 25, 50 o 75, un nombre de imagen que no sea una huella con su extensión o que no exista),
+una transparencia que no sea 0, 25, 50 o 75, un nombre de imagen que no sea una huella con su extensión, que no exista,
+cuyo contenido no tenga esa huella o no pase las reglas de los logos, y un archivo de más de 1 MB),
 como un archivo roto del estilo visual (OWASP A05): esa opción se ve sin personalizar. La clave es el id de la opción, que
 no cambia entre versiones; una opción quitada deja una entrada que nadie lee.
 
@@ -61,21 +64,26 @@ no cambia entre versiones; una opción quitada deja una entrada que nadie lee.
 
 Cada `.opcion` lleva sus variables (`--fondo-opcion`, `--opacidad-fondo`, `--imagen-opcion`) en su `style` y la clase
 `personalizada` o `con-imagen`; el fondo se pinta en un `::before` con esa opacidad (1 menos la transparencia), así el
-texto queda opaco. Con imagen, el nombre y el cargo llevan un respaldo claro para leerse sobre cualquier foto. Una opción
-con el precio oculto no dibuja `.cargo` ni «Cargo informado» en el cartel, como una sin cargo; el comprobante y la
-bitácora no cambian.
+texto queda opaco. En una tarjeta personalizada, el nombre y el cargo llevan un halo del papel, que los deja legibles sobre
+una imagen o un fondo muy transparente sin moverlos: el texto empieza en el mismo borde que en las tarjetas hermanas, que
+miden lo mismo. El estilo de cada opción se arma una vez por guardado: con una imagen pesa megabytes. Una opción con el
+precio oculto no dibuja `.cargo`, ni «Cargo informado» en el cartel, ni el cargo vigente en la reconfirmación por cambio
+de precio (que sigue diciendo que la opción cambió), como una sin cargo; el comprobante y la bitácora, también
+`DisplayedCharge` de `OPTION_SELECTED`, conservan el importe: son el registro.
 
 - **Descartada: ocultar el precio en `MaquinaAtencion`.** La máquina decide y registra con el cargo; ocultarlo es
   presentación y queda en la pantalla.
 
 ### D5. La bitácora
 
-Cada guardado deja `OPTION_STYLE_CHANGED` en la general con `OptionId`, `Color`, `ImageSha256` (no la imagen),
-`Transparency`, `PriceVisible`, cómo se entró y el actor nulo con `NO_AUTHENTICATION`, como los demás ajustes de la
-clave del día.
+Cada guardado deja en la general un `CONFIGURATION_CHANGED` del ajuste `OPTION_STYLE`, como el estilo visual, los logos
+y el monitor (`configuracion-puesto`): `OptionId`, el antes, el después y lo vigente (`Color`, `ImageSha256`, nunca la
+imagen, `Transparency` y `PriceVisible`), el resultado (`APPLIED` o `FAILED`, también cuando no se pudo escribir), cómo
+se entró y el actor nulo con `NO_AUTHENTICATION`.
 
-- **Descartada: un `CONFIGURATION_CHANGED`.** Ése registra versiones de la configuración; la presentación no crea
-  versión.
+- **Descartada: un evento propio (`OPTION_STYLE_CHANGED`).** Los demás ajustes locales sin versión ya usan
+  `CONFIGURATION_CHANGED` con el antes, el después y el resultado, y la spec de la bitácora pide reconstruir también el
+  guardado fallido.
 
 ### D6. Prolijidad
 

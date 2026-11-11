@@ -55,3 +55,31 @@
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+
+## 5. Correcciones de la verificación
+
+- [x] 5.1 Lo que marcó el agente de sólo lectura sobre `e799f27` (1 crítico, 12 advertencias y 10 sugerencias), con
+  pruebas nuevas vistas fallar antes. Verifica: `Kiosk.Tests` entero en verde y la E2E del change.
+  - La spec: los tres requisitos vivos de la atención que decían «su cargo informado» (el catálogo, el cartel y la
+    reconfirmación) pasan a MODIFIED con la excepción del precio oculto, sin tocar sus escenarios; se suman la
+    reconfirmación con el precio oculto, la imagen que ya no está, el guardado fallido e INWeb como dueño.
+  - La reconfirmación por cambio de precio ya no muestra el cargo de una opción con el precio oculto (opción 6 del gate,
+    para mostrarle a David).
+  - La bitácora pasa a `CONFIGURATION_CHANGED` del ajuste `OPTION_STYLE`, como el estilo y los logos, con el antes, el
+    después, el resultado (`APPLIED` o `FAILED`) y lo vigente; un guardado fallido deja el cartel abierto con su aviso
+    (`#aviso-presentacion`) y se registra.
+  - Un archivo inválido elegido después de uno válido descarta también el válido, como un logo. El almacén: la imagen se
+    lee con tope y con su huella comprobada, una vez; el archivo de presentación, hasta 1 MB; el nombre con `\z`; el
+    estilo de cada opción, armado una vez por guardado (con una imagen pesa megabytes).
+  - La pantalla: un halo del papel en el texto de las tarjetas personalizadas, en lugar del respaldo con relleno que lo
+    corría 6 px; la transparencia deshabilitada sin fondo y «Mostrar el precio» sólo con cargo; el foco vuelve a
+    «Personalizar» al cerrar el cartel.
+  - Pruebas: 9 vistas fallar contra `e799f27` (la huella y el tope del almacén; la reconfirmación; el registro en cinco
+    pruebas de la pestaña; el guardado fallido; la imagen inválida después de la válida) y las que fijan lo que ya andaba
+    (la ruta con `..` con un PNG válido plantado, «Editar» y «Guardar» con una sola versión, reabrir Configuración, Escape,
+    INWeb, la imagen que ya no está, el JSON roto con la atención). `Kiosk.Tests`: `total: 486`, `error: 0`. La E2E suma
+    el foco real en el nombre después de «Editar», una imagen, 75 % de transparencia y las tarjetas de la atención
+    medidas: diez de 486 × 64 px, con el nombre desde 41 o 535 px según la columna; captura mirada.
+  - Quedan sin cambiar, con su porqué: las imágenes sin uso en `opciones\` no se borran (son pocas y chicas en la
+    demostración); la muestra se ve sobre el diálogo y no sobre el fondo de la atención; el peso de diez imágenes de 2 MB
+    no se midió.
