@@ -526,7 +526,7 @@ todavía no le llegó: cada uno lleva su marca, el último consumo que recibió,
 cada escritura deja el archivo de antes o el completo. Si un destino falla, la pestaña dice cuándo y por qué, la
 general lo registra como `CONSUMPTIONS_AUTO_EXPORT_FAILED`, el otro destino sigue, y la pasada siguiente reintenta desde
 su marca, sin perder ni repetir consumos; cada pasada que escribe queda como `CONSUMPTIONS_AUTO_EXPORTED`. **El SFTP es
-simulado** (decisión 11 del plan del cierre): escribe en `sftp-simulado\<servidor>\<carpeta remota>` de la carpeta de
+simulado** (decisión de David del 10/11/2026: «Todo, envíos simulados»): escribe en `sftp-simulado\<servidor>\<carpeta remota>` de la carpeta de
 datos, y su modo «Caído» falla como un servidor que no responde, para ver la falla y la recuperación. **Queda pendiente
 la conexión real**: un cliente SFTP con la clave guardada en el almacén de credenciales de Windows y su prueba de
 conexión, detrás del mismo destino. La configuración vive en `exportacion-automatica.json` y las marcas en
@@ -543,7 +543,7 @@ estado técnico (una exportación automática que falla y una bitácora que se d
 elegida, la señal de vida con el resumen del día anterior. El asunto siempre es «Cliente · Puesto N Nombre · Situación»,
 y un mismo aviso no se repite antes de 15 minutos. Cada correo pasa por una cola (`correo-pendiente\`, hasta 500) y un
 reloj de cada minuto la envía en orden; la general registra `NOTIFICATION_QUEUED`, `NOTIFICATION_SENT` y
-`NOTIFICATION_FAILED`, sin direcciones. **El envío es simulado** (decisión 11 del plan del cierre): cada correo queda
+`NOTIFICATION_FAILED`, sin direcciones. **El envío es simulado** (decisión de David del 10/11/2026: «Todo, envíos simulados»): cada correo queda
 como un `.eml` en `correo-simulado\` de la carpeta de datos, que se abre con cualquier cliente de correo, y el servidor
 simulado «Caído» deja la cola esperando hasta que vuelve; «Enviar una prueba» manda un correo a todas las casillas.
 **Queda pendiente el envío real**: un cliente SMTP con la clave o el token en el almacén de credenciales de Windows,
