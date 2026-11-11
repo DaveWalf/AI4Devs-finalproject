@@ -239,6 +239,8 @@
                             RegistrarExportacionPersonas="RegistrarExportacionDePersonas"
                             ElectorArchivo="_electorArchivo" RegistrarImportacionPersonas="RegistrarImportacionDePersonas"
                             PresentacionOpciones="_presentacionOpciones" RegistrarPresentacion="RegistrarPresentacionDeOpcion"
+                            RegistrarExportacionOpciones="RegistrarExportacionDeOpciones" RegistrarImportacionOpciones="RegistrarImportacionDeOpciones"
+                            RegistrarImportacionOpcionesRechazada="RegistrarImportacionDeOpcionesRechazada"
                             RegistrarImportacionRechazada="RegistrarImportacionRechazada"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
@@ -936,6 +938,64 @@
             ActorReason = SinAutenticacion,
         });
     }
+
+    /// <summary>
+    /// Exportar Opciones queda en la general con el archivo sin su ruta y las filas, sin el catálogo (D5 de
+    /// importar-opciones-desde-excel).
+    /// </summary>
+    private void RegistrarExportacionDeOpciones(PanelConfiguracion.ExportacionOpcionesRealizada exportacion) =>
+        RegistrarConfiguracion("MENU_OPTIONS_EXPORTED", new
+        {
+            File = exportacion.Archivo,
+            Rows = exportacion.Filas,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    /// <summary>
+    /// Cada importación de Opciones aplicada queda en la general con REPLACE, la huella del archivo, la versión, los totales y,
+    /// opción por opción, su id y lo que pasó; cada opción cambiada tiene además su CONFIGURATION_CHANGED (D6).
+    /// </summary>
+    private void RegistrarImportacionDeOpciones(PanelConfiguracion.ImportacionOpcionesRealizada importacion)
+    {
+        var opciones = importacion.Resultado.Opciones;
+        RegistrarConfiguracion("MENU_OPTIONS_IMPORTED", new
+        {
+            Mode = "REPLACE",
+            FileSha256 = importacion.Huella,
+            Version = importacion.Resultado.Guardado.VersionActiva,
+            Added = opciones.Count(o => o.Accion == AccionOpcionImportada.Agregada),
+            Updated = opciones.Count(o => o.Accion == AccionOpcionImportada.Modificada),
+            Unchanged = opciones.Count(o => o.Accion == AccionOpcionImportada.SinCambios),
+            Removed = opciones.Count(o => o.Accion == AccionOpcionImportada.Quitada),
+            Options = opciones.Select(o => new
+            {
+                OptionId = o.OpcionId,
+                Result = o.Accion switch
+                {
+                    AccionOpcionImportada.Agregada => "ADDED",
+                    AccionOpcionImportada.Modificada => "UPDATED",
+                    AccionOpcionImportada.SinCambios => "UNCHANGED",
+                    _ => "REMOVED",
+                },
+            }).ToList(),
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+    }
+
+    /// <summary>Una importación de Opciones con errores queda con la huella y cuántos errores hay de cada motivo (D6).</summary>
+    private void RegistrarImportacionDeOpcionesRechazada(PanelConfiguracion.ImportacionOpcionesRechazada rechazo) =>
+        RegistrarConfiguracion("MENU_OPTIONS_IMPORT_REJECTED", new
+        {
+            FileSha256 = rechazo.Huella,
+            Errors = rechazo.Errores.GroupBy(e => e.Motivo).OrderBy(g => g.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count()),
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
 
     /// <summary>La presentación de una opción, o la de siempre sin almacén (D3 de personalizar-opciones).</summary>
     private PresentacionOpcion PresentacionDe(OpcionCatalogo opcion) => _presentacionOpciones?.De(opcion.Id) ?? PresentacionOpcion.PorDefecto;

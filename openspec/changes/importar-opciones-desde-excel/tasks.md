@@ -14,13 +14,21 @@
 
 ## 2. En la pantalla
 
-- [ ] 2.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: «Exportar Excel» y «Planilla base» en el pie de Opciones
+- [x] 2.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: «Exportar Excel» y «Planilla base» en el pie de Opciones
   (y cancelar la carpeta); «Importar Excel» muestra el resumen con «Reemplazar» y «Cancelar»; «Reemplazar» deja la
   versión nueva y el catálogo a la vista leído de nuevo; una importación con errores no deja aplicar; los tres registros
   en la general, sin el contenido del archivo; con INWeb como dueño no se importa (D4 a D6). Verifica: rojo antes y verde
   después.
-- [ ] 2.2 Los botones del pie, el cartel del resumen y los registros. Verifica: 2.1 en verde y `Kiosk.Tests` entero, con
+  - `ImportarOpcionesTests` (6) contra los mensajes ya escritos: `total: 6`, `error: 6` (sin `#exportar-opciones`,
+    `#importar-opciones` ni `#planilla-opciones`). Tres cayeron primero por un error de la prueba (leer el catálogo antes
+    de dibujar el puesto), corregido con un elector de archivos cuya ruta se da después.
+- [x] 2.2 Los botones del pie, el cartel del resumen y los registros. Verifica: 2.1 en verde y `Kiosk.Tests` entero, con
   las pruebas existentes que cambien listadas con su porqué.
+  - Los tres botones en el pie de Opciones (la importación, sin INWeb), el cartel con «Reemplazar» y «Cancelar» o los
+    errores, el catálogo leído de nuevo al aplicar y `MENU_OPTIONS_EXPORTED`, `MENU_OPTIONS_IMPORTED` y
+    `MENU_OPTIONS_IMPORT_REJECTED`. `Kiosk.Tests`: `total: 492`, `error: 0`; build con `-warnaserror` sin advertencias.
+    Prueba existente cambiada (decisión 13): `PuntoFinalTests`, que suma los cuatro mensajes nuevos y los motivos de
+    Opciones con sus ejemplos (8 líneas, sin cambiar ninguna aserción).
 
 ## 3. El puesto compilado, documentos y verificación integral
 

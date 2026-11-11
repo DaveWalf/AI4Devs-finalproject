@@ -155,7 +155,9 @@ public static class MensajesAtencion
             PlanillaInvalidaException.Demasiado => "El archivo es demasiado grande: puede tener hasta 5 MB.",
             PlanillaInvalidaException.DemasiadasFilas => "La planilla tiene más de 2000 filas.",
             CodigosAdministracion.INWebAdministra => INWebAdministra,
-            CodigosAdministracion.Requerido => $"La hoja «{error.Campo}» no tiene ninguna persona.",
+            CodigosAdministracion.Requerido => error.Campo == ImportacionOpciones.HojaOpciones
+                ? $"La hoja «{error.Campo}» no tiene ninguna opción."
+                : $"La hoja «{error.Campo}» no tiene ninguna persona.",
             _ => "El archivo no se puede importar.",
         },
         1 => error.Motivo switch
@@ -176,6 +178,9 @@ public static class MensajesAtencion
             CodigosAdministracion.NoSonDigitos => $"«{error.Campo}» lleva sólo dígitos.",
             CodigosAdministracion.DemasiadoLargo => $"«{error.Campo}» es demasiado largo.",
             CodigosAdministracion.CaracterDeControl => $"«{error.Campo}» tiene caracteres que no se pueden guardar.",
+            CodigosAdministracion.Desconocido => $"«{error.Campo}» no es uno del puesto.",
+            CodigosAdministracion.HoraInvalida => $"«{error.Campo}» no tiene el formato «HH:mm a HH:mm».",
+            CodigosAdministracion.FranjaVacia => "una franja empieza y termina a la misma hora.",
             _ => $"«{error.Campo}» no es válido.",
         },
     };
@@ -184,6 +189,22 @@ public static class MensajesAtencion
     public const string PresentacionNoGuardada = "No se pudo guardar la presentación: la carpeta de datos no se puede escribir. No cambió nada.";
 
     public static string PresentacionGuardada(string opcion) => $"Se guardó la presentación de «{opcion}».";
+
+    // Exportar e importar Opciones (D4 y D5 de importar-opciones-desde-excel).
+    public const string ReemplazarOpciones = "«Reemplazar» deja el catálogo como la planilla: las opciones que se quitan no se ofrecen más, y sus consumos siguen registrados.";
+
+    public static string ExportacionOpcionesHecha(string archivo, int filas, string carpeta) =>
+        $"Exportado {archivo} con {Cantidad(filas, "opción", "opciones")} en {carpeta}.";
+
+    public static string PlanillaBaseHecha(string archivo, string carpeta) => $"Planilla base guardada como {archivo} en {carpeta}.";
+
+    public static string ResumenImportacionOpciones(string archivo, int agregadas, int modificadas, int sinCambios, int quitadas) =>
+        $"{archivo}: {Cantidad(agregadas, "opción nueva", "opciones nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")}, "
+        + $"{Cantidad(sinCambios, "sin cambios", "sin cambios")} y {Cantidad(quitadas, "que se quita", "que se quitan")}.";
+
+    public static string ImportacionOpcionesAplicada(int version, int agregadas, int modificadas, int quitadas) =>
+        $"Se importó la planilla en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración: "
+        + $"{Cantidad(agregadas, "opción nueva", "opciones nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")} y {Cantidad(quitadas, "quitada", "quitadas")}.";
 
     private static string Cantidad(int cantidad, string uno, string varios) =>
         $"{cantidad.ToString(CultureInfo.InvariantCulture)} {(cantidad == 1 ? uno : varios)}";

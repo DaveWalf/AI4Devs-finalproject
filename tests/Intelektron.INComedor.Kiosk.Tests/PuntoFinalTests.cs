@@ -69,6 +69,10 @@ public class PuntoFinalTests
             MensajesAtencion.ImportacionCodigosComoNumero(1),
             MensajesAtencion.ImportacionCodigosComoNumero(3),
             MensajesAtencion.PresentacionGuardada("Almuerzo opcional"),
+            MensajesAtencion.ExportacionOpcionesHecha("INComedor-opciones-20261111-120000.xlsx", 15, @"C:\Exportaciones"),
+            MensajesAtencion.PlanillaBaseHecha("INComedor-planilla-opciones-20261111-120000.xlsx", @"C:\Exportaciones"),
+            MensajesAtencion.ResumenImportacionOpciones("opciones.xlsx", 1, 1, 12, 1),
+            MensajesAtencion.ImportacionOpcionesAplicada(2, 1, 1, 1),
             .. ErroresDeImportacion.Select(MensajesAtencion.ErrorDeImportacion),
         ];
 
@@ -91,6 +95,8 @@ public class PuntoFinalTests
         nameof(MensajesAtencion.ImportacionConErrores), nameof(MensajesAtencion.ImportacionAplicada), nameof(MensajesAtencion.ImportacionSinCambios),
         nameof(MensajesAtencion.ErrorDeImportacion), nameof(MensajesAtencion.ImportacionConFilasDeEjemplo),
         nameof(MensajesAtencion.ImportacionCodigosComoNumero), nameof(MensajesAtencion.PresentacionGuardada),
+        nameof(MensajesAtencion.ExportacionOpcionesHecha), nameof(MensajesAtencion.PlanillaBaseHecha),
+        nameof(MensajesAtencion.ResumenImportacionOpciones), nameof(MensajesAtencion.ImportacionOpcionesAplicada),
     ];
 
     /// <summary>Un error de cada clase: del archivo, del encabezado y de una fila, con cada motivo y uno desconocido.</summary>
@@ -104,6 +110,8 @@ public class PuntoFinalTests
         new(2, "Código", CodigosAdministracion.Requerido), new(3, "Código", CodigosAdministracion.Repetido),
         new(4, "Código", ImportacionPersonas.CodigoDadoDeBaja), new(5, "ALMUERZO: límite", CodigosAdministracion.FueraDeRango),
         new(4, "Código", ImportacionPersonas.CodigoComoNumero), new(4, "Código", ImportacionPersonas.MismaPersona),
+        new(0, "Opciones", CodigosAdministracion.Requerido), new(5, "Servicio", CodigosAdministracion.Desconocido),
+        new(6, "Franjas", CodigosAdministracion.HoraInvalida), new(7, "Franjas", CodigosAdministracion.FranjaVacia),
         new(6, "ALMUERZO: límite", CodigosAdministracion.NoSonDigitos), new(7, "Nombre", CodigosAdministracion.DemasiadoLargo),
         new(8, "Nombre", CodigosAdministracion.CaracterDeControl), new(9, "Nombre", "OTRO"),
     ];
