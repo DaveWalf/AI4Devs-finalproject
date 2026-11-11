@@ -13,13 +13,21 @@
 
 ## 2. Revisar y aplicar la importación
 
-- [ ] 2.1 Pruebas nuevas, vistas fallar antes: el resumen de «Modificar y agregar» y de «Reemplazar» (que conserva a los
+- [x] 2.1 Pruebas nuevas, vistas fallar antes: el resumen de «Modificar y agregar» y de «Reemplazar» (que conserva a los
   operadores y al administrador); las filas con error (sin código, repetido, de una persona dada de baja, nombre inválido,
   límite fuera de rango) y las columnas que faltan o sobran; aplicar crea una sola versión con un `CONFIGURATION_CHANGED`
   por persona; lo usado hoy no cambia; la planilla de ejemplo con su encabezado, el código como texto y ningún código de la
   base (D2 a D6). Verifica: rojo antes y verde después.
-- [ ] 2.2 `ImportacionPersonas` (`Revisar`, `Aplicar` y la planilla de ejemplo). Verifica: 2.1 en verde y
+  - `ImportacionPersonasTests` (6) contra el esqueleto: `total: 6`, `error: 6` (`NotImplementedException`). Suman la
+    planilla sin personas, que es un error del archivo (D2, agregado al aplicar).
+- [x] 2.2 `ImportacionPersonas` (`Revisar`, `Aplicar` y la planilla de ejemplo). Verifica: 2.1 en verde y
   `Infrastructure.Sqlite.Tests` entero en verde.
+  - `AdministracionLocal.LeerParaImportar` (interno) lee en una transacción la vista, los códigos vigentes de las
+    personas activas, los usados en cualquier versión y las personas con un permiso sin revocar. `Infrastructure.Sqlite.Tests`:
+    `total: 252`, `error: 0`, sin pruebas existentes cambiadas; build con `-warnaserror` sin advertencias. La planilla de
+    ejemplo escrita sobre una copia de la base de la demostración se abrió con Excel por COM: hojas «Personas» e
+    «Instrucciones», encabezado `Nombre | Código | ALMUERZO: límite | REFRIGERIO: límite`, la columna B con formato `@`
+    y un «0105» escrito después en B10 queda «0105».
 
 ## 3. En la pantalla
 

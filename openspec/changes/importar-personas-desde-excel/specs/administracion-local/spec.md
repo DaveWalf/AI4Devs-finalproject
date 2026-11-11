@@ -53,7 +53,7 @@ Origen: mejora 14 de David del 10/11/2026 («según se configure»), borde.
 
 #### Scenario: Un archivo que no es una planilla
 Origen: `AGENTS.md` (OWASP: la entrada externa), borde.
-- **GIVEN** un archivo `.xlsx` dañado, sin la columna «Código», o con una columna desconocida
+- **GIVEN** un archivo `.xlsx` dañado, sin la columna «Código», con una columna desconocida o sin ninguna persona
 - **WHEN** se importa
 - **THEN** el pie avisa qué falta o qué sobra y no se aplica nada
 

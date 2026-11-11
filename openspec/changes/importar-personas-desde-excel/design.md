@@ -32,7 +32,8 @@ el archivo hasta 5 MB y cada parte hasta 20 MB descomprimida (una bomba de zip s
 La fila 1 es el encabezado: «Nombre», «Código» y, por cada cupo, «<cupo>: límite», con el nombre de la tabla
 (`NombrePar`), sin distinguir mayúsculas ni espacios de más. Falta «Nombre» o «Código», o hay una columna que no es de
 ningún cupo: error del archivo. Una columna de cupo que no está deja ese cupo como estaba; una celda vacía en una que
-está lo quita, como vaciar la celda en la tabla.
+está lo quita, como vaciar la celda en la tabla. Una planilla sin ninguna persona también es un error del archivo:
+«Reemplazar» con ella daría de baja a todos los que no tienen un permiso.
 
 ### D3. Quién es quién
 
