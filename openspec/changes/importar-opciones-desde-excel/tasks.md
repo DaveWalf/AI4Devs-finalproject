@@ -1,12 +1,16 @@
 ## 1. Exportar, la planilla base y revisar y aplicar la importación
 
-- [ ] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: exportar el catálogo y volver a leerlo con
+- [x] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: exportar el catálogo y volver a leerlo con
   `LectorPlanilla`; la planilla base con su encabezado y sus dos filas; revisar y aplicar reemplazando (una modificada,
   una agregada, una quitada, una sin cambios, en una sola versión); el importe como número y como texto; las filas con
   error (sin nombre o repetido, servicio o categoría desconocidos, unidades fuera de rango, sin cargas, franja mal
   escrita) y las columnas que faltan o sobran; un archivo sin opciones; aplicar sin cambios no crea versión (D1 a D5).
   Verifica: rojo antes y verde después.
-- [ ] 1.2 `ExportacionOpciones` e `ImportacionOpciones`. Verifica: 1.1 en verde y `Infrastructure.Sqlite.Tests` entero.
+  - `ImportacionOpcionesTests` (6) contra el esqueleto: `total: 6`, `error: 6` (`NotImplementedException`).
+- [x] 1.2 `ExportacionOpciones` e `ImportacionOpciones`. Verifica: 1.1 en verde y `Infrastructure.Sqlite.Tests` entero.
+  - Las dos en `ImportacionOpciones` (exportar, la planilla base, revisar y aplicar), con el encabezado y la letra de
+    columna de la importación de Personas, que pasan a internas. `Infrastructure.Sqlite.Tests`: `total: 268`, `error: 0`;
+    build con `-warnaserror` sin advertencias.
 
 ## 2. En la pantalla
 

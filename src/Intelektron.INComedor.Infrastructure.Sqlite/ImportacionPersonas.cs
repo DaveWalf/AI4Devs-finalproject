@@ -443,7 +443,7 @@ public sealed class ImportacionPersonas
         actuales.Select(c => (c.ServicioId, c.CategoriaId, c.Limite)).ToHashSet()
             .SetEquals(finales.Select(c => (c.ServicioId, c.CategoriaId, c.Limite)));
 
-    private static string Normalizar(string texto)
+    internal static string Normalizar(string texto)
     {
         var sinTildes = new StringBuilder();
         foreach (var letra in texto.Normalize(NormalizationForm.FormD))
@@ -458,7 +458,7 @@ public sealed class ImportacionPersonas
     }
 
     /// <summary>La letra de una columna desde 0, como la muestra Excel (la 0 es «A»; la 26, «AA»).</summary>
-    private static string LetraDeColumna(int columna)
+    internal static string LetraDeColumna(int columna)
     {
         var letras = string.Empty;
         for (var n = columna + 1; n > 0; n = (n - 1) / 26)
