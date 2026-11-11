@@ -49,8 +49,8 @@ public class PestanaConsumosTests
         Assert.Equal("DAILY_KEY", consulta.GetProperty("Access").GetString());
     }
 
-    [Fact(DisplayName = "comprobante-local · Asistencia con permiso OPERATOR: con la tabla de Consumos a la vista y la clave del día, «Reimprimir» pide el código de un operador y no pide el motivo")]
-    public async Task Comprobantes_sigue_pidiendo_un_operador()
+    [Fact(DisplayName = "comprobante-local · Con la clave del día no se pide un código: con la tabla de Consumos a la vista, «Reimprimir» pide el motivo y ningún código")]
+    public async Task Con_la_clave_reimprimir_pide_el_motivo()
     {
         using var puesto = new PuestoDePrueba();
         var pantalla = puesto.Dibujar();
@@ -60,8 +60,8 @@ public class PestanaConsumosTests
 
         await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
 
-        Assert.NotNull(pantalla.Find("#codigo-operador"));
-        Assert.Empty(pantalla.FindAll("#seccion-consumos .motivo"));
+        Assert.Empty(pantalla.FindAll("#codigo-operador"));
+        Assert.Equal(4, pantalla.FindAll("#seccion-consumos .motivo").Count);
     }
 
     [Fact(DisplayName = "consulta-consumos · La consulta en la bitácora: filtrar por REFRIGERIO con dos refrigerios deja CONSUMPTIONS_QUERIED con el actor nulo, NO_AUTHENTICATION, DAILY_KEY, el servicio filtrado y 2 filas, sin nombres ni códigos")]

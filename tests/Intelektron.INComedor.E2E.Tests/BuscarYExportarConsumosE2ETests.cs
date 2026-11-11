@@ -4,7 +4,7 @@ using Microsoft.Playwright;
 namespace Intelektron.INComedor.E2E.Tests;
 
 /// <summary>
-/// Consumos con la búsqueda, el número, «Ver», la exportación y el pedido del código de un operador, con el puesto compilado (buscar-y-exportar-consumos): por CDP y
+/// Consumos con la búsqueda, el número, «Ver», la exportación y la sección del motivo con la clave del día, con el puesto compilado (buscar-y-exportar-consumos y reimprimir-sin-codigo): por CDP y
 /// a 1024 × 768, lo que bUnit no mide, con la tolerancia de 1 px de la regla de prolijidad (D8). La carpeta de exportación se
 /// deja elegida en <c>exportacion.json</c> antes de exportar, porque el diálogo de carpetas de Windows no se maneja por CDP.
 /// </summary>
@@ -103,15 +103,45 @@ public class BuscarYExportarConsumosE2ETests : IAsyncLifetime
         Assert.Single(archivos, a => a!.EndsWith(".xlsx", StringComparison.Ordinal));
         Assert.Equal(2, File.ReadAllLines(Path.Combine(destino, archivos.Single(a => a!.EndsWith(".csv", StringComparison.Ordinal))!)).Length);
 
+        // Con la clave del día, «Reimprimir» pide el motivo sin código y avisa la marca (D7 de reimprimir-sin-codigo). Una
+        // copia con la impresora en «Incierta» deja el último trabajo en UNKNOWN, para ver los dos avisos juntos y medirlos.
+        await pagina.Locator("#pestana-impresora").ClickAsync();
+        await pagina.Locator("#impresora-incierta").ClickAsync();
+        await pagina.Locator("#pestana-consumos").ClickAsync();
         await filas.Locator(".reimprimir").ClickAsync();
-        await Assertions.Expect(pagina.Locator("#pedido-operador")).ToContainTextAsync(numero);
-        var pedido = await MedirIds(pagina, "#codigo-operador", "#entrar-operador", "#cancelar-operador");
-        _escenario.Registrar($"1024 × 768, el pedido del código: {string.Join("; ", pedido.Select(c => c.ToString()))}");
-        await _escenario.CapturarAsync(pagina, "consumos-pedido-operador-1024x768");
-        Assert.All(pedido, c => Assert.True(Math.Abs(c.Alto - pedido[0].Alto) <= Tolerancia && c.Alto >= 56 && c.Letra == pedido[0].Letra
-            && Math.Abs(c.Arriba - pedido[0].Arriba) <= Tolerancia, $"{c.Id}: {c.Alto} px, letra {c.Letra}, arriba {c.Arriba}, contra {pedido[0]}"));
-        await pagina.Locator("#cancelar-operador").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#aviso-sin-validez")).ToHaveTextAsync(
+            "La copia va a salir marcada SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD porque se entró con la clave del día.");
         await Assertions.Expect(pagina.Locator("#codigo-operador")).ToHaveCountAsync(0);
+        await pagina.Locator("#seccion-consumos .motivo").First.ClickAsync();
+        await Assertions.Expect(pagina.Locator("#mensaje-asistencia")).ToBeVisibleAsync();
+        await filas.Locator(".reimprimir").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#aviso-incertidumbre")).ToBeVisibleAsync();
+        await Assertions.Expect(pagina.Locator("#aviso-sin-validez")).ToBeVisibleAsync();
+        var avisos = await MedirIds(pagina, "#aviso-incertidumbre", "#aviso-sin-validez");
+        var botones = await MedirTodos(pagina, "#seccion-consumos .pedido-reimpresion .acciones button");
+        _escenario.Registrar($"1024 × 768, los avisos del motivo: {string.Join("; ", avisos.Select(c => c.ToString()))}");
+        _escenario.Registrar($"1024 × 768, los botones del motivo: {string.Join("; ", botones.Select(c => $"{c}, ancho {c.Derecha - c.Izquierda:F1} px y alto {c.Alto:F1} px"))}");
+        await _escenario.CapturarAsync(pagina, "consumos-motivo-sin-validez-1024x768");
+        Assert.True(Math.Abs(avisos[0].Izquierda - avisos[1].Izquierda) <= Tolerancia && Math.Abs(avisos[0].Derecha - avisos[1].Derecha) <= Tolerancia,
+            $"los avisos no comparten bordes: {avisos[0]} contra {avisos[1]}");
+        Assert.Equal(5, botones.Length);
+        Assert.Equal("#cancelar-reimpresion", botones[^1].Id);
+        Assert.All(botones, c => Assert.True(Math.Abs(c.Alto - botones[0].Alto) <= Tolerancia && c.Alto >= 56 && c.Letra == botones[0].Letra
+            && Math.Abs(c.Arriba - botones[0].Arriba) <= Tolerancia, $"{c.Id}: {c.Alto} px, letra {c.Letra}, arriba {c.Arriba}, contra {botones[0]}"));
+        await pagina.Locator("#cancelar-reimpresion").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#seccion-consumos .pedido-reimpresion")).ToHaveCountAsync(0);
+    }
+
+    /// <summary>Las cajas de todos los controles que cumplen un selector, en el orden del documento.</summary>
+    private static async Task<Caja[]> MedirTodos(IPage pagina, string selector)
+    {
+        var json = await pagina.EvaluateAsync<string>(
+            """
+            s => JSON.stringify([...document.querySelectorAll(s)].map(e => { const b = e.getBoundingClientRect();
+              return { Id: e.id ? '#' + e.id : '.' + e.className, Arriba: b.top, Abajo: b.bottom, Izquierda: b.left, Derecha: b.right, Alto: b.height,
+                Letra: getComputedStyle(e).fontSize }; }))
+            """, selector);
+        return JsonSerializer.Deserialize<Caja[]>(json)!;
     }
 
     /// <summary>Las cajas de unos controles, por su id.</summary>

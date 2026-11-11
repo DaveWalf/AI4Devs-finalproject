@@ -53,7 +53,6 @@ public class PuntoFinalTests
             MensajesAtencion.RedCanceladaEnPaso(2, 3),
             MensajesAtencion.RedFallo(1, 3, 5, conAplicados: false),
             MensajesAtencion.RedFallo(2, 3, 5, conAplicados: true),
-            MensajesAtencion.PedidoOperadorPara(recuperar: true, "0a1b2c3d"),
             MensajesAtencion.CarpetaElegida(@"C:\Exportaciones"),
             MensajesAtencion.ExportacionHecha("INComedor-consumos-20261110-120000.csv", 2, @"C:\Exportaciones"),
             MensajesAtencion.ExportacionPersonasHecha("INComedor-personas-20261110-120000.csv", 9, @"C:\Exportaciones"),
@@ -103,7 +102,7 @@ public class PuntoFinalTests
     private static readonly string[] MetodosConPunto =
     [
         nameof(MensajesAtencion.DeMotivo), nameof(MensajesAtencion.VersionGuardada), nameof(MensajesAtencion.CopiaEnviada),
-        nameof(MensajesAtencion.RedCanceladaEnPaso), nameof(MensajesAtencion.RedFallo), nameof(MensajesAtencion.PedidoOperadorPara),
+        nameof(MensajesAtencion.RedCanceladaEnPaso), nameof(MensajesAtencion.RedFallo),
         nameof(MensajesAtencion.CarpetaElegida), nameof(MensajesAtencion.ExportacionHecha), nameof(MensajesAtencion.ExportacionPersonasHecha),
         nameof(MensajesAtencion.PlanillaDeEjemploHecha), nameof(MensajesAtencion.ResumenImportacion), nameof(MensajesAtencion.ImportacionReemplazar),
         nameof(MensajesAtencion.ImportacionConErrores), nameof(MensajesAtencion.ImportacionAplicada), nameof(MensajesAtencion.ImportacionSinCambios),

@@ -102,10 +102,8 @@ public static class MensajesAtencion
     public const string SinCarpeta = "No se eligió una carpeta: no se exportó nada.";
     public const string ExportacionPersonasFallida = "No se pudo exportar: la carpeta no se puede escribir. Cambiala con «Cambiar carpeta» en Consumos.";
     public const string FiltradoPorCodigo = "La tabla está filtrada por el código de una persona; «Consultar» sin código lo quita.";
-    public const string PedidoOperador = "Para reimprimir o recuperar un comprobante, ingresá el código de un operador.";
-
-    public static string PedidoOperadorPara(bool recuperar, string? numero) =>
-        $"Para {(recuperar ? "recuperar" : "reimprimir")} el comprobante N.º {numero}, ingresá el código de un operador.";
+    /// <summary>El aviso antes de elegir el motivo con la clave del día (D7 de reimprimir-sin-codigo).</summary>
+    public const string CopiaSinValidez = "La copia va a salir marcada SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD porque se entró con la clave del día.";
 
     public static string CarpetaElegida(string carpeta) => $"Las exportaciones van a {carpeta}.";
 

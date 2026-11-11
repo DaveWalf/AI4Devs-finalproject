@@ -76,7 +76,7 @@ public class TextosComprobanteTests
         Assert.False(File.Exists(Path.Combine(puesto.Carpeta, "impresora.json")));
     }
 
-    [Fact(DisplayName = "comprobante-local · Una copia lleva los textos vigentes: impreso con los de siempre, la copia de un operador después de guardar un encabezado nuevo lleva ese encabezado, REIMPRESIÓN y los mismos datos")]
+    [Fact(DisplayName = "comprobante-local · Una copia lleva los textos vigentes: impreso con los de siempre, la copia hecha después de guardar un encabezado nuevo lleva ese encabezado, REIMPRESIÓN y los mismos datos")]
     public async Task Una_copia_lleva_los_textos_vigentes()
     {
         using var puesto = new PuestoDePrueba();
@@ -92,8 +92,6 @@ public class TextosComprobanteTests
 
         await pantalla.Find("#pestana-consumos").ClickAsync(new());
         await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
-        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "9001" });
-        await pantalla.Find("#entrar-operador").ClickAsync(new());
         await pantalla.FindAll(".motivo")[0].ClickAsync(new());
 
         var copia = File.ReadAllLines(Assert.Single(Directory.GetFiles(impresora.Carpeta, "*-1.txt")));

@@ -1,38 +1,31 @@
 using Intelektron.INComedor.Infrastructure.Sqlite;
-using Microsoft.Data.Sqlite;
 
 namespace Intelektron.INComedor.Kiosk.Atencion;
 
-/// <summary>Reimprimir o recuperar el comprobante de una fila de Consumos, a la espera del código de un operador.</summary>
-public sealed record AccionPendiente(bool Recuperar, ConsumoConsultado Fila);
-
 /// <summary>
-/// La sesión del operador para reimprimir y recuperar desde Consumos (D8 de configurar-puesto-por-pestanas y D5 de
-/// buscar-y-exportar-consumos): la asistencia que antes era un estado de la máquina, sobre el mismo <see cref="Asistencia"/>.
-/// Se abre con el código de un operador en la pestaña, o adopta la del operador que entró a Configuración con su código.
-/// Vive mientras Configuración esté abierta y termina con «Salir», al cerrar Configuración, cuando una acción vuelve sin
-/// privilegio o a los 30 s sin un toque; cada salida queda en la bitácora con su causa. La adoptada es prestada: salir la
-/// olvida sin cerrarla, porque la cierra Configuración, una sola vez. La acción que espera un código (<see cref="Pendiente"/>)
-/// vence a los mismos 30 s sin un toque.
+/// Quién habilita reimprimir y recuperar desde Consumos (D1, D5 y D6 de reimprimir-sin-codigo): el acceso con que se entró a
+/// Configuración, sin pedir otro código. Con el código de un operador, adopta la sesión privilegiada que abrió su entrada y
+/// <see cref="Asistencia"/> comprueba su permiso en cada acción (RB26); con la clave del día, actúa sin sesión y con el actor
+/// nulo, y la copia sale marcada SIN VALIDEZ. Sin ninguno de los dos, la pestaña no ofrece las acciones. La sesión del
+/// operador es de Configuración, que la cierra al cerrarse, una sola vez: <see cref="Salir"/> sólo olvida el acceso.
 /// </summary>
 public sealed class SesionOperador
 {
-    public static readonly TimeSpan Plazo = TimeSpan.FromSeconds(30);
-
     private readonly Asistencia _asistencia;
-    private readonly TimeProvider _reloj;
     private Guid? _sesion;
-    private bool _adoptada;
-    private DateTimeOffset _ultimoToque;
 
-    public SesionOperador(Asistencia asistencia, TimeProvider reloj)
+    public SesionOperador(Asistencia asistencia)
     {
         _asistencia = asistencia;
-        _reloj = reloj;
     }
 
-    public bool Abierta => _sesion is not null;
+    /// <summary>Si hay un acceso que habilita reimprimir y recuperar: el de un operador o el de la clave del día.</summary>
+    public bool Habilitada => _sesion is not null || ConClave;
 
+    /// <summary>Se entró a Configuración con la clave del día: la copia sale marcada SIN VALIDEZ y se avisa antes (D7).</summary>
+    public bool ConClave { get; private set; }
+
+    /// <summary>El operador que entró con su código; con la clave del día, ninguno.</summary>
     public string? NombreVisible { get; private set; }
 
     /// <summary>El comprobante cuyo motivo de reimpresión se está pidiendo.</summary>
@@ -41,61 +34,11 @@ public sealed class SesionOperador
     /// <summary>El aviso de incertidumbre va antes de pedir el motivo (HU03-B).</summary>
     public bool AvisoIncertidumbre => ReimpresionPedida?.EstadoUltimoTrabajo == EstadoTrabajoImpresion.Unknown;
 
-    /// <summary>El resultado de la última acción del operador.</summary>
+    /// <summary>El resultado de la última acción.</summary>
     public string? Mensaje { get; private set; }
 
-    /// <summary>Por qué no hay sesión: el permiso que falta o que cayó, o la base que no respondió.</summary>
+    /// <summary>Por qué se denegó la última acción del operador: el permiso que cayó o la sesión que ya no sirve (D6).</summary>
     public string? Aviso { get; private set; }
-
-    /// <summary>La acción de una fila que espera el código de un operador, para hacerla en cuanto entre (D5).</summary>
-    public AccionPendiente? Pendiente { get; private set; }
-
-    /// <summary>Una fila pidió reimprimir o recuperar sin sesión: queda pendiente hasta un código, «Cancelar» o 30 s.</summary>
-    public void Pedir(AccionPendiente accion)
-    {
-        Pendiente = accion;
-        Aviso = null;
-        Tocar();
-    }
-
-    /// <summary>La acción pendiente, que se saca al tomarla: se hace una sola vez.</summary>
-    public AccionPendiente? TomarPendiente()
-    {
-        var pendiente = Pendiente;
-        Pendiente = null;
-        return pendiente;
-    }
-
-    public void DescartarPendiente() => Pendiente = null;
-
-    /// <summary>«Cancelar» después de una denegación: el aviso se va con el pedido.</summary>
-    public void DescartarAviso() => Aviso = null;
-
-    public void Entrar(string codigo)
-    {
-        try
-        {
-            var resultado = _asistencia.Entrar(codigo);
-            if (!resultado.Concedida)
-            {
-                Aviso = MensajesAtencion.DeMotivo(resultado.ReasonCode);
-                return;
-            }
-
-            // La acción que esperaba este código sobrevive a la limpieza, para hacerla en cuanto la pestaña la tome.
-            var pendiente = Pendiente;
-            Limpiar();
-            Pendiente = pendiente;
-            _sesion = resultado.SesionId;
-            NombreVisible = resultado.NombreVisible;
-            Tocar();
-        }
-        catch (SqliteException)
-        {
-            Limpiar();
-            Aviso = MensajesAtencion.ErrorAlmacenamiento;
-        }
-    }
 
     /// <summary>
     /// Adopta la sesión de acción privilegiada que abrió un operador al entrar a Configuración con su código, para no pedírselo
@@ -105,123 +48,82 @@ public sealed class SesionOperador
     {
         Limpiar();
         _sesion = sesion;
-        _adoptada = true;
         NombreVisible = nombreVisible;
-        Tocar();
+    }
+
+    /// <summary>Se entró a Configuración con la clave del día, que no identifica a nadie (D1 de reimprimir-sin-codigo).</summary>
+    public void ConClaveDelDia()
+    {
+        Limpiar();
+        ConClave = true;
     }
 
     /// <summary>El comprobante de una fila de Consumos, cuyo motivo de reimpresión se pide a continuación.</summary>
     public void PedirReimpresion(ComprobanteDelDia comprobante)
     {
-        if (!Abierta)
+        if (!Habilitada)
         {
             return;
         }
 
         ReimpresionPedida = comprobante;
         Mensaje = null;
-        Tocar();
+        Aviso = null;
     }
 
-    public void CancelarReimpresion()
-    {
-        ReimpresionPedida = null;
-        Tocar();
-    }
+    public void CancelarReimpresion() => ReimpresionPedida = null;
 
     public void Reimprimir(MotivoReimpresion motivo)
     {
-        if (_sesion is not { } sesion || ReimpresionPedida is null)
+        if (ReimpresionPedida is not { } pedida || !Habilitada)
         {
             return;
         }
 
-        var resultado = _asistencia.Reimprimir(sesion, ReimpresionPedida.TicketId, motivo);
+        var resultado = _sesion is { } sesion
+            ? _asistencia.Reimprimir(sesion, pedida.TicketId, motivo)
+            : _asistencia.ReimprimirConClave(pedida.TicketId, motivo);
         DespuesDeAccion(resultado, resultado.Envio is { } envio ? MensajesAtencion.CopiaEnviada(envio.NumeroCopia) : null);
     }
 
     public void Recuperar(Guid trabajoId)
     {
-        if (_sesion is not { } sesion)
+        if (!Habilitada)
         {
             return;
         }
 
-        var resultado = _asistencia.Recuperar(sesion, trabajoId);
+        var resultado = _sesion is { } sesion ? _asistencia.Recuperar(sesion, trabajoId) : _asistencia.RecuperarConClave(trabajoId);
         DespuesDeAccion(resultado, MensajesAtencion.OriginalEnviado);
     }
 
-    /// <summary>
-    /// Termina la sesión con su causa: EXIT, CONFIGURATION_CLOSED, TIMEOUT o PERMISSION_LOST. La adoptada sólo se olvida: es la
-    /// del acceso a Configuración, que la cierra al cerrarse (D5 de buscar-y-exportar-consumos).
-    /// </summary>
-    public void Salir(string causa = "EXIT")
-    {
-        if (_sesion is { } sesion && !_adoptada)
-        {
-            try
-            {
-                _asistencia.Salir(sesion, causa);
-            }
-            catch (SqliteException)
-            {
-                // La sesión vence igual por su plazo en la base; la pestaña ya no la usa.
-            }
-        }
-
-        Limpiar();
-    }
-
-    public void Tocar() => _ultimoToque = _reloj.GetUtcNow();
-
-    /// <summary>
-    /// A los 30 s sin un toque (el borde incluido) la sesión termina, y la acción que esperaba un código se descarta sin
-    /// hacerse; devuelve si cambió algo.
-    /// </summary>
-    public bool RevisarInactividad()
-    {
-        if ((!Abierta && Pendiente is null) || _reloj.GetUtcNow() - _ultimoToque < Plazo)
-        {
-            return false;
-        }
-
-        if (Abierta)
-        {
-            Salir("TIMEOUT");
-        }
-        else
-        {
-            Pendiente = null;
-        }
-
-        return true;
-    }
+    /// <summary>Olvida el acceso al cerrar Configuración; la sesión del operador la cierra Configuración, una sola vez.</summary>
+    public void Salir() => Limpiar();
 
     private void DespuesDeAccion(ResultadoAccion resultado, string? exito)
     {
+        ReimpresionPedida = null;
         var sinPrivilegio = resultado.ReasonCode is { } codigo
             && (codigo == "SESSION_NOT_USABLE" || codigo.StartsWith("PERMISSION_", StringComparison.Ordinal));
         if (!resultado.Realizada && sinPrivilegio)
         {
-            // El permiso o la sesión cayeron: la sesión termina y la pestaña vuelve a pedir un código (RB26).
-            var aviso = MensajesAtencion.DeMotivo(resultado.ReasonCode);
-            Salir("PERMISSION_LOST");
-            Aviso = aviso;
+            // El permiso o la sesión cayeron: se avisa el motivo sin pedir un código y la sesión queda como está, así que la
+            // acción siguiente vuelve a comprobar el permiso y vuelve a denegarse (RB26, D6 de reimprimir-sin-codigo).
+            Mensaje = null;
+            Aviso = MensajesAtencion.DeMotivo(resultado.ReasonCode);
             return;
         }
 
+        Aviso = null;
         Mensaje = !resultado.Realizada
             ? MensajesAtencion.DeMotivo(resultado.ReasonCode)
             : resultado.Envio?.Estado == EstadoTrabajoImpresion.Submitted ? exito : MensajesAtencion.ComprobanteQuedoPendiente;
-        ReimpresionPedida = null;
-        Tocar();
     }
 
     private void Limpiar()
     {
         _sesion = null;
-        _adoptada = false;
-        Pendiente = null;
+        ConClave = false;
         NombreVisible = null;
         ReimpresionPedida = null;
         Mensaje = null;

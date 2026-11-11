@@ -172,39 +172,8 @@ public class PantallaAtencionTests : IDisposable
         Assert.Equal("REIMPRESIÓN · copia 1", _impresora.Recibidos[^1].Leyenda);
     }
 
-    [Fact(DisplayName = "HU03-C · Persona sin permiso (pantalla): informa que no tiene permiso y sigue en reposo")]
-    public async Task Persona_sin_permiso_sigue_en_reposo()
-    {
-        var pantalla = Dibujar();
-
-        await Consumir(pantalla);
-        await EntradaConfiguracion.Entrar(pantalla);
-        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
-        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "0001" });
-        await pantalla.Find("#entrar-operador").ClickAsync(new());
-
-        Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_MISSING"), pantalla.Find("#aviso-comprobantes").TextContent.Trim());
-        Assert.NotNull(pantalla.Find("#codigo"));
-        Assert.Empty(pantalla.FindAll(".motivo"));
-    }
-
-    [Fact(DisplayName = "RB26 · Salir de la asistencia (pantalla): vuelve a reposo sin privilegios ni el nombre del operador")]
-    public async Task Salir_de_la_asistencia_vuelve_a_reposo()
-    {
-        var pantalla = Dibujar();
-        await Consumir(pantalla);
-        await EntrarAsistencia(pantalla, "9001");
-        Assert.Contains("Operador sintético 01", pantalla.Markup);
-
-        await pantalla.Find("#salir").ClickAsync(new());
-
-        Assert.NotNull(pantalla.Find("#codigo"));
-        Assert.DoesNotContain("Operador sintético 01", pantalla.Markup);
-        Assert.Empty(pantalla.FindAll("#salir"));
-    }
-
-    [Fact(DisplayName = "RB26 · AT54 · El permiso vence durante la sesión (pantalla): reimprimir vuelve a reposo con el aviso de PERMISSION_EXPIRED")]
-    public async Task Permiso_que_vence_durante_la_sesion_vuelve_a_reposo()
+    [Fact(DisplayName = "RB26 · AT54 · El permiso vence durante la sesión (pantalla): reimprimir se deniega con el aviso de PERMISSION_EXPIRED sin pedir un código, Configuración sigue abierta y la acción siguiente también se deniega")]
+    public async Task Permiso_que_vence_durante_la_sesion_deniega_sin_pedir_codigo()
     {
         var pantalla = Dibujar();
         await Ingresar(pantalla, "0001");
@@ -227,8 +196,12 @@ public class PantallaAtencionTests : IDisposable
         await pantalla.FindAll(".motivo")[0].ClickAsync(new());
 
         Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_EXPIRED"), pantalla.Find("#aviso-comprobantes").TextContent.Trim());
-        Assert.NotNull(pantalla.Find("#codigo"));
-        Assert.DoesNotContain("Operador sintético 01", pantalla.Markup);
+        Assert.Empty(pantalla.FindAll("#codigo-operador"));
+        Assert.NotEmpty(pantalla.FindAll("[role=\"tablist\"]"));
+        await pantalla.Find(".reimprimir").ClickAsync(new());
+        await pantalla.FindAll(".motivo")[0].ClickAsync(new());
+        Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_EXPIRED"), pantalla.Find("#aviso-comprobantes").TextContent.Trim());
+        Assert.DoesNotContain(_impresora.Recibidos, r => r.NumeroCopia > 0);
     }
 
     [Fact(DisplayName = "TK03.1 · Base de una versión de esquema desconocida (pantalla): informa el error de almacenamiento y no ofrece el campo del código")]
@@ -269,26 +242,13 @@ public class PantallaAtencionTests : IDisposable
     }
 
     /// <summary>
-    /// La asistencia desde la fila de Consumos (buscar-y-exportar-consumos): «Reimprimir» en el primer consumo pide el código
-    /// del operador. Antes era la pestaña Comprobantes.
+    /// La asistencia desde la fila de Consumos: entra a Configuración por el engranaje con el código del operador, y Consumos
+    /// muestra su nombre sin pedir otro código (reimprimir-sin-codigo). Antes era la pestaña Comprobantes, y después el código
+    /// se tipeaba en Consumos.
     /// </summary>
     private static async Task EntrarAsistencia(IRenderedComponent<PantallaAtencion> pantalla, string codigo)
     {
-        await EntradaConfiguracion.Entrar(pantalla);
-        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
-        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = codigo });
-        await pantalla.Find("#entrar-operador").ClickAsync(new());
-        Assert.NotNull(pantalla.Find("#salir"));
-    }
-
-    /// <summary>Un consumo de 0001, para que Consumos tenga una fila con «Reimprimir».</summary>
-    private static async Task Consumir(IRenderedComponent<PantallaAtencion> pantalla)
-    {
-        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
-        await pantalla.Find("#ingresar").ClickAsync(new());
-        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
-        await pantalla.Find("#confirmar").ClickAsync(new());
-        pantalla.WaitForAssertion(() => pantalla.Find("#listo"));
-        await pantalla.Find("#listo").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla, codigo);
+        Assert.Contains("Operador sintético 01", pantalla.Find("#seccion-consumos").TextContent);
     }
 }

@@ -635,15 +635,10 @@
 
     private void Revisar()
     {
+        // Consumos ya no tiene un plazo propio: la sesión del operador la cierra Configuración (D5 de reimprimir-sin-codigo).
         if (Maquina.RevisarInactividad())
         {
             CancelarConfiguracionFueraDeReposo();
-            StateHasChanged();
-        }
-        else if (ConfiguracionAbierta && _sesionOperador?.RevisarInactividad() == true)
-        {
-            // Treinta segundos sin un toque en Consumos cierran la sesión del operador o descartan la acción que esperaba un
-            // código (D8 de configurar-puesto-por-pestanas y D5 de buscar-y-exportar-consumos).
             StateHasChanged();
         }
     }
@@ -859,7 +854,7 @@
         _avisoSimulacion = null;
         // El estado se leyó al tocar el engranaje (AbrirConfiguracion): muestra lo que había entonces, sin la clave ni la apertura.
         RegistrarConfiguracion("CONFIGURATION_OPENED", new { Access = _acceso, ActorPersonId = (Guid?)null, ActorReason = SinAutenticacion });
-        _sesionOperador = Servicio.Asistencia is { } asistencia ? new SesionOperador(asistencia, Servicio.Reloj) : null;
+        _sesionOperador = Servicio.Asistencia is { } asistencia ? new SesionOperador(asistencia) : null;
         // Una sesión de Configuración nueva vuelve a mostrar el teclado general (D4 de operar-solo-con-la-pantalla).
         _tecladoOculto = false;
         _configuracion = true;
@@ -958,6 +953,9 @@
                     // Con la clave del día no hay operador: actor nulo con NO_AUTHENTICATION (D7).
                     SalirDelOperador();
                     AbrirConfiguracionCon(AccesoClave);
+                    // Consumos reimprime y recupera con la clave, sin pedir un código, y la copia sale SIN VALIDEZ (D1 de
+                    // reimprimir-sin-codigo).
+                    _sesionOperador?.ConClaveDelDia();
                 }
 
                 break;
@@ -1659,8 +1657,8 @@
 
     private void CancelarConfiguracion()
     {
-        // Cerrar Configuración termina la sesión del operador de Consumos (D8); la adoptada la cierra SalirDelOperador, una vez.
-        _sesionOperador?.Salir("CONFIGURATION_CLOSED");
+        // Consumos olvida el acceso; la sesión del operador la cierra SalirDelOperador, una vez, con CONFIGURATION_CLOSED.
+        _sesionOperador?.Salir();
         _sesionOperador = null;
         _vista = _guardado;
         _configuracion = false;

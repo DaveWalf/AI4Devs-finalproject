@@ -52,8 +52,7 @@ sigue la regla de prolijidad de `config.yaml`.
   un comprobante inexistente da `TICKET_NOT_FOUND`. Verifica:
   `dotnet test tests/Intelektron.INComedor.Infrastructure.Sqlite.Tests --filter-class *AsistenciaConClave*`, en rojo
   antes y en verde después.
-  - Hecho el 11/11 a las 18:03: rojo 4 de 4 por `NotImplementedException` de los dos métodos vacíos, antes de
-    implementarlos.
+  - Hecho el 11/11: rojo 4 de 4 por `NotImplementedException` de los dos métodos vacíos, antes de implementarlos.
 - [x] 2.2 Los dos métodos de D1 en `Asistencia.cs`, con el cuerpo común extraído de `Actuar`. Verifica: 2.1 en verde, y
   `AsistenciaTests` y `SalidaAsistenciaTests` sin cambios y en verde.
   - Hecho: `CuerpoRecuperar` y `CuerpoReimprimir` comunes, `ActuarConClave` sin persona ni permiso. Las tres clases en
@@ -86,24 +85,41 @@ sigue la regla de prolijidad de `config.yaml`.
 
 ## 4. Consumos sin pedido de código
 
-- [ ] 4.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes, una por escenario nuevo del delta: «Con la clave del día
+- [x] 4.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes, una por escenario nuevo del delta: «Con la clave del día
   no se pide un código», «Reimpresión con la clave del día» (el archivo de la impresora simulada tiene la marca y no
   tiene «Habilitó:»), «El aviso de una copia sin validez» (compara `#aviso-sin-validez` con el mensaje entero, con su
   punto final, y afirma que la impresora no recibió nada) y «Recuperar con la clave del día». Verifica: en rojo antes y
   en verde después.
-- [ ] 4.2 Las reescrituras y las bajas aprobadas en 1.1, ni una más. Verifica: el `git diff --diff-filter=M` del
+  - Hecho en `ConsumosSinCodigoTests` (4 pruebas): rojo 4 de 4 con el pedido de código todavía en la pestaña; verdes
+    después de 4.3.
+- [x] 4.2 Las reescrituras y las bajas aprobadas en 1.1, ni una más. Verifica: el `git diff --diff-filter=M` del
   encabezado, igual a la lista de 1.1.
-- [ ] 4.3 D5, D6 y D7. En `SesionOperador.cs`: `ConClaveDelDia()`, sin `Pedir`, `TomarPendiente`, `DescartarPendiente`,
+  - Hecho: las reescrituras y bajas de 1.1, más el auxiliar `Consumir` de `PantallaAtencionTests`, que quedó sin uso con
+    las dos bajas de ese archivo. `git diff --diff-filter=M --name-only 7b80d45 -- tests/` da los ocho archivos de 1.1,
+    con el E2E de 4.4: `BuscarYExportarConsumosE2ETests`, `AccionesEnConsumosTests`, `DatosDelComprobanteTests`,
+    `PantallaAtencionTests`, `PestanaComprobantesTests`, `PestanaConsumosTests`, `PuntoFinalTests` y
+    `TextosComprobanteTests`.
+- [x] 4.3 D5, D6 y D7. En `SesionOperador.cs`: `ConClaveDelDia()`, sin `Pedir`, `TomarPendiente`, `DescartarPendiente`,
   `Entrar` ni `RevisarInactividad`, y la denegación que deja el aviso sin pedido. En `PestanaConsumos.razor`: sin el
   bloque del pedido ni «Salir», y con `#aviso-sin-validez`. En `PantallaAtencion.razor`: `ConClaveDelDia()` al abrir
   con la clave, y sin la revisión de inactividad de Consumos. En `MensajesAtencion.cs`: `CopiaSinValidez`, y se quitan
   `PedidoOperador` y `PedidoOperadorPara`. Verifica: `dotnet test tests/Intelektron.INComedor.Kiosk.Tests` en verde, y
   `git grep -n "codigo-operador" -- src` vacío.
-- [ ] 4.4 Prolijidad: por CDP, a 1024 × 768, se miden en la sección del motivo con la clave del día los bordes izquierdo
+  - Hecho: `SesionOperador` sin reloj ni plazo, con `Habilitada`, `ConClave` y `ConClaveDelDia()`; Reimprimir y
+    Recuperar sólo se ofrecen con un acceso que los habilite. Se borraron las reglas de `puesto.css` de
+    `.entrada-operador`, que quedaron sin uso. `Kiosk.Tests` 602 de 602 y `git grep -n "codigo-operador" -- src` vacío.
+- [x] 4.4 Prolijidad: por CDP, a 1024 × 768, se miden en la sección del motivo con la clave del día los bordes izquierdo
   y derecho de `#aviso-sin-validez` y de `#aviso-incertidumbre`, y el alto, el ancho y el tamaño de letra de los botones
   de motivo y de «Cancelar» (tolerancia de 1 px). La captura `consumos-motivo-sin-validez-1024x768` queda para la
   verificación, en el E2E de 1.1. Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests --filter-class
   *BuscarYExportarConsumos*` en verde, con las medidas pegadas de `registro.txt`.
+  - Hecho: la impresora pasa a «Incierta» en su pestaña y una copia deja el último trabajo en `UNKNOWN`, para ver los
+    dos avisos juntos. Medidas de `registro.txt` (11/11, 18:11:57): `#aviso-incertidumbre` de 49,0 a 975,0 px y
+    `#aviso-sin-validez` de 49,0 a 975,0 px, los dos con letra 16px; los cuatro `.motivo` y `#cancelar-reimpresion`, de
+    56,0 px de alto, letra 16px y arriba en 418,0 px, con anchos de 147,4, 135,6, 212,9, 120,0 y 120,0 px (no cambian:
+    cada uno el de su texto, D5). Seis corridas en primer plano: cinco en verde y la primera roja sólo por el control de
+    `EscenarioE2E.cs:410`, porque `%LOCALAPPDATA%\INComedor\demo\` cambió durante la corrida, una carpeta que esta prueba
+    no usa (corría otra sesión en paralelo); las cuatro siguientes dieron la foto igual.
 
 ## 5. Documentación, decisión y verificación completa
 
