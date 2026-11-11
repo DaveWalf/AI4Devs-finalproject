@@ -54,9 +54,9 @@
   fila de pestañas.
 - [x] 5.2 `readme.md` (los avisos, la señal de vida y el envío real como pendiente) y la fila que corresponda de
   `docs/aplicacion-del-curso.md`. Verifica: el chequeo de enlaces con su control negativo, `enlaces rotos: 0`. Hecho: 0, con el control en 2.
-- [ ] 5.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
+- [x] 5.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
   --no-incremental`, el puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c
-  Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+  Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas. Hecho sobre `be3217f`: 1071 de 1071; la final, sobre el archivado, en el PR.
 
 ## 6. Correcciones de la verificación
 
