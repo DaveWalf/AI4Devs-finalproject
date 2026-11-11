@@ -521,6 +521,12 @@ html, body { overscroll-behavior: none; }
 .encabezado-configuracion p { margin: 0; font-size: 16px; }
 .dialogo .indicacion { font-size: 15px; color: var(--tinta-suave); }
 .abrir-paneles { justify-content: flex-start; }
+/* El resguardo, al final de General (D4 y D6 de resguardar-configuracion): los dos botones del mismo ancho, a la izquierda,
+   con el alto y la letra de «Cerrar»; el resumen con la letra de los de las importaciones. */
+#resguardo { display: flex; flex-direction: column; gap: 8px; }
+#resguardo h3 { margin: 0; }
+.dialogo .acciones.botones-resguardo { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; justify-content: start; }
+#resumen-resguardo p { margin: 0; font-size: 18px; }
 .panel-administracion { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .lista-administracion {
     display: flex;

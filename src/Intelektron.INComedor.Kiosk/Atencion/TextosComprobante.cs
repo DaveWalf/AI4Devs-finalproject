@@ -62,23 +62,41 @@ public sealed class AlmacenImpresora
     {
         try
         {
-            using var documento = JsonDocument.Parse(File.ReadAllText(Ruta));
-            var raiz = documento.RootElement;
-            if (raiz.ValueKind == JsonValueKind.Object
-                && raiz.TryGetProperty("encabezado", out var encabezado) && encabezado.ValueKind == JsonValueKind.String
-                && raiz.TryGetProperty("pie", out var pie) && pie.ValueKind == JsonValueKind.String
-                && TextosComprobante.Validar(encabezado.GetString(), pie.GetString()).Count == 0)
-            {
-                return new TextosComprobante(encabezado.GetString()!, pie.GetString()!);
-            }
+            return Interpretar(File.ReadAllText(Ruta)) ?? TextosComprobante.PorDefecto;
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             // Sin archivo, o ilegible: los textos por defecto.
+            return TextosComprobante.PorDefecto;
         }
-
-        return TextosComprobante.PorDefecto;
     }
+
+    /// <summary>Los textos de un contenido con la forma del archivo, o null si no la tiene o no validan.</summary>
+    public static TextosComprobante? Interpretar(string contenido)
+    {
+        try
+        {
+            using var documento = JsonDocument.Parse(contenido);
+            var raiz = documento.RootElement;
+            return raiz.ValueKind == JsonValueKind.Object
+                && raiz.TryGetProperty("encabezado", out var encabezado) && encabezado.ValueKind == JsonValueKind.String
+                && raiz.TryGetProperty("pie", out var pie) && pie.ValueKind == JsonValueKind.String
+                && TextosComprobante.Validar(encabezado.GetString(), pie.GetString()).Count == 0
+                ? new TextosComprobante(encabezado.GetString()!, pie.GetString()!)
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>El contenido del archivo para unos textos, el que escribe <see cref="Guardar"/>.</summary>
+    public static string Serializar(TextosComprobante textos) =>
+        JsonSerializer.Serialize(new { encabezado = textos.Encabezado, pie = textos.Pie });
+
+    /// <summary>Borra el archivo: vuelven los textos por defecto (D3 de resguardar-configuracion).</summary>
+    public void VolverAlPorDefecto() => File.Delete(Ruta);
 
     public void Guardar(TextosComprobante textos)
     {
@@ -91,7 +109,7 @@ public sealed class AlmacenImpresora
         var temporal = Ruta + ".tmp";
         try
         {
-            File.WriteAllText(temporal, JsonSerializer.Serialize(new { encabezado = textos.Encabezado, pie = textos.Pie }));
+            File.WriteAllText(temporal, Serializar(textos));
             File.Move(temporal, Ruta, overwrite: true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

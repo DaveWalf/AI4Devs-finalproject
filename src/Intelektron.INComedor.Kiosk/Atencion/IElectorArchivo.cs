@@ -17,4 +17,13 @@ public interface IElectorArchivo
     /// como los dobles de las pruebas, elige igual.
     /// </summary>
     string? Elegir(string? carpeta, string titulo) => Elegir(carpeta);
+
+    /// <summary>El título del diálogo al recuperar un resguardo (D4 de resguardar-configuracion).</summary>
+    public const string TituloResguardo = "Resguardo de la configuración para recuperar";
+
+    /// <summary>
+    /// El <c>.zip</c> de un resguardo, con su título y su filtro (D4 de resguardar-configuracion); un elector que no los usa,
+    /// como los dobles de las pruebas, elige igual.
+    /// </summary>
+    string? ElegirResguardo(string? carpeta) => Elegir(carpeta, TituloResguardo);
 }

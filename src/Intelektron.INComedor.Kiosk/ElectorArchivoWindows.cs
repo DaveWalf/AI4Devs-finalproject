@@ -8,7 +8,7 @@ namespace Intelektron.INComedor.Kiosk;
 /// <summary>
 /// El diálogo de archivos de Windows para importar Personas (D7 de importar-personas-desde-excel), con la ventana del puesto
 /// como dueña, como el de carpetas: se abre sobre ella, en el monitor del puesto, y la deja inerte mientras está abierto.
-/// Sólo ofrece libros <c>.xlsx</c> y empieza en la carpeta de la exportación si todavía existe.
+/// Ofrece libros <c>.xlsx</c>, o sólo <c>.zip</c> para un resguardo, y empieza en la carpeta de la exportación si todavía existe.
 /// </summary>
 public sealed class ElectorArchivoWindows : IElectorArchivo
 {
@@ -27,14 +27,19 @@ public sealed class ElectorArchivoWindows : IElectorArchivo
 
     public string? Elegir(string? carpeta) => Elegir(carpeta, Titulo);
 
-    public string? Elegir(string? carpeta, string titulo)
+    public string? Elegir(string? carpeta, string titulo) => Mostrar(carpeta, titulo, "Libro de Excel (*.xlsx)|*.xlsx");
+
+    /// <summary>Sólo los <c>.zip</c>, con el título del resguardo (D4 de resguardar-configuracion).</summary>
+    public string? ElegirResguardo(string? carpeta) => Mostrar(carpeta, IElectorArchivo.TituloResguardo, "Resguardo del puesto (*.zip)|*.zip");
+
+    private string? Mostrar(string? carpeta, string titulo, string filtro)
     {
         string? Mostrar()
         {
             var dialogo = new OpenFileDialog
             {
                 Title = titulo,
-                Filter = "Libro de Excel (*.xlsx)|*.xlsx",
+                Filter = filtro,
                 Multiselect = false,
                 CheckFileExists = true,
             };

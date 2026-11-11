@@ -77,6 +77,12 @@ public class PuntoFinalTests
             MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo(2),
             .. ErroresDeImportacionOpciones.Select(MensajesAtencion.ErrorDeImportacionOpciones),
             .. ErroresDeImportacion.Select(MensajesAtencion.ErrorDeImportacion),
+            MensajesAtencion.ResguardoGuardado("INComedor-resguardo-20261111-120000.zip", @"C:\Exportaciones"),
+            MensajesAtencion.ResumenResguardo("INComedor-resguardo-20261111-120000.zip", ResguardoDeEjemplo(conAjustes: true), TimeZoneInfo.Utc),
+            MensajesAtencion.AjustesDelResguardo(ResguardoDeEjemplo(conAjustes: true)),
+            MensajesAtencion.AjustesDelResguardo(ResguardoDeEjemplo(conAjustes: false)),
+            .. MotivosDeResguardo.Select(m => MensajesAtencion.ResguardoRechazado("resguardo.zip", m)),
+            MensajesAtencion.ResguardoRecuperado(3),
         ];
 
         var sinPunto = armados.Where(m => !m.EndsWith('.')).ToList();
@@ -101,7 +107,28 @@ public class PuntoFinalTests
         nameof(MensajesAtencion.ExportacionOpcionesHecha), nameof(MensajesAtencion.PlanillaBaseHecha),
         nameof(MensajesAtencion.ResumenImportacionOpciones), nameof(MensajesAtencion.ImportacionOpcionesAplicada),
         nameof(MensajesAtencion.ImportacionOpcionesConFilasDeEjemplo), nameof(MensajesAtencion.ErrorDeImportacionOpciones),
+        nameof(MensajesAtencion.ResguardoGuardado), nameof(MensajesAtencion.ResumenResguardo), nameof(MensajesAtencion.AjustesDelResguardo),
+        nameof(MensajesAtencion.ResguardoRechazado), nameof(MensajesAtencion.ResguardoRecuperado),
     ];
+
+    /// <summary>Cada motivo por el que un resguardo no se recupera, y uno desconocido (D2 de resguardar-configuracion).</summary>
+    private static readonly string[] MotivosDeResguardo =
+    [
+        MotivosResguardo.Ilegible, MotivosResguardo.NoEsUnZip, MotivosResguardo.DemasiadoGrande, MotivosResguardo.ParteDesconocida,
+        MotivosResguardo.HuellaDistinta, MotivosResguardo.OtroFormato, MotivosResguardo.OtroEsquema, MotivosResguardo.AjusteInvalido,
+        CodigosAdministracion.ResguardoInvalido, CodigosAdministracion.CodigoEnConflicto, CodigosAdministracion.INWebAdministra,
+        "LOCAL_FILES_NOT_WRITTEN", "DATABASE_ERROR", "OTRO",
+    ];
+
+    /// <summary>Un resguardo revisado de ejemplo, con todos los ajustes locales o con ninguno.</summary>
+    private static ResguardoRevisado ResguardoDeEjemplo(bool conAjustes)
+    {
+        var logo = new LogoElegido(".png", "image/png", "PNG", [0x89, 0x50, 0x4E, 0x47]);
+        return new ResguardoRevisado("ABC", 2, DateTimeOffset.Parse("2026-11-11T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture), 9, 15, 1, [],
+            "{}", conAjustes ? EstiloVisual.PorDefecto : null, conAjustes ? TextosComprobante.PorDefecto : null,
+            conAjustes ? new Dictionary<LogoPuesto, LogoElegido> { [LogoPuesto.Empresa] = logo, [LogoPuesto.Concesionaria] = logo } : [],
+            conAjustes ? new Dictionary<Guid, PresentacionOpcion> { [Guid.NewGuid()] = PresentacionOpcion.PorDefecto } : null, []);
+    }
 
     /// <summary>Un error de cada clase: del archivo, del encabezado y de una fila, con cada motivo y uno desconocido.</summary>
     private static readonly ErrorImportacion[] ErroresDeImportacion =

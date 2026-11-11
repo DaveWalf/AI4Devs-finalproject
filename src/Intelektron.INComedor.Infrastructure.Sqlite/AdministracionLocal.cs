@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Intelektron.INComedor.Contracts;
@@ -69,6 +70,62 @@ public sealed class AdministracionLocal
         var vista = LeerVista(conexion, transaccion, PuestoLocal.Leer(conexion, transaccion), _reloj.GetUtcNow());
         transaccion.Commit();
         return vista;
+    }
+
+    /// <summary>
+    /// La versión activa entera, tabla por tabla, en JSON (D1 de resguardar-configuracion): las tablas y columnas de
+    /// <see cref="TablasDeConfiguracion"/> sin la versión, con enteros, textos o nulos.
+    /// </summary>
+    public ConfiguracionLeida LeerConfiguracion()
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        using var transaccion = conexion.BeginTransaction(deferred: true);
+        var puesto = PuestoLocal.Leer(conexion, transaccion);
+        using var flujo = new MemoryStream();
+        using (var escritor = new Utf8JsonWriter(flujo, new JsonWriterOptions { Indented = true }))
+        {
+            EscribirTablas(escritor, conexion, transaccion, puesto.SnapshotId);
+        }
+
+        transaccion.Commit();
+        return new ConfiguracionLeida(puesto.VersionConfiguracion, VersionEsquema, Encoding.UTF8.GetString(flujo.ToArray()));
+    }
+
+    /// <summary>
+    /// Revisa entera la configuración de un resguardo, sin dejar nada escrito (D2): la ensaya como la recuperación, en una
+    /// transacción BEGIN IMMEDIATE que se deshace. Con INWeb como dueño, el motivo es el de un guardado denegado.
+    /// </summary>
+    public RevisionConfiguracion RevisarConfiguracion(string configuracion)
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        using var transaccion = BaseComedor.IniciarTransaccionEscritura(conexion);
+        var revision = Ensayar(conexion, transaccion, _reloj.GetUtcNow(), configuracion, out _);
+        transaccion.Rollback();
+        return revision;
+    }
+
+    /// <summary>
+    /// Crea una versión nueva con la configuración de un resguardo y la activa, como un guardado (D3): denegado con INWeb
+    /// como dueño; rechazado si no tiene las tablas, las columnas, los tipos y los valores de un guardado de este esquema, o
+    /// si la base o la pantalla no pueden tomar lo que trae (INVALID_BACKUP), o si un código es, en esta base, de otra
+    /// persona en cualquier versión (CODE_CONFLICT, RB25). Todo en una transacción BEGIN IMMEDIATE: un rechazo no escribe
+    /// nada. Los registros de la recuperación los deja quien la pide (D5): reemplazar la configuración no edita entidades.
+    /// </summary>
+    public ResultadoGuardado RecuperarVersion(string configuracion)
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        using var transaccion = BaseComedor.IniciarTransaccionEscritura(conexion);
+        var anterior = PuestoLocal.Leer(conexion, transaccion).VersionConfiguracion;
+        var revision = Ensayar(conexion, transaccion, _reloj.GetUtcNow(), configuracion, out var numero);
+        if (revision.Motivo is { } motivo)
+        {
+            transaccion.Rollback();
+            var tipo = motivo == INWebAdministra ? TipoGuardado.Denegado : TipoGuardado.Rechazado;
+            return new ResultadoGuardado(tipo, anterior, motivo, []);
+        }
+
+        transaccion.Commit();
+        return new ResultadoGuardado(TipoGuardado.Aplicado, numero, null, []);
     }
 
     /// <summary>
@@ -478,6 +535,21 @@ public sealed class AdministracionLocal
 
     private static int CrearVersion(Contexto c, Guid nueva)
     {
+        var numero = InsertarVersion(c, nueva);
+        foreach (var (tabla, columnas) in TablasDeConfiguracion)
+        {
+            var lista = string.Join(", ", columnas);
+            ComandosSqlite.Ejecutar(c.Conexion, c.Transaccion,
+                $"INSERT INTO {tabla} (comvcCodigo, {lista}) SELECT $nueva, {lista} FROM {tabla} WHERE comvcCodigo = $activa",
+                ("$nueva", nueva), ("$activa", c.Puesto.SnapshotId));
+        }
+
+        return numero;
+    }
+
+    /// <summary>La fila de la versión nueva, con los números de la activa, todavía sin contenido.</summary>
+    private static int InsertarVersion(Contexto c, Guid nueva)
+    {
         var numero = (int)ComandosSqlite.EscalarLong(c.Conexion, c.Transaccion,
             "SELECT MAX(comvcVersionConfiguracion) + 1 FROM tbComedorVersionesConfiguracion");
         var ahora = FormatoInstante.Texto(c.Ahora);
@@ -489,16 +561,267 @@ public sealed class AdministracionLocal
             FROM tbComedorVersionesConfiguracion WHERE comvcCodigo = $activa
             """,
             ("$nueva", nueva), ("$numero", numero), ("$esquema", VersionEsquema), ("$ahora", ahora), ("$activa", c.Puesto.SnapshotId));
+        return numero;
+    }
 
-        foreach (var (tabla, columnas) in TablasDeConfiguracion)
+    /// <summary>
+    /// Las filas de una tabla del resguardo en la versión nueva, con un comando preparado y SQL parametrizado (D3): cada valor
+    /// ya tiene el tipo de su columna (un GUID, un texto, un entero o un nulo) y se enlaza como lo enlaza cualquier guardado.
+    /// </summary>
+    private static void InsertarFilas(Contexto c, Guid version, string tabla, string[] columnas, List<object[]> filas)
+    {
+        var parametros = columnas.Select((_, i) => "$p" + i.ToString(CultureInfo.InvariantCulture)).ToArray();
+        using var comando = ComandosSqlite.Crear(c.Conexion, c.Transaccion,
+            $"INSERT INTO {tabla} (comvcCodigo, {string.Join(", ", columnas)}) VALUES ($vc, {string.Join(", ", parametros)})",
+            ("$vc", version));
+        var valores = parametros.Select(p => comando.Parameters.Add(new SqliteParameter { ParameterName = p })).ToArray();
+        foreach (var fila in filas)
         {
-            var lista = string.Join(", ", columnas);
-            ComandosSqlite.Ejecutar(c.Conexion, c.Transaccion,
-                $"INSERT INTO {tabla} (comvcCodigo, {lista}) SELECT $nueva, {lista} FROM {tabla} WHERE comvcCodigo = $activa",
-                ("$nueva", nueva), ("$activa", c.Puesto.SnapshotId));
+            for (var i = 0; i < fila.Length; i++)
+            {
+                valores[i].Value = fila[i];
+            }
+
+            comando.ExecuteNonQuery();
+        }
+    }
+
+    // ── El resguardo (D1 a D3 de resguardar-configuracion) ───────────────────────────────────────────────────
+
+    /// <summary>Cómo se lee cada columna de un resguardo: lo que la base guarda y la pantalla lee de ella.</summary>
+    private enum TipoColumna
+    {
+        Guid,
+        Instante,
+        Hora,
+        Entero,
+        Texto,
+    }
+
+    private static readonly HashSet<string> ColumnasEnteras = new(StringComparer.Ordinal)
+    {
+        "comperActivo", "comperVersionMaterialIdentidad", "commenVersionMenu", "commenEscala", "commenImporteEmpleadoUnidadesMenores",
+        "commccUnidades", "comregLimite", "comregPrioridad",
+    };
+
+    /// <summary>Un GUID termina en «Codigo», un instante lleva «Fecha», una hora es de una franja; los enteros, por su nombre.</summary>
+    private static TipoColumna Tipo(string columna) =>
+        columna.EndsWith("Codigo", StringComparison.Ordinal) ? TipoColumna.Guid
+        : columna.Contains("Fecha", StringComparison.Ordinal) ? TipoColumna.Instante
+        : columna.StartsWith("comfraHora", StringComparison.Ordinal) ? TipoColumna.Hora
+        : ColumnasEnteras.Contains(columna) ? TipoColumna.Entero
+        : TipoColumna.Texto;
+
+    /// <summary>
+    /// Ensaya la recuperación en la transacción de quien llama, sin commit (D2 y D3): INWeb como dueño; la forma, los tipos y
+    /// los valores de un guardado a mano; la versión nueva insertada y activada, con sus claves foráneas, sus CHECK y sus
+    /// únicos; ningún código de otra persona en cualquier versión (RB25), y la vista que la pantalla lee. Un rechazo deja la
+    /// transacción para deshacer; una falla de la base que no es de una restricción sigue de largo.
+    /// </summary>
+    private static RevisionConfiguracion Ensayar(
+        SqliteConnection conexion, SqliteTransaction transaccion, DateTimeOffset ahora, string configuracion, out int numero)
+    {
+        numero = 0;
+        var puesto = PuestoLocal.Leer(conexion, transaccion);
+        if (LeerVista(conexion, transaccion, puesto, ahora).SoloLectura)
+        {
+            return new RevisionConfiguracion(INWebAdministra, 0, 0, 0);
         }
 
-        return numero;
+        if (LeerTablas(configuracion) is not { } tablas || !ValoresDeUnGuardado(tablas))
+        {
+            return new RevisionConfiguracion(ResguardoInvalido, 0, 0, 0);
+        }
+
+        var contexto = new Contexto(conexion, transaccion, puesto, ahora);
+        var cambios = new Cambios(Guid.NewGuid()) { Padron = true, Politicas = true, Catalogo = true };
+        try
+        {
+            numero = InsertarVersion(contexto, cambios.Version);
+            foreach (var (tabla, columnas) in TablasDeConfiguracion)
+            {
+                InsertarFilas(contexto, cambios.Version, tabla, columnas, tablas[tabla]);
+            }
+
+            ActivarVersion(contexto, cambios, numero);
+            if (CodigoDeOtraPersona(conexion, transaccion, cambios.Version))
+            {
+                return new RevisionConfiguracion(CodigoEnConflicto, 0, 0, 0);
+            }
+
+            LeerVista(conexion, transaccion, PuestoLocal.Leer(conexion, transaccion), ahora);
+        }
+        catch (SqliteException error) when (error.SqliteErrorCode == SqliteRestriccion)
+        {
+            return new RevisionConfiguracion(ResguardoInvalido, 0, 0, 0);
+        }
+        catch (Exception error) when (error is FormatException or InvalidCastException or OverflowException or ArgumentException)
+        {
+            return new RevisionConfiguracion(ResguardoInvalido, 0, 0, 0);
+        }
+
+        return new RevisionConfiguracion(null, Personas(tablas), tablas["tbComedorOpcionesMenu"].Count, Permisos(tablas, ahora));
+    }
+
+    /// <summary>SQLITE_CONSTRAINT: una clave foránea, un CHECK, un único o un NOT NULL que el resguardo no cumple.</summary>
+    private const int SqliteRestriccion = 19;
+
+    /// <summary>
+    /// Un código de la versión nueva que alguna versión de esta base le da a otra persona (RB25): una sola pasada por las
+    /// credenciales, contra el conjunto de códigos de la versión nueva.
+    /// </summary>
+    private static bool CodigoDeOtraPersona(SqliteConnection conexion, SqliteTransaction transaccion, Guid version) =>
+        ComandosSqlite.EscalarLong(conexion, transaccion,
+            """
+            SELECT COUNT(*) FROM (
+                SELECT comcreValorNormalizado FROM tbComedorCredencialesPersonas
+                WHERE comcreTipo = 'SERIAL_CODE' AND comcreValorNormalizado IN (
+                    SELECT comcreValorNormalizado FROM tbComedorCredencialesPersonas WHERE comvcCodigo = $vc AND comcreTipo = 'SERIAL_CODE')
+                GROUP BY comcreValorNormalizado
+                HAVING COUNT(DISTINCT comperCodigo) > 1)
+            """,
+            ("$vc", version)) > 0;
+
+    /// <summary>Las personas activas que trae el resguardo.</summary>
+    private static int Personas(Dictionary<string, List<object[]>> tablas)
+    {
+        var activo = Indice("tbComedorPersonas", "comperActivo");
+        return tablas["tbComedorPersonas"].Count(p => p[activo] is 1L);
+    }
+
+    /// <summary>Los permisos de operador del resguardo vigentes ahora: sin revocar, ya empezados y sin vencer.</summary>
+    private static int Permisos(Dictionary<string, List<object[]>> tablas, DateTimeOffset ahora)
+    {
+        var (rol, desde, hasta, revocacion) = (
+            Indice("tbComedorPermisosOperadores", "compopRol"), Indice("tbComedorPermisosOperadores", "compopFechaVigenciaDesdeUtc"),
+            Indice("tbComedorPermisosOperadores", "compopFechaVigenciaHastaUtc"), Indice("tbComedorPermisosOperadores", "compopFechaRevocacionUtc"));
+        return tablas["tbComedorPermisosOperadores"].Count(p => p[rol] is "OPERATOR" && p[revocacion] is DBNull
+            && (p[desde] is not string d || FormatoInstante.Leer(d) <= ahora)
+            && (p[hasta] is not string h || FormatoInstante.Leer(h) > ahora));
+    }
+
+    /// <summary>
+    /// Los valores con las reglas de un guardado a mano (D2): los nombres de personas y opciones, los códigos, el importe, las
+    /// unidades de cada carga y el límite de cada regla. Un resguardo no es un atajo para lo que la pantalla no deja guardar.
+    /// </summary>
+    private static bool ValoresDeUnGuardado(Dictionary<string, List<object[]>> tablas)
+    {
+        bool Todas(string tabla, string columna, Func<object, bool> valida)
+        {
+            var indice = Indice(tabla, columna);
+            return tablas[tabla].All(f => valida(f[indice]));
+        }
+
+        var (tipo, valor) = (Indice("tbComedorCredencialesPersonas", "comcreTipo"), Indice("tbComedorCredencialesPersonas", "comcreValorNormalizado"));
+        return Todas("tbComedorPersonas", "comperNombreVisible", n => ValidarTexto(n as string, LargoNombrePersona) is null)
+            && Todas("tbComedorPersonas", "comperActivo", a => a is 0L or 1L)
+            && tablas["tbComedorCredencialesPersonas"].All(c => c[tipo] is not "SERIAL_CODE" || ValidarCodigo(c[valor] as string) is null)
+            && Todas("tbComedorOpcionesMenu", "commenNombre", n => ValidarTexto(n as string, LargoNombreOpcion) is null)
+            && Todas("tbComedorOpcionesMenu", "commenImporteEmpleadoUnidadesMenores", i => i is long importe && importe is >= 0 and <= ImporteMaximo)
+            && Todas("tbComedorOpcionesMenu_CategoriasCupo", "commccUnidades", u => u is long unidades && unidades is >= 1 and <= UnidadesMaximas)
+            && Todas("tbComedorReglasHabilitacion", "comregLimite", l => l is long limite && limite is >= 0 and <= LimiteMaximo);
+    }
+
+    private static int Indice(string tabla, string columna) =>
+        Array.IndexOf(TablasDeConfiguracion.First(t => t.Tabla == tabla).Columnas, columna);
+
+    /// <summary>
+    /// Las filas de cada tabla de configuración, con sus valores en el orden de sus columnas y con el tipo de cada una; nulo si
+    /// el JSON no es un objeto con exactamente las diez tablas, cada una una lista de objetos con exactamente sus columnas (D2).
+    /// </summary>
+    private static Dictionary<string, List<object[]>>? LeerTablas(string configuracion)
+    {
+        JsonDocument documento;
+        try
+        {
+            documento = JsonDocument.Parse(configuracion, new JsonDocumentOptions { MaxDepth = 8 });
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        using (documento)
+        {
+            if (documento.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            var tablas = new Dictionary<string, List<object[]>>(StringComparer.Ordinal);
+            foreach (var tabla in documento.RootElement.EnumerateObject())
+            {
+                var columnas = TablasDeConfiguracion.FirstOrDefault(t => t.Tabla == tabla.Name).Columnas;
+                if (columnas is null || tablas.ContainsKey(tabla.Name) || tabla.Value.ValueKind != JsonValueKind.Array)
+                {
+                    return null;
+                }
+
+                var filas = new List<object[]>();
+                foreach (var fila in tabla.Value.EnumerateArray())
+                {
+                    if (LeerFila(fila, columnas) is not { } valores)
+                    {
+                        return null;
+                    }
+
+                    filas.Add(valores);
+                }
+
+                tablas.Add(tabla.Name, filas);
+            }
+
+            return tablas.Count == TablasDeConfiguracion.Length ? tablas : null;
+        }
+    }
+
+    /// <summary>
+    /// Una fila con exactamente sus columnas, cada valor del tipo de la suya: un GUID, un instante y una hora se leen y se
+    /// vuelven a escribir como los escribe el puesto, un entero sólo como número y un texto sólo como texto; un nulo, en
+    /// cualquiera (los NOT NULL los controla la base). Así un código no entra como número ni un importe como texto.
+    /// </summary>
+    private static object[]? LeerFila(JsonElement fila, string[] columnas)
+    {
+        if (fila.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var valores = new object[columnas.Length];
+        var leidas = new bool[columnas.Length];
+        foreach (var celda in fila.EnumerateObject())
+        {
+            var indice = Array.IndexOf(columnas, celda.Name);
+            if (indice < 0 || leidas[indice] || Valor(celda.Value, Tipo(celda.Name)) is not { } valor)
+            {
+                return null;
+            }
+
+            valores[indice] = valor;
+            leidas[indice] = true;
+        }
+
+        return leidas.All(l => l) ? valores : null;
+    }
+
+    private static object? Valor(JsonElement celda, TipoColumna tipo)
+    {
+        if (celda.ValueKind == JsonValueKind.Null)
+        {
+            return DBNull.Value;
+        }
+
+        var texto = celda.ValueKind == JsonValueKind.String ? celda.GetString() : null;
+        return tipo switch
+        {
+            TipoColumna.Entero => celda.ValueKind == JsonValueKind.Number && celda.TryGetInt64(out var entero) ? entero : null,
+            TipoColumna.Texto => texto,
+            TipoColumna.Guid => Guid.TryParse(texto, out var guid) ? guid : null,
+            TipoColumna.Instante => DateTimeOffset.TryParse(texto, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var instante)
+                ? FormatoInstante.Texto(instante)
+                : null,
+            _ => TimeOnly.TryParseExact(texto, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var hora) ? Hora(hora) : null,
+        };
     }
 
     private static void ActivarVersion(Contexto c, Cambios cambios, int numero)
@@ -531,44 +854,53 @@ public sealed class AdministracionLocal
         using var flujo = new MemoryStream();
         using (var escritor = new Utf8JsonWriter(flujo))
         {
-            escritor.WriteStartObject();
-            foreach (var (tabla, columnas) in TablasDeConfiguracion)
-            {
-                escritor.WriteStartArray(tabla);
-                var lista = string.Join(", ", columnas);
-                using var comando = ComandosSqlite.Crear(c.Conexion, c.Transaccion,
-                    $"SELECT {lista} FROM {tabla} WHERE comvcCodigo = $vc ORDER BY {lista}", ("$vc", version));
-                using var lector = comando.ExecuteReader();
-                while (lector.Read())
-                {
-                    escritor.WriteStartObject();
-                    for (var i = 0; i < columnas.Length; i++)
-                    {
-                        escritor.WritePropertyName(columnas[i]);
-                        switch (lector.GetValue(i))
-                        {
-                            case DBNull:
-                                escritor.WriteNullValue();
-                                break;
-                            case long entero:
-                                escritor.WriteNumberValue(entero);
-                                break;
-                            case var valor:
-                                escritor.WriteStringValue(Convert.ToString(valor, CultureInfo.InvariantCulture));
-                                break;
-                        }
-                    }
-
-                    escritor.WriteEndObject();
-                }
-
-                escritor.WriteEndArray();
-            }
-
-            escritor.WriteEndObject();
+            EscribirTablas(escritor, c.Conexion, c.Transaccion, version);
         }
 
         return SHA256.HashData(JsonCanonico.Canonicalizar(flujo.ToArray()));
+    }
+
+    /// <summary>
+    /// El contenido de una versión, tabla por tabla en un orden fijo, cada fila ordenada por sus columnas: lo que mide el hash
+    /// (D14) y lo que lleva el resguardo (D1 de resguardar-configuracion).
+    /// </summary>
+    private static void EscribirTablas(Utf8JsonWriter escritor, SqliteConnection conexion, SqliteTransaction transaccion, Guid version)
+    {
+        escritor.WriteStartObject();
+        foreach (var (tabla, columnas) in TablasDeConfiguracion)
+        {
+            escritor.WriteStartArray(tabla);
+            var lista = string.Join(", ", columnas);
+            using var comando = ComandosSqlite.Crear(conexion, transaccion,
+                $"SELECT {lista} FROM {tabla} WHERE comvcCodigo = $vc ORDER BY {lista}", ("$vc", version));
+            using var lector = comando.ExecuteReader();
+            while (lector.Read())
+            {
+                escritor.WriteStartObject();
+                for (var i = 0; i < columnas.Length; i++)
+                {
+                    escritor.WritePropertyName(columnas[i]);
+                    switch (lector.GetValue(i))
+                    {
+                        case DBNull:
+                            escritor.WriteNullValue();
+                            break;
+                        case long entero:
+                            escritor.WriteNumberValue(entero);
+                            break;
+                        case var valor:
+                            escritor.WriteStringValue(Convert.ToString(valor, CultureInfo.InvariantCulture));
+                            break;
+                    }
+                }
+
+                escritor.WriteEndObject();
+            }
+
+            escritor.WriteEndArray();
+        }
+
+        escritor.WriteEndObject();
     }
 
     // ── Personas (D8 y D9) ───────────────────────────────────────────────────────────────────────────────────

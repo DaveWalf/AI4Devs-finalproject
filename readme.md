@@ -355,7 +355,7 @@ borra. Cada guardado queda en la general por la huella SHA-256 del archivo, su t
 
 El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre
 **Configuración por pestañas**: Consumos, donde abre, Personas, Opciones, Identidad visual, Impresora,
-Pantalla, Red y, al final, General (el modo y el estado de las bitácoras), en una fila de botones de 56 px que entra en
+Pantalla, Red y, al final, General (el modo, el estado de las bitácoras y el resguardo), en una fila de botones de 56 px que entra en
 1024 × 768.
 Todas quedan montadas, así que lo editado en una pestaña sobrevive al pasar a otra hasta cerrar. Cada «Guardar»
 guarda sólo lo de su pestaña y deja Configuración abierta con el aviso de lo guardado; «Cerrar» o Escape la cierran
@@ -364,6 +364,24 @@ opacidad de las superficies (72 a 88 %, 76 % por defecto) y el desenfoque del fo
 vista previa y su «Guardar» en `estilo-visual.json` de la carpeta de datos; Impresora, con la impresora simulada, sus
 modos. En mantenimiento, cualquiera que toque el puesto en reposo puede cambiar el estilo o simular una impresora sin
 papel.
+
+**Resguardo de la configuración.** Al final de General, «Guardar resguardo» deja en la carpeta de la exportación
+`INComedor-resguardo-AAAAMMDD-HHmmss.zip`, con un manifiesto (formato, esquema de la base y huella SHA-256 de cada
+parte), la versión activa de la configuración tabla por tabla y los ajustes locales que la acompañan: el estilo visual,
+los textos del comprobante, los logos propios y la presentación de las opciones con sus imágenes. No lleva certificados,
+consumos ni lo que es del equipo (el monitor, el modo, la simulación y la carpeta de la exportación). **El archivo lleva
+los códigos de identificación de las personas**, porque sin ellos no se puede recuperar: se guarda como un dato de la
+empresa, y ni el resumen ni la bitácora los muestran. «Recuperar resguardo», sólo sin INWeb como dueño, pide el `.zip`
+con el diálogo de archivos, lo revisa entero sin escribir (hasta 50 MB, sólo sus partes y de hasta 20 MB cada una, sus
+huellas, el mismo formato y esquema, cada valor del tipo de su columna y con las reglas de un guardado a mano, cada
+ajuste con las reglas de su almacén, un ensayo de la inserción que se deshace y ningún código que en este puesto sea de
+otra persona) y muestra de qué versión y fecha es, cuántas personas activas, opciones y permisos de operador vigentes
+trae y qué ajustes, con «Recuperar» y «Cancelar», éste destacado. «Recuperar» es todo o nada: escribe los ajustes,
+crea una versión nueva (la anterior queda en la base) y la pantalla toma en el acto el estilo, los logos y los textos;
+lo que el resguardo no trae vuelve al de ejemplo, y si algo falla, todo queda como estaba. Los ajustes locales de antes
+no quedan guardados: para conservarlos, se guarda antes un resguardo. La huella del manifiesto detecta un archivo
+dañado, no uno alterado a propósito: a ése lo frenan las validaciones. Un rechazo dice el motivo y no cambia nada. Queda en la general como `CONFIGURATION_BACKUP_CREATED`, `CONFIGURATION_RESTORED` o
+`CONFIGURATION_RESTORE_REJECTED`, con la huella del archivo y sin códigos ni nombres.
 
 **Modos, clave del día y cierre.** El puesto tiene dos modos, que atienden igual y sólo cambian el cierre. En los dos,
 el engranaje pide la **clave del día**, con un teclado numérico en pantalla y «ENTER»; en este corte es la de

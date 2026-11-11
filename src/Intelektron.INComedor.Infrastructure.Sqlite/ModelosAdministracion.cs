@@ -132,9 +132,21 @@ public sealed record CampoRechazado(int Indice, string Campo, string Codigo);
 /// </summary>
 public sealed record ResultadoGuardado(TipoGuardado Tipo, int VersionActiva, string? Motivo, IReadOnlyList<CampoRechazado> Campos);
 
+/// <summary>La versión activa en JSON, con su número y el esquema de la base (D1 de resguardar-configuracion).</summary>
+public sealed record ConfiguracionLeida(int VersionConfiguracion, int VersionEsquema, string Json);
+
+/// <summary>
+/// Lo que una configuración de un resguardo traería, revisada sin escribir (D2 de resguardar-configuracion): sin motivo,
+/// cuántas personas activas, opciones y permisos de operador vigentes trae; con motivo, por qué no se recupera.
+/// </summary>
+public sealed record RevisionConfiguracion(string? Motivo, int Personas, int Opciones, int Permisos);
+
 /// <summary>Los códigos de motivo y de campo que devuelve un guardado y que quedan en la bitácora (D11 y D13).</summary>
 public static class CodigosAdministracion
 {
+    public const string ResguardoInvalido = "INVALID_BACKUP";
+    public const string CodigoEnConflicto = "CODE_CONFLICT";
+
     public const string CampoInvalido = "INVALID_FIELD";
     public const string CodigoDuplicado = "DUPLICATE_CODE";
     public const string INWebAdministra = "INWEB_OWNS_DATA";
