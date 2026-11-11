@@ -306,7 +306,7 @@ public static class MensajesAtencion
 
     /// <summary>Lo recuperado, con la versión nueva (D3).</summary>
     public static string ResguardoRecuperado(int version) =>
-        $"Se recuperó el resguardo en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración, con su estilo, sus logos, sus textos y su presentación.";
+        $"Se recuperó el resguardo en la versión {version.ToString(CultureInfo.InvariantCulture)} de la configuración, con sus ajustes locales.";
 
     /// <summary>La base tomó el resguardo, pero algún ajuste local no se pudo escribir (D3).</summary>
     public static string ResguardoRecuperadoSinAjustes(int version) =>

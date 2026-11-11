@@ -33,11 +33,13 @@
 
 ## 4. El puesto compilado, documentos y verificación integral
 
-- [ ] 4.1 E2E nueva a 1024 × 768: guardar el resguardo, cambiar el estilo, recuperarlo con el diálogo de archivos y ver el
+- [x] 4.1 E2E nueva a 1024 × 768: guardar el resguardo, cambiar el estilo, recuperarlo con el diálogo de archivos y ver el
   estilo de antes; los dos botones de General y los del cartel medidos, con capturas miradas (D6). Verifica: `dotnet test
-  tests/Intelektron.INComedor.E2E.Tests` en verde.
-- [ ] 4.2 `readme.md` (General) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
-  enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
+  tests/Intelektron.INComedor.E2E.Tests` en verde. Hecho: `ResguardoE2ETests` en verde; General 207,4 × 56 px los dos a la misma altura y
+  con la letra de «Cerrar» (18px); el cartel, 56 px parejos y termina en 557 px; tres capturas miradas.
+- [x] 4.2 `readme.md` (General) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
+  enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`. Hecho: 0, con el control
+  en 2.
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
