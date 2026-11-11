@@ -50,11 +50,19 @@
 
 ## 4. El puesto compilado, documentos y verificación integral
 
-- [ ] 4.1 E2E nueva a 1024 × 768: la planilla de ejemplo descargada y vuelta a importar con un cambio, el resumen y
+- [x] 4.1 E2E nueva a 1024 × 768: la planilla de ejemplo descargada y vuelta a importar con un cambio, el resumen y
   «Modificar y agregar»; los cuatro botones del pie y los del resumen medidos, con capturas miradas. Verifica: `dotnet test
   tests/Intelektron.INComedor.E2E.Tests` en verde.
-- [ ] 4.2 `readme.md` (Personas) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
+  - `ImportarPersonasE2ETests`: la primera medición mostró los cuatro botones de 192,1 px y «Cerrar» en otro renglón (el
+    diálogo deja 928 px útiles); con 16 px de relleno lateral miden 184,1 y entran con «Cerrar» desde 679 px, con su alto
+    de 56 y su letra de 18 px. El diálogo de archivos se contesta con mensajes de ventana (la ruta en el cuadro del nombre,
+    releída con `WM_GETTEXT`, e IDOK): el diálogo vacía las dos primeras escrituras, así que se reescribe hasta leerla.
+    Tres corridas seguidas en verde. Resumen: «Modificar y agregar» 197,4, «Reemplazar» 134,2 y «Cancelar» 120 px, los tres
+    de 56 px desde 440, y el cartel termina en 521 de 768. Capturas miradas: el pie, el resumen y la tabla importada.
+- [x] 4.2 `readme.md` (Personas) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
   enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
+  - `readme.md` (Personas) y la fila de OWASP del mapa (XXE, topes y todo o nada). Enlaces de los dos y del change:
+    `enlaces rotos: 0`; el control negativo, `enlaces rotos: 2`.
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.

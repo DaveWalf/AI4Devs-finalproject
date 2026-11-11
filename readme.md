@@ -390,7 +390,14 @@ el encabezado, la pasa a edición en el mismo lugar, con un teclado en pantalla 
 quita el cupo) y quitarla, que la da de baja y revoca su código sin borrar sus consumos. Cada guardado deja en la
 general los cupos cambiados de cada persona, con el límite antes y después, y el operador que entró con su código como
 actor. «Exportar CSV» y «Exportar Excel», en el pie de Personas, guardan la tabla en la carpeta de la exportación de
-Consumos, sin ningún código, y quedan en la general como `PEOPLE_EXPORTED`. El código se tipea en un campo
+Consumos, sin ningún código, y quedan en la general como `PEOPLE_EXPORTED`. «Planilla de ejemplo» deja ahí un `.xlsx`
+para completar (Nombre, Código como texto y el límite de cada cupo, con una hoja de instrucciones), e «Importar Excel» lo
+lee: cada fila se reconoce por su código, uno que ya está modifica a esa persona y uno nuevo la agrega. Antes de aplicar,
+un resumen cuenta las nuevas, las modificadas y las que «Reemplazar» daría de baja por no estar en la planilla (nunca un
+operador ni el administrador), y ofrece «Modificar y agregar», «Reemplazar» y «Cancelar»; una fila con error no deja
+aplicar nada y se lista con su motivo. Lo consumido hoy sigue contando contra los límites nuevos. Cada importación
+queda en la general como `PEOPLE_IMPORTED`, persona por persona sin nombres ni códigos, o `PEOPLE_IMPORT_REJECTED` con
+sus errores por motivo. El código se tipea en un campo
 enmascarado de sólo dígitos, conserva sus ceros iniciales, no se puede repetir aunque esté revocado, y nunca se
 muestra ni se registra. El segundo muestra cada opción con su servicio, su importe, sus cargas de cupo y sus
 **franjas horarias**, en la hora local del puesto, de inicio incluido a fin excluido (de 22:00 a 02:00 cruza la
