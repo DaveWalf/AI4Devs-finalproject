@@ -113,7 +113,9 @@
                 @if (_panel == Panel.Personas || _elegida == Pestana.Personas)
                 {
                     <PanelPersonas Administracion="Administracion" Editando="@(_panel == Panel.Personas)" Cerrar="CerrarPanel"
-                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" Actor="Actor" />
+                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" Actor="Actor"
+                                   AlmacenExportacion="AlmacenExportacion" ElectorCarpeta="ElectorCarpeta" Zona="Zona"
+                                   RegistrarExportacion="RegistrarExportacionPersonas" />
                 }
                 else
                 {
@@ -500,6 +502,9 @@
 
     [Parameter]
     public Action<PestanaConsumos.ExportacionRealizada>? RegistrarExportacion { get; set; }
+
+    [Parameter]
+    public Action<PanelPersonas.ExportacionPersonasRealizada>? RegistrarExportacionPersonas { get; set; }
 
     /// <summary>La sesión del operador para reimprimir desde Consumos, que la pantalla abre con Configuración y cierra con ella (D8).</summary>
     [Parameter]

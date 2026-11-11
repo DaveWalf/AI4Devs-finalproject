@@ -106,6 +106,10 @@ public static class MensajesAtencion
 
     public static string CarpetaElegida(string carpeta) => $"Las exportaciones van a {carpeta}.";
 
+    /// <summary>La exportación de Personas hecha (D5 de editar-raciones-en-personas).</summary>
+    public static string ExportacionPersonasHecha(string archivo, int filas, string carpeta) =>
+        $"Exportado {archivo} con {filas} {(filas == 1 ? "persona" : "personas")} en {carpeta}.";
+
     public static string ExportacionHecha(string archivo, int filas, string carpeta) =>
         $"Exportado {archivo} con {filas} {(filas == 1 ? "consumo" : "consumos")} en {carpeta}.";
 

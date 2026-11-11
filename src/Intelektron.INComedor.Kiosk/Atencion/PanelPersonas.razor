@@ -3,8 +3,10 @@
 
 @*
     Personas en una tabla (D4 de configurar-puesto-por-pestanas, sobre «Personas habilitadas» de administrar-personas-y-opciones):
-    una fila por persona y una columna por cada par de servicio y categoría que usa el catálogo o alguna regla, con el límite
-    o «—». Para leer es #tabla-personas; con «Editar» pasa a #panel-personas en el mismo lugar: el nombre y cada límite son
+    una fila por persona y una columna por cada par de servicio y categoría que usa el catálogo o alguna regla, con lo usado
+    hoy sobre el límite («1/2») o «—» (D1 de editar-raciones-en-personas). Para leer es #tabla-personas, donde tocar un cupo
+    abre la edición con ese límite elegido (D2) y Personas se exporta (D5); con «Editar» pasa a #panel-personas en el mismo
+    lugar: el nombre y cada límite son
     campos (vacío es sin cupo, 0 es la denegación explícita), una fila nueva suma el código enmascarado, y «Quitar»,
     «Guardar» y «Cancelar» actúan como en C. Ordenar cambia sólo la vista: la edición se arma en el orden de lectura y los
     campos rechazados vuelven a su fila por esa posición. Nunca muestra un código; el servicio valida y decide (D10, D11).
@@ -73,13 +75,24 @@
                             <td class="cupo" data-cupo="@NombrePar(_pares[columna])">
                                 @if (Editable)
                                 {
-                                    <input class="limite" type="number" inputmode="numeric" min="0" max="@AdministracionLocal.LimiteMaximo"
-                                           aria-label="@($"Límite diario de {NombrePar(_pares[columna])}")" value="@fila.Limites[columna]"
-                                           aria-invalid="@MarcaCupo(indice, columna)" @oninput="e => fila.Limites[columna] = Texto(e)" />
+                                    @if (fila.Usados[columna] is { } usado)
+                                    {
+                                        <span class="usado-hoy">@usado/</span>
+                                    }
+                                    <input class="limite @(EsElegido(indice, columna) ? "elegido" : null)" type="number" inputmode="numeric" min="0"
+                                           max="@AdministracionLocal.LimiteMaximo" aria-label="@($"Límite diario de {NombrePar(_pares[columna])}")"
+                                           value="@fila.Limites[columna]" aria-invalid="@MarcaCupo(indice, columna)"
+                                           @ref="_referenciasLimite[(indice, columna)]" @onfocus="() => Elegir(indice, columna)"
+                                           @oninput="e => fila.Limites[columna] = Texto(e)" />
+                                }
+                                else if (PuedeEditar && !_vista.SoloLectura)
+                                {
+                                    @* Tocar el cupo abre la edición con su límite elegido (D2 de editar-raciones-en-personas). *@
+                                    <button type="button" class="cupo-tocable" @onclick="() => TocarCupo(indice, columna)">@Racion(fila, columna)</button>
                                 }
                                 else
                                 {
-                                    @(fila.Limites[columna].Length == 0 ? "—" : fila.Limites[columna])
+                                    @Racion(fila, columna)
                                 }
                             </td>
                         }
@@ -117,6 +130,19 @@
         </table>
     </div>
 
+    @* Exportar la tabla, con la carpeta de la exportación de Consumos (D5 de editar-raciones-en-personas). *@
+    @if (!Editando && AlmacenExportacion is not null && ElectorCarpeta is not null)
+    {
+        <div class="exportar-personas">
+            <button id="exportar-personas-csv" type="button" @onclick="() => Exportar(FormatoExportacion.Csv)">Exportar CSV</button>
+            <button id="exportar-personas-xlsx" type="button" @onclick="() => Exportar(FormatoExportacion.Xlsx)">Exportar Excel</button>
+        </div>
+        @if (_mensajeExportacion is not null)
+        {
+            <p id="mensaje-exportacion-personas" class="@(_exportacionFallida ? "aviso" : "mensaje-exportacion")" role="status">@_mensajeExportacion</p>
+        }
+    }
+
     @if (Editando)
     {
         <div class="acciones">
@@ -145,6 +171,11 @@
     private string? _ordenColumna;
     private bool _ordenAscendente = true;
     private bool? _editandoCargado;
+    private (int Fila, int Columna)? _elegido;
+    private bool _enfocarElegido;
+    private readonly Dictionary<(int, int), ElementReference> _referenciasLimite = [];
+    private string? _mensajeExportacion;
+    private bool _exportacionFallida;
 
     [Parameter, EditorRequired]
     public AdministracionLocal Administracion { get; set; } = null!;
@@ -168,6 +199,23 @@
     [Parameter]
     public EventCallback<string?> Cerrar { get; set; }
 
+    /// <summary>La carpeta de la exportación de Consumos, que Personas también usa; sin ella o sin elector, no exporta (D5).</summary>
+    [Parameter]
+    public AlmacenExportacion? AlmacenExportacion { get; set; }
+
+    [Parameter]
+    public IElectorCarpeta? ElectorCarpeta { get; set; }
+
+    [Parameter]
+    public TimeZoneInfo Zona { get; set; } = TimeZoneInfo.Utc;
+
+    /// <summary>La pantalla registra cada exportación de Personas en la general, como PEOPLE_EXPORTED.</summary>
+    [Parameter]
+    public Action<ExportacionPersonasRealizada>? RegistrarExportacion { get; set; }
+
+    /// <summary>Lo que queda en la general de una exportación de Personas: el formato, el nombre del archivo y las filas.</summary>
+    public sealed record ExportacionPersonasRealizada(string Formato, string Archivo, int Filas);
+
     private bool Editable => Editando && !_vista.SoloLectura;
 
     private IEnumerable<(string Clave, string Titulo)> Columnas =>
@@ -181,14 +229,94 @@
         if (_editandoCargado != Editando)
         {
             _editandoCargado = Editando;
+            if (!Editando)
+            {
+                _elegido = null;
+            }
+
             Cargar(Administracion.Leer());
         }
+    }
+
+    /// <summary>El campo elegido al tocar un cupo recibe el foco cuando la edición ya está dibujada (D2).</summary>
+    protected override async Task OnAfterRenderAsync(bool primera)
+    {
+        if (_enfocarElegido && Editable && _elegido is { } elegido && _referenciasLimite.TryGetValue(elegido, out var campo))
+        {
+            _enfocarElegido = false;
+            await campo.FocusAsync();
+        }
+    }
+
+    /// <summary>Tocar un cupo de la tabla de lectura abre la edición, como «Editar», con ese límite elegido (D2).</summary>
+    private async Task TocarCupo(int fila, int columna)
+    {
+        _elegido = (fila, columna);
+        _enfocarElegido = true;
+        await Editar.InvokeAsync();
+    }
+
+    private void Elegir(int fila, int columna) => _elegido = (fila, columna);
+
+    private bool EsElegido(int fila, int columna) => _elegido == (fila, columna);
+
+    /// <summary>Lo usado hoy sobre el límite, «1/2», o «—» sin cupo (D1).</summary>
+    private static string Racion(FilaPersona fila, int columna) =>
+        fila.Limites[columna].Length == 0 ? "—" : $"{(fila.Usados[columna] ?? 0).ToString(CultureInfo.InvariantCulture)}/{fila.Limites[columna]}";
+
+    /// <summary>
+    /// Exporta Personas a la carpeta de la exportación de Consumos; sin carpeta guardada, la pide y la guarda; si se cancela,
+    /// no exporta. Sin poder escribir, avisa y la general no registra nada (D5).
+    /// </summary>
+    private void Exportar(FormatoExportacion formato)
+    {
+        string? avisoCarpeta = null;
+        var carpeta = AlmacenExportacion!.Leer();
+        if (carpeta is null)
+        {
+            carpeta = ElectorCarpeta!.Elegir(null);
+            if (carpeta is null)
+            {
+                (_mensajeExportacion, _exportacionFallida) = (MensajesAtencion.SinCarpeta, true);
+                return;
+            }
+
+            try
+            {
+                AlmacenExportacion.Guardar(carpeta);
+            }
+            catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+            {
+                avisoCarpeta = MensajesAtencion.CarpetaNoGuardada;
+            }
+        }
+
+        ResultadoExportacionPersonas resultado;
+        try
+        {
+            resultado = new ExportacionPersonas(Administracion, Administracion.Reloj).Exportar(formato, carpeta, Zona);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            (_mensajeExportacion, _exportacionFallida) = (MensajesAtencion.ExportacionFallida, true);
+            return;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeExportacion, _exportacionFallida) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            return;
+        }
+
+        _exportacionFallida = avisoCarpeta is not null;
+        _mensajeExportacion = string.Join(' ', new[] { avisoCarpeta, MensajesAtencion.ExportacionPersonasHecha(resultado.Archivo, resultado.Filas, carpeta) }
+            .OfType<string>());
+        RegistrarExportacion?.Invoke(new ExportacionPersonasRealizada(formato == FormatoExportacion.Csv ? "CSV" : "XLSX", resultado.Archivo, resultado.Filas));
     }
 
     private void Cargar(VistaAdministracion vista)
     {
         _vista = vista;
-        _pares = ParesDeColumnas(vista);
+        _pares = vista.ParesDeCupo().ToList();
         _filas = vista.Personas.Select(p => new FilaPersona
         {
             Id = p.Id,
@@ -197,33 +325,12 @@
             Limites = _pares.Select(par => p.Cupos.FirstOrDefault(c => c.ServicioId == par.Servicio && c.CategoriaId == par.Categoria) is { } cupo
                 ? cupo.Limite.ToString(CultureInfo.InvariantCulture)
                 : string.Empty).ToArray(),
+            Usados = _pares.Select(par => p.Cupos.FirstOrDefault(c => c.ServicioId == par.Servicio && c.CategoriaId == par.Categoria)?.UsadoHoy).ToArray(),
             Habilitadas = p.OpcionesHabilitadas.Count,
         }).ToList();
         _campos = [];
         _columnasEnviadas = [];
         _aviso = null;
-    }
-
-    /// <summary>
-    /// Los pares que usan las cargas de las opciones, en el orden del catálogo, y después los de alguna regla que el catálogo
-    /// no usa; no cada servicio por cada categoría (D4).
-    /// </summary>
-    private static List<(Guid Servicio, Guid Categoria)> ParesDeColumnas(VistaAdministracion vista)
-    {
-        var pares = new List<(Guid, Guid)>();
-        foreach (var par in vista.Opciones.SelectMany(o => o.Cargas.Select(c => (o.ServicioId, c.CategoriaId)))
-                     .Concat(vista.Personas.SelectMany(p => p.Cupos.Select(c => (c.ServicioId, c.CategoriaId)))))
-        {
-            if (!pares.Contains(par))
-            {
-                pares.Add(par);
-            }
-        }
-
-        return pares
-            .OrderBy(p => vista.Servicios.Select(s => s.Id).ToList().IndexOf(p.Item1))
-            .ThenBy(p => vista.Categorias.Select(c => c.Id).ToList().IndexOf(p.Item2))
-            .ToList();
     }
 
     /// <summary>El orden de la vista: las filas de lectura ordenadas por la columna elegida, y las nuevas siempre al final.</summary>
@@ -271,7 +378,7 @@
 
     private void AgregarPersona()
     {
-        _filas.Add(new FilaPersona { Nueva = true, Activa = true, Limites = new string[_pares.Count] });
+        _filas.Add(new FilaPersona { Nueva = true, Activa = true, Limites = new string[_pares.Count], Usados = new int?[_pares.Count] });
         Array.Fill(_filas[^1].Limites, string.Empty);
     }
 
@@ -352,12 +459,7 @@
             ? "true"
             : null;
 
-    private string NombrePar((Guid Servicio, Guid Categoria) par)
-    {
-        var nombreServicio = _vista.Servicios.FirstOrDefault(s => s.Id == par.Servicio)?.Nombre ?? "?";
-        var nombreCategoria = _vista.Categorias.FirstOrDefault(c => c.Id == par.Categoria)?.Nombre ?? "?";
-        return nombreServicio == nombreCategoria ? nombreServicio : $"{nombreServicio} · {nombreCategoria}";
-    }
+    private string NombrePar((Guid Servicio, Guid Categoria) par) => _vista.NombrePar(par);
 
     private static string Estado(FilaPersona fila) =>
         fila.Nueva ? "Nueva" : fila.Quitar ? "Se da de baja al guardar" : fila.Activa ? "Activa" : "De baja";
@@ -379,6 +481,9 @@
         public bool Quitar { get; set; }
 
         public string[] Limites { get; init; } = [];
+
+        /// <summary>Lo usado hoy en cada cupo que la persona tiene; null donde no tiene cupo (D1).</summary>
+        public int?[] Usados { get; init; } = [];
 
         public int Habilitadas { get; init; }
     }

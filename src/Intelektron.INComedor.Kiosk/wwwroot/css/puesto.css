@@ -422,6 +422,14 @@ html, body { overscroll-behavior: none; }
 .operador-consumos { display: flex; flex-direction: column; gap: 8px; }
 .operador-consumos .entrada-operador, .operador-consumos .fila-operador { display: flex; align-items: center; gap: 12px; }
 .operador-consumos .entrada-operador input { min-height: 56px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
+/* Personas: el cupo tocable se lee como la celda, «x/n», con el alto de la fila; al editar, lo usado va antes del campo
+   (D1, D2 y D6 de editar-raciones-en-personas). La exportación, como la de Consumos. */
+.tabla-personas .cupo-tocable { min-height: 44px; min-width: 64px; padding: 0 8px; font: inherit; background: transparent; border: 1px dashed transparent; border-radius: 8px; color: inherit; }
+.tabla-personas .cupo-tocable:hover, .tabla-personas .cupo-tocable:focus-visible { border-color: var(--tinta-suave); }
+.tabla-personas .usado-hoy { margin-right: 4px; }
+.tabla-personas input.limite.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
+.exportar-personas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; }
+.exportar-personas button { font-size: 16px; }
 /* La exportación, debajo de la tabla: tres botones del alto táctil de siempre y del mismo ancho, el del más largo (D6 y D8). */
 .exportar-consumos { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; }
 /* Los botones de Consumos con la letra de sus campos, 16 px: los filtros, la exportación y la fila del operador (D8). */

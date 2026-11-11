@@ -27,13 +27,23 @@
 
 ## 3. La tabla: x/n, tocar para editar y exportar
 
-- [ ] 3.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: «0/1» y «0/2» en la fila de 0001; «1/1» con un almuerzo
+- [x] 3.1 Pruebas nuevas en `Kiosk.Tests`, vistas fallar antes: «0/1» y «0/2» en la fila de 0001; «1/1» con un almuerzo
   hoy; tocar la celda REFRIGERIO abre la edición con ese límite elegido; «Exportar CSV» y «Exportar Excel» en Personas con
   `PEOPLE_EXPORTED`. Verifica: rojo antes y verde después.
-- [ ] 3.2 `PanelPersonas.razor` con el x/n, la celda tocable y los botones de exportar (D1, D2 y D5). Verifica: 3.1 en
+  - `RacionesEnPersonasTests` (5) contra la tabla de antes: `total: 5`, `error: 5` («Expected: "0/1", Actual: "1"», el
+    cupo sin `.cupo-tocable` y `#exportar-personas-csv` que no existe). `PuntoFinalTests` suma el mensaje nuevo
+    `ExportacionPersonasHecha` a su lista, como esa prueba pide para cada método nuevo.
+- [x] 3.2 `PanelPersonas.razor` con el x/n, la celda tocable y los botones de exportar (D1, D2 y D5). Verifica: 3.1 en
   verde.
-- [ ] 3.3 Las pruebas existentes que leen el límite como el texto de la celda pasan a leer el x/n, y nada más (decisión
+  - Las columnas salen de `VistaAdministracion.ParesDeCupo`, con el orden de servicio y categoría que tenía el panel
+    (`ParesDeColumnas` se borra); el campo elegido lleva la clase `elegido` y recibe el foco al dibujarse. Una fila nueva
+    trae lo usado del largo de las columnas (sin eso, `IndexOutOfRangeException` en 7 pruebas que agregan personas).
+- [x] 3.3 Las pruebas existentes que leen el límite como el texto de la celda pasan a leer el x/n, y nada más (decisión
   13). Verifica: `Kiosk.Tests` en verde y la lista de archivos cambiados pegada.
+  - Con el x/n y las pruebas sin tocar: `total: 439`, `error: 4`, todas en `TablaPersonasTests` y por leer el límite como
+    el texto de la celda. Cambian sus literales a «0/1» y «0/2», los dos `DisplayName` que repiten ese texto (los
+    escenarios del delta) y el orden por cupo, que toma el límite después de la «/». Después: `total: 439`, `error: 0`.
+    Pruebas existentes cambiadas: `TablaPersonasTests.cs` y `PuntoFinalTests.cs` (la lista de métodos).
 
 ## 4. El teclado en pantalla
 

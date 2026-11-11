@@ -58,6 +58,9 @@ public sealed class AdministracionLocal
         _reloj = reloj;
     }
 
+    /// <summary>El reloj del puesto, el de la fecha de negocio de lo usado hoy, para nombrar una exportación (D5 de editar-raciones-en-personas).</summary>
+    public TimeProvider Reloj => _reloj;
+
     /// <summary>La versión activa como la muestran los paneles, con su origen.</summary>
     public VistaAdministracion Leer()
     {

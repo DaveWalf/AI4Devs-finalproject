@@ -72,7 +72,10 @@ public sealed record VistaAdministracion(
             }
         }
 
-        return pares;
+        return pares
+            .OrderBy(p => Servicios.Select(s => s.Id).ToList().IndexOf(p.Item1))
+            .ThenBy(p => Categorias.Select(c => c.Id).ToList().IndexOf(p.Item2))
+            .ToList();
     }
 
     /// <summary>El nombre de la columna de un par: el del servicio si coincide con la categoría, o «servicio · categoría».</summary>
