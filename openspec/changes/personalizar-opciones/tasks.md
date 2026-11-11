@@ -39,11 +39,19 @@
 
 ## 4. El puesto compilado, documentos y verificación integral
 
-- [ ] 4.1 E2E nueva a 1024 × 768: el catálogo a la vista, el cartel con sus colores y sus pasos de transparencia medidos,
+- [x] 4.1 E2E nueva a 1024 × 768: el catálogo a la vista, el cartel con sus colores y sus pasos de transparencia medidos,
   una opción personalizada y otra con el precio oculto en la atención, con capturas miradas (D6). Verifica: `dotnet test
   tests/Intelektron.INComedor.E2E.Tests` en verde.
-- [ ] 4.2 `readme.md` (Opciones) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
+  - `PersonalizarOpcionesE2ETests`: tarjetas del catálogo de 295,7 px, sus botones de 130,8 × 56 px con la letra de
+    18 px de «Cerrar»; el cartel con 9 fondos de 95,6 × 56 px y 4 pasos de 121,5 × 56 px, que termina en 713 de 768; en
+    la atención, «Almuerzo común» con el fondo `rgb(221, 176, 137)` a 0,75 y otra opción sin precio. Dos tropiezos de la
+    prueba, corregidos: tipear el código con el diálogo todavía abierto (la atención es inerte hasta que se va) y elegir
+    la misma opción para el fondo y el precio oculto. Las capturas mostraron el precio partido en la muestra angosta:
+    `nowrap`. Capturas miradas: el catálogo, el cartel y la atención.
+- [x] 4.2 `readme.md` (Opciones) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
   enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
+  - `readme.md` (Opciones) y la fila de OWASP del mapa (la presentación leída campo por campo). Enlaces de los dos y del
+    change: `enlaces rotos: 0`; el control negativo, `enlaces rotos: 2`.
 - [ ] 4.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.

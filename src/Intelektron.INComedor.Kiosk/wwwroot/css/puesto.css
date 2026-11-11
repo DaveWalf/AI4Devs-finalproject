@@ -628,6 +628,7 @@ html, body { overscroll-behavior: none; }
     opacity: var(--opacidad-fondo, 1);
 }
 .opcion.con-imagen .nombre, .opcion.con-imagen .cargo { padding: 0 6px; border-radius: 6px; background: rgb(var(--papel) / .85); }
+.muestra-opcion .cargo { white-space: nowrap; }
 .muestra-opcion { min-height: 64px; padding: 6px 18px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--borde); border-radius: 14px; }
 
 /* El catálogo a la vista en la pestaña Opciones (D1 y D6): tarjetas del mismo ancho, con sus datos, la muestra y dos botones
