@@ -1,11 +1,12 @@
 ## 1. La base
 
-- [ ] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: `ConsultaConsumos.Desde` devuelve los
+- [x] 1.1 Pruebas nuevas en `Infrastructure.Sqlite.Tests`, vistas fallar antes: `ConsultaConsumos.Desde` devuelve los
   consumos con secuencia mayor, en orden, con su secuencia, hasta el tope; la línea CSV de una fila de consumo tiene las
   columnas de la exportación de Consumos, el apóstrofo de las fórmulas y ningún código (D1). Verifica: rojo antes y verde
-  después.
-- [ ] 1.2 `ConsultaConsumos.Desde` y la línea CSV de `EscritorPlanilla` y `ExportacionConsumos`. Verifica: 1.1 en verde y
-  `Infrastructure.Sqlite.Tests` entero.
+  después. Hecho: 2 en `ExportacionDesdeMarcaTests`, vistas fallar con `NotImplementedException`.
+- [x] 1.2 `ConsultaConsumos.Desde` y la línea CSV de `EscritorPlanilla` y `ExportacionConsumos`. Verifica: 1.1 en verde y
+  `Infrastructure.Sqlite.Tests` entero. Hecho: Sqlite 292 de 292; `Leer` y `Desde` comparten columnas, origen y
+  lectura de fila, y el CSV de siempre sale de `LineaCsv`.
 
 ## 2. La exportación en el puesto
 

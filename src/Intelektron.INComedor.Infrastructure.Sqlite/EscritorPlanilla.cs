@@ -102,19 +102,26 @@ public static class EscritorPlanilla
         throw new IOException($"Ya hay {NombresPorSegundo} exportaciones de ese segundo en la carpeta.");
     }
 
+    /// <summary>
+    /// Una línea CSV como las de la exportación, sin el salto: cada celda entre comillas, separadas por punto y coma, los
+    /// números en es-AR y el apóstrofo delante de lo que una planilla tomaría como fórmula (D1 de exportar-consumos-automaticamente).
+    /// </summary>
+    public static string LineaCsv(IEnumerable<object> celdas) =>
+        string.Join(';', celdas.Select(celda => Comillas(celda switch
+        {
+            NumeroPlanilla numero => numero.Valor.ToString("F" + numero.Decimales.ToString(CultureInfo.InvariantCulture), EnEspanol),
+            _ => SinFormula((string)celda),
+        })));
+
     private static void EscribirCsv(Stream flujo, IReadOnlyList<string> encabezado, IEnumerable<IReadOnlyList<object>> filas)
     {
         using var escritor = new StreamWriter(flujo, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
         escritor.NewLine = "\r\n";
         // El encabezado también: en Personas lleva los nombres de los servicios y las categorías, que llegan de la configuración.
-        escritor.WriteLine(string.Join(';', encabezado.Select(t => Comillas(SinFormula(t)))));
+        escritor.WriteLine(LineaCsv(encabezado));
         foreach (var fila in filas)
         {
-            escritor.WriteLine(string.Join(';', fila.Select(celda => Comillas(celda switch
-            {
-                NumeroPlanilla numero => numero.Valor.ToString("F" + numero.Decimales.ToString(CultureInfo.InvariantCulture), EnEspanol),
-                _ => SinFormula((string)celda),
-            }))));
+            escritor.WriteLine(LineaCsv(fila));
         }
     }
 
