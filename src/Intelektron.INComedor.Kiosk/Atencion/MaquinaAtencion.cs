@@ -155,7 +155,7 @@ public sealed class MaquinaAtencion
         {
             Aviso = MensajesAtencion.DeMotivo(resultado.ReasonCode);
             // A los operadores, con el nombre de una credencial conocida y nunca el código (D4 de avisar-por-correo).
-            _servicio.Avisos?.PersonaSinConsumo(resultado.NombreVisible, resultado.ReasonCode ?? "IDENTITY_NOT_RESOLVED");
+            _servicio.Avisos?.PersonaSinConsumo(resultado.PersonId, resultado.NombreVisible, resultado.ReasonCode ?? "IDENTITY_NOT_RESOLVED");
             return ResultadoToque.Rechazado;
         }
 
@@ -173,8 +173,9 @@ public sealed class MaquinaAtencion
         _codigoMensaje = _catalogo.Count == 0 ? nameof(MensajesAtencion.SinOpciones) : null;
         if (_catalogo.Count == 0)
         {
-            _servicio.Avisos?.PersonaSinConsumo(NombreVisible,
-                _retenidas.Count > 0 && _retenidas.All(r => r.Motivo == "PERSON_INACTIVE") ? "PERSON_INACTIVE" : "NO_OPTIONS");
+            // El motivo común de lo retenido (sin cupo, fuera de horario, inactiva) o, si no hay uno, ninguna opción disponible.
+            var motivos = _retenidas.Select(r => r.Causa ?? r.Motivo).Distinct(StringComparer.Ordinal).ToList();
+            _servicio.Avisos?.PersonaSinConsumo(PersonaId, NombreVisible, motivos.Count == 1 ? motivos[0] : "NO_OPTIONS");
         }
 
         Tocar();
@@ -410,7 +411,7 @@ public sealed class MaquinaAtencion
                 // La causa interna, si la hay, elige el mensaje: fuera de horario no es lo mismo que sin habilitación (D5).
                 Mensaje = MensajesAtencion.DeMotivo(resultado.ReasonCause ?? resultado.ReasonCode);
                 _codigoMensaje = resultado.ReasonCause ?? resultado.ReasonCode;
-                _servicio.Avisos?.PersonaSinConsumo(NombreVisible, resultado.ReasonCause ?? resultado.ReasonCode ?? "DENIED");
+                _servicio.Avisos?.PersonaSinConsumo(PersonaId, NombreVisible, resultado.ReasonCause ?? resultado.ReasonCode ?? "DENIED");
                 _decisionId = resultado.DecisionId;
                 Estado = EstadoAtencion.Resultado;
                 break;

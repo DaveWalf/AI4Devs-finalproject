@@ -30,7 +30,8 @@ forma, lo de fábrica: apagados. Ninguna clave ni token.
 ### D2. El correo y su asunto
 
 `MensajeCorreo` lleva destinatarios, asunto y cuerpo en texto. El asunto siempre es «Cliente · Puesto N Nombre ·
-Situación», con el número y el nombre de `puesto.json` («Puesto» solo si no hay número). Las situaciones son «Persona sin
+Situación», con el número y el nombre de `puesto.json`; sin número, el nombre solo, y sin ninguno de los dos, «Puesto».
+El asunto va en palabras codificadas de RFC 2047 de hasta 75 caracteres, plegadas. Las situaciones son «Persona sin
 consumo», «Impresora», «Exportación», «Bitácora», «Señal de vida» y «Prueba». Ningún cuerpo lleva un código de
 identificación ni una credencial.
 
@@ -51,15 +52,28 @@ orden. La cola guarda hasta 500; uno más descarta el más viejo y lo registra.
 - **Al Administrador Principal**: una exportación automática que falla, con el destino y el motivo; y una bitácora que
   se degrada.
 
-Un mismo aviso (situación y motivo) no se repite antes de 15 minutos; una bitácora avisa al pasar a degradada y no
-mientras sigue así. Un código desconocido no avisa: no hay persona, y un tecleo errado no es un problema de gestión.
+Un mismo aviso no se repite antes de 15 minutos: la clave es la situación y el motivo, más la persona en «Persona sin
+consumo» (dos personas con el mismo motivo avisan cada una la suya) y el destino en «Bitácora», que además avisa al pasar
+a degradada y no mientras sigue así. La ventana corre recién cuando el aviso quedó en la cola. Sin opciones, el motivo es
+el común de lo retenido o, si no hay uno, «ninguna opción disponible». Un código desconocido no avisa: no hay persona, y
+un tecleo errado no es un problema de gestión. La atención sólo deja el aviso en memoria; leer la configuración, escribir
+la cola y registrarlo pasa en otro hilo, así un archivo o una base ocupada no la demoran.
+
+- **Descartada: la ventana por situación y motivo sin la persona.** Un catálogo mal cargado callaría a todos después del
+  primero, y los operadores no sabrían quiénes no comieron.
+- **Descartada: encolar en el hilo de la atención.** Una base ocupada por el ciclo de las bitácoras la demoraría hasta
+  el tiempo de espera de SQLite.
 
 ### D5. La señal de vida
 
 Una vez por día, a la hora elegida o en la primera pasada después, al Administrador Principal: el resumen del día
 anterior, contado de la bitácora general de la base (consumos autorizados, rechazos de identificación y consumos
-denegados, y eventos de advertencia o error), sin nombres. `correo-estado.json` guarda la fecha de la última señal, así
-un reinicio no la repite.
+denegados, comprobantes que terminaron fallidos o inciertos, y eventos de advertencia o error), sin nombres. La fecha de
+la última señal queda en memoria y en `correo-estado.json`, marcada recién cuando la señal quedó en la cola, así un
+reinicio no la repite y una cola que no se puede escribir la reintenta. Con un puesto recién configurado después de la
+hora, la primera pasada manda la del día anterior. Si armar el resumen falla, se registra y la cola igual sale.
+
+- **Descartada: mandar la señal a la hora exacta con un reloj propio.** Un puesto apagado a esa hora no la mandaría nunca.
 
 ### D6. El reloj
 
@@ -75,8 +89,12 @@ Una falla queda registrada y no cierra el puesto, como la exportación.
 
 ### D8. La bitácora
 
-`NOTIFICATION_QUEUED` (situación y cantidad de destinatarios), `NOTIFICATION_SENT` (situación) y `NOTIFICATION_FAILED`
-(situación y motivo), sin direcciones, nombres ni códigos.
+`NOTIFICATION_QUEUED` (situación y cantidad de destinatarios), `NOTIFICATION_SENT` (situación), `NOTIFICATION_FAILED`
+(situación y motivo: el servidor, la cola, la señal o una falla inesperada) y `NOTIFICATION_DISCARDED` (el más viejo al
+llegar al tope, o un pendiente ilegible), sin direcciones, nombres ni códigos.
+
+- **Descartada: registrar el destinatario.** Una dirección es un dato personal y la general viaja en los resguardos de
+  diagnóstico.
 
 ### D9. La persona de una identificación rechazada
 

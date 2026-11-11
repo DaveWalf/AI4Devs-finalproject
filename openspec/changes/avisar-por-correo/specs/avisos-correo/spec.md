@@ -40,7 +40,7 @@ Origen: mejora 12 de David del 10/11/2026 («el estado técnico al Administrador
 
 ### Requirement: La señal de vida diaria
 
-Con los correos activos, el puesto SHALL enviar una vez por día, a la hora elegida o en la primera pasada después, a la casilla del Administrador Principal, el resumen del día anterior: consumos, rechazos y advertencias o errores de la bitácora general, sin nombres. MUST NOT repetirla el mismo día aunque el puesto se reinicie.
+Con los correos activos, el puesto SHALL enviar una vez por día, a la hora elegida o en la primera pasada después, a la casilla del Administrador Principal, el resumen del día anterior: consumos, rechazos, comprobantes sin imprimir y advertencias o errores de la bitácora general, sin nombres. MUST NOT repetirla el mismo día aunque el puesto se reinicie.
 
 #### Scenario: La señal de las 08:00
 Origen: mejora 12 de David del 10/11/2026 («una señal de vida diaria con el resumen y las fallas»).

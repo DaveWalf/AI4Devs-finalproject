@@ -7,7 +7,7 @@
 
 @*
     Configuración por pestañas (D1 a D3 de configurar-puesto-por-pestanas): un diálogo modal que no cambia el estado de la
-    máquina, con nueve pestañas según el patrón de WAI-ARIA. Todas quedan montadas y sólo la elegida se ve, así que lo
+    máquina, con diez pestañas según el patrón de WAI-ARIA. Todas quedan montadas y sólo la elegida se ve, así que lo
     editado en una sobrevive al pasar a otra y los id de siempre siguen en el diálogo (D2). Cada «Guardar» guarda lo suyo y
     deja Configuración abierta, con el aviso de lo guardado debajo de las pestañas (D3); «Cerrar» o Escape la cierran y
     descartan lo no guardado, también con un panel de edición abierto. Sólo un panel de edición se abre a la vez: Personas y
@@ -47,7 +47,7 @@
             <p id="aviso-guardado" class="aviso" role="status">@_avisoGuardado</p>
         }
 
-        @* Con un operador, General, Opciones, Identidad visual, Pantalla y Red no existen en el DOM (D6). *@
+        @* Con un operador, General, Opciones, Identidad visual, Mails, Pantalla, Red y Exportación no existen en el DOM (D6). *@
         @if (Operador is null)
         {
         <section role="tabpanel" id="seccion-general" class="seccion" aria-labelledby="pestana-general" hidden="@Oculta(Pestana.General)">
@@ -817,7 +817,7 @@
     /// <summary>Las tres de un operador, en este orden (D6 de entrar-a-configuracion-con-teclado).</summary>
     private static readonly Pestana[] DelOperador = [Pestana.Consumos, Pestana.Personas, Pestana.Impresora];
 
-    /// <summary>Las nueve con la clave del día; con un operador, sólo las suyas.</summary>
+    /// <summary>Las diez con la clave del día; con un operador, sólo las suyas.</summary>
     private Pestana[] Visibles => Operador is null ? Todas : DelOperador;
 
     private readonly ElementReference[] _botones = new ElementReference[Todas.Length];
@@ -1803,16 +1803,18 @@
         _mensajeCorreo = null;
         try
         {
-            var configuracion = ConfiguracionCorreo;
-            var pendientes = await Task.Run(() => Avisos!.EnviarPrueba());
-            var casillas = configuracion.Operadores.Concat(configuracion.Administrador is { } a ? [a] : [])
-                .Distinct(StringComparer.OrdinalIgnoreCase).Count();
-            (_mensajeCorreo, _correoFallido) = pendientes switch
+            // Las casillas las cuenta quien envía, con lo guardado recién: el parámetro de la pantalla puede ser el de antes.
+            var resultado = await Task.Run(() => Avisos!.EnviarPrueba());
+            (_mensajeCorreo, _correoFallido) = resultado switch
             {
                 null => (MensajesAtencion.PruebaCorreoSinCasillas, true),
-                0 => (MensajesAtencion.PruebaCorreoEnviada(casillas), false),
+                { Pendientes: 0 } => (MensajesAtencion.PruebaCorreoEnviada(resultado.Casillas), false),
                 _ => (MensajesAtencion.PruebaCorreoEnCola, true),
             };
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeCorreo, _correoFallido) = (MensajesAtencion.PruebaCorreoFallida, true);
         }
         finally
         {

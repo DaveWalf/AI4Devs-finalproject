@@ -153,7 +153,9 @@ public sealed class AlmacenConfiguracionCorreo
 
     private string Ruta => Path.Combine(CarpetaDatos, Nombre);
 
-    /// <summary>Lo guardado; sin archivo, ilegible o fuera de forma, lo de fábrica: apagados.</summary>
+    private ConfiguracionCorreo? _ultima;
+
+    /// <summary>Lo guardado; sin archivo o fuera de forma, lo de fábrica: apagados. Tomado un instante, lo último leído.</summary>
     public ConfiguracionCorreo Leer()
     {
         try
@@ -179,12 +181,22 @@ public sealed class AlmacenConfiguracionCorreo
                     _ => throw new JsonException("segundoFactor"),
                 },
                 raiz.GetProperty("operadores").EnumerateArray().Select(o => o.ValueKind == JsonValueKind.String ? o.GetString()! : throw new JsonException("operadores")).ToList(),
-                raiz.GetProperty("administrador").ValueKind == JsonValueKind.Null ? null : Texto(raiz, "administrador"),
+                raiz.GetProperty("administrador").ValueKind == JsonValueKind.Null || Texto(raiz, "administrador").Length == 0 ? null : Texto(raiz, "administrador"),
                 Texto(raiz, "horaSenal"));
-            return ConfiguracionCorreo.Validar(configuracion).Count == 0 ? configuracion : ConfiguracionCorreo.PorDefecto;
+            var leida = ConfiguracionCorreo.Validar(configuracion).Count == 0 ? configuracion : ConfiguracionCorreo.PorDefecto;
+            _ultima = leida;
+            return leida;
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or KeyNotFoundException
-                                       or InvalidOperationException or FormatException)
+        catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return ConfiguracionCorreo.PorDefecto;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Tomado un instante (un antivirus): lo último que se leyó o se guardó, así un aviso no se pierde por eso.
+            return _ultima ?? ConfiguracionCorreo.PorDefecto;
+        }
+        catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
         {
             return ConfiguracionCorreo.PorDefecto;
         }
@@ -212,6 +224,7 @@ public sealed class AlmacenConfiguracionCorreo
             administrador = configuracion.Administrador,
             horaSenal = configuracion.HoraSenal,
         }));
+        _ultima = configuracion;
     }
 
     private static string Texto(JsonElement objeto, string nombre) =>
@@ -276,15 +289,38 @@ public sealed class CorreoSimulado
         EscrituraAtomica.Escribir(Path.Combine(_carpeta, nombre), Eml(mensaje));
     }
 
-    /// <summary>El mensaje en RFC 5322: el asunto en una palabra codificada (RFC 2047) y el cuerpo en UTF-8.</summary>
+    /// <summary>
+    /// El asunto en palabras codificadas (RFC 2047) de hasta 45 bytes de texto cada una, así ninguna pasa de 75 caracteres,
+    /// sin partir un carácter.
+    /// </summary>
+    public static IReadOnlyList<string> PalabrasCodificadas(string texto)
+    {
+        var palabras = new List<string>();
+        var trozo = new StringBuilder();
+        foreach (var elemento in texto.EnumerateRunes())
+        {
+            if (Encoding.UTF8.GetByteCount(trozo.ToString()) + elemento.Utf8SequenceLength > 45)
+            {
+                palabras.Add("=?utf-8?B?" + Convert.ToBase64String(Encoding.UTF8.GetBytes(trozo.ToString())) + "?=");
+                trozo.Clear();
+            }
+
+            trozo.Append(elemento.ToString());
+        }
+
+        palabras.Add("=?utf-8?B?" + Convert.ToBase64String(Encoding.UTF8.GetBytes(trozo.ToString())) + "?=");
+        return palabras;
+    }
+
+    /// <summary>El mensaje en RFC 5322: el asunto en palabras codificadas (RFC 2047) y el cuerpo en UTF-8.</summary>
     public static string Eml(MensajeCorreo mensaje)
     {
         var texto = new StringBuilder();
         texto.Append("Message-ID: <").Append(mensaje.Id.ToString("N")).Append("@incomedor.local>\r\n");
-        texto.Append("Date: ").Append(mensaje.Creado.ToString("ddd, dd MMM yyyy HH:mm:ss +0000", CultureInfo.InvariantCulture)).Append("\r\n");
+        texto.Append("Date: ").Append(mensaje.Creado.UtcDateTime.ToString("ddd, dd MMM yyyy HH:mm:ss", CultureInfo.InvariantCulture)).Append(" +0000\r\n");
         texto.Append("From: ").Append(mensaje.Remitente).Append("\r\n");
         texto.Append("To: ").Append(string.Join(", ", mensaje.Para)).Append("\r\n");
-        texto.Append("Subject: =?utf-8?B?").Append(Convert.ToBase64String(Encoding.UTF8.GetBytes(mensaje.Asunto))).Append("?=\r\n");
+        texto.Append("Subject: ").Append(string.Join("\r\n ", PalabrasCodificadas(mensaje.Asunto))).Append("\r\n");
         texto.Append("MIME-Version: 1.0\r\n");
         texto.Append("Content-Type: text/plain; charset=utf-8\r\n");
         texto.Append("Content-Transfer-Encoding: 8bit\r\n");
@@ -294,9 +330,13 @@ public sealed class CorreoSimulado
     }
 }
 
+/// <summary>Lo que se leyó de la cola: los pendientes válidos, en orden, y cuántos se descartaron por ilegibles.</summary>
+public sealed record LecturaCola(IReadOnlyList<MensajeCorreo> Validos, int Ilegibles);
+
 /// <summary>
 /// La cola de los correos (D3): un archivo por correo en <c>correo-pendiente\</c>, con escritura atómica, que sale en el
-/// orden en que entró. Guarda hasta 500; uno más descarta el más viejo.
+/// orden en que entró. Guarda hasta 500; uno más descarta el más viejo. Un pendiente ilegible, incompleto o con una casilla
+/// que no tiene forma (que agregaría un destinatario o cortaría un encabezado) se descarta al leer. Segura entre hilos.
 /// </summary>
 public sealed class ColaCorreo
 {
@@ -304,6 +344,7 @@ public sealed class ColaCorreo
     public const int Tope = 500;
 
     private readonly string _carpeta;
+    private readonly Lock _cerrojo = new();
 
     public ColaCorreo(string carpetaDatos)
     {
@@ -313,39 +354,106 @@ public sealed class ColaCorreo
     /// <summary>Encola el correo; devuelve la situación de cada uno que se descartó por el tope.</summary>
     public IReadOnlyList<string> Encolar(MensajeCorreo mensaje)
     {
-        Directory.CreateDirectory(_carpeta);
-        var descartados = new List<string>();
-        var archivos = Archivos();
-        for (var i = 0; i <= archivos.Count - Tope; i++)
+        lock (_cerrojo)
         {
-            descartados.Add(Leer(archivos[i])?.Situacion ?? SituacionCorreo.Prueba);
-            File.Delete(archivos[i]);
-        }
+            Directory.CreateDirectory(_carpeta);
+            var descartados = new List<string>();
+            var archivos = Archivos();
+            for (var i = 0; i <= archivos.Count - Tope; i++)
+            {
+                descartados.Add(LeerArchivo(archivos[i]) is { } viejo && Valido(viejo) ? viejo.Situacion : SituacionCorreo.Prueba);
+                File.Delete(archivos[i]);
+            }
 
-        var nombre = mensaje.Creado.UtcDateTime.ToString("yyyyMMdd-HHmmssfff", CultureInfo.InvariantCulture) + "-" + mensaje.Id.ToString("N") + ".json";
-        EscrituraAtomica.Escribir(Path.Combine(_carpeta, nombre), JsonSerializer.Serialize(mensaje));
-        return descartados;
+            var nombre = mensaje.Creado.UtcDateTime.ToString("yyyyMMdd-HHmmssfff", CultureInfo.InvariantCulture) + "-" + mensaje.Id.ToString("N") + ".json";
+            EscrituraAtomica.Escribir(Path.Combine(_carpeta, nombre), JsonSerializer.Serialize(mensaje));
+            return descartados;
+        }
     }
 
-    /// <summary>Los pendientes, del más viejo al más nuevo; uno ilegible se saltea.</summary>
-    public IReadOnlyList<MensajeCorreo> Pendientes() => Archivos().Select(Leer).OfType<MensajeCorreo>().ToList();
+    /// <summary>
+    /// Los pendientes válidos, del más viejo al más nuevo; los ilegibles o fuera de forma se borran y se cuentan. Uno que
+    /// otro programa tiene abierto en ese instante se saltea sin borrarlo.
+    /// </summary>
+    public LecturaCola Leer()
+    {
+        lock (_cerrojo)
+        {
+            var validos = new List<MensajeCorreo>();
+            var ilegibles = 0;
+            foreach (var archivo in Archivos())
+            {
+                string texto;
+                try
+                {
+                    texto = File.ReadAllText(archivo);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    continue;
+                }
 
-    public int Cantidad => Archivos().Count;
+                MensajeCorreo? mensaje;
+                try
+                {
+                    mensaje = JsonSerializer.Deserialize<MensajeCorreo>(texto);
+                }
+                catch (Exception e) when (e is JsonException or NotSupportedException)
+                {
+                    mensaje = null;
+                }
+
+                if (mensaje is not null && Valido(mensaje))
+                {
+                    validos.Add(mensaje);
+                    continue;
+                }
+
+                File.Delete(archivo);
+                ilegibles++;
+            }
+
+            return new LecturaCola(validos, ilegibles);
+        }
+    }
+
+    /// <summary>Los pendientes válidos, del más viejo al más nuevo.</summary>
+    public IReadOnlyList<MensajeCorreo> Pendientes() => Leer().Validos;
+
+    public int Cantidad
+    {
+        get
+        {
+            lock (_cerrojo)
+            {
+                return Archivos().Count;
+            }
+        }
+    }
 
     public void Quitar(MensajeCorreo mensaje)
     {
-        foreach (var archivo in Archivos().Where(a => Path.GetFileNameWithoutExtension(a).EndsWith(mensaje.Id.ToString("N"), StringComparison.Ordinal)))
+        lock (_cerrojo)
         {
-            File.Delete(archivo);
+            foreach (var archivo in Archivos().Where(a => Path.GetFileNameWithoutExtension(a).EndsWith(mensaje.Id.ToString("N"), StringComparison.Ordinal)))
+            {
+                File.Delete(archivo);
+            }
         }
     }
+
+    /// <summary>Un pendiente con todo lo que un correo necesita y cada casilla con su forma.</summary>
+    private static bool Valido(MensajeCorreo m) =>
+        m.Situacion is not null && m.Asunto is not null && m.Cuerpo is not null && m.Remitente is not null
+        && !m.Asunto.Any(char.IsControl) && ConfiguracionCorreo.EsCasilla(m.Remitente)
+        && m.Para is { Count: > 0 } && m.Para.All(c => c is not null && ConfiguracionCorreo.EsCasilla(c));
 
     private List<string> Archivos() =>
         Directory.Exists(_carpeta)
             ? Directory.GetFiles(_carpeta, "*.json").Order(StringComparer.Ordinal).ToList()
             : [];
 
-    private static MensajeCorreo? Leer(string archivo)
+    private static MensajeCorreo? LeerArchivo(string archivo)
     {
         try
         {

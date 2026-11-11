@@ -68,12 +68,17 @@ public partial class CorreoE2ETests : IAsyncLifetime
             && Math.Abs(c.Alto - impresora.Alto) <= Tolerancia && c.Letra == impresora.Letra, $"{c.Id}: desde x {c.Izquierda} con {c.Ancho} × {c.Alto}, letra {c.Letra}"));
         var cerrar = botones[^1];
         Assert.All(botones, c => Assert.True(Math.Abs(c.Alto - cerrar.Alto) <= Tolerancia && c.Letra == cerrar.Letra, $"{c.Id}: {c.Alto} px, letra {c.Letra}"));
+        // El primer botón de cada par en la columna de los campos, y «Guardar» al borde de los campos.
+        Assert.All(botones.Where(c => c.Id is "correos-activos" or "cifrado-starttls" or "factor-aplicacion" or "servidor-correo-disponible"),
+            c => Assert.True(Math.Abs(c.Izquierda - impresora.Izquierda) <= Tolerancia, $"{c.Id} desde x {c.Izquierda}"));
+        var guardar = botones.Single(c => c.Id == "guardar-correo");
+        Assert.True(Math.Abs(guardar.Izquierda + guardar.Ancho - (impresora.Izquierda + impresora.Ancho)) <= Tolerancia, $"«Guardar» termina en x {guardar.Izquierda + guardar.Ancho}");
 
         await pagina.Locator("#guardar-correo").ClickAsync();
         await Assertions.Expect(pagina.Locator("#aviso-guardado")).ToContainTextAsync("Se guardaron los correos");
         await pagina.Locator("#servidor-correo-caido").ClickAsync();
         await pagina.Locator("#enviar-prueba-correo").ClickAsync();
-        await Assertions.Expect(pagina.Locator("#mensaje-correo")).ToHaveTextAsync("La prueba quedó en la cola: el servidor no responde y se reintenta cada minuto.");
+        await Assertions.Expect(pagina.Locator("#mensaje-correo")).ToHaveTextAsync("La prueba no salió todavía: quedó en la cola y se reintenta cada minuto.");
         await Assertions.Expect(pagina.Locator("#estado-correo")).ToHaveTextAsync("Cola: 1 pendiente");
         await pagina.Locator("#mensaje-correo").ScrollIntoViewIfNeededAsync();
         await _escenario.CapturarAsync(pagina, "correo-en-cola-1024x768");
@@ -83,6 +88,7 @@ public partial class CorreoE2ETests : IAsyncLifetime
         await pagina.Locator("#enviar-prueba-correo").ClickAsync();
         await Assertions.Expect(pagina.Locator("#mensaje-correo")).ToHaveTextAsync("Se envió la prueba a 2 casillas.");
         await Assertions.Expect(pagina.Locator("#estado-correo")).ToHaveTextAsync("Cola: sin pendientes");
+        await pagina.Locator("#mensaje-correo").ScrollIntoViewIfNeededAsync();
         await _escenario.CapturarAsync(pagina, "correo-enviado-1024x768");
         var pruebas = Pruebas();
         _escenario.Registrar("correos de prueba: " + string.Join(" | ", pruebas));
@@ -97,12 +103,13 @@ public partial class CorreoE2ETests : IAsyncLifetime
         return !Directory.Exists(carpeta)
             ? []
             : Directory.GetFiles(carpeta, "*.eml")
-                .Select(a => Encoding.UTF8.GetString(Convert.FromBase64String(Asunto().Match(File.ReadAllText(a, Encoding.UTF8)).Groups[1].Value)))
+                .Select(a => string.Concat(Asunto().Match(File.ReadAllText(a, Encoding.UTF8)).Groups[1].Value.Split("\r\n ")
+                    .Select(p => Encoding.UTF8.GetString(Convert.FromBase64String(p.Trim()[10..^2])))))
                 .Where(a => a.EndsWith("· Prueba", StringComparison.Ordinal))
                 .ToList();
     }
 
-    [GeneratedRegex(@"^Subject: =\?utf-8\?B\?([A-Za-z0-9+/=]+)\?=\r$", RegexOptions.Multiline)]
+    [GeneratedRegex(@"^Subject: ((?:=\?utf-8\?B\?[A-Za-z0-9+/=]+\?=)(?:\r\n =\?utf-8\?B\?[A-Za-z0-9+/=]+\?=)*)\r$", RegexOptions.Multiline)]
     private static partial Regex Asunto();
 
     private static async Task<Caja[]> MedirAsync(IPage pagina, string selector) =>

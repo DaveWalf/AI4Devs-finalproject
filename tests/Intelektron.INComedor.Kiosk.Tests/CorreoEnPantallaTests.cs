@@ -107,6 +107,59 @@ public class CorreoEnPantallaTests
         pantalla.WaitForAssertion(() => Assert.Equal(MensajesAtencion.PruebaCorreoSinCasillas, pantalla.Find("#mensaje-correo").TextContent.Trim()));
     }
 
+    [Fact(DisplayName = "avisos-correo · El servidor de correo cae y vuelve: «Guardar» y enseguida «Enviar una prueba» cuenta las casillas recién guardadas")]
+    public async Task Guardar_y_enviar_una_prueba()
+    {
+        using var puesto = Preparar();
+        var pantalla = puesto.Dibujar();
+        await AbrirMails(pantalla);
+
+        await pantalla.Find("#correos-activos").ClickAsync(new());
+        await Escribir(pantalla, "#remitente-correo", "puesto@ejemplo.com");
+        await Escribir(pantalla, "#servidor-correo", "smtp.ejemplo.local");
+        await Escribir(pantalla, "#operador-correo-1", "operador1@ejemplo.com");
+        await Escribir(pantalla, "#administrador-correo", "admin@ejemplo.com");
+        await Escribir(pantalla, "#hora-senal", "23:59");
+        await pantalla.Find("#guardar-correo").ClickAsync(new());
+        await pantalla.Find("#enviar-prueba-correo").ClickAsync(new());
+
+        pantalla.WaitForAssertion(() => Assert.Equal(MensajesAtencion.PruebaCorreoEnviada(2), pantalla.Find("#mensaje-correo").TextContent.Trim()));
+    }
+
+    [Fact(DisplayName = "avisos-correo · La exportación que falla: con los correos activos, «Exportar ahora» con el SFTP simulado caído deja un aviso de «Exportación» para el Administrador Principal")]
+    public async Task La_exportacion_avisa_por_correo()
+    {
+        using var puesto = Preparar();
+        puesto.Contexto.Services.AddSingleton(new AlmacenConfiguracionExportacion(puesto.Carpeta));
+        new AlmacenConfiguracionExportacion(puesto.Carpeta).Guardar(ConfiguracionExportacion.PorDefecto with
+        {
+            Activa = true, SftpActivo = true, Servidor = "sftp.ejemplo.local", Usuario = "comedor", CarpetaRemota = "entrada",
+        });
+        new AlmacenConfiguracionCorreo(puesto.Carpeta).Guardar(ConfiguracionCorreo.PorDefecto with
+        {
+            Activos = true, Cliente = "Cliente Demo", Remitente = "puesto@ejemplo.com", Servidor = "smtp.ejemplo.local",
+            Administrador = "admin@ejemplo.com", HoraSenal = "23:59",
+        });
+        var pantalla = puesto.Dibujar();
+        await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+        await pantalla.Find("#ingresar").ClickAsync(new());
+        await pantalla.FindAll(".opcion")[0].ClickAsync(new());
+        await pantalla.Find("#confirmar").ClickAsync(new());
+        pantalla.WaitForAssertion(() => pantalla.Find("#listo"));
+        await pantalla.Find("#listo").ClickAsync(new());
+        await EntradaConfiguracion.Entrar(pantalla);
+        await pantalla.Find("#pestana-exportacion").ClickAsync(new());
+
+        await pantalla.Find("#sftp-caido").ClickAsync(new());
+        await pantalla.Find("#exportar-ahora").ClickAsync(new());
+
+        // El aviso se encola fuera del hilo de la pantalla: se espera por tiempo, no por un dibujo.
+        var carpeta = Path.Combine(puesto.Carpeta, ColaCorreo.Carpeta);
+        bool HayAviso() => Directory.Exists(carpeta) && Directory.GetFiles(carpeta, "*.json").Select(File.ReadAllText).Any(t =>
+            System.Text.Json.JsonSerializer.Deserialize<MensajeCorreo>(t) is { Situacion: SituacionCorreo.Exportacion } m && m.Para.SequenceEqual(["admin@ejemplo.com"]));
+        Assert.True(SpinWait.SpinUntil(HayAviso, TimeSpan.FromSeconds(10)), "No llegó el aviso de «Exportación» a la cola.");
+    }
+
     [Fact(DisplayName = "avisos-correo · Guardar los correos: con el código de un operador no existe la pestaña Mails")]
     public async Task Con_un_operador()
     {

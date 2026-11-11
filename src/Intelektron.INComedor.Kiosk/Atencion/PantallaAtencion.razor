@@ -434,8 +434,9 @@
         }
 
         Maquina.Iniciar();
-        IniciarExportacion();
+        // Los correos antes que la exportación: su primera pasada ya puede avisar una falla.
         IniciarCorreos();
+        IniciarExportacion();
         LeerPersonasSimulacion();
         _temporizador = new Timer(_ => _ = InvokeAsync(Revisar), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
@@ -1639,13 +1640,8 @@
         }
 
         _avisos = new AvisosCorreo(Servicio.RegistroConfiguracion, Servicio.Reloj, ZonaDelPuesto, _almacenCorreo.CarpetaDatos, _almacenCorreo,
-            _almacenDatosPuesto ?? new AlmacenDatosPuesto(_almacenCorreo.CarpetaDatos), new ResumenDelDia(Servicio.Base));
+            _almacenDatosPuesto ?? new AlmacenDatosPuesto(_almacenCorreo.CarpetaDatos), new ResumenDelDia(Servicio.Base).Contar);
         Servicio.Avisos = _avisos;
-        if (_exportacion is not null)
-        {
-            _exportacion.AlFallar = _avisos.ExportacionFallida;
-        }
-
         _avisos.PasadaTerminada += RefrescarExportacion;
         _avisos.Programar();
     }
@@ -1742,6 +1738,7 @@
         _exportacion = new ExportacionAutomatica(Servicio.Consumos, Servicio.RegistroConfiguracion, Servicio.Reloj, ZonaDelPuesto,
             _almacenExportacionAutomatica.CarpetaDatos, _almacenExportacionAutomatica);
         _exportacion.PasadaTerminada += RefrescarExportacion;
+        _exportacion.AlFallar = _avisos is null ? null : _avisos.ExportacionFallida;
         _exportacion.Programar();
     }
 

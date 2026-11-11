@@ -329,8 +329,9 @@ public static class MensajesAtencion
     public const string CorreoNoGuardado = "No se pudieron guardar los correos: siguen los de antes.";
     public const string ExplicacionCorreo =
         "El envío es simulado: cada correo queda como un archivo en la carpeta correo-simulado del puesto. Ninguna clave se guarda.";
-    public const string PruebaCorreoEnCola = "La prueba quedó en la cola: el servidor no responde y se reintenta cada minuto.";
-    public const string PruebaCorreoSinCasillas = "Los correos están apagados o no tienen casillas guardadas: guardalos y probá de nuevo.";
+    public const string PruebaCorreoEnCola = "La prueba no salió todavía: quedó en la cola y se reintenta cada minuto.";
+    public const string PruebaCorreoSinCasillas = "Los correos están apagados o no tienen casillas guardadas: activalos, guardalos y probá de nuevo.";
+    public const string PruebaCorreoFallida = "No se pudo enviar la prueba: la carpeta del puesto no respondió; probá de nuevo en un momento.";
 
     /// <summary>La prueba que salió, con las casillas que la recibieron.</summary>
     public static string PruebaCorreoEnviada(int casillas) => $"Se envió la prueba a {Cantidad(casillas, "casilla", "casillas")}.";
@@ -381,7 +382,8 @@ public static class MensajesAtencion
 
     private static string NombreDestino(string destino) => destino == ExportacionAutomatica.Sftp ? "el SFTP simulado" : "la carpeta";
 
-    private static string MotivoExportacion(string motivo) => motivo switch
+    /// <summary>El motivo de una falla de la exportación en palabras, para la pestaña y para el aviso por correo.</summary>
+    internal static string MotivoExportacion(string motivo) => motivo switch
     {
         "SERVER_UNREACHABLE" => "el servidor no responde",
         "FOLDER_NOT_FOUND" => "la carpeta no existe",

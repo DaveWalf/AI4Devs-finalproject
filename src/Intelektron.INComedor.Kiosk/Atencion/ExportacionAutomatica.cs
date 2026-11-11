@@ -353,6 +353,10 @@ public sealed class ExportacionAutomatica : IDisposable
                 if (_estados is null)
                 {
                     resultados.AddRange(destinos.Select(d => new ResultadoDestino(d.Clave, 0, [], "STATE_UNREADABLE")));
+                    foreach (var destino in destinos)
+                    {
+                        AlFallar?.Invoke(destino.Clave, "STATE_UNREADABLE");
+                    }
                 }
                 else
                 {
@@ -424,6 +428,7 @@ public sealed class ExportacionAutomatica : IDisposable
             System.Diagnostics.Debug.WriteLine($"INComedor: falló una pasada de la exportación automática ({error.GetType().Name}).");
             Registrar("CONSUMPTIONS_AUTO_EXPORT_FAILED", new { Destination = "ALL", ReasonCode = "UNEXPECTED_ERROR", Error = error.GetType().Name, Trigger = "TIMER" },
                 SeveridadBitacora.Warning);
+            AlFallar?.Invoke("ALL", "UNEXPECTED_ERROR");
         }
     }
 
@@ -485,9 +490,9 @@ public sealed class ExportacionAutomatica : IDisposable
             estados[clave] = new EstadoDestino(marca, ahora, exito, motivo, identidad);
             GuardarEstado();
 
-            AlFallar?.Invoke(clave, motivo);
             Registrar("CONSUMPTIONS_AUTO_EXPORT_FAILED", new { Destination = clave, ReasonCode = motivo, Rows = filas, UpToSequence = marca, Trigger = Disparo(aMano) },
                 SeveridadBitacora.Warning);
+            AlFallar?.Invoke(clave, motivo);
             return new ResultadoDestino(clave, filas, archivos, motivo);
         }
     }

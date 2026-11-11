@@ -107,9 +107,71 @@ public sealed partial class AvisosCorreoTests : IDisposable
         Assert.Equal("Cliente Demo · Puesto 3 Comedor Norte · Persona sin consumo", correo.Asunto);
         Assert.Equal("operador1@ejemplo.com, operador2@ejemplo.com", correo.Para);
         Assert.Contains("Persona sintética 02 no pudo comer al marcar: su credencial está vencida.", correo.Cuerpo, StringComparison.Ordinal);
-        Assert.DoesNotContain("0002", correo.Texto, StringComparison.Ordinal);
-        Assert.DoesNotContain("7777", correo.Texto, StringComparison.Ordinal);
+        Assert.DoesNotContain("0002", correo.Asunto + correo.Cuerpo, StringComparison.Ordinal);
+        Assert.DoesNotContain("7777", correo.Asunto + correo.Cuerpo, StringComparison.Ordinal);
         Assert.Null(_maquina.NombreVisible);
+    }
+
+    [Fact(DisplayName = "avisos-correo · Una persona sin consumo: la misma persona con el mismo motivo avisa una vez en 15 minutos; otra persona, aunque tenga el mismo motivo, avisa la suya")]
+    public void La_ventana_por_persona()
+    {
+        using var avisos = Avisos(Activos);
+        var otra = Guid.NewGuid();
+
+        _maquina.Identificar("0002");
+        _maquina.Identificar("0002");
+        avisos.PersonaSinConsumo(otra, "Persona sintética homónima", "CREDENTIAL_EXPIRED");
+        avisos.Pasada();
+
+        Assert.Equal(2, Enviados().Count);
+    }
+
+    [Fact(DisplayName = "avisos-correo · Una persona sin consumo: una persona sin ninguna opción disponible avisa con su nombre")]
+    public async Task Una_persona_sin_opciones()
+    {
+        using var avisos = Avisos(Activos);
+        await Consumir("0001");
+        await Consumir("0001");
+        await Consumir("0001");
+
+        Assert.Equal(ResultadoToque.Aceptado, _maquina.Identificar("0001"));
+        Assert.Equal(EstadoAtencion.SinOpciones, _maquina.Estado);
+        avisos.Pasada();
+
+        var correo = Assert.Single(Enviados());
+        Assert.EndsWith("· Persona sin consumo", correo.Asunto, StringComparison.Ordinal);
+        Assert.Contains("Persona sintética 01 no pudo comer al marcar:", correo.Cuerpo, StringComparison.Ordinal);
+    }
+
+    [Fact(DisplayName = "avisos-correo · Un consumo denegado al confirmar: la franja cierra entre la oferta y la confirmación y los operadores reciben el aviso con el nombre")]
+    public async Task Un_consumo_denegado()
+    {
+        using var avisos = Avisos(Activos);
+        FranjaEnTodas("11:00", "12:01");
+        Assert.Equal(ResultadoToque.Aceptado, _maquina.Identificar("0001"));
+        _maquina.Elegir(_maquina.PaginaActual[0].Id);
+
+        _reloj.Avanzar(TimeSpan.FromMinutes(1));
+        await _maquina.ConfirmarAsync();
+        avisos.Pasada();
+
+        Assert.False(_maquina.ConsumoRegistrado);
+        var correo = Assert.Single(Enviados());
+        Assert.Contains("Persona sintética 01 no pudo comer al marcar: la opción no está disponible en este horario.", correo.Cuerpo, StringComparison.Ordinal);
+    }
+
+    [Fact(DisplayName = "avisos-correo · Los avisos por correo: con los correos apagados no se encola ni se envía nada")]
+    public void Con_los_correos_apagados()
+    {
+        using var avisos = Avisos(Activos with { Activos = false });
+
+        _maquina.Identificar("0002");
+        avisos.ComprobanteSinImprimir("PAPER_OUT");
+        avisos.Pasada();
+
+        Assert.Empty(Enviados());
+        Assert.Equal(0, avisos.Pendientes);
+        Assert.Empty(Registros("NOTIFICATION_QUEUED"));
     }
 
     [Fact(DisplayName = "avisos-correo · La impresora sin papel: dos consumos seguidos sin papel dan un solo correo de «Impresora» a los operadores; pasada la ventana, otro")]
@@ -153,19 +215,27 @@ public sealed partial class AvisosCorreoTests : IDisposable
         var correo = Assert.Single(Enviados(), c => c.Asunto.EndsWith("· Exportación", StringComparison.Ordinal));
         Assert.Equal("admin@ejemplo.com", correo.Para);
         Assert.Contains("al SFTP simulado", correo.Cuerpo, StringComparison.Ordinal);
-        Assert.Contains("SERVER_UNREACHABLE", correo.Cuerpo, StringComparison.Ordinal);
+        Assert.Contains("el servidor no responde", correo.Cuerpo, StringComparison.Ordinal);
+        Assert.DoesNotContain("SERVER_UNREACHABLE", correo.Cuerpo, StringComparison.Ordinal);
     }
 
-    [Fact(DisplayName = "avisos-correo · Una bitácora que se degrada avisa una vez al Administrador Principal, no mientras sigue degradada, y otra vez si vuelve a degradarse")]
+    [Fact(DisplayName = "avisos-correo · Una bitácora que se degrada avisa una vez al Administrador Principal, no mientras sigue degradada ni si vuelve a degradarse antes de 15 minutos; después, otra vez")]
     public void Una_bitacora_degradada()
     {
         using var avisos = Avisos(Activos);
         var desde = _reloj.GetUtcNow();
 
-        avisos.Bitacoras([new EstadoBitacora(DestinoBitacora.General, false, 3, desde)]);
+        avisos.Bitacoras([new EstadoBitacora(DestinoBitacora.General, false, 1, desde)]);
         avisos.Bitacoras([new EstadoBitacora(DestinoBitacora.General, false, 5, desde)]);
         avisos.Bitacoras([new EstadoBitacora(DestinoBitacora.General, true, 0, null)]);
         avisos.Bitacoras([new EstadoBitacora(DestinoBitacora.General, false, 1, desde.AddMinutes(1))]);
+        avisos.Pasada();
+        Assert.Single(Enviados());
+        Assert.Contains("1 registro espera su archivo.", Enviados()[0].Cuerpo, StringComparison.Ordinal);
+
+        _reloj.Avanzar(AvisosCorreo.Ventana);
+        avisos.Bitacoras([new EstadoBitacora(DestinoBitacora.General, true, 0, null)]);
+        avisos.Bitacoras([new EstadoBitacora(DestinoBitacora.General, false, 2, _reloj.GetUtcNow())]);
         avisos.Pasada();
 
         var correos = Enviados();
@@ -180,7 +250,7 @@ public sealed partial class AvisosCorreoTests : IDisposable
         using var avisos = Avisos(Activos);
         avisos.Servidor.Caido = true;
 
-        Assert.Equal(1, avisos.EnviarPrueba());
+        Assert.Equal(new ResultadoPrueba(3, 1), avisos.EnviarPrueba());
         Assert.Empty(Enviados());
         avisos.Pasada();
         Assert.Equal(1, avisos.Pendientes);
@@ -214,6 +284,49 @@ public sealed partial class AvisosCorreoTests : IDisposable
         Assert.Single(descartados);
         Assert.Equal(ColaCorreo.Tope, cola.Cantidad);
         Assert.Equal("1", cola.Pendientes()[0].Cuerpo);
+
+        using var avisos = Avisos(Activos);
+        avisos.ComprobanteSinImprimir("PAPER_OUT");
+        avisos.Servidor.Caido = true;
+        avisos.Pasada();
+        Assert.Single(Registros("NOTIFICATION_DISCARDED"));
+    }
+
+    [Fact(DisplayName = "avisos-correo · El envío simulado y la cola: un pendiente roto, uno incompleto y uno con una casilla que agrega otra se descartan y se registran; los demás salen y la cola queda vacía")]
+    public void Una_cola_ilegible()
+    {
+        using var avisos = Avisos(Activos);
+        var carpeta = Directory.CreateDirectory(Path.Combine(_carpeta, ColaCorreo.Carpeta)).FullName;
+        File.WriteAllText(Path.Combine(carpeta, "20261106-150000000-roto.json"), "{ roto");
+        File.WriteAllText(Path.Combine(carpeta, "20261106-150000001-incompleto.json"), "{}");
+        new ColaCorreo(_carpeta).Encolar(Mensaje(2) with { Para = ["admin@ejemplo.com\r\nBcc: otro@ejemplo.com"] });
+
+        Assert.Equal(new ResultadoPrueba(3, 0), avisos.EnviarPrueba());
+
+        Assert.Single(Enviados());
+        Assert.Equal(0, avisos.Pendientes);
+        Assert.Equal(3, Registros("NOTIFICATION_DISCARDED").Count);
+    }
+
+    [Fact(DisplayName = "avisos-correo · El envío simulado y la cola: si el correo salió pero su pendiente no se puede quitar, la pasada siguiente lo quita sin enviarlo otra vez")]
+    public void Un_pendiente_que_no_se_puede_quitar()
+    {
+        using var avisos = Avisos(Activos);
+        avisos.Servidor.Caido = true;
+        avisos.EnviarPrueba();
+        avisos.Servidor.Caido = false;
+        var pendiente = Directory.GetFiles(Path.Combine(_carpeta, ColaCorreo.Carpeta), "*.json").Single();
+
+        using (new FileStream(pendiente, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            avisos.Pasada();
+        }
+
+        avisos.Pasada();
+
+        Assert.Single(Enviados());
+        Assert.Equal(0, avisos.Pendientes);
+        Assert.Single(Registros("NOTIFICATION_SENT"));
     }
 
     [Fact(DisplayName = "avisos-correo · La señal de las 08:00: con dos consumos y un rechazo el día anterior, pasadas las 08:00 sale una sola «Señal de vida» al Administrador Principal, aunque el puesto se reinicie")]
@@ -248,20 +361,29 @@ public sealed partial class AvisosCorreoTests : IDisposable
         Assert.DoesNotContain("Persona sintética", correo.Cuerpo, StringComparison.Ordinal);
     }
 
-    [Fact(DisplayName = "avisos-correo · El reloj de los correos corre cada minuto, el primero al minuto, y una pasada que falla no sale del reloj")]
+    [Fact(DisplayName = "avisos-correo · El reloj de los correos corre cada minuto, el primero al minuto; una señal de vida que falla queda registrada, no frena la cola y el reloj sigue")]
     public void El_reloj()
     {
         var reloj = new RelojConTemporizadores(_reloj);
-        using var avisos = new AvisosCorreo(_servicio.RegistroConfiguracion!, reloj, Zona, _carpeta, Configuracion(Activos),
-            new AlmacenDatosPuesto(_carpeta), new ResumenDelDia(_servicio.Base));
+        var fallas = 0;
+        using var avisos = new AvisosCorreo(_servicio.RegistroConfiguracion!, reloj, Zona, _carpeta, Configuracion(Activos with { HoraSenal = "08:00" }),
+            new AlmacenDatosPuesto(_carpeta), (_, _) => fallas++ < 1 ? throw new InvalidOperationException("resumen roto") : new ResumenDia(0, 0, 0, 0));
+        _servicio.Avisos = avisos;
+        avisos.Servidor.Caido = true;
+        _maquina.Identificar("0002");
+        avisos.Servidor.Caido = false;
 
         avisos.Programar();
-        File.WriteAllText(Path.Combine(_carpeta, ColaCorreo.Carpeta), "un archivo donde va la carpeta");
-
         var temporizador = Assert.Single(reloj.Temporizadores);
         Assert.Equal(AvisosCorreo.Periodo, temporizador.Periodo);
         Assert.Equal(AvisosCorreo.Periodo, temporizador.Primero);
         temporizador.Disparar();
+
+        Assert.Single(Enviados());
+        Assert.Contains(Registros("NOTIFICATION_FAILED"), r => r.Contains("HEARTBEAT", StringComparison.Ordinal));
+        temporizador.Disparar();
+        Assert.Equal(2, Enviados().Count);
+        Assert.Contains(Enviados(), c => c.Asunto.EndsWith("· Señal de vida", StringComparison.Ordinal));
     }
 
     private AlmacenConfiguracionCorreo Configuracion(ConfiguracionCorreo configuracion)
@@ -274,7 +396,7 @@ public sealed partial class AvisosCorreoTests : IDisposable
     private AvisosCorreo Avisos(ConfiguracionCorreo configuracion)
     {
         var avisos = new AvisosCorreo(_servicio.RegistroConfiguracion!, _reloj, Zona, _carpeta, Configuracion(configuracion),
-            new AlmacenDatosPuesto(_carpeta), new ResumenDelDia(_servicio.Base));
+            new AlmacenDatosPuesto(_carpeta), new ResumenDelDia(_servicio.Base).Contar);
         _servicio.Avisos = avisos;
         return avisos;
     }
@@ -300,13 +422,14 @@ public sealed partial class AvisosCorreoTests : IDisposable
             : Directory.GetFiles(carpeta, "*.eml").Order(StringComparer.Ordinal).Select(a =>
             {
                 var texto = File.ReadAllText(a, Encoding.UTF8);
-                var asunto = Encoding.UTF8.GetString(Convert.FromBase64String(Subject().Match(texto).Groups[1].Value));
+                var asunto = string.Concat(Subject().Match(texto).Groups[1].Value.Split("\r\n ")
+                    .Select(p => Encoding.UTF8.GetString(Convert.FromBase64String(p.Trim()[10..^2]))));
                 var para = Para().Match(texto).Groups[1].Value.Trim();
                 return new Correo(asunto, para, texto[(texto.IndexOf("\r\n\r\n", StringComparison.Ordinal) + 4)..], texto);
             }).ToList();
     }
 
-    [GeneratedRegex(@"^Subject: =\?utf-8\?B\?([A-Za-z0-9+/=]+)\?=\r$", RegexOptions.Multiline)]
+    [GeneratedRegex(@"^Subject: ((?:=\?utf-8\?B\?[A-Za-z0-9+/=]+\?=)(?:\r\n =\?utf-8\?B\?[A-Za-z0-9+/=]+\?=)*)\r$", RegexOptions.Multiline)]
     private static partial Regex Subject();
 
     [GeneratedRegex(@"^To: (.+)\r$", RegexOptions.Multiline)]
@@ -327,6 +450,23 @@ public sealed partial class AvisosCorreoTests : IDisposable
         }
 
         return contextos;
+    }
+
+    private void FranjaEnTodas(string inicio, string fin)
+    {
+        using var conexion = new SqliteConnection($"Data Source={Path.Combine(_carpeta, "incomedor.db")};Pooling=False");
+        conexion.Open();
+        using var comando = conexion.CreateCommand();
+        comando.CommandText =
+            """
+            DELETE FROM tbComedorFranjasOpcionesMenu WHERE comvcCodigo = (SELECT comvcCodigoActiva FROM tbComedorConfiguracionPuestos);
+            INSERT INTO tbComedorFranjasOpcionesMenu (comvcCodigo, commenCodigo, comfraCodigo, comfraHoraInicio, comfraHoraFin)
+            SELECT comvcCodigo, commenCodigo, lower(hex(randomblob(16))), $inicio, $fin FROM tbComedorOpcionesMenu
+            WHERE comvcCodigo = (SELECT comvcCodigoActiva FROM tbComedorConfiguracionPuestos)
+            """;
+        comando.Parameters.AddWithValue("$inicio", inicio);
+        comando.Parameters.AddWithValue("$fin", fin);
+        comando.ExecuteNonQuery();
     }
 
     private sealed record Correo(string Asunto, string Para, string Cuerpo, string Texto);

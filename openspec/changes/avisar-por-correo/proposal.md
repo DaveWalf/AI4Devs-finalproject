@@ -11,6 +11,10 @@ del plan `AI4DEVS-GOAL-CIERRE-FINAL-11-11.md`) y el gate dado (decisiones 12 y 1
 Hoy el puesto no avisa nada fuera de su pantalla: una impresora sin papel, una persona rechazada o una exportación que
 falla sólo quedan en la bitácora, y nadie se entera hasta que alguien mira.
 
+Origen: épica HU03 («supervisar el puesto y recuperar un comprobante»: configurarlo y diagnosticarlo sin red y ver cuándo
+una bitácora quedó degradada) y su historia HU03.4 (diagnosticar los componentes, la impresora entre ellos), RB21 (todo
+cambio con actor y resultado); ticket TK02 (interfaz: flujo autónomo y estados de operación).
+
 ## What Changes
 
 - **La pestaña Mails**, después de Impresora y sólo con la clave del día: «Activos» o «Apagados»; el nombre del cliente
@@ -26,8 +30,9 @@ falla sólo quedan en la bitácora, y nadie se entera hasta que alguien mira.
 - **El asunto** siempre es «Cliente · Puesto N Nombre · Situación».
 - **El envío simulado**: cada correo se escribe como un `.eml` en `correo-simulado\` de la carpeta de datos. Uno que no
   sale queda en la cola (`correo-pendiente\`) y se reintenta cada minuto; la conexión real queda como pendiente escrita.
-- **La bitácora general** registra el ajuste (`CONFIGURATION_CHANGED` de `MAIL` y de `SIMULATED_MAIL`) y cada envío
-  (`NOTIFICATION_SENT`, `NOTIFICATION_QUEUED`), sin direcciones, nombres ni códigos.
+- **La bitácora general** registra el ajuste (`CONFIGURATION_CHANGED` de `MAIL` y de `SIMULATED_MAIL`) y cada correo
+  (`NOTIFICATION_QUEUED`, `NOTIFICATION_SENT`, `NOTIFICATION_FAILED` y `NOTIFICATION_DISCARDED`), sin direcciones,
+  nombres ni códigos.
 
 ## Non-goals
 
@@ -71,8 +76,9 @@ Opciones recomendadas, aplicadas sin esperar:
    directo), sin guardar ninguna clave: el envío es simulado y el secreto real irá al almacén de credenciales de Windows.
 2. Los avisos de gestión van a los operadores con el nombre visible de la persona y el motivo, nunca su código; los
    técnicos y la señal de vida, al Administrador Principal.
-3. Un mismo aviso (la misma situación con el mismo motivo) no se repite más de una vez cada 15 minutos; una bitácora
-   avisa cuando se degrada, no mientras sigue degradada.
+3. Un mismo aviso (la misma situación con el mismo motivo y, para una persona, la misma persona) no se repite más de
+   una vez cada 15 minutos; una bitácora avisa cuando se degrada, no mientras sigue degradada ni antes de 15 minutos si
+   vuelve a degradarse.
 4. La señal de vida sale una vez por día, a la hora elegida (08:00 por defecto), con el resumen del día anterior.
 5. Un correo que no sale queda en la cola de la carpeta de datos y se reintenta cada minuto, hasta 500 pendientes.
 6. La configuración y la cola son del equipo y no viajan en un resguardo.

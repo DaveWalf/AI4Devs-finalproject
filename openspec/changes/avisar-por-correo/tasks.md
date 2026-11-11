@@ -57,3 +57,20 @@
 - [ ] 5.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror
   --no-incremental`, el puesto publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c
   Release` contra ese EXE, con los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.
+
+## 6. Correcciones de la verificación
+
+- [x] 6.1 Lo que encontró la verificación por un agente de sólo lectura (09:44 a ~10:00; 0 críticos, 9 advertencias y 13
+  sugerencias), corregido con el gate dado (decisión 13) y primero con las pruebas que lo muestran, vistas fallar: los
+  avisos salen del hilo de la atención (quedan en memoria y se encolan en otro hilo, con una falla inesperada
+  registrada); «Enviar una prueba» cuenta las casillas recién guardadas y atrapa una falla de la carpeta; la pasada
+  atrapa la lectura y el borrado de la cola, y un correo que salió pero no se pudo quitar no se vuelve a enviar; un
+  pendiente ilegible, incompleto o con una casilla fuera de forma se descarta con `NOTIFICATION_DISCARDED`; la bitácora
+  que vuelve a degradarse respeta la ventana; la ventana de una persona es por persona y motivo, y corre recién cuando el
+  aviso quedó en la cola; la señal de vida falla sola sin frenar la cola y se marca recién encolada; el motivo de la
+  exportación en palabras, también con el estado tomado y una falla inesperada; el asunto en palabras de 75 caracteres
+  como máximo; el plural de los registros; un administrador vacío es ninguno; lo último leído si `correo.json` está
+  tomado; el origen HU03, HU03.4 y TK02 en la propuesta. Pruebas nuevas: la ventana por persona, sin opciones, un
+  consumo denegado, los correos apagados, el descarte al tope, la cola ilegible, el pendiente que no se puede quitar, el
+  reloj con una señal que falla, «Guardar» y enseguida la prueba, y la exportación que avisa por la pantalla (ésta, vista
+  fallar contra un mutante sin la asignación). Verifica: Kiosk en verde. Hecho: Kiosk 566 de 566.
