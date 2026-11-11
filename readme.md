@@ -382,11 +382,15 @@ cómo se entró (`MAINTENANCE_MODE` para el cierre directo, `DAILY_KEY` u `OPERA
 **Personas y opciones en Configuración.** Mientras no haya INWeb, el puesto es el dueño de sus datos: las pestañas
 Personas y Opciones abren, con «Editar», «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y
 su «Cancelar», que vuelven a la pestaña. Personas es una **tabla**: una fila por persona y una columna por cada cupo
-que usa el catálogo (en la semilla, ALMUERZO y REFRIGERIO), con su límite diario de 0 a 99 o «—» sin cupo, el estado
-y la cantidad de opciones que esos cupos habilitan. En 1024 × 768 entran diez filas de 44 px, el encabezado queda fijo
-y cada encabezado ordena la vista sin cambiar lo que se guarda. «Editar», en el encabezado, la pasa a edición en el
-mismo lugar: agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus cupos (vaciar una celda
-quita el cupo) y quitarla, que la da de baja y revoca su código sin borrar sus consumos. El código se tipea en un campo
+que usa el catálogo (en la semilla, ALMUERZO y REFRIGERIO), con lo usado hoy sobre su límite diario de 0 a 99 («1/2»)
+o «—» sin cupo, el estado y la cantidad de opciones que esos cupos habilitan. En 1024 × 768 entran diez filas de 44 px,
+el encabezado queda fijo y cada encabezado ordena la vista sin cambiar lo que se guarda. Tocar un cupo, o «Editar» en
+el encabezado, la pasa a edición en el mismo lugar, con un teclado en pantalla que escribe en el campo elegido y que
+«Ocultar teclado» esconde hasta cerrar Configuración: agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus cupos (vaciar una celda
+quita el cupo) y quitarla, que la da de baja y revoca su código sin borrar sus consumos. Cada guardado deja en la
+general los cupos cambiados de cada persona, con el límite antes y después, y el operador que entró con su código como
+actor. «Exportar CSV» y «Exportar Excel», en el pie de Personas, guardan la tabla en la carpeta de la exportación de
+Consumos, sin ningún código, y quedan en la general como `PEOPLE_EXPORTED`. El código se tipea en un campo
 enmascarado de sólo dígitos, conserva sus ceros iniciales, no se puede repetir aunque esté revocado, y nunca se
 muestra ni se registra. El segundo muestra cada opción con su servicio, su importe, sus cargas de cupo y sus
 **franjas horarias**, en la hora local del puesto, de inicio incluido a fin excluido (de 22:00 a 02:00 cruza la

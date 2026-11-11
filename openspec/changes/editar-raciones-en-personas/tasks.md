@@ -59,12 +59,25 @@
 
 ## 5. El puesto compilado, documentos y verificación integral
 
-- [ ] 5.1 E2E nueva contra el puesto compilado, a 1024 × 768: el x/n en la tabla, tocar una celda, el teclado con sus
+- [x] 5.1 E2E nueva contra el puesto compilado, a 1024 × 768: el x/n en la tabla, tocar una celda, el teclado con sus
   teclas de 56 px dentro de la ventana y del mismo ancho por fila, y escribir con él; medidas pegadas y capturas miradas.
   Ajustar las E2E existentes que leen el límite como texto. Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests`
   en verde.
-- [ ] 5.2 `readme.md` (Personas) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
+  - `RacionesEnPersonasE2ETests`. La primera captura mostró la tabla aplastada a una fila y media con el teclado y el
+    campo elegido tapado por el encabezado fijo; la E2E entera, que «Muchas personas en 1024 × 768» (existente) veía 9
+    filas en lugar de 10, por la barra de exportar debajo de la tabla. Corregido sin tocar esa prueba: el teclado en cuatro
+    filas, el título que cede su alto con el teclado, `scroll-margin-top` en los campos, lo usado con su ancho fijo para
+    alinear los campos de cada columna, y la exportación de Personas en el pie del diálogo (D5 y D6).
+  - Medidas finales a 1024 × 768: el teclado, cuatro filas de 10 teclas de 87,2 × 56,0 px; el diálogo termina en 752 px y
+    «Guardar» en 667; el límite elegido de 255,5 a 299,5 px, debajo del encabezado (192,5) y dentro de la tabla (345,0),
+    con 3 filas enteras a la vista; los límites de REFRIGERIO empiezan los nueve en 540,8 px; el pie, «Exportar CSV» y
+    «Exportar Excel» de 152,7 × 56,0 y «Cerrar» de 120,0 × 56,0, los tres desde 679,0 y con letra de 18 px. Capturas
+    miradas: `personas-x-de-n-1024x768` y `personas-teclado-1024x768`. Ninguna E2E existente leía el límite como texto.
+- [x] 5.2 `readme.md` (Personas) y la fila que corresponda de `docs/aplicacion-del-curso.md`. Verifica: el chequeo de
   enlaces de D8 de `mostrar-aplicacion-del-curso` con su control negativo, `enlaces rotos: 0`.
+  - `readme.md`: Personas con el x/n, el toque, el teclado, los cupos cambiados en la general y la exportación en el pie.
+    `docs/aplicacion-del-curso.md`, la fila de las reglas de `config.yaml`: los dos defectos que atrapó la regla de
+    prolijidad. Control negativo `enlaces rotos: 2`; los cuatro documentos, `enlaces rotos: 0`.
 - [ ] 5.3 Verificación integral: `openspec validate --all --strict`, `dotnet build INComedor.sln -warnaserror`, el puesto
   publicado con `publicar-puesto.ps1 -Version 0.0.0-local` y `dotnet test INComedor.sln -c Release` contra ese EXE, con
   los totales por proyecto pegados, y la lista de pruebas existentes cambiadas.

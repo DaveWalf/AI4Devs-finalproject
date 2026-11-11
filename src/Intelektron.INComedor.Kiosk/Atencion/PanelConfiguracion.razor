@@ -113,9 +113,7 @@
                 @if (_panel == Panel.Personas || _elegida == Pestana.Personas)
                 {
                     <PanelPersonas Administracion="Administracion" Editando="@(_panel == Panel.Personas)" Cerrar="CerrarPanel"
-                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" Actor="Actor"
-                                   AlmacenExportacion="AlmacenExportacion" ElectorCarpeta="ElectorCarpeta" Zona="Zona"
-                                   RegistrarExportacion="RegistrarExportacionPersonas" />
+                                   PuedeEditar="@(_panel is null)" Editar="() => AbrirPanel(Panel.Personas)" Actor="Actor" />
                 }
                 else
                 {
@@ -311,6 +309,19 @@
         }
 
         <div class="acciones pie-dialogo">
+            @* Exportar Personas va en el pie, a la izquierda de «Cerrar», para que la tabla conserve sus diez filas a la vista a
+               1024 × 768 (D5 y D6 de editar-raciones-en-personas). Sólo con Personas en lectura. *@
+            @if (_elegida == Pestana.Personas && _panel is null && Administracion is not null && AlmacenExportacion is not null && ElectorCarpeta is not null)
+            {
+                <div class="exportar-personas">
+                    <button id="exportar-personas-csv" type="button" @onclick="() => ExportarPersonas(FormatoExportacion.Csv)">Exportar CSV</button>
+                    <button id="exportar-personas-xlsx" type="button" @onclick="() => ExportarPersonas(FormatoExportacion.Xlsx)">Exportar Excel</button>
+                </div>
+                @if (_mensajeExportacionPersonas is not null)
+                {
+                    <p id="mensaje-exportacion-personas" class="@(_exportacionPersonasFallida ? "aviso" : "mensaje-exportacion")" role="status">@_mensajeExportacionPersonas</p>
+                }
+            }
             @* «Cerrar»: cada pestaña guarda lo suyo, así que el pie cierra y descarta lo no guardado; el id se conserva (D2 de ordenar-configuracion). *@
             <button id="cancelar-configuracion" type="button" @onclick="Cancelar">Cerrar</button>
         </div>
@@ -356,6 +367,60 @@
     private bool _redMontada;
     private bool _enfocarPestana;
     private Panel? _panel;
+    private string? _mensajeExportacionPersonas;
+    private bool _exportacionPersonasFallida;
+
+    /// <summary>
+    /// Exporta Personas a la carpeta de la exportación de Consumos; sin carpeta guardada, la pide y la guarda; si se cancela,
+    /// no exporta. Sin poder escribir, avisa y la general no registra nada (D5 de editar-raciones-en-personas).
+    /// </summary>
+    private void ExportarPersonas(FormatoExportacion formato)
+    {
+        string? avisoCarpeta = null;
+        var carpeta = AlmacenExportacion!.Leer();
+        if (carpeta is null)
+        {
+            carpeta = ElectorCarpeta!.Elegir(null);
+            if (carpeta is null)
+            {
+                (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.SinCarpeta, true);
+                return;
+            }
+
+            try
+            {
+                AlmacenExportacion.Guardar(carpeta);
+            }
+            catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+            {
+                avisoCarpeta = MensajesAtencion.CarpetaNoGuardada;
+            }
+        }
+
+        ResultadoExportacionPersonas resultado;
+        try
+        {
+            resultado = new ExportacionPersonas(Administracion!, Administracion!.Reloj).Exportar(formato, carpeta, Zona);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.ExportacionFallida, true);
+            return;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeExportacionPersonas, _exportacionPersonasFallida) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            return;
+        }
+
+        _exportacionPersonasFallida = avisoCarpeta is not null;
+        _mensajeExportacionPersonas = string.Join(' ', new[]
+        {
+            avisoCarpeta, MensajesAtencion.ExportacionPersonasHecha(resultado.Archivo, resultado.Filas, carpeta),
+        }.OfType<string>());
+        RegistrarExportacionPersonas?.Invoke(new PanelPersonas.ExportacionPersonasRealizada(
+            formato == FormatoExportacion.Csv ? "CSV" : "XLSX", resultado.Archivo, resultado.Filas));
+    }
     private string? _avisoGuardado;
     private string? _avisoEstilo;
     private VistaAdministracion? _resumen;

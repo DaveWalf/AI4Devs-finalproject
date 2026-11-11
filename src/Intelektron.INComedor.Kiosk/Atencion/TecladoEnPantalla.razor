@@ -1,6 +1,7 @@
 @*
     Un teclado en pantalla para editar sin teclado físico (D4 de editar-raciones-en-personas): números, letras con la Ñ,
-    «Mayús», borrar y espacio, en filas de teclas de 56 px y del mismo ancho por fila. Avisa cada tecla con su valor
+    «Mayús», espacio y borrar, en cuatro filas de teclas de 56 px y del mismo ancho por fila, para que la tabla conserve
+    sus filas a la vista a 1024 × 768. Avisa cada tecla con su valor
     (la letra, el número, BORRAR o ESPACIO); quien lo usa decide en qué campo escribe. Las teclas no sacan el foco del campo.
 *@
 <div class="teclado-en-pantalla" role="group" aria-label="Teclado en pantalla">
@@ -27,8 +28,7 @@
         ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
         ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
         ["A", "S", "D", "F", "G", "H", "J", "K", "L", "Ñ"],
-        [Mayus, "Z", "X", "C", "V", "B", "N", "M", Borrar],
-        [Espacio],
+        [Mayus, "Z", "X", "C", "V", "B", "N", "M", Espacio, Borrar],
     ];
 
     private bool _mayusculas;

@@ -426,9 +426,10 @@ html, body { overscroll-behavior: none; }
    (D1, D2 y D6 de editar-raciones-en-personas). La exportación, como la de Consumos. */
 .tabla-personas .cupo-tocable { min-height: 44px; min-width: 64px; padding: 0 8px; font: inherit; background: transparent; border: 1px dashed transparent; border-radius: 8px; color: inherit; }
 .tabla-personas .cupo-tocable:hover, .tabla-personas .cupo-tocable:focus-visible { border-color: var(--tinta-suave); }
-.tabla-personas .usado-hoy { margin-right: 4px; }
+.tabla-personas .usado-hoy { display: inline-block; min-width: 2.5em; margin-right: 4px; text-align: right; }
 .tabla-personas input.limite.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
-.exportar-personas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; }
+.exportar-personas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; margin-right: auto; }
+.pie-dialogo #mensaje-exportacion-personas { flex-basis: 100%; order: -1; margin: 0; font-size: 16px; overflow-wrap: anywhere; }
 /* El teclado en pantalla de Personas: filas de teclas de 56 px, del mismo ancho dentro de cada fila (D4 y D6). */
 .teclado-en-pantalla { display: flex; flex-direction: column; gap: 6px; flex: none; }
 .teclado-en-pantalla .fila-teclas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
@@ -436,7 +437,8 @@ html, body { overscroll-behavior: none; }
 .teclado-en-pantalla .tecla.especial { font-size: 16px; }
 .teclado-en-pantalla .tecla.activa { background: var(--acento); color: var(--sobre-acento); border-color: var(--acento); }
 .tabla-personas input.nombre-persona.elegido, .tabla-personas input.codigo-persona.elegido { outline: 3px solid var(--acento); outline-offset: 1px; }
-.exportar-personas button { font-size: 16px; }
+/* Al recibir el foco, el campo queda debajo del encabezado fijo de la tabla y no detrás (D6). */
+.tabla-personas input { scroll-margin-top: 72px; scroll-margin-bottom: 8px; }
 /* La exportación, debajo de la tabla: tres botones del alto táctil de siempre y del mismo ancho, el del más largo (D6 y D8). */
 .exportar-consumos { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; }
 /* Los botones de Consumos con la letra de sus campos, 16 px: los filtros, la exportación y la fila del operador (D8). */

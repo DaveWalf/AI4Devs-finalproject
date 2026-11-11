@@ -5,14 +5,15 @@
     Personas en una tabla (D4 de configurar-puesto-por-pestanas, sobre «Personas habilitadas» de administrar-personas-y-opciones):
     una fila por persona y una columna por cada par de servicio y categoría que usa el catálogo o alguna regla, con lo usado
     hoy sobre el límite («1/2») o «—» (D1 de editar-raciones-en-personas). Para leer es #tabla-personas, donde tocar un cupo
-    abre la edición con ese límite elegido (D2) y Personas se exporta (D5); con «Editar» pasa a #panel-personas en el mismo
+    abre la edición con ese límite elegido (D2); la exportación (D5) está en el pie del diálogo. Con «Editar» pasa a #panel-personas en el mismo
     lugar: el nombre y cada límite son
     campos (vacío es sin cupo, 0 es la denegación explícita), una fila nueva suma el código enmascarado, y «Quitar»,
     «Guardar» y «Cancelar» actúan como en C. Ordenar cambia sólo la vista: la edición se arma en el orden de lectura y los
     campos rechazados vuelven a su fila por esa posición. Nunca muestra un código; el servicio valida y decide (D10, D11).
 *@
 <section id="@(Editando ? "panel-personas" : "tabla-personas")" class="panel-administracion tabla-administracion" aria-label="Personas habilitadas">
-    @if (Editando)
+    @* Con el teclado a la vista, el título cede su alto a la tabla (D6 de editar-raciones-en-personas). *@
+    @if (Editando && !(Editable && _tecladoVisible))
     {
         <h3 id="titulo-personas">Personas habilitadas</h3>
     }
@@ -76,10 +77,8 @@
                             <td class="cupo" data-cupo="@NombrePar(_pares[columna])">
                                 @if (Editable)
                                 {
-                                    @if (fila.Usados[columna] is { } usado)
-                                    {
-                                        <span class="usado-hoy">@usado/</span>
-                                    }
+                                    @* Lo usado ocupa siempre su ancho, vacío sin cupo, para que los campos de una columna se alineen (D6). *@
+                                    <span class="usado-hoy">@(fila.Usados[columna] is { } usado ? $"{usado}/" : string.Empty)</span>
                                     <input class="limite @(EsElegido(TipoCampo.Limite, indice, columna) ? "elegido" : null)" type="number" inputmode="numeric" min="0"
                                            max="@AdministracionLocal.LimiteMaximo" aria-label="@($"Límite diario de {NombrePar(_pares[columna])}")"
                                            value="@fila.Limites[columna]" aria-invalid="@MarcaCupo(indice, columna)"
@@ -132,19 +131,6 @@
         </table>
     </div>
 
-    @* Exportar la tabla, con la carpeta de la exportación de Consumos (D5 de editar-raciones-en-personas). *@
-    @if (!Editando && AlmacenExportacion is not null && ElectorCarpeta is not null)
-    {
-        <div class="exportar-personas">
-            <button id="exportar-personas-csv" type="button" @onclick="() => Exportar(FormatoExportacion.Csv)">Exportar CSV</button>
-            <button id="exportar-personas-xlsx" type="button" @onclick="() => Exportar(FormatoExportacion.Xlsx)">Exportar Excel</button>
-        </div>
-        @if (_mensajeExportacion is not null)
-        {
-            <p id="mensaje-exportacion-personas" class="@(_exportacionFallida ? "aviso" : "mensaje-exportacion")" role="status">@_mensajeExportacion</p>
-        }
-    }
-
     @* El teclado en pantalla escribe en el campo elegido; se muestra al editar y se oculta hasta cerrar Configuración (D4). *@
     @if (Editable && _tecladoVisible)
     {
@@ -186,8 +172,6 @@
     private bool _tecladoVisible = true;
     private bool _enfocarElegido;
     private readonly Dictionary<(int, int), ElementReference> _referenciasLimite = [];
-    private string? _mensajeExportacion;
-    private bool _exportacionFallida;
 
     [Parameter, EditorRequired]
     public AdministracionLocal Administracion { get; set; } = null!;
@@ -210,20 +194,6 @@
     /// <summary>Se cierra la edición: con el aviso de la versión guardada, o null si se canceló.</summary>
     [Parameter]
     public EventCallback<string?> Cerrar { get; set; }
-
-    /// <summary>La carpeta de la exportación de Consumos, que Personas también usa; sin ella o sin elector, no exporta (D5).</summary>
-    [Parameter]
-    public AlmacenExportacion? AlmacenExportacion { get; set; }
-
-    [Parameter]
-    public IElectorCarpeta? ElectorCarpeta { get; set; }
-
-    [Parameter]
-    public TimeZoneInfo Zona { get; set; } = TimeZoneInfo.Utc;
-
-    /// <summary>La pantalla registra cada exportación de Personas en la general, como PEOPLE_EXPORTED.</summary>
-    [Parameter]
-    public Action<ExportacionPersonasRealizada>? RegistrarExportacion { get; set; }
 
     /// <summary>Lo que queda en la general de una exportación de Personas: el formato, el nombre del archivo y las filas.</summary>
     public sealed record ExportacionPersonasRealizada(string Formato, string Archivo, int Filas);
@@ -334,55 +304,6 @@
     /// <summary>Lo usado hoy sobre el límite, «1/2», o «—» sin cupo (D1).</summary>
     private static string Racion(FilaPersona fila, int columna) =>
         fila.Limites[columna].Length == 0 ? "—" : $"{(fila.Usados[columna] ?? 0).ToString(CultureInfo.InvariantCulture)}/{fila.Limites[columna]}";
-
-    /// <summary>
-    /// Exporta Personas a la carpeta de la exportación de Consumos; sin carpeta guardada, la pide y la guarda; si se cancela,
-    /// no exporta. Sin poder escribir, avisa y la general no registra nada (D5).
-    /// </summary>
-    private void Exportar(FormatoExportacion formato)
-    {
-        string? avisoCarpeta = null;
-        var carpeta = AlmacenExportacion!.Leer();
-        if (carpeta is null)
-        {
-            carpeta = ElectorCarpeta!.Elegir(null);
-            if (carpeta is null)
-            {
-                (_mensajeExportacion, _exportacionFallida) = (MensajesAtencion.SinCarpeta, true);
-                return;
-            }
-
-            try
-            {
-                AlmacenExportacion.Guardar(carpeta);
-            }
-            catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
-            {
-                avisoCarpeta = MensajesAtencion.CarpetaNoGuardada;
-            }
-        }
-
-        ResultadoExportacionPersonas resultado;
-        try
-        {
-            resultado = new ExportacionPersonas(Administracion, Administracion.Reloj).Exportar(formato, carpeta, Zona);
-        }
-        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
-        {
-            (_mensajeExportacion, _exportacionFallida) = (MensajesAtencion.ExportacionFallida, true);
-            return;
-        }
-        catch (Microsoft.Data.Sqlite.SqliteException)
-        {
-            (_mensajeExportacion, _exportacionFallida) = (MensajesAtencion.ConfiguracionNoLeida, true);
-            return;
-        }
-
-        _exportacionFallida = avisoCarpeta is not null;
-        _mensajeExportacion = string.Join(' ', new[] { avisoCarpeta, MensajesAtencion.ExportacionPersonasHecha(resultado.Archivo, resultado.Filas, carpeta) }
-            .OfType<string>());
-        RegistrarExportacion?.Invoke(new ExportacionPersonasRealizada(formato == FormatoExportacion.Csv ? "CSV" : "XLSX", resultado.Archivo, resultado.Filas));
-    }
 
     private void Cargar(VistaAdministracion vista)
     {

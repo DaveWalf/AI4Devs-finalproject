@@ -59,7 +59,7 @@ Configuración. Va debajo de la tabla, dentro del panel, con las teclas de una f
 
 ### D5. Exportar Personas
 
-«Exportar CSV» y «Exportar Excel» en la tabla de lectura escriben, con la carpeta de `AlmacenExportacion` (la de Consumos)
+«Exportar CSV» y «Exportar Excel», en el pie del diálogo a la izquierda de «Cerrar» y sólo con Personas en lectura, escriben, con la carpeta de `AlmacenExportacion` (la de Consumos)
 o pidiéndola la primera vez, `INComedor-personas-AAAAMMDD-HHmmss.csv` o `.xlsx`: la persona, el estado, por cada cupo lo
 usado hoy y el límite, y las opciones habilitadas, sin ningún código. La escritura de CSV y XLSX sale de
 `ExportacionConsumos` a `EscritorPlanilla` (en `Infrastructure.Sqlite`), que comparten las dos: temporal con GUID,
@@ -68,11 +68,18 @@ formato, las filas y el nombre del archivo.
 
 - **Descartada: una carpeta propia de Personas.** Dos carpetas para lo mismo confunden; «Cambiar carpeta» de Consumos ya
   la cambia.
+- **Descartada: los botones debajo de la tabla, como en Consumos.** Le quitaban 68 px a la tabla de lectura, que a
+  1024 × 768 dejaba de mostrar diez filas («Se ven 9 filas enteras», `ConfiguracionPorPestanasE2ETests`); en el pie, al
+  lado de «Cerrar», hay lugar.
 
 ### D6. Prolijidad
 
-La celda «x/n» se lee como el límite de antes: la misma letra y alineación de la columna. Las teclas de una fila miden lo
-mismo, 56 px de alto; los botones de exportar miden como los de Consumos. Medido por CDP a 1024 × 768, con capturas.
+La celda «x/n» se lee como el límite de antes: la misma letra y alineación de la columna; al editar, lo usado ocupa
+siempre su ancho, también vacío, para que los campos de una columna empiecen en el mismo borde. El teclado tiene cuatro
+filas (el espacio va con «Mayús» y borrar), las teclas de una fila miden lo mismo y 56 px de alto, y con el teclado a la
+vista el título de la edición cede su alto a la tabla; el campo elegido queda debajo del encabezado fijo
+(`scroll-margin-top`). Los botones de exportar del pie miden como «Cerrar», 56 px y su letra de 18 px, y entre ellos el
+ancho del más largo. Medido por CDP a 1024 × 768, con capturas.
 
 ## Risks / Trade-offs
 
