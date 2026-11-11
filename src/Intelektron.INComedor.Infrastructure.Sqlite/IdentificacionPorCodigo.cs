@@ -45,6 +45,13 @@ public sealed class IdentificacionPorCodigo
         Identificar((conexion, transaccion, puesto) => Resolver(conexion, transaccion, puesto, codigo), proposito, origen: null);
 
     /// <summary>
+    /// El código que llegó por un lector, con su origen en la clave Origin de la sesión o del rechazo, la misma de la
+    /// simulación por lista (D7 de elegir-medio-de-identificacion): mismas reglas y mismos registros que el tipeado.
+    /// </summary>
+    public ResultadoIdentificacionCodigo Identificar(string codigo, PropositoSesion proposito, string? origen) =>
+        Identificar((conexion, transaccion, puesto) => Resolver(conexion, transaccion, puesto, codigo), proposito, origen);
+
+    /// <summary>
     /// La credencial elegida en el combo del modo simulación (D2 de simular-identificacion-por-lista): la misma clasificación
     /// (RB25), la misma sesión con método CODE y el mismo registro que el código tipeado, más la clave Origin. Una credencial
     /// que no está en el snapshot activo se rechaza como un código desconocido.

@@ -138,6 +138,10 @@ body:has(.puesto) {
 .ingreso { display: flex; align-items: stretch; gap: 12px; }
 .atencion .ingreso input { flex: 1 1 auto; width: auto; min-width: 0; }
 .atencion .ingreso button { flex: none; }
+/* Con el lector simulado, una grilla de dos columnas: los dos campos y los dos botones del mismo ancho (D6 de
+   elegir-medio-de-identificacion). */
+.ingreso.con-lector { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 8px; }
+.ingreso.con-lector .rotulo-lector { grid-column: 1 / -1; font-size: 18px; margin-top: 8px; }
 
 /* El combo del modo simulación, con el alto táctil de los otros controles (D9 de simular-identificacion-por-lista). */
 .simulacion { display: flex; flex-direction: column; gap: 8px; }
@@ -367,7 +371,9 @@ html, body { overscroll-behavior: none; }
 .dialogo .pestanas button {
     min-width: 0;
     min-height: 56px;
-    padding: 0 10px;
+    /* Con once pestañas, el relleno lateral baja de 10 a 7 px para que la fila entre en 1024 × 768 sin tocar la letra ni el
+       alto (D8 de elegir-medio-de-identificacion). */
+    padding: 0 7px;
     font-size: 16px;
     white-space: nowrap;
     border-radius: 10px 10px 0 0;
@@ -473,6 +479,8 @@ html, body { overscroll-behavior: none; }
    (D8 de enriquecer-comprobante): entra «Número del comprobante». */
 .textos-comprobante { display: grid; grid-template-columns: 12.5em 1fr; align-items: center; gap: 8px 12px; font-size: 17px; }
 .textos-comprobante h3, .textos-comprobante p, .textos-comprobante .acciones { grid-column: 1 / -1; }
+/* Un dato que acompaña a un campo, en la columna de los campos (la lista de puertos de Lector). */
+.textos-comprobante p.en-columna-de-campos { grid-column: 2; }
 .textos-comprobante input { min-height: 56px; padding: 0 12px; font: inherit; font-size: 18px; border: 1px solid var(--tinta-suave); border-radius: 10px; background: rgb(var(--papel)); }
 .textos-comprobante input[aria-invalid="true"] { outline: 3px solid #b3261e; outline-offset: 2px; }
 /* Los datos del comprobante (D7 y D8 de enriquecer-comprobante): la grilla de los textos; la numeración, sus dos botones

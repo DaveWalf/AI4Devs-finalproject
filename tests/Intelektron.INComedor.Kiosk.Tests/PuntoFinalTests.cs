@@ -172,6 +172,7 @@ public class PuntoFinalTests
         nameof(MensajesAtencion.Motivo), nameof(MensajesAtencion.EstadoBitacora), nameof(MensajesAtencion.UsoDelDia),
         nameof(MensajesAtencion.ResumenOpciones), nameof(MensajesAtencion.Cargo), nameof(MensajesAtencion.PedidoMotivo),
         nameof(MensajesAtencion.EstadoExportacion), nameof(MensajesAtencion.EstadoColaCorreo),
+        nameof(MensajesAtencion.EstadoLector), nameof(MensajesAtencion.UltimaLectura), nameof(MensajesAtencion.PuertosDelEquipo),
     ];
 
     [Fact(DisplayName = "presentacion-puesto · Un mensaje nuevo sin punto: cada método de MensajesAtencion que arma un texto está clasificado, con o sin punto")]
@@ -208,6 +209,14 @@ public class PuntoFinalTests
                 new EstadoDestino(3, DateTimeOffset.UnixEpoch, null, "SERVER_UNREACHABLE"), TimeZoneInfo.Utc),
             MensajesAtencion.EstadoColaCorreo(0),
             MensajesAtencion.EstadoColaCorreo(2),
+            .. Enum.GetValues<Lector.EstadoLector>().Select(e => MensajesAtencion.EstadoLector(e,
+                Lector.ConfiguracionLector.PorDefecto with { Medio = Lector.MedioIdentificacion.PuertoSerie, Puerto = "COM3" })),
+            MensajesAtencion.UltimaLectura(null, TimeZoneInfo.Utc),
+            MensajesAtencion.UltimaLectura(new Lector.UltimaLectura(DateTimeOffset.UnixEpoch, "IDENTIFIED", null), TimeZoneInfo.Utc),
+            MensajesAtencion.UltimaLectura(new Lector.UltimaLectura(DateTimeOffset.UnixEpoch, "REJECTED", null), TimeZoneInfo.Utc),
+            MensajesAtencion.UltimaLectura(new Lector.UltimaLectura(DateTimeOffset.UnixEpoch, "DISCARDED", "NOT_IDLE"), TimeZoneInfo.Utc),
+            MensajesAtencion.PuertosDelEquipo([]),
+            MensajesAtencion.PuertosDelEquipo(["COM3"]),
         ];
 
         Assert.All(rotulos, r => Assert.False(r.EndsWith('.'), $"«{r}»"));

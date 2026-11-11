@@ -9,14 +9,14 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Intelektron.INComedor.Kiosk.Tests;
 
 /// <summary>
-/// Configuración por pestañas (configuracion-puesto de configurar-puesto-por-pestanas): las diez pestañas con el patrón de
+/// Configuración por pestañas (configuracion-puesto de configurar-puesto-por-pestanas): las once pestañas con el patrón de
 /// WAI-ARIA, todas montadas y la elegida visible (D1, D2), lo editado que se conserva hasta cerrar y cada «Guardar» que
 /// guarda lo suyo y deja Configuración abierta (D3). bUnit sobre un <see cref="ServicioAtencion"/> real.
 /// </summary>
 public class PestanasConfiguracionTests : IDisposable
 {
     private static readonly string[] Pestanas =
-        ["Consumos", "Personas", "Opciones", "Identidad visual", "Impresora", "Mails", "Pantalla", "Red", "Exportación", "General"];
+        ["Consumos", "Personas", "Opciones", "Identidad visual", "Impresora", "Mails", "Pantalla", "Red", "Lector", "Exportación", "General"];
 
     private readonly string _carpeta = Path.Combine(Path.GetTempPath(), "incomedor-tests", "pestanas-" + Guid.NewGuid().ToString("N"));
     private readonly ArchivoTemporal _archivo = new();
@@ -51,7 +51,7 @@ public class PestanasConfiguracionTests : IDisposable
         var lista = pantalla.Find("[role=\"tablist\"]");
         var pestanas = lista.QuerySelectorAll("[role=\"tab\"]");
         Assert.Equal(Pestanas, pestanas.Select(p => p.TextContent.Trim()));
-        Assert.Equal(["true", "false", "false", "false", "false", "false", "false", "false", "false", "false"], pestanas.Select(p => p.GetAttribute("aria-selected")));
+        Assert.Equal(["true", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false"], pestanas.Select(p => p.GetAttribute("aria-selected")));
         Assert.False(pantalla.Find("#seccion-consumos").HasAttribute("hidden"));
         await pantalla.Find("#pestana-general").ClickAsync(new());
         var general = pantalla.Find("#seccion-general");
@@ -59,7 +59,7 @@ public class PestanasConfiguracionTests : IDisposable
         Assert.False(general.HasAttribute("hidden"));
         Assert.Contains("Modo: mantenimiento", general.TextContent);
         Assert.NotNull(general.QuerySelector("#estado-bitacoras"));
-        Assert.Equal(9, pantalla.FindAll("[role=\"tabpanel\"][hidden]").Count);
+        Assert.Equal(10, pantalla.FindAll("[role=\"tabpanel\"][hidden]").Count);
     }
 
     [Fact(DisplayName = "configuracion-puesto · Elegir otra pestaña: tocar «Impresora» deja visible sólo su contenido y la marca como elegida")]

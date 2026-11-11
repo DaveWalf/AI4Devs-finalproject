@@ -155,9 +155,35 @@ public class CorreoEnPantallaTests
 
         // El aviso se encola fuera del hilo de la pantalla: se espera por tiempo, no por un dibujo.
         var carpeta = Path.Combine(puesto.Carpeta, ColaCorreo.Carpeta);
-        bool HayAviso() => Directory.Exists(carpeta) && Directory.GetFiles(carpeta, "*.json").Select(File.ReadAllText).Any(t =>
+        // Un pendiente recién creado puede estar tomado un instante (el antivirus): se vuelve a mirar, como hace la cola.
+        static string? Leer(string archivo)
+        {
+            try
+            {
+                return File.ReadAllText(archivo);
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+        }
+
+        bool HayAviso() => Directory.Exists(carpeta) && Directory.GetFiles(carpeta, "*.json").Select(Leer).OfType<string>().Any(t =>
             System.Text.Json.JsonSerializer.Deserialize<MensajeCorreo>(t) is { Situacion: SituacionCorreo.Exportacion } m && m.Para.SequenceEqual(["admin@ejemplo.com"]));
         Assert.True(SpinWait.SpinUntil(HayAviso, TimeSpan.FromSeconds(10)), "No llegó el aviso de «Exportación» a la cola.");
+
+        // El archivo del aviso aparece antes de que su encolado quede en la general: la prueba termina recién cuando el
+        // hilo de los avisos soltó la base, así el cierre no la encuentra abierta.
+        bool Registrado()
+        {
+            using var conexion = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={puesto.RutaBase};Pooling=False");
+            conexion.Open();
+            using var comando = conexion.CreateCommand();
+            comando.CommandText = "SELECT COUNT(*) FROM tbComedorBitacora WHERE combitTipoEvento = 'NOTIFICATION_QUEUED'";
+            return (long)comando.ExecuteScalar()! > 0;
+        }
+
+        Assert.True(SpinWait.SpinUntil(Registrado, TimeSpan.FromSeconds(10)), "El encolado no quedó en la general.");
     }
 
     [Fact(DisplayName = "avisos-correo · Guardar los correos: con el código de un operador no existe la pestaña Mails")]

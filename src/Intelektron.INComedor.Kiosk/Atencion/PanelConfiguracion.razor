@@ -1,13 +1,14 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Intelektron.INComedor.Infrastructure.Sqlite
 @using Intelektron.INComedor.Kiosk.Red
+@using Intelektron.INComedor.Kiosk.Lector
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
 @inject IJSRuntime JS
 
 @*
     Configuración por pestañas (D1 a D3 de configurar-puesto-por-pestanas): un diálogo modal que no cambia el estado de la
-    máquina, con diez pestañas según el patrón de WAI-ARIA. Todas quedan montadas y sólo la elegida se ve, así que lo
+    máquina, con once pestañas según el patrón de WAI-ARIA. Todas quedan montadas y sólo la elegida se ve, así que lo
     editado en una sobrevive al pasar a otra y los id de siempre siguen en el diálogo (D2). Cada «Guardar» guarda lo suyo y
     deja Configuración abierta, con el aviso de lo guardado debajo de las pestañas (D3); «Cerrar» o Escape la cierran y
     descartan lo no guardado, también con un panel de edición abierto. Sólo un panel de edición se abre a la vez: Personas y
@@ -47,7 +48,7 @@
             <p id="aviso-guardado" class="aviso" role="status">@_avisoGuardado</p>
         }
 
-        @* Con un operador, General, Opciones, Identidad visual, Mails, Pantalla, Red y Exportación no existen en el DOM (D6). *@
+        @* Con un operador, General, Opciones, Identidad visual, Mails, Pantalla, Red, Lector y Exportación no existen en el DOM (D6). *@
         @if (Operador is null)
         {
         <section role="tabpanel" id="seccion-general" class="seccion" aria-labelledby="pestana-general" hidden="@Oculta(Pestana.General)">
@@ -477,6 +478,74 @@
             }
         </section>
 
+        @* El medio de identificación, después de Red y sólo con la clave del día (D8 de elegir-medio-de-identificacion). *@
+        <section role="tabpanel" id="seccion-lector" class="seccion" aria-labelledby="pestana-lector" hidden="@Oculta(Pestana.Lector)">
+            @if (LectorDelPuesto is not null && GuardarLector is not null)
+            {
+                <section aria-labelledby="titulo-lector" class="textos-comprobante datos-comprobante">
+                    <h3 id="titulo-lector">Medio de identificación</h3>
+                    <p class="explicacion-correo">@MensajesAtencion.ExplicacionLector</p>
+                    <span id="rotulo-medio-lector" class="rotulo">Medio</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-medio-lector">
+                        <button id="medio-teclado" type="button" aria-pressed="@(_medioLector == MedioIdentificacion.Teclado ? "true" : "false")" @onclick="() => _medioLector = MedioIdentificacion.Teclado">Teclado</button>
+                        <button id="medio-simulador" type="button" aria-pressed="@(_medioLector == MedioIdentificacion.Simulador ? "true" : "false")" @onclick="() => _medioLector = MedioIdentificacion.Simulador">Simulador interno</button>
+                        <button id="medio-puerto" type="button" aria-pressed="@(_medioLector == MedioIdentificacion.PuertoSerie ? "true" : "false")" @onclick="() => _medioLector = MedioIdentificacion.PuertoSerie">Puerto serie</button>
+                    </div>
+                    <label for="puerto-lector">Puerto</label>
+                    <div class="numeracion">
+                        <input id="puerto-lector" type="text" maxlength="6" value="@_puertoLector"
+                               aria-invalid="@(_camposLector.Contains("Puerto") ? "true" : null)" @oninput="e => _puertoLector = e.Value?.ToString() ?? string.Empty" />
+                        <button id="actualizar-puertos" type="button" @onclick="ActualizarPuertos">Actualizar</button>
+                    </div>
+                    @if (_puertosLector is not null)
+                    {
+                        <p id="puertos-lector" class="en-columna-de-campos" role="status">@_puertosLector</p>
+                    }
+                    <label for="velocidad-lector">Velocidad (baudios)</label>
+                    <input id="velocidad-lector" type="text" inputmode="numeric" maxlength="6" value="@_velocidadLector"
+                           aria-invalid="@(_camposLector.Contains("Velocidad") ? "true" : null)" @oninput="e => _velocidadLector = e.Value?.ToString() ?? string.Empty" />
+                    <span id="rotulo-bits-lector" class="rotulo">Bits de datos</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-bits-lector">
+                        <button id="bits-7" type="button" aria-pressed="@(_bitsLector == 7 ? "true" : "false")" @onclick="() => _bitsLector = 7">7</button>
+                        <button id="bits-8" type="button" aria-pressed="@(_bitsLector == 8 ? "true" : "false")" @onclick="() => _bitsLector = 8">8</button>
+                    </div>
+                    <span id="rotulo-paridad-lector" class="rotulo">Paridad</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-paridad-lector">
+                        <button id="paridad-ninguna" type="button" aria-pressed="@(_paridadLector == ParidadLector.Ninguna ? "true" : "false")" @onclick="() => _paridadLector = ParidadLector.Ninguna">Ninguna</button>
+                        <button id="paridad-par" type="button" aria-pressed="@(_paridadLector == ParidadLector.Par ? "true" : "false")" @onclick="() => _paridadLector = ParidadLector.Par">Par</button>
+                        <button id="paridad-impar" type="button" aria-pressed="@(_paridadLector == ParidadLector.Impar ? "true" : "false")" @onclick="() => _paridadLector = ParidadLector.Impar">Impar</button>
+                    </div>
+                    <span id="rotulo-parada-lector" class="rotulo">Bits de parada</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-parada-lector">
+                        <button id="parada-1" type="button" aria-pressed="@(_paradaLector == 1 ? "true" : "false")" @onclick="() => _paradaLector = 1">1</button>
+                        <button id="parada-2" type="button" aria-pressed="@(_paradaLector == 2 ? "true" : "false")" @onclick="() => _paradaLector = 2">2</button>
+                    </div>
+                    <span id="rotulo-terminador-lector" class="rotulo">Terminador</span>
+                    <div class="numeracion" role="group" aria-labelledby="rotulo-terminador-lector">
+                        <button id="terminador-crlf" type="button" aria-pressed="@(_terminadorLector == TerminadorLector.CrLf ? "true" : "false")" @onclick="() => _terminadorLector = TerminadorLector.CrLf">CR LF</button>
+                        <button id="terminador-cr" type="button" aria-pressed="@(_terminadorLector == TerminadorLector.Cr ? "true" : "false")" @onclick="() => _terminadorLector = TerminadorLector.Cr">CR</button>
+                        <button id="terminador-lf" type="button" aria-pressed="@(_terminadorLector == TerminadorLector.Lf ? "true" : "false")" @onclick="() => _terminadorLector = TerminadorLector.Lf">LF</button>
+                        <button id="terminador-tab" type="button" aria-pressed="@(_terminadorLector == TerminadorLector.Tab ? "true" : "false")" @onclick="() => _terminadorLector = TerminadorLector.Tab">TAB</button>
+                    </div>
+                    <label for="relleno-lector">Relleno de dígitos (0 a 20)</label>
+                    <input id="relleno-lector" type="text" inputmode="numeric" maxlength="2" value="@_rellenoLector"
+                           aria-invalid="@(_camposLector.Contains("Relleno") ? "true" : null)" @oninput="e => _rellenoLector = e.Value?.ToString() ?? string.Empty" />
+                    @if (_avisoLector is not null)
+                    {
+                        <p id="aviso-lector" class="aviso" role="status">@_avisoLector</p>
+                    }
+                    <div class="acciones">
+                        <button id="guardar-lector" type="button" class="principal" @onclick="GuardarElLector">Guardar</button>
+                    </div>
+                </section>
+                <section aria-labelledby="titulo-estado-lector" class="estado-exportacion">
+                    <h3 id="titulo-estado-lector">Estado del lector</h3>
+                    <p id="estado-lector" role="status">@MensajesAtencion.EstadoLector(LectorDelPuesto.Estado, LectorDelPuesto.Configuracion)</p>
+                    <p id="ultima-lectura" role="status">@MensajesAtencion.UltimaLectura(LectorDelPuesto.Ultima, Zona)</p>
+                </section>
+            }
+        </section>
+
         @* La exportación automática de consumos, antes de General y sólo con la clave del día (D6 de exportar-consumos-automaticamente). *@
         <section role="tabpanel" id="seccion-exportacion" class="seccion" aria-labelledby="pestana-exportacion" hidden="@Oculta(Pestana.Exportacion)">
             @if (Exportacion is not null && GuardarExportacion is not null)
@@ -802,6 +871,7 @@
         Mails,
         Pantalla,
         Red,
+        Lector,
         Exportacion,
         General,
     }
@@ -817,7 +887,7 @@
     /// <summary>Las tres de un operador, en este orden (D6 de entrar-a-configuracion-con-teclado).</summary>
     private static readonly Pestana[] DelOperador = [Pestana.Consumos, Pestana.Personas, Pestana.Impresora];
 
-    /// <summary>Las diez con la clave del día; con un operador, sólo las suyas.</summary>
+    /// <summary>Las once con la clave del día; con un operador, sólo las suyas.</summary>
     private Pestana[] Visibles => Operador is null ? Todas : DelOperador;
 
     private readonly ElementReference[] _botones = new ElementReference[Todas.Length];
@@ -1677,6 +1747,7 @@
         _pie = Textos.Pie;
         LeerConfiguracionExportacion();
         LeerConfiguracionCorreo();
+        LeerConfiguracionLector();
         _numeroPuesto = DatosDelPuesto.Numero?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
         _nombrePuesto = DatosDelPuesto.Nombre;
         _correlativo = DatosDelPuesto.Correlativo;
@@ -1823,6 +1894,60 @@
     }
 
     private void CambiarCorreo(bool caido) => CambiarCorreoSimulado?.Invoke(caido);
+
+    /// <summary>El lector del puesto; sin él, la pestaña Lector queda vacía (D8 de elegir-medio-de-identificacion).</summary>
+    [Parameter]
+    public LectorIdentificacion? LectorDelPuesto { get; set; }
+
+    /// <summary>Valida, guarda, vuelve a abrir el lector y registra READER; devuelve los campos rechazados o el aviso.</summary>
+    [Parameter]
+    public Func<ConfiguracionLector, ResultadoTextos>? GuardarLector { get; set; }
+
+    private MedioIdentificacion _medioLector;
+    private string _puertoLector = string.Empty;
+    private string _velocidadLector = "9600";
+    private int _bitsLector = 8;
+    private ParidadLector _paridadLector;
+    private int _paradaLector = 1;
+    private TerminadorLector _terminadorLector;
+    private string _rellenoLector = "0";
+    private IReadOnlyList<string> _camposLector = [];
+    private string? _avisoLector;
+    private string? _puertosLector;
+
+    private void LeerConfiguracionLector()
+    {
+        var c = LectorDelPuesto?.Configuracion ?? ConfiguracionLector.PorDefecto;
+        _medioLector = c.Medio;
+        _puertoLector = c.Puerto ?? string.Empty;
+        _velocidadLector = c.Velocidad.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _bitsLector = c.BitsDatos;
+        _paridadLector = c.Paridad;
+        _paradaLector = c.BitsParada;
+        _terminadorLector = c.Terminador;
+        _rellenoLector = c.Relleno.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>«Guardar» del lector: lo tipeado, con un número que no lo es como -1 para que la validación lo señale (D8).</summary>
+    private void GuardarElLector()
+    {
+        static int Numero(string texto) =>
+            int.TryParse(texto.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var valor) ? valor : -1;
+
+        var pedida = new ConfiguracionLector(_medioLector, _puertoLector.Trim().Length == 0 ? null : _puertoLector.Trim().ToUpperInvariant(),
+            Numero(_velocidadLector), _bitsLector, _paridadLector, _paradaLector, _terminadorLector, Numero(_rellenoLector));
+        if (GuardarLector?.Invoke(pedida) is not { } resultado)
+        {
+            return;
+        }
+
+        _camposLector = resultado.Campos;
+        _avisoLector = resultado.Aviso;
+        _avisoGuardado = resultado.Guardado ? MensajesAtencion.LectorGuardado : null;
+    }
+
+    /// <summary>«Actualizar»: los puertos serie que el equipo tiene ahora.</summary>
+    private void ActualizarPuertos() => _puertosLector = MensajesAtencion.PuertosDelEquipo(LectorDelPuesto!.Puertos());
 
     /// <summary>La exportación automática; sin ella, la pestaña Exportación queda vacía (D6 de exportar-consumos-automaticamente).</summary>
     [Parameter]

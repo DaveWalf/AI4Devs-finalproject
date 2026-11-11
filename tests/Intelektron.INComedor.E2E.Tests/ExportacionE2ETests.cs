@@ -5,7 +5,7 @@ namespace Intelektron.INComedor.E2E.Tests;
 
 /// <summary>
 /// La exportación automática de consumos, con el puesto compilado (exportar-consumos-automaticamente, D6 y D7): por CDP y a
-/// 1024 × 768, con la tolerancia de 1 px de la regla de prolijidad. Las diez pestañas en una fila; la pestaña
+/// 1024 × 768, con la tolerancia de 1 px de la regla de prolijidad. Las once pestañas en una fila; la pestaña
 /// Exportación medida; con el SFTP simulado caído, «Exportar ahora» llega a la carpeta y no al SFTP, y al levantarlo los dos
 /// quedan al día con el mismo archivo.
 /// </summary>
@@ -23,7 +23,7 @@ public class ExportacionE2ETests : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _escenario.DisposeAsync();
 
-    [Fact(DisplayName = "exportacion-consumos · El servidor cae y vuelve (puesto compilado): a 1024 × 768 las diez pestañas entran en una fila y la pestaña Exportación tiene sus campos y botones parejos, en la columna de los datos de Impresora y con «Elegir» al borde de los campos; con el SFTP simulado caído la carpeta recibe el consumo y el SFTP no, y al levantarlo los dos quedan al día con el mismo archivo")]
+    [Fact(DisplayName = "exportacion-consumos · El servidor cae y vuelve (puesto compilado): a 1024 × 768 las once pestañas entran en una fila y la pestaña Exportación tiene sus campos y botones parejos, en la columna de los datos de Impresora y con «Elegir» al borde de los campos; con el SFTP simulado caído la carpeta recibe el consumo y el SFTP no, y al levantarlo los dos quedan al día con el mismo archivo")]
     public async Task Exportar_con_el_sftp_caido_y_levantado()
     {
         var destino = Directory.CreateDirectory(Path.Combine(_escenario.Carpeta, "exportaciones-automaticas")).FullName;
@@ -35,7 +35,7 @@ public class ExportacionE2ETests : IAsyncLifetime
             ["width"] = 1024, ["height"] = 768, ["deviceScaleFactor"] = 1, ["mobile"] = false,
         });
         await EntradaConfiguracionE2E.EntrarAsync(pagina);
-        await Assertions.Expect(pagina.Locator("[role=\"tab\"]")).ToHaveCountAsync(10);
+        await Assertions.Expect(pagina.Locator("[role=\"tab\"]")).ToHaveCountAsync(11);
 
         var pestanas = JsonSerializer.Deserialize<Caja[]>(await pagina.EvaluateAsync<string>(
             """
@@ -45,7 +45,7 @@ public class ExportacionE2ETests : IAsyncLifetime
             }))
             """))!;
         _escenario.Registrar("1024 × 768, las pestañas: " + string.Join("; ", pestanas.Select(c => $"{c.Id} desde x {c.Izquierda:F1} con {c.Ancho:F1} px")));
-        Assert.Equal(10, pestanas.Length);
+        Assert.Equal(11, pestanas.Length);
         Assert.All(pestanas, c => Assert.True(Math.Abs(c.Arriba - pestanas[0].Arriba) <= Tolerancia && c.Alto >= 56 - Tolerancia, $"{c.Id} desde {c.Arriba} con {c.Alto} px"));
         Assert.True(pestanas[^1].Izquierda + pestanas[^1].Ancho <= 1024, $"La última pestaña termina en {pestanas[^1].Izquierda + pestanas[^1].Ancho} px");
         Assert.Equal("pestana-exportacion", pestanas[^2].Id);
