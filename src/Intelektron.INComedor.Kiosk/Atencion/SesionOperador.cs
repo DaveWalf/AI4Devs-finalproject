@@ -3,11 +3,17 @@ using Microsoft.Data.Sqlite;
 
 namespace Intelektron.INComedor.Kiosk.Atencion;
 
+/// <summary>Reimprimir o recuperar el comprobante de una fila de Consumos, a la espera del código de un operador.</summary>
+public sealed record AccionPendiente(bool Recuperar, ConsumoConsultado Fila);
+
 /// <summary>
-/// La sesión del operador de la pestaña Comprobantes (D8 de configurar-puesto-por-pestanas): la asistencia que antes era un
-/// estado de la máquina, sobre el mismo <see cref="Asistencia"/>. Vive mientras Configuración esté abierta y termina con
-/// «Salir», al cerrar Configuración, cuando una acción vuelve sin privilegio o a los 30 s sin un toque; cada salida queda
-/// en la bitácora con su causa.
+/// La sesión del operador para reimprimir y recuperar desde Consumos (D8 de configurar-puesto-por-pestanas y D5 de
+/// buscar-y-exportar-consumos): la asistencia que antes era un estado de la máquina, sobre el mismo <see cref="Asistencia"/>.
+/// Se abre con el código de un operador en la pestaña, o adopta la del operador que entró a Configuración con su código.
+/// Vive mientras Configuración esté abierta y termina con «Salir», al cerrar Configuración, cuando una acción vuelve sin
+/// privilegio o a los 30 s sin un toque; cada salida queda en la bitácora con su causa. La adoptada es prestada: salir la
+/// olvida sin cerrarla, porque la cierra Configuración, una sola vez. La acción que espera un código (<see cref="Pendiente"/>)
+/// vence a los mismos 30 s sin un toque.
 /// </summary>
 public sealed class SesionOperador
 {
@@ -16,6 +22,7 @@ public sealed class SesionOperador
     private readonly Asistencia _asistencia;
     private readonly TimeProvider _reloj;
     private Guid? _sesion;
+    private bool _adoptada;
     private DateTimeOffset _ultimoToque;
 
     public SesionOperador(Asistencia asistencia, TimeProvider reloj)
@@ -27,8 +34,6 @@ public sealed class SesionOperador
     public bool Abierta => _sesion is not null;
 
     public string? NombreVisible { get; private set; }
-
-    public IReadOnlyList<ComprobanteDelDia> Comprobantes { get; private set; } = [];
 
     /// <summary>El comprobante cuyo motivo de reimpresión se está pidiendo.</summary>
     public ComprobanteDelDia? ReimpresionPedida { get; private set; }
@@ -42,6 +47,30 @@ public sealed class SesionOperador
     /// <summary>Por qué no hay sesión: el permiso que falta o que cayó, o la base que no respondió.</summary>
     public string? Aviso { get; private set; }
 
+    /// <summary>La acción de una fila que espera el código de un operador, para hacerla en cuanto entre (D5).</summary>
+    public AccionPendiente? Pendiente { get; private set; }
+
+    /// <summary>Una fila pidió reimprimir o recuperar sin sesión: queda pendiente hasta un código, «Cancelar» o 30 s.</summary>
+    public void Pedir(AccionPendiente accion)
+    {
+        Pendiente = accion;
+        Aviso = null;
+        Tocar();
+    }
+
+    /// <summary>La acción pendiente, que se saca al tomarla: se hace una sola vez.</summary>
+    public AccionPendiente? TomarPendiente()
+    {
+        var pendiente = Pendiente;
+        Pendiente = null;
+        return pendiente;
+    }
+
+    public void DescartarPendiente() => Pendiente = null;
+
+    /// <summary>«Cancelar» después de una denegación: el aviso se va con el pedido.</summary>
+    public void DescartarAviso() => Aviso = null;
+
     public void Entrar(string codigo)
     {
         try
@@ -53,10 +82,12 @@ public sealed class SesionOperador
                 return;
             }
 
+            // La acción que esperaba este código sobrevive a la limpieza, para hacerla en cuanto la pestaña la tome.
+            var pendiente = Pendiente;
             Limpiar();
+            Pendiente = pendiente;
             _sesion = resultado.SesionId;
             NombreVisible = resultado.NombreVisible;
-            Comprobantes = _asistencia.ComprobantesDelDia();
             Tocar();
         }
         catch (SqliteException)
@@ -66,14 +97,28 @@ public sealed class SesionOperador
         }
     }
 
-    public void PedirReimpresion(Guid ticketId)
+    /// <summary>
+    /// Adopta la sesión de acción privilegiada que abrió un operador al entrar a Configuración con su código, para no pedírselo
+    /// otra vez (D5 de buscar-y-exportar-consumos). Asistencia sigue comprobando el permiso en cada acción (RB26).
+    /// </summary>
+    public void Adoptar(Guid sesion, string nombreVisible)
+    {
+        Limpiar();
+        _sesion = sesion;
+        _adoptada = true;
+        NombreVisible = nombreVisible;
+        Tocar();
+    }
+
+    /// <summary>El comprobante de una fila de Consumos, cuyo motivo de reimpresión se pide a continuación.</summary>
+    public void PedirReimpresion(ComprobanteDelDia comprobante)
     {
         if (!Abierta)
         {
             return;
         }
 
-        ReimpresionPedida = Comprobantes.FirstOrDefault(c => c.TicketId == ticketId);
+        ReimpresionPedida = comprobante;
         Mensaje = null;
         Tocar();
     }
@@ -106,10 +151,13 @@ public sealed class SesionOperador
         DespuesDeAccion(resultado, "Comprobante original enviado otra vez");
     }
 
-    /// <summary>Termina la sesión con su causa: EXIT, CONFIGURATION_CLOSED, TIMEOUT o PERMISSION_LOST.</summary>
+    /// <summary>
+    /// Termina la sesión con su causa: EXIT, CONFIGURATION_CLOSED, TIMEOUT o PERMISSION_LOST. La adoptada sólo se olvida: es la
+    /// del acceso a Configuración, que la cierra al cerrarse (D5 de buscar-y-exportar-consumos).
+    /// </summary>
     public void Salir(string causa = "EXIT")
     {
-        if (_sesion is { } sesion)
+        if (_sesion is { } sesion && !_adoptada)
         {
             try
             {
@@ -126,15 +174,26 @@ public sealed class SesionOperador
 
     public void Tocar() => _ultimoToque = _reloj.GetUtcNow();
 
-    /// <summary>A los 30 s sin un toque (el borde incluido) la sesión termina; devuelve si cambió algo.</summary>
+    /// <summary>
+    /// A los 30 s sin un toque (el borde incluido) la sesión termina, y la acción que esperaba un código se descarta sin
+    /// hacerse; devuelve si cambió algo.
+    /// </summary>
     public bool RevisarInactividad()
     {
-        if (!Abierta || _reloj.GetUtcNow() - _ultimoToque < Plazo)
+        if ((!Abierta && Pendiente is null) || _reloj.GetUtcNow() - _ultimoToque < Plazo)
         {
             return false;
         }
 
-        Salir("TIMEOUT");
+        if (Abierta)
+        {
+            Salir("TIMEOUT");
+        }
+        else
+        {
+            Pendiente = null;
+        }
+
         return true;
     }
 
@@ -155,15 +214,15 @@ public sealed class SesionOperador
             ? MensajesAtencion.DeMotivo(resultado.ReasonCode)
             : resultado.Envio?.Estado == EstadoTrabajoImpresion.Submitted ? exito : "El comprobante quedó pendiente: revisá la impresora";
         ReimpresionPedida = null;
-        Comprobantes = _asistencia.ComprobantesDelDia();
         Tocar();
     }
 
     private void Limpiar()
     {
         _sesion = null;
+        _adoptada = false;
+        Pendiente = null;
         NombreVisible = null;
-        Comprobantes = [];
         ReimpresionPedida = null;
         Mensaje = null;
         Aviso = null;

@@ -7,7 +7,8 @@ using static Intelektron.INComedor.Kiosk.Tests.PuestoDePrueba;
 namespace Intelektron.INComedor.Kiosk.Tests;
 
 /// <summary>
-/// La asistencia en la pestaña Comprobantes (comprobante-local de configurar-puesto-por-pestanas, D8): reposo sin
+/// La asistencia para reimprimir, antes en la pestaña Comprobantes y desde buscar-y-exportar-consumos en las filas de
+/// Consumos (comprobante-local, D8 de configurar-puesto-por-pestanas y D4 y D5 de buscar-y-exportar-consumos): reposo sin
 /// «Asistencia», la sesión del operador que vive mientras Configuración esté abierta y vence a los 30 s sin un toque, y el
 /// aviso del motivo cuando el permiso cae. Las reglas de RB26 son las de Asistencia, que no cambia.
 /// </summary>
@@ -27,7 +28,7 @@ public class PestanaComprobantesTests
         Assert.DoesNotContain(pantalla.FindAll("main button"), b => b.TextContent.Contains("Asistencia", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "comprobante-local · Operador con permiso vigente: en la pestaña Comprobantes, 9001 abre la sesión y la pestaña muestra su nombre, los comprobantes y «Salir»")]
+    [Fact(DisplayName = "comprobante-local · Operador con permiso vigente: al reimprimir en Consumos, 9001 abre la sesión y la pestaña muestra su nombre, el motivo de la reimpresión y «Salir»")]
     public async Task Operador_con_permiso_vigente()
     {
         using var puesto = new PuestoDePrueba();
@@ -35,9 +36,9 @@ public class PestanaComprobantesTests
 
         await EntrarAComprobantes(pantalla, "9001");
 
-        var pestana = pantalla.Find("#seccion-comprobantes");
+        var pestana = pantalla.Find("#seccion-consumos");
         Assert.Contains(Operador, pestana.TextContent);
-        Assert.NotNull(pestana.QuerySelector("table"));
+        Assert.Equal(4, pestana.QuerySelectorAll(".motivo").Length);
         Assert.NotNull(pestana.QuerySelector("#salir"));
         Assert.Empty(pantalla.FindAll("#codigo-operador"));
     }
@@ -55,9 +56,9 @@ public class PestanaComprobantesTests
         var cierre = ContextoDe(Assert.Single(puesto.General(), l => Tipo(l) == "PRIVILEGED_SESSION_CLOSED"));
         Assert.Equal("CONFIGURATION_CLOSED", cierre.GetProperty("Cause").GetString());
         await EntradaConfiguracion.Entrar(pantalla);
-        await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
+        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
         Assert.NotNull(pantalla.Find("#codigo-operador"));
-        Assert.DoesNotContain(Operador, pantalla.Find("#seccion-comprobantes").TextContent);
+        Assert.DoesNotContain(Operador, pantalla.Find("#seccion-consumos").TextContent);
     }
 
     [Fact(DisplayName = "comprobante-local · Treinta segundos sin tocar la pestaña: la sesión termina y la pestaña vuelve a pedir un código, sin el nombre del operador")]
@@ -69,8 +70,9 @@ public class PestanaComprobantesTests
 
         puesto.Reloj.Avanzar(TimeSpan.FromSeconds(30));
 
-        pantalla.WaitForAssertion(() => Assert.NotNull(pantalla.Find("#codigo-operador")), TimeSpan.FromSeconds(5));
-        Assert.DoesNotContain(Operador, pantalla.Find("#seccion-comprobantes").TextContent);
+        pantalla.WaitForAssertion(() => Assert.DoesNotContain(Operador, pantalla.Find("#seccion-consumos").TextContent), TimeSpan.FromSeconds(5));
+        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
+        Assert.NotNull(pantalla.Find("#codigo-operador"));
         Assert.Equal(0L, SesionesAbiertas(puesto));
         Assert.NotEmpty(pantalla.FindAll("[role=\"tablist\"]"));
     }
@@ -117,17 +119,31 @@ public class PestanaComprobantesTests
 
         Assert.Equal(MensajesAtencion.DeMotivo("PERMISSION_EXPIRED"), pantalla.Find("#aviso-comprobantes").TextContent.Trim());
         Assert.NotNull(pantalla.Find("#codigo-operador"));
-        Assert.DoesNotContain(Operador, pantalla.Find("#seccion-comprobantes").TextContent);
+        Assert.DoesNotContain(Operador, pantalla.Find("#seccion-consumos").TextContent);
     }
 
+    /// <summary>
+    /// La asistencia desde la fila de Consumos (buscar-y-exportar-consumos): si no hay ningún consumo, hace uno de 0001; entra
+    /// a Configuración, toca «Reimprimir» en la primera fila y tipea el código. Antes era la pestaña Comprobantes.
+    /// </summary>
     private static async Task EntrarAComprobantes(IRenderedComponent<PantallaAtencion> pantalla, string codigo)
     {
         if (pantalla.FindAll("[role=\"tablist\"]").Count == 0)
         {
+            if (pantalla.FindAll("#listo").Count == 0 && pantalla.FindAll("#codigo").Count > 0)
+            {
+                await pantalla.Find("#codigo").InputAsync(new ChangeEventArgs { Value = "0001" });
+                await pantalla.Find("#ingresar").ClickAsync(new());
+                await pantalla.FindAll(".opcion")[0].ClickAsync(new());
+                await pantalla.Find("#confirmar").ClickAsync(new());
+                pantalla.WaitForAssertion(() => pantalla.Find("#listo"));
+                await pantalla.Find("#listo").ClickAsync(new());
+            }
+
             await EntradaConfiguracion.Entrar(pantalla);
         }
 
-        await pantalla.Find("#pestana-comprobantes").ClickAsync(new());
+        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
         await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = codigo });
         await pantalla.Find("#entrar-operador").ClickAsync(new());
     }

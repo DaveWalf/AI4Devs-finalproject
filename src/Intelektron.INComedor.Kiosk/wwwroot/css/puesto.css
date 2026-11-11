@@ -414,6 +414,20 @@ html, body { overscroll-behavior: none; }
 .filtros-consumos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; font-size: 16px; }
 .filtros-consumos label, .filtros-consumos .filtro { display: flex; flex-direction: column; gap: 4px; }
 .filtros-consumos .lista-desplegable { min-width: 240px; }
+/* El código de una persona se tipea enmascarado sin ser un campo de contraseña (D3 de buscar-y-exportar-consumos). */
+.codigo-oculto { -webkit-text-security: disc; }
+/* Las acciones de cada fila de Consumos, de 44 px como el resto de la tabla, y el operador arriba de ella (D4 y D5). */
+.tabla-consumos td.acciones-consumo { white-space: nowrap; }
+.dialogo .tabla-consumos .acciones-consumo button { min-height: 44px; min-width: 0; padding: 0 10px; font-size: 15px; margin-right: 4px; }
+.operador-consumos { display: flex; flex-direction: column; gap: 8px; }
+.operador-consumos .entrada-operador, .operador-consumos .fila-operador { display: flex; align-items: center; gap: 12px; }
+.operador-consumos .entrada-operador input { min-height: 56px; padding: 0 8px; font: inherit; font-size: 16px; border: 1px solid var(--tinta-suave); border-radius: 8px; background: rgb(var(--papel)); }
+/* La exportación, debajo de la tabla: tres botones del alto táctil de siempre y del mismo ancho, el del más largo (D6 y D8). */
+.exportar-consumos { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: max-content; max-width: 100%; gap: 12px; }
+/* Los botones de Consumos con la letra de sus campos, 16 px: los filtros, la exportación y la fila del operador (D8). */
+.consumos .filtros-consumos button, .consumos .exportar-consumos button, .consumos .operador-consumos button { font-size: 16px; }
+.mensaje-exportacion, .consumos #mensaje-exportacion { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+.comprobante-visto { display: flex; flex-direction: column; gap: 4px; padding: 16px; background: #fff; border: 1px dashed var(--tinta-suave); font-family: Consolas, "Courier New", monospace; }
 .filtros-consumos .lista-opciones, .filtros-consumos .lista-fila { font-size: 16px; }
 /* Dentro del diálogo, hasta cinco filas a la vista (290 px con el relleno y el borde), para que la lista no salga del panel
    de la pestaña aunque la fila de filtros ocupe dos renglones; con más, se desplaza adentro (ordenar-configuracion). */

@@ -88,8 +88,26 @@ public static class MensajesAtencion
     // La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas).
     public const string SinConsumos = "No hay consumos con estos filtros";
     public const string RangoInvertido = "El inicio no puede ser posterior al fin";
+    public const string CodigoDeNadie = "Ese código no es de ninguna persona.";
     public const string RangoDemasiadoLargo = "El rango no puede pasar de 366 días";
     public const string HayMasConsumos = "Se muestran 500 consumos y hay más: acotá los filtros";
+
+    // La exportación de Consumos (D6 de buscar-y-exportar-consumos). Cada oración termina en punto (pedido de David del
+    // 10/11/2026); el resto de los mensajes lo sigue el change puntuar-la-interfaz.
+    public const string ExportacionFallida = "No se pudo exportar: la carpeta no se puede escribir. Elegí otra con «Cambiar carpeta».";
+    public const string ExportacionTopada = "Se exportaron los primeros 10 000 consumos y hay más: acotá los filtros para el resto.";
+    public const string CarpetaNoGuardada = "No se pudo guardar la carpeta elegida: se usa hasta cerrar Configuración.";
+    public const string SinCarpeta = "No se eligió una carpeta: no se exportó nada.";
+    public const string FiltradoPorCodigo = "La tabla está filtrada por el código de una persona; «Consultar» sin código lo quita.";
+    public const string PedidoOperador = "Para reimprimir o recuperar un comprobante, ingresá el código de un operador.";
+
+    public static string PedidoOperadorPara(bool recuperar, string? numero) =>
+        $"Para {(recuperar ? "recuperar" : "reimprimir")} el comprobante N.º {numero}, ingresá el código de un operador.";
+
+    public static string CarpetaElegida(string carpeta) => $"Las exportaciones van a {carpeta}.";
+
+    public static string ExportacionHecha(string archivo, int filas, string carpeta) =>
+        $"Exportado {archivo} con {filas} {(filas == 1 ? "consumo" : "consumos")} en {carpeta}.";
 
     /// <summary>El resumen de Personas u Opciones cuando la base no respondió al abrir Configuración.</summary>
     public const string ConfiguracionNoLeida = "No se pudo leer la configuración de la base";
