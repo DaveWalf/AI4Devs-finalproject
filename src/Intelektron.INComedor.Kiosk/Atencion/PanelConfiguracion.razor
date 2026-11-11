@@ -103,6 +103,25 @@
                     </ul>
                 </section>
             }
+            @if (Resguardo is not null)
+            {
+                @* Al final de General: guardar el resguardo siempre; recuperarlo, sólo sin INWeb como dueño y con el diálogo de
+                   archivos (D4 de resguardar-configuracion). *@
+                <section id="resguardo" aria-labelledby="titulo-resguardo">
+                    <h3 id="titulo-resguardo">Resguardo de la configuración</h3>
+                    <div class="acciones botones-resguardo">
+                        <button id="guardar-resguardo" type="button" @onclick="GuardarResguardo">Guardar resguardo</button>
+                        @if (PuedeRecuperar)
+                        {
+                            <button id="recuperar-resguardo" type="button" @onclick="RevisarResguardo">Recuperar resguardo</button>
+                        }
+                    </div>
+                    @if (_mensajeResguardo is not null)
+                    {
+                        <p id="mensaje-resguardo" class="@(_resguardoFallido ? "aviso" : "mensaje-exportacion")" role="status">@_mensajeResguardo</p>
+                    }
+                </section>
+            }
         </section>
         }
 
@@ -506,6 +525,33 @@
                         </ul>
                         <div class="acciones">
                             <button id="importar-opciones-cerrar" type="button" class="principal" @onclick="CerrarImportacionOpciones">Cerrar</button>
+                        </div>
+                    }
+                </section>
+            </div>
+        }
+
+        @* El resumen de un resguardo: de dónde viene, qué trae y «Recuperar» o «Cancelar», o el motivo y «Cerrar» (D4 de
+           resguardar-configuracion). Recuperar reemplaza todo: el botón destacado y el foco van a «Cancelar». *@
+        @if (_revisionResguardo is { } revisionResguardo)
+        {
+            <div class="fondo-cartel">
+                <section id="resumen-resguardo" class="cartel superficie" role="dialog" aria-modal="true" aria-label="Recuperar resguardo">
+                    @if (revisionResguardo.Resguardo is { } resguardo)
+                    {
+                        <p id="resguardo-origen">@MensajesAtencion.ResumenResguardo(_archivoResguardo!, resguardo, Zona)</p>
+                        <p id="resguardo-ajustes">@MensajesAtencion.AjustesDelResguardo(resguardo)</p>
+                        <p>@MensajesAtencion.RecuperarReemplaza</p>
+                        <div class="acciones">
+                            <button id="resguardo-recuperar" type="button" @onclick="RecuperarResguardo">Recuperar</button>
+                            <button id="resguardo-cancelar" type="button" class="principal" @onclick="CerrarResguardo">Cancelar</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <p id="resguardo-rechazado">@MensajesAtencion.ResguardoRechazado(_archivoResguardo!, revisionResguardo.Motivo!)</p>
+                        <div class="acciones">
+                            <button id="resguardo-cerrar" type="button" class="principal" @onclick="CerrarResguardo">Cerrar</button>
                         </div>
                     }
                 </section>
@@ -1074,6 +1120,151 @@
 
     private void CerrarImportacionOpciones() => (_revisionOpciones, _archivoOpciones, _huellaOpciones) = (null, null, null);
 
+    /// <summary>Un resguardo guardado, para la general: el archivo sin su ruta, su huella, la versión y sus partes (D5 de resguardar-configuracion).</summary>
+    public sealed record ResguardoRealizado(string Archivo, string Huella, int Version, IReadOnlyList<string> Partes);
+
+    /// <summary>Un resguardo recuperado, para la general y para que la pantalla vuelva a leer sus ajustes (D3 y D5).</summary>
+    public sealed record RecuperacionRealizada(string Huella, int VersionOrigen, RecuperacionResguardo Resultado, IReadOnlyList<string> Partes);
+
+    /// <summary>Un resguardo que no se recupera, para la general: la huella, si se pudo leer, y el motivo (D5).</summary>
+    public sealed record RecuperacionRechazada(string? Huella, string Motivo);
+
+    /// <summary>El resguardo del puesto; sin él, General no lo ofrece (D4 de resguardar-configuracion).</summary>
+    [Parameter]
+    public ResguardoPuesto? Resguardo { get; set; }
+
+    [Parameter]
+    public Action<ResguardoRealizado>? RegistrarResguardo { get; set; }
+
+    /// <summary>La pantalla registra la recuperación y vuelve a leer el estilo, los logos y los textos (D3).</summary>
+    [Parameter]
+    public Action<RecuperacionRealizada>? RegistrarRecuperacion { get; set; }
+
+    [Parameter]
+    public Action<RecuperacionRechazada>? RegistrarRecuperacionRechazada { get; set; }
+
+    private string? _mensajeResguardo;
+    private bool _resguardoFallido;
+    private RevisionResguardo? _revisionResguardo;
+    private string? _archivoResguardo;
+    private bool _enfocarCartelResguardo;
+    private bool _releerTextos;
+
+    /// <summary>Recuperar, sólo con el diálogo de archivos y sin INWeb como dueño de los datos (D4, gate 6).</summary>
+    private bool PuedeRecuperar => ElectorArchivo is not null && _resumen is { SoloLectura: false };
+
+    /// <summary>«Guardar resguardo»: el .zip en la carpeta de la exportación, como una exportación (D1 y D4).</summary>
+    private void GuardarResguardo()
+    {
+        _mensajeResguardo = null;
+        if (CarpetaDeExportacion(out var avisoCarpeta) is not { } carpeta)
+        {
+            (_mensajeResguardo, _resguardoFallido) = (MensajesAtencion.SinCarpeta, true);
+            return;
+        }
+
+        ResguardoGuardado guardado;
+        try
+        {
+            guardado = Resguardo!.Guardar(carpeta, Zona);
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+        {
+            (_mensajeResguardo, _resguardoFallido) = (MensajesAtencion.ResguardoNoGuardado, true);
+            return;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeResguardo, _resguardoFallido) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            return;
+        }
+
+        var archivo = System.IO.Path.GetFileName(guardado.Ruta);
+        _resguardoFallido = avisoCarpeta is not null;
+        _mensajeResguardo = string.Join(' ', new[] { avisoCarpeta, MensajesAtencion.ResguardoGuardado(archivo, carpeta) }.OfType<string>());
+        RegistrarResguardo?.Invoke(new ResguardoRealizado(archivo, guardado.Huella, guardado.VersionConfiguracion, guardado.Partes));
+    }
+
+    /// <summary>
+    /// «Recuperar resguardo»: pide el .zip, lo revisa entero sin escribir y muestra el resumen o el motivo (D2 y D4); un
+    /// rechazo deja CONFIGURATION_RESTORE_REJECTED (D5). Cancelar la elección no hace nada.
+    /// </summary>
+    private void RevisarResguardo()
+    {
+        _mensajeResguardo = null;
+        if (ElectorArchivo!.ElegirResguardo(AlmacenExportacion?.Leer()) is not { } ruta)
+        {
+            return;
+        }
+
+        RevisionResguardo revision;
+        try
+        {
+            revision = Resguardo!.Revisar(ruta);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            (_mensajeResguardo, _resguardoFallido) = (MensajesAtencion.ConfiguracionNoLeida, true);
+            return;
+        }
+
+        (_revisionResguardo, _archivoResguardo, _enfocarCartelResguardo) = (revision, System.IO.Path.GetFileName(ruta), true);
+        if (revision.Motivo is { } motivo)
+        {
+            RegistrarRecuperacionRechazada?.Invoke(new RecuperacionRechazada(revision.Huella, motivo));
+        }
+    }
+
+    /// <summary>
+    /// «Recuperar»: la versión nueva y los ajustes locales del resguardo revisado (D3); la pantalla los vuelve a leer y el
+    /// panel relee su resumen, las personas y los textos. La base vuelve a validar los códigos en su transacción.
+    /// </summary>
+    private void RecuperarResguardo()
+    {
+        var (revisado, archivo) = (_revisionResguardo!.Resguardo!, _archivoResguardo!);
+        CerrarResguardo();
+        RecuperacionResguardo resultado;
+        try
+        {
+            resultado = Resguardo!.Recuperar(revisado);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _avisoGuardado = MensajesAtencion.PanelNoGuardado;
+            return;
+        }
+
+        if (resultado.Base.Tipo == TipoGuardado.Aplicado)
+        {
+            var version = resultado.Base.VersionActiva;
+            _avisoGuardado = resultado.AjustesRecuperados
+                ? MensajesAtencion.ResguardoRecuperado(version)
+                : MensajesAtencion.ResguardoRecuperadoSinAjustes(version);
+            _releerTextos = true;
+            _recargaPersonas++;
+            RegistrarRecuperacion?.Invoke(new RecuperacionRealizada(revisado.Huella, revisado.VersionOrigen, resultado, revisado.Partes));
+        }
+        else
+        {
+            var motivo = resultado.Base.Motivo ?? CodigosAdministracion.ResguardoInvalido;
+            _avisoGuardado = MensajesAtencion.ResguardoRechazado(archivo, motivo);
+            RegistrarRecuperacionRechazada?.Invoke(new RecuperacionRechazada(revisado.Huella, motivo));
+        }
+
+        LeerResumen();
+    }
+
+    private void CerrarResguardo() => (_revisionResguardo, _archivoResguardo) = (null, null);
+
+    /// <summary>Después de recuperar, los textos de la pestaña Impresora son los que la pantalla volvió a leer (D3).</summary>
+    protected override void OnParametersSet()
+    {
+        if (_releerTextos)
+        {
+            (_encabezado, _pie, _releerTextos) = (Textos.Encabezado, Textos.Pie, false);
+        }
+    }
+
     private void CerrarImportacion() => (_revision, _archivoImportado, _huellaImportada) = (null, null, null);
     private string? _avisoGuardado;
     private string? _avisoEstilo;
@@ -1355,6 +1546,20 @@
             try
             {
                 await JS.InvokeVoidAsync("incomedor.enfocar", "#personalizar-opcion button.color-opcion");
+            }
+            catch (JSException)
+            {
+                // Sin la función (una página vieja en caché), el foco queda donde estaba.
+            }
+        }
+
+        // El foco entra al resumen de un resguardo, en «Cancelar» o «Cerrar» (D4 de resguardar-configuracion).
+        if (_enfocarCartelResguardo && _revisionResguardo is not null)
+        {
+            _enfocarCartelResguardo = false;
+            try
+            {
+                await JS.InvokeVoidAsync("incomedor.enfocar", "#resumen-resguardo .acciones button.principal");
             }
             catch (JSException)
             {

@@ -21,12 +21,15 @@
 
 ## 3. En la pantalla
 
-- [ ] 3.1 Pruebas nuevas, vistas fallar antes: «Guardar resguardo» (y cancelar la carpeta); «Recuperar resguardo» muestra
+- [x] 3.1 Pruebas nuevas, vistas fallar antes: «Guardar resguardo» (y cancelar la carpeta); «Recuperar resguardo» muestra
   el resumen con «Recuperar» y «Cancelar»; «Recuperar» deja la versión nueva y la pantalla con el estilo, el logo y los
   textos recuperados; un rechazo con su motivo; con INWeb no se ofrece recuperar; los tres registros sin códigos ni
-  nombres (D4 y D5). Verifica: rojo antes y verde después.
-- [ ] 3.2 Los botones de General, el cartel y los registros; el diálogo de archivos con título y filtro de `.zip`.
-  Verifica: 3.1 en verde y `Kiosk.Tests` entero, con las pruebas existentes que cambien listadas con su porqué.
+  nombres (D4 y D5). Verifica: rojo antes y verde después. Hecho: 6 pruebas en `ResguardoEnGeneralTests`, vistas fallar
+  porque General no tenía los botones, y en verde.
+- [x] 3.2 Los botones de General, el cartel y los registros; el diálogo de archivos con título y filtro de `.zip`.
+  Verifica: 3.1 en verde y `Kiosk.Tests` entero, con las pruebas existentes que cambien listadas con su porqué. Hecho: Kiosk 507
+  de 507; cambió `PuntoFinalTests` (decisión 13, prevista en la propuesta): clasifica los seis métodos nuevos de
+  `MensajesAtencion` con sus valores de ejemplo, que es lo que esa prueba exige a todo método nuevo; ninguna aserción se aflojó.
 
 ## 4. El puesto compilado, documentos y verificación integral
 

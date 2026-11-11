@@ -242,6 +242,8 @@
                             RegistrarExportacionOpciones="RegistrarExportacionDeOpciones" RegistrarImportacionOpciones="RegistrarImportacionDeOpciones"
                             RegistrarImportacionOpcionesRechazada="RegistrarImportacionDeOpcionesRechazada"
                             RegistrarImportacionRechazada="RegistrarImportacionRechazada"
+                            Resguardo="Resguardo" RegistrarResguardo="RegistrarResguardoGuardado"
+                            RegistrarRecuperacion="RegistrarRecuperacionDeResguardo" RegistrarRecuperacionRechazada="RegistrarRecuperacionRechazada"
                             Textos="_textos" ImprimirPrueba="ImprimirPrueba" GuardarTextos="GuardarTextos"
                             AvisoMonitor="@_pantallaDelPuesto?.Aviso" GuardarMonitor="GuardarMonitor" MonitorGuardadoId="@_almacenPantalla?.Leer().Guardada?.Id"
                             Logos="@(_logosLocales is null ? null : _logos)" GuardarLogo="GuardarLogo"
@@ -1215,6 +1217,74 @@
     private static object Huella(LogoElegido? logo) => logo is null
         ? new { Example = true }
         : new { Example = false, logo.Sha256, Size = logo.Contenido.Length, Format = logo.Formato };
+
+    private ResguardoPuesto? _resguardo;
+
+    /// <summary>
+    /// El resguardo del puesto, con la base y los cuatro almacenes de sus ajustes; sin alguno (las pruebas que no los usan),
+    /// General no lo ofrece (D4 de resguardar-configuracion).
+    /// </summary>
+    private ResguardoPuesto? Resguardo => _resguardo ??=
+        (Servicio.Administracion, _almacenEstilo, _almacenImpresora, _logosLocales, _presentacionOpciones) is ({ } administracion, { } estilo, { } impresora, { } logos, { } presentacion)
+            ? new ResguardoPuesto(administracion, estilo, impresora, logos, presentacion)
+            : null;
+
+    /// <summary>Un resguardo guardado queda en la general con el archivo sin su ruta, su huella, la versión y sus partes (D5).</summary>
+    private void RegistrarResguardoGuardado(PanelConfiguracion.ResguardoRealizado resguardo) =>
+        RegistrarConfiguracion("CONFIGURATION_BACKUP_CREATED", new
+        {
+            File = resguardo.Archivo,
+            FileSha256 = resguardo.Huella,
+            resguardo.Version,
+            Parts = resguardo.Partes,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+
+    /// <summary>
+    /// Lo recuperado se ve en el acto: el estilo, los logos y los textos se vuelven a leer, y la presentación ya la releyó su
+    /// almacén (D3). Queda en la general con la huella, la versión de origen, la nueva y las partes, sin códigos ni nombres (D5).
+    /// </summary>
+    private void RegistrarRecuperacionDeResguardo(PanelConfiguracion.RecuperacionRealizada recuperacion)
+    {
+        _guardado = _vista = _almacenEstilo?.Leer() ?? EstiloVisual.PorDefecto;
+        if (_logosLocales is not null)
+        {
+            _logos = _logosLocales.Leer();
+        }
+
+        _textos = _almacenImpresora?.Leer() ?? TextosComprobante.PorDefecto;
+        if (Servicio.Impresora is ImpresoraSimulada simulada)
+        {
+            simulada.Textos = _textos;
+        }
+
+        // La recuperación corre en el panel: esta pantalla se redibuja con lo recuperado.
+        StateHasChanged();
+        RegistrarConfiguracion("CONFIGURATION_RESTORED", new
+        {
+            FileSha256 = recuperacion.Huella,
+            SourceVersion = recuperacion.VersionOrigen,
+            Version = recuperacion.Resultado.Base.VersionActiva,
+            Parts = recuperacion.Partes,
+            LocalSettingsRestored = recuperacion.Resultado.AjustesRecuperados,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        });
+    }
+
+    /// <summary>Un resguardo que no se recupera queda con la huella del archivo, si se leyó, y el motivo (D5).</summary>
+    private void RegistrarRecuperacionRechazada(PanelConfiguracion.RecuperacionRechazada rechazo) =>
+        RegistrarConfiguracion("CONFIGURATION_RESTORE_REJECTED", new
+        {
+            FileSha256 = rechazo.Huella,
+            ReasonCode = rechazo.Motivo,
+            Access = _acceso,
+            ActorPersonId = (Guid?)null,
+            ActorReason = SinAutenticacion,
+        }, SeveridadBitacora.Warning);
 
     /// <summary>
     /// La IPv4 de un adaptador con netsh, un comando por paso y cada uno con su permiso de administrador (D11); cada aplicación
