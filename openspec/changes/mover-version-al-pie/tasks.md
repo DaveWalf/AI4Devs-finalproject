@@ -42,6 +42,14 @@ sigue la regla de prolijidad de `config.yaml`.
   CentroVentana = 512, CentroVersion = 512, IzquierdaVersion = 459,84, DerechaVersion = 564,16, DerechaFranja = 284,71,
   IzquierdaMarca = 877,74, LetraPie = 14, LetraVersion = 12, MargenDerechoEngranaje = 8, MargenInferiorEngranaje = 0`;
   total 1, error 0; captura `pie-version-1024x768.png` mirada.
+- [x] 2.5 Agregada al revisar el change contra su spec: el escenario «El pie y la cabecera no cambian de lugar» pide
+  medir otra vez con la sincronización en otro estado, y la 2.4 mide sólo «Sin receptor configurado». Prueba E2E nueva
+  `VersionEnElPieE2ETests`: mide, cambia el texto de la franja por uno largo (el de un error de credencial con
+  pendientes y retenidos) y vuelve a medir. Verifica: el filtro de la clase en verde y su control negativo en rojo.
+  Hecho: escrita después del código, así que su control negativo fue volver un momento el pie a `display: flex`: en
+  rojo («La versión no está centrada: … CentroVersion = 354,32»), y en verde con la grilla: `CentroVersion = 512` antes
+  y después, `DerechaFranja` de 284,71 a 442,39, `AltoPie = 57` las dos veces; `puesto.css` restaurado con el mismo
+  SHA-256. Captura `pie-sincronizacion-larga-1024x768`.
 
 ## 3. El título en Heebo
 
