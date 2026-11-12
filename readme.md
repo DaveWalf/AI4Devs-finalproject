@@ -256,8 +256,8 @@ receptor, en la ventana:
 La sincronización con el receptor se ve en «Receptor de lotes y puesto conectados», más abajo, y el E2E la recorre
 sola.
 
-**Video.** Un recorrido de 2 a 3 minutos, con su [guion](docs/guion-video.md). Pendiente: va como archivo del
-Release cuando se publique.
+**Video.** Un recorrido de 2 a 3 minutos, con su [guion](docs/guion-video.md). Pendiente: cuando se grabe, va a
+YouTube como no listado y su enlace, acá.
 
 #### Capturas del flujo principal
 

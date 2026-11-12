@@ -1,7 +1,7 @@
 # Guion del video
 
-Un recorrido de 2 a 3 minutos por el puesto (D9 de `demostrar-flujo-de-punta-a-punta`), que acompaña al Release
-como archivo y que el README enlaza en «Cómo revisar». Lo graba David; este guion fija qué se muestra y cuánto dura
+Un recorrido de 2 a 3 minutos por el puesto (D9 de `demostrar-flujo-de-punta-a-punta`, que lo ponía como archivo del
+Release; desde el 12/11/2026 va a YouTube como no listado) y que el README enlaza en «Cómo revisar». Lo graba David; este guion fija qué se muestra y cuánto dura
 cada paso. Todo lo que aparece es sintético: los códigos son los de la tabla de «Cómo ver la demostración» del
 [README](../readme.md#cómo-ver-la-demostración).
 
@@ -24,7 +24,8 @@ cada paso. Todo lo que aparece es sintético: los códigos son los de la tabla d
    registre el puesto, y cerrarlo con Ctrl+C:
    `dotnet run --project src/Intelektron.INComedor.Sync.Api -- --demostracion`. Sin LocalDB, la instancia de SQL
    Server va en `INCOMEDOR_SQLSERVER`.
-2. Tener a mano el zip del Release descomprimido, y en el navegador la corrida de la CI del PR con el E2E en verde.
+2. Tener a mano el zip del paquete descomprimido (el del Release o, mientras no haya uno publicado, el que arma
+   `publicar-puesto.ps1`, como dice el camino 1 del README), y en el navegador la corrida de la CI del PR con el E2E en verde.
 3. Dejar la impresora simulada en «Disponible».
 
 ## Los pasos
@@ -32,7 +33,7 @@ cada paso. Todo lo que aparece es sintético: los códigos son los de la tabla d
 | Paso | Tiempo | Qué se ve | Qué se dice |
 |---|---|---|---|
 | 1 | 15 s | La portada del README | INComedor es un puesto de autoservicio de comedor que atiende sin red; el video recorre el corte de la entrega |
-| 2 | 15 s | El EXE del Release, abierto desde la terminal con la carpeta propia: el reposo con la lista de la simulación | Es el paquete autocontenido: abre sin .NET instalado y crea su base sintética al arrancar; en mantenimiento, la simulación deja elegir a la persona de una lista |
+| 2 | 15 s | El EXE del paquete, abierto desde la terminal con la carpeta propia: el reposo con la lista de la simulación | Es el paquete autocontenido: abre sin .NET instalado y crea su base sintética al arrancar; en mantenimiento, la simulación deja elegir a la persona de una lista |
 | 3 | 30 s | Tocar el código con el dedo, `0001` con el teclado en pantalla e «Ingresar»; «Almuerzo común», el cartel «¿Confirmás tu elección?», «Confirmar» y el comprobante en pantalla con el nombre del comensal | Identificación simulada, selección y confirmación atómica; el comprobante sale después del commit, con el nombre y nunca el código |
 | 4 | 15 s | `0001` otra vez: la selección ya no ofrece ningún almuerzo, sólo los refrigerios, y dice «Hoy ya usaste: almuerzo 1 de 1» | El cupo se aplica en el puesto, sin consultar a nadie, y la persona ve sólo lo que puede consumir |
 | 5 | 20 s | El engranaje y la clave del día con su teclado numérico; en Configuración, la pestaña Impresora en «Sin papel»; `0001` con «Café con leche»: el consumo registrado y el comprobante pendiente | Un fallo de papel nunca crea otro consumo: el consumo queda registrado y el comprobante, pendiente |
@@ -50,5 +51,5 @@ ciclo se narra o se corta en la edición. Si la CI todavía no tiene el E2E en v
 
 1. Cerrar el puesto y el receptor, y borrar la carpeta propia (`$env:TEMP\incomedor-video`) y la base
    `INComedorReceptorVideo`.
-2. Subir el video como archivo del Release en borrador, junto al zip y su suma, y publicarlo.
+2. Subir el video a YouTube como no listado.
 3. En el README, cambiar «Pendiente» por el enlace al video en «Cómo revisar».
