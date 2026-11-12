@@ -14,7 +14,12 @@
     @* Con Configuración abierta, el resto de la página es inerte: el foco no sale del diálogo (D5). *@
     <header class="cabecera" inert="@(HayDialogo || CartelVisible)">
         <img class="logo-empresa" src="@_logos.Empresa" alt="Logo de la empresa" />
-        <span class="servicio">INComedor · tu pausa del día</span>
+        @* El nombre del servicio y, debajo, la versión del programa, más chica y atenuada, en una columna centrada entre los *@
+        @* dos logos; la versión es texto, no un control (D3 de mostrar-version-del-programa). *@
+        <div class="titulo-cabecera">
+            <span class="servicio">INComedor · tu pausa del día</span>
+            <span id="version-programa">@VersionDelPrograma.Cabecera</span>
+        </div>
         <img class="logo-concesionaria" src="@_logos.Concesionaria" alt="Logo de la concesionaria" />
     </header>
 
@@ -556,6 +561,9 @@
     private const string AccesoClave = "DAILY_KEY";
     private const string AccesoOperador = "OPERATOR";
     private const string AccesoOperadorIdentificacion = "OPERATOR_IDENTIFICATION";
+
+    /// <summary>La versión del Kiosk que corre, leída una sola vez de su ensamblado (D2 de mostrar-version-del-programa).</summary>
+    private static readonly VersionPrograma VersionDelPrograma = VersionPrograma.DelPuesto();
 
     /// <summary>El motivo por el que «Configuración» no abrió desde la identificación, hasta la próxima identificación (D2).</summary>
     private string? _avisoOperador;

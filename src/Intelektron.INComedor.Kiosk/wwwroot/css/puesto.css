@@ -68,6 +68,16 @@ body:has(.puesto) {
 
 .cabecera img { height: 44px; width: auto; max-width: 180px; object-fit: contain; }
 .cabecera .servicio { flex: 1; text-align: center; font-family: Georgia, "Times New Roman", serif; font-size: 22px; }
+/* El título y la versión en una columna centrada entre los logos, dentro de los 64 px de la cabecera (D3 de
+   mostrar-version-del-programa): la versión en 12 px, atenuada. */
+.cabecera .titulo-cabecera { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
+.cabecera .titulo-cabecera .servicio { flex: none; }
+.cabecera #version-programa { font-size: 12px; color: var(--tinta-suave); opacity: .8; font-variant-numeric: tabular-nums; }
+/* La versión del programa en General (D4): los rótulos en una columna y los valores en otra, en la letra de la pestaña. */
+.datos-version { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; font-size: 17px; }
+.datos-version dt { font-weight: 600; }
+.datos-version dd { margin: 0; }
+.datos-version dd.commit { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 .engranaje {
     width: 56px;

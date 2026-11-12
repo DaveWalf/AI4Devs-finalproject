@@ -126,6 +126,21 @@
                     }
                 </section>
             }
+            @* La última sección de General: la versión, el commit completo, la fecha de compilación en la zona del puesto y .NET, *@
+            @* sin rutas ni datos del equipo (D4 de mostrar-version-del-programa). *@
+            <section id="version-programa-general" aria-labelledby="titulo-version-programa">
+                <h3 id="titulo-version-programa">Versión del programa</h3>
+                <dl class="datos-version">
+                    <dt>Versión</dt>
+                    <dd>@VersionDelPrograma.Version</dd>
+                    <dt>Commit</dt>
+                    <dd class="commit">@VersionDelPrograma.Commit</dd>
+                    <dt>Compilado</dt>
+                    <dd>@VersionDelPrograma.CompiladoEn(Zona)</dd>
+                    <dt>.NET</dt>
+                    <dd>@VersionDelPrograma.Net</dd>
+                </dl>
+            </section>
         </section>
         }
 
@@ -1589,6 +1604,9 @@
     /// <summary>La zona en que se muestra desde qué hora una bitácora está degradada.</summary>
     [Parameter]
     public TimeZoneInfo Zona { get; set; } = TimeZoneInfo.Utc;
+
+    /// <summary>La versión del programa que muestra General, leída una sola vez del ensamblado del Kiosk (D4).</summary>
+    private static readonly VersionPrograma VersionDelPrograma = VersionPrograma.DelPuesto();
 
     [Parameter]
     public EventCallback<CambioModoImpresora> ModoImpresoraCambiado { get; set; }
