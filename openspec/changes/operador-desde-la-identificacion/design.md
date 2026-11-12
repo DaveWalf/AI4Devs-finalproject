@@ -86,7 +86,10 @@ la persona como actor, sin el código; `ASSISTANCE_DENIED` sigue en interaccione
 
 - **El aviso por correo.** Un operador sin comidas sigue disparando `PersonaSinConsumo` al identificarse, como hoy,
   aunque vaya a Configuración. Si David lo quiere silenciar, va en un change aparte.
-- **La sesión de consumo se cierra antes que la privilegiada se abra**, en la misma transacción: si la base falla, no
+- **La sesión de consumo se cierra antes que la privilegiada se abra**, en la misma transacción. Precisión de la
+  verificación del 11/11/2026: si la base falla, la transacción se deshace entera, la sesión de consumo queda como estaba
+  y no se abre la privilegiada; la atención sigue, con el aviso del error de almacenamiento junto a «Configuración». Una
+  denegación deja de ofrecer «Configuración» en esa atención, y su aviso queda atado a ella. Texto anterior: si la base falla, no
   queda ninguna abierta, y la pantalla muestra el error de almacenamiento.
 - **El combo sin validación** abre Configuración a cualquiera frente a la pantalla en mantenimiento con la simulación
   encendida. Es lo que pidió David, porque el combo no existe en operativo.

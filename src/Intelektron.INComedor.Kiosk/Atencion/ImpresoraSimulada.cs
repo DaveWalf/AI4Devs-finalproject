@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using System.Text.Json.Nodes;
 using Intelektron.INComedor.Infrastructure.Sqlite;
 
 namespace Intelektron.INComedor.Kiosk.Atencion;
@@ -86,7 +87,7 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
                 texto.AppendLine("Habilitó: " + habilito);
             }
 
-            texto.AppendLine(comprobante.DatosImpresion)
+            texto.AppendLine(Textos.Comensal ? comprobante.DatosImpresion : SinComensal(comprobante.DatosImpresion))
                 .AppendLine(FrasesComprobante.Para(comprobante.TicketId));
             if (Textos.Pie.Length > 0)
             {
@@ -109,5 +110,28 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
 
         UltimoEnviado = comprobante;
         return RespuestaImpresora.Enviado();
+    }
+
+    /// <summary>
+    /// Los datos del comprobante sin el nombre del comensal, para el papel con «Nombre del comensal» en «No imprimir» (D3 de
+    /// elegir-lineas-del-comprobante): lo guardado no cambia, sólo lo que sale en el papel. Unos datos que no son un objeto
+    /// JSON salen como están, y no llevan nombre.
+    /// </summary>
+    private static string SinComensal(string datos)
+    {
+        try
+        {
+            if (JsonNode.Parse(datos) is JsonObject objeto)
+            {
+                objeto.Remove("PersonName");
+                return objeto.ToJsonString();
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // Unos datos que no son JSON no tienen un nombre que quitar.
+        }
+
+        return datos;
     }
 }

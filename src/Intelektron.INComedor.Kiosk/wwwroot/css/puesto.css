@@ -436,7 +436,7 @@ html, body { overscroll-behavior: none; }
 .tabla-personas th[data-columna="Operador"] { padding: 0 2px; }
 .dialogo .tabla-personas th[data-columna="Operador"] button.ordenar { padding: 0 4px; text-align: center; }
 .tabla-personas .escudo-operador { display: inline-block; vertical-align: middle; }
-.dialogo .tabla-personas button.operador-celda { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; display: inline-grid; place-items: center; color: var(--tinta); }
+.dialogo .tabla-personas button.operador-celda { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; display: inline-grid; place-items: center; vertical-align: middle; color: var(--tinta); }
 .dialogo .tabla-personas button.operador-celda:disabled { opacity: .4; cursor: not-allowed; }
 
 /* Consumos (D9): los filtros en una fila que se parte, y la tabla con su encabezado fijo, como la de personas. */
@@ -529,7 +529,7 @@ html, body { overscroll-behavior: none; }
 .tabla-consumos th[data-columna="Hora"] { width: calc(10ch + 8px); }
 .tabla-consumos th.numero { width: calc(9ch + 8px); }
 .tabla-consumos th[data-columna="Servicio"] { width: calc(10.5ch + 8px); }
-.tabla-consumos th[data-columna="Cargo"] { width: calc(11ch + 8px); }
+.tabla-consumos th[data-columna="Cargo"] { width: calc(12ch + 8px); }
 .tabla-consumos th[data-columna="Estado"] { width: calc(9.5ch + 8px); }
 .tabla-consumos th.acciones-consumo { width: calc(10.8em + 3 * 18px + 8px + 8px); }
 .tabla-consumos th button.ordenar { overflow: hidden; text-overflow: ellipsis; }

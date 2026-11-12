@@ -90,9 +90,9 @@
                         <p id="uso-del-dia" class="uso-del-dia">@uso</p>
                     }
                 </div>
-                @if (_avisoOperador is not null)
+                @if (AvisoOperador is { } avisoOperador)
                 {
-                    <p id="aviso-operador" class="aviso superficie" role="status">@_avisoOperador</p>
+                    <p id="aviso-operador" class="aviso superficie" role="status" inert="@CartelVisible">@avisoOperador</p>
                 }
                 @if (Maquina.Aviso is not null && Maquina.Estado == EstadoAtencion.Seleccion)
                 {
@@ -191,9 +191,9 @@
                     {
                         <p id="motivo-sin-opciones" class="aviso">@motivo</p>
                     }
-                    @if (_avisoOperador is not null)
+                    @if (AvisoOperador is { } avisoSinOpciones)
                     {
-                        <p id="aviso-operador" class="aviso" role="status">@_avisoOperador</p>
+                        <p id="aviso-operador" class="aviso" role="status">@avisoSinOpciones</p>
                     }
                     <div class="acciones">
                         @if (Maquina.EsOperador)
@@ -565,8 +565,14 @@
     /// <summary>La versión del Kiosk que corre, leída una sola vez de su ensamblado (D2 de mostrar-version-del-programa).</summary>
     private static readonly VersionPrograma VersionDelPrograma = VersionPrograma.DelPuesto();
 
-    /// <summary>El motivo por el que «Configuración» no abrió desde la identificación, hasta la próxima identificación (D2).</summary>
-    private string? _avisoOperador;
+    /// <summary>
+    /// El motivo por el que «Configuración» no abrió desde la identificación, atado a la sesión de consumo de esa atención (D2):
+    /// la persona siguiente, se identifique como se identifique, no lo ve.
+    /// </summary>
+    private (Guid? Sesion, string Texto)? _avisoOperador;
+
+    private string? AvisoOperador =>
+        _avisoOperador is { } aviso && aviso.Sesion is not null && aviso.Sesion == Maquina.SesionConsumo ? aviso.Texto : null;
 
     /// <summary>Con un operador no hay General: el modo, la simulación y el cierre vuelven sin hacer nada (D6).</summary>
     private bool EsOperador => _actor is not null;
@@ -878,7 +884,7 @@
         }
         catch (Microsoft.Data.Sqlite.SqliteException)
         {
-            _avisoOperador = MensajesAtencion.ErrorAlmacenamiento;
+            _avisoOperador = (sesion, MensajesAtencion.ErrorAlmacenamiento);
             return;
         }
 
@@ -890,7 +896,9 @@
             {
                 Access = AccesoOperadorIdentificacion, resultado.ReasonCode, ActorPersonId = Maquina.PersonaId,
             }, SeveridadBitacora.Warning);
-            _avisoOperador = MensajesAtencion.DeMotivo(resultado.ReasonCode);
+            _avisoOperador = (sesion, MensajesAtencion.DeMotivo(resultado.ReasonCode));
+            // Sin el permiso, «Configuración» deja de ofrecerse en esta atención: otro toque sólo repetiría la denegación.
+            Maquina.OlvidarOperador();
             return;
         }
 

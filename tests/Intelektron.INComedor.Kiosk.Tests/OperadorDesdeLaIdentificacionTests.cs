@@ -108,6 +108,26 @@ public class OperadorDesdeLaIdentificacionTests
         Assert.Equal("IDENTIFICATION", asistencia.GetProperty("Source").GetString());
     }
 
+    [Fact(DisplayName = "atencion-puesto · Después de una denegación: «Configuración» deja de ofrecerse en esa atención, y la persona siguiente no ve el aviso")]
+    public async Task Despues_de_una_denegacion()
+    {
+        using var puesto = new PuestoDePrueba();
+        var pantalla = puesto.Dibujar();
+        DarOperador(puesto, PersonaDe0001);
+        await Identificar(pantalla, "0001");
+        Ejecutar(puesto, "UPDATE tbComedorPermisosOperadores SET compopFechaVigenciaHastaUtc = $ahora WHERE comperCodigo = $per",
+            ("$ahora", "2026-11-06T15:00:00.000Z"), ("$per", PersonaDe0001.ToString("D")));
+        await pantalla.Find("#configuracion-operador").ClickAsync(new());
+        Assert.NotNull(pantalla.Find("#aviso-operador"));
+
+        Assert.Empty(pantalla.FindAll("#configuracion-operador"));
+        await pantalla.Find("#cancelar").ClickAsync(new());
+        await Identificar(pantalla, "0001");
+
+        Assert.NotEmpty(pantalla.FindAll(".opcion"));
+        Assert.Empty(pantalla.FindAll("#aviso-operador"));
+    }
+
     [Fact(DisplayName = "atencion-puesto · Configuración no deja consumo: un operador con comidas toca «Configuración» y la cierra, sin intención ni consumo nuevos, con su sesión de consumo vencida y el puesto en reposo, sin su nombre")]
     public async Task Configuracion_no_deja_consumo()
     {

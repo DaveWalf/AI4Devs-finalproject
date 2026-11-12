@@ -38,7 +38,7 @@ celdas no cambian.
 Ajuste al aplicar (11/11/2026), medido por CDP con los anchos de cada texto en Segoe UI: a 14 px, con 8 px de relleno,
 la persona y la opción no llegaban a «Persona sintética…». El relleno de las celdas bajó a 4 px por lado (el encabezado lo
 lleva en su botón de orden, así su texto empieza en el borde del de su columna), y los anchos quedaron en hora `10ch`,
-N.º `9ch`, servicio `10.5ch`, cargo `11ch` y estado `9.5ch`, más el relleno; las acciones, `10.8em` del texto de los tres
+N.º `9ch`, servicio `10.5ch`, cargo `12ch` (con lugar para «ARS 10.000,00», por la verificación) y estado `9.5ch`, más el relleno; las acciones, `10.8em` del texto de los tres
 botones más su relleno, sus bordes y los 4 px entre ellos.
 
 - *Descartada*: `table-layout` automático con `max-width` en la persona y la opción. El navegador ignora `max-width` en

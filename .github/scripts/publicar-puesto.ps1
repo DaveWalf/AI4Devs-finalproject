@@ -45,7 +45,9 @@ $binlog = { param([string] $Paso) '-bl:' + (Join-Path $artefactos "$Paso.binlog"
 $fechaCompilacion = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ', [Globalization.CultureInfo]::InvariantCulture)
 $propiedades = @("-p:VersionPuesto=$Version", "-p:FechaCompilacionPuesto=$fechaCompilacion")
 Invocar 'El restore' { dotnet restore INComedor.sln (& $binlog 'restore') }
-Invocar 'El build' { dotnet build INComedor.sln -c Release -warnaserror --no-restore @propiedades (& $binlog 'build') }
+# El build de la solución va sin ellas: las pruebas en Release copian el Kiosk y tienen que ver «desarrollo»; sólo el EXE
+# publicado lleva el tag (sugerencia de la verificación del 11/11/2026).
+Invocar 'El build' { dotnet build INComedor.sln -c Release -warnaserror --no-restore (& $binlog 'build') }
 Invocar 'La publicación' { dotnet publish src/Intelektron.INComedor.Kiosk -c Release -r win-x64 --self-contained true -o $publicacion @propiedades (& $binlog 'publicacion') }
 RevisarPublicacion
 

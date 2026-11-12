@@ -178,7 +178,7 @@ public static class MensajesAtencion
         {
             CodigosAdministracion.Requerido => $"Falta la columna «{error.Campo}».",
             CodigosAdministracion.Repetido => $"La columna {error.Campo} repite el título de otra.",
-            ImportacionPersonas.ColumnaDesconocida => $"La columna {error.Campo} no es «Nombre», «Código» ni el límite de un cupo.",
+            ImportacionPersonas.ColumnaDesconocida => $"La columna {error.Campo} no es «Nombre», «Código», «Operador» ni el límite de un cupo.",
             _ => $"La columna {error.Campo} no es válida.",
         },
         _ => $"Fila {error.Fila.ToString(CultureInfo.InvariantCulture)}: " + error.Motivo switch
@@ -192,6 +192,9 @@ public static class MensajesAtencion
             CodigosAdministracion.NoSonDigitos => $"«{error.Campo}» lleva sólo dígitos.",
             CodigosAdministracion.DemasiadoLargo => $"«{error.Campo}» es demasiado largo.",
             CodigosAdministracion.CaracterDeControl => $"«{error.Campo}» tiene caracteres que no se pueden guardar.",
+            // La columna «Operador» (D2 y D4 de marcar-operadores-en-personas), sin repetir lo escrito.
+            CodigosAdministracion.PermisoPropio => "no podés cambiar tu propio permiso de operador.",
+            CodigosAdministracion.ValorInvalido => $"«{error.Campo}» lleva «Sí», «No» o nada.",
             _ => $"«{error.Campo}» no es válido.",
         },
     };

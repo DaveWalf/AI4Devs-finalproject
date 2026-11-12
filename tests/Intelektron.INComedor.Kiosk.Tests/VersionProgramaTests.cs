@@ -44,6 +44,14 @@ public class VersionProgramaTests
         Assert.Equal("desarrollo · 7b80d45", version.Cabecera);
     }
 
+    [Fact(DisplayName = "presentacion-puesto · Una versión fuera de forma: un tag válido seguido de un salto de línea también da «desarrollo»")]
+    public void Un_tag_con_salto_de_linea()
+    {
+        var version = new VersionPrograma("v1.0.1\n", Informativa, null, FechaDelArchivo, ".NET 11.0.0");
+
+        Assert.Equal("desarrollo", version.Version);
+    }
+
     [Theory(DisplayName = "configuracion-puesto · Sin commit: sin «+», o con algo que no es hexadecimal o de largo fuera de 7 a 40, dice «sin commit»")]
     [InlineData("1.0.0")]
     [InlineData("1.0.0+zz80d455")]
@@ -71,6 +79,8 @@ public class VersionProgramaTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("ayer")]
+    [InlineData("Thu, 12 Nov 2026 00:00:00 GMT")]
+    [InlineData("2026-11-11")]
     public void Sin_fecha_usa_la_del_archivo(string? fecha)
     {
         var version = new VersionPrograma(null, Informativa, fecha, FechaDelArchivo, ".NET 11.0.0");

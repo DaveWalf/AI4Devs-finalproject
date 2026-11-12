@@ -145,6 +145,40 @@ public class OperadoresEnPersonasPantallaTests
         Assert.Equal((1, 1), (importacion.GetProperty("OperatorGranted").GetInt32(), importacion.GetProperty("OperatorRevoked").GetInt32()));
     }
 
+    [Fact(DisplayName = "administracion-local · Un operador que se quita a sí mismo por planilla: con 9001, su fila en «No» se señala con «no podés cambiar tu propio permiso de operador.» y no deja aplicar")]
+    public async Task Un_operador_no_se_quita_por_planilla_en_pantalla()
+    {
+        using var puesto = new PuestoDePrueba();
+        puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;
+        var carpeta = Directory.CreateDirectory(Path.Combine(puesto.Carpeta, "planillas")).FullName;
+        var nombre = EscritorPlanilla.EscribirLibro(carpeta, "propio",
+            [new HojaPlanilla("Personas", ["Nombre", "Código", "Operador"], [new object[] { "Operador sintético 01", "9001", "No" }], [1])]);
+        puesto.Contexto.Services.AddSingleton<IElectorArchivo>(new ElectorArchivoFijo(Path.Combine(carpeta, nombre)));
+        var pantalla = puesto.Dibujar();
+        await EntradaConfiguracion.Entrar(pantalla, "9001");
+        await pantalla.Find("#pestana-personas").ClickAsync(new());
+
+        await pantalla.Find("#importar-personas").ClickAsync(new());
+
+        Assert.Contains("Fila 2: no podés cambiar tu propio permiso de operador.", pantalla.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain(pantalla.FindAll("button"), b => b.TextContent.Trim() == "Modificar y agregar");
+    }
+
+    [Fact(DisplayName = "administracion-local · Una persona de baja: marcar «Operador» y después «Quitar» le devuelve el permiso que tenía, y el guardado da de baja sin rechazo")]
+    public async Task Quitar_devuelve_el_permiso()
+    {
+        using var puesto = new PuestoDePrueba();
+        var pantalla = await AbrirPersonas(puesto);
+        await pantalla.Find("#abrir-personas").ClickAsync(new());
+
+        await Fila(pantalla, "Persona sintética 03").QuerySelector("button.operador-celda")!.ClickAsync(new());
+        await Fila(pantalla, "Persona sintética 03").QuerySelector("button.quitar-persona")!.ClickAsync(new());
+
+        Assert.Equal("false", Fila(pantalla, "Persona sintética 03").QuerySelector("button.operador-celda")!.GetAttribute("aria-pressed"));
+        await pantalla.Find("#guardar-panel").ClickAsync(new());
+        Assert.Equal("De baja", Fila(pantalla, "Persona sintética 03").QuerySelector(".estado-persona")!.TextContent.Trim());
+    }
+
     private static async Task<IRenderedComponent<PantallaAtencion>> AbrirPersonas(PuestoDePrueba puesto)
     {
         puesto.Contexto.JSInterop.Mode = JSRuntimeMode.Loose;

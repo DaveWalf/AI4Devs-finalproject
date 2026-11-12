@@ -314,6 +314,9 @@ public sealed class MaquinaAtencion
         }
     }
 
+    /// <summary>Una entrada denegada deja de ofrecer «Configuración» en esta atención (D2 de operador-desde-la-identificacion).</summary>
+    public void OlvidarOperador() => EsOperador = false;
+
     /// <summary>El permiso OPERATOR de la persona identificada; sin la base o sin asistencia, no se ofrece (D1).</summary>
     private bool LeerOperador()
     {

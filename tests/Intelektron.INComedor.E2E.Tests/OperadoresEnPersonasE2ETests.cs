@@ -56,12 +56,9 @@ public class OperadoresEnPersonasE2ETests : IAsyncLifetime
         Assert.True(Math.Abs(edicion.CentroBoton - (edicion.ColumnaIzquierda + edicion.ColumnaDerecha) / 2) <= Tolerancia, "El botón no queda centrado en su columna.");
         Assert.True(edicion.AnchoTabla <= edicion.AnchoCaja, $"La tabla de edición mide {edicion.AnchoTabla} px en {edicion.AnchoCaja} px: se desplaza en horizontal.");
         _escenario.Registrar($"filas a la vista en edición: {edicion.FilasVisibles} de {edicion.Total}, con el teclado en pantalla abierto");
-        _escenario.Registrar("diagnóstico de anchos: " + await pagina.EvaluateAsync<string>(
-            """
-            () => { const cajas = [...document.querySelectorAll('#panel-personas .caja-tabla')];
-              return JSON.stringify(cajas.map(c => ({ sw: c.scrollWidth, cw: c.clientWidth, ow: c.offsetWidth, tabla: c.querySelector('table').getBoundingClientRect().width,
-                cols: [...c.querySelectorAll('thead th, thead td')].map(th => th.textContent.trim().slice(0, 12) + '=' + th.getBoundingClientRect().width.toFixed(0)) }))); }
-            """));
+        // Con el teclado abierto entran al menos dos filas, como pide RacionesEnPersonasE2ETests, y el botón no corre los cupos.
+        Assert.True(edicion.FilasVisibles >= 2, $"Con el teclado se ven {edicion.FilasVisibles} filas enteras.");
+        Assert.True(Math.Abs(edicion.ArribaBoton - edicion.ArribaCupo) <= 12, $"El botón empieza en {edicion.ArribaBoton} y el cupo en {edicion.ArribaCupo}.");
     }
 
     /// <summary>

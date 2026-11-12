@@ -1,7 +1,8 @@
 # Tasks
 
-Rama local `feature/mejoras-2-3-dw`, en el worktree `C:\AI\INComedor\INComedor-AI4DEVS-mejoras`, desde `0af7359`. Antes
-de aplicar se rebasa sobre la punta que deje el goal de `reimprimir-sin-codigo`. Gate respondido por David el 11/11/2026
+Rama local `feature/mejoras-2-5-dw` (antes `feature/mejoras-2-3-dw`), en el worktree
+`C:\AI\INComedor\INComedor-AI4DEVS-mejoras`, rebasada sobre `d6bbb24`, la punta que dejó el goal de `reimprimir-sin-codigo`;
+`<base>` es `d6bbb24`. Gate respondido por David el 11/11/2026
 (proposal). Cada grupo cierra con `git diff --diff-filter=M --name-only <base> -- tests/` pegado, que tiene que salir
 vacío: este change no prevé tocar pruebas existentes. Cada tarea que toca una pantalla sigue la regla de prolijidad de
 `config.yaml`.

@@ -97,4 +97,12 @@ que inyectar.
 - **Marcar a alguien lo habilita al instante.** Con `operador-desde-la-identificacion`, esa persona ve «Configuración» en
   su próxima identificación.
 - **Una prueba existente cambia**: `ImportacionPersonasTests`, la de la planilla de ejemplo, porque su encabezado
-  cambia. Necesita la aprobación de David (tarea 1.1).
+  cambia. Necesita la aprobación de David (tarea 1.1). Al aplicar se vio que el delta pone en rojo dos más,
+  `ExportacionPersonasTests` «Exportar Personas a CSV» y `TablaPersonasTests` «Las columnas de cupo»; no se tocaron y esperan
+  su aprobación (el hallazgo de la tarea 1.1).
+- **La planilla de ejemplo trae un operador.** Su segunda fila va en «Sí» con un código libre y predecible (el primero
+  desde 1001): importarla sin editarla da el permiso a «Persona de ejemplo 2». Lo dicen el resumen («1 permiso de operador
+  dado…») y el aviso de las filas de ejemplo; anotado por la verificación del 11/11/2026.
+- **Una fórmula vale por su resultado.** El lector toma el valor que Excel guardó en la celda: una fórmula cuyo resultado
+  es «Sí» o «No» pasa la lista cerrada como si se hubiera escrito, y cualquier otro resultado, como el «2» de `=1+1`, es
+  `INVALID_VALUE`. Nada se interpreta ni se evalúa en el puesto (precisión de D4 por la verificación del 11/11/2026).

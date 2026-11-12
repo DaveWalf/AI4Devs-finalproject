@@ -133,7 +133,10 @@ public class LineasDelComprobanteTests
         await Confirmar(pantalla);
 
         Assert.DoesNotContain(Original(impresora), l => l.StartsWith("Comensal:", StringComparison.Ordinal));
-        Assert.DoesNotContain("Persona sintética 01", string.Join('\n', Original(impresora)));
+        // El nombre tampoco va en los datos volcados: ni la clave ni el valor, que el JSON escribe con la «é» escapada.
+        var papel = string.Join('\n', Original(impresora));
+        Assert.DoesNotContain("PersonName", papel, StringComparison.Ordinal);
+        Assert.DoesNotContain("Persona sint", papel, StringComparison.Ordinal);
         Assert.Empty(pantalla.FindAll(".comensal-comprobante"));
         await pantalla.Find("#listo").ClickAsync(new());
         await EntradaConfiguracion.Entrar(pantalla);

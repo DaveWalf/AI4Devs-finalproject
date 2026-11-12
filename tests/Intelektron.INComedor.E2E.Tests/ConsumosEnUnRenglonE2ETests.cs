@@ -131,6 +131,8 @@ public class ConsumosEnUnRenglonE2ETests : IAsyncLifetime
         var visibleOpcion = medidas.Filas.Min(f => f.Celdas.Single(c => c.Clase == "opcion").Visible);
         _escenario.Registrar($"1024 × 768, a la vista: persona {visiblePersona:F1} px para «Persona sintética…» de {medidas.PrefijoPersona:F1} px; opción {visibleOpcion:F1} px para «Almuerzo con…» de {medidas.PrefijoOpcion:F1} px");
         Assert.True(visiblePersona >= medidas.PrefijoPersona, $"La persona muestra {visiblePersona} px y «Persona sintética…» pide {medidas.PrefijoPersona} px.");
+        _escenario.Registrar($"1024 × 768, «Cargo» muestra {medidas.CargoVisible:F1} px y «ARS 10.000,00» pide {medidas.CargoCinco:F1} px");
+        Assert.True(medidas.CargoVisible >= medidas.CargoCinco, $"«ARS 10.000,00» pide {medidas.CargoCinco} px y «Cargo» muestra {medidas.CargoVisible} px.");
         Assert.True(visibleOpcion >= medidas.PrefijoOpcion, $"La opción muestra {visibleOpcion} px y «Almuerzo con…» pide {medidas.PrefijoOpcion} px.");
 
         // El globo con el mouse: medio segundo sobre la persona larga muestra el nombre entero, anclado debajo de su celda.
@@ -195,7 +197,9 @@ public class ConsumosEnUnRenglonE2ETests : IAsyncLifetime
                 AnchoTabla: tabla.scrollWidth, AnchoCaja: tabla.clientWidth,
                 TextoEncabezadoPersona: inicio(document.querySelector('#seccion-consumos th[data-columna="Persona"] button.ordenar')),
                 TextoCeldaPersona: inicio(document.querySelector('#seccion-consumos tr.consumo td.persona')),
-                PrefijoPersona: medir('Persona sintética…'), PrefijoOpcion: medir('Almuerzo con…')
+                PrefijoPersona: medir('Persona sintética…'), PrefijoOpcion: medir('Almuerzo con…'),
+                CargoCinco: medir('ARS 10.000,00'),
+                CargoVisible: (c => c.clientWidth - parseFloat(getComputedStyle(c).paddingLeft) - parseFloat(getComputedStyle(c).paddingRight))(document.querySelector('#seccion-consumos tr.consumo td.cargo'))
               });
             }
             """);
@@ -223,5 +227,5 @@ public class ConsumosEnUnRenglonE2ETests : IAsyncLifetime
 
     private sealed record Fila(double Alto, Celda[] Celdas, Boton[] Botones, double AccionesDerecha);
 
-    private sealed record Medidas(Fila[] Filas, string LetraTabla, string LetraEncabezado, double AnchoTabla, double AnchoCaja, double TextoEncabezadoPersona, double TextoCeldaPersona, double PrefijoPersona, double PrefijoOpcion);
+    private sealed record Medidas(Fila[] Filas, string LetraTabla, string LetraEncabezado, double AnchoTabla, double AnchoCaja, double TextoEncabezadoPersona, double TextoCeldaPersona, double PrefijoPersona, double PrefijoOpcion, double CargoCinco, double CargoVisible);
 }

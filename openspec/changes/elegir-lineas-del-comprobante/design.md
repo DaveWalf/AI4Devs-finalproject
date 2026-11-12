@@ -34,8 +34,9 @@
 `TextosComprobante` suma tres booleanos al final, `Comensal`, `AvisoReimpresion` y `Operador`, todos con valor por
 defecto `true`. `AlmacenImpresora.Interpretar` acepta el archivo de hoy (sin ellos) y les da `true`. Con alguno
 presente que no es booleano JSON, el archivo entero se toma como fuera de forma y vale el valor por defecto, como ya
-pasa con un encabezado de 300 caracteres. `Serializar` escribe los cinco campos. El resguardo los lleva sin cambios,
-porque copia el archivo.
+pasa con un encabezado de 300 caracteres. `Serializar` escribe los cinco campos. El resguardo los lleva: lee el
+archivo con `Leer` y lo vuelve a escribir con `Serializar`, y al recuperar lo interpreta con `Interpretar`, así que un
+resguardo con una elección fuera de forma se rechaza entero (precisión de la verificación del 11/11/2026).
 
 - *Descartada*: un archivo nuevo para las elecciones. Habría que sumarlo al resguardo y a su manifiesto, y David las
   pidió «en los textos del comprobante».

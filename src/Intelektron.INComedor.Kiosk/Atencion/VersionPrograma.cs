@@ -24,8 +24,9 @@ public sealed partial class VersionPrograma
         var mas = versionInformativa?.IndexOf('+', StringComparison.Ordinal) ?? -1;
         var commit = mas >= 0 ? versionInformativa![(mas + 1)..] : string.Empty;
         Commit = FormaDelCommit().IsMatch(commit) ? commit : SinCommit;
-        Compilado = DateTimeOffset.TryParse(fechaCompilacion, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var fecha)
-            && fechaCompilacion!.Contains('T', StringComparison.Ordinal)
+        // El formato exacto que escribe publicar-puesto.ps1; cualquier otro texto, la fecha del archivo.
+        Compilado = DateTimeOffset.TryParseExact(fechaCompilacion, "yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var fecha)
             ? fecha
             : fechaArchivo;
         Net = net;

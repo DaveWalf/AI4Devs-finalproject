@@ -80,7 +80,7 @@
                             @if (Editable)
                             {
                                 var propia = Actor is { } actor && actor == fila.Id;
-                                <button type="button" class="operador-celda" aria-label="Operador" aria-pressed="@(fila.Operador ? "true" : "false")"
+                                <button type="button" class="operador-celda" aria-label="Operador" aria-pressed="@(fila.Operador ? "true" : "false")" aria-invalid="@Marca(indice, "Operador")"
                                         disabled="@(propia || !fila.Activa || fila.Quitar)" title="@(propia ? MensajesAtencion.PermisoPropio : null)"
                                         @onclick="() => fila.Operador = !fila.Operador">
                                     <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
@@ -143,7 +143,7 @@
                                 }
                                 else if (fila.Activa)
                                 {
-                                    <button type="button" class="@(fila.Quitar ? "deshacer-quitar" : "quitar-persona")" @onclick="() => fila.Quitar = !fila.Quitar">
+                                    <button type="button" class="@(fila.Quitar ? "deshacer-quitar" : "quitar-persona")" @onclick="() => QuitarODeshacer(fila)">
                                         @(fila.Quitar ? "Deshacer" : "Quitar")
                                     </button>
                                 }
@@ -432,6 +432,16 @@
 
     private string Orden(string columna) =>
         _ordenColumna != columna ? "none" : _ordenAscendente ? "ascending" : "descending";
+
+    /// <summary>Quitar a una persona le devuelve el permiso que tenía: no se marca a quien se da de baja (D3).</summary>
+    private static void QuitarODeshacer(FilaPersona fila)
+    {
+        fila.Quitar = !fila.Quitar;
+        if (fila.Quitar)
+        {
+            fila.Operador = fila.OperadorAntes;
+        }
+    }
 
     private void AgregarPersona()
     {
