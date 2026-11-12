@@ -40,6 +40,7 @@ public class LineasDelComprobanteE2ETests : IAsyncLifetime
         await EntradaConfiguracionE2E.EntrarAsync(pagina);
 
         await pagina.Locator("#pestana-mails").ClickAsync();
+        await Assertions.Expect(pagina.Locator("#correos-activos")).ToBeVisibleAsync();
         var mails = await Medir(pagina, "#correos-activos", "#correos-apagados");
         _escenario.Registrar($"1024 × 768, los pares de Mails: {string.Join("; ", mails.Select(c => c.ToString()))}");
 
