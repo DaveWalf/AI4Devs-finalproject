@@ -28,6 +28,8 @@ prolijidad de `config.yaml`. Se aplica después de `operador-desde-la-identifica
       el delta suma «Operador» después de «Estado». El cambio que haría falta:
       `Assert.Equal(["Nombre", "Estado", "Operador", "ALMUERZO", "REFRIGERIO", "Opciones habilitadas"], encabezados);`.
     Sin esa aprobación, la verificación completa (5.2 y las de los otros cuatro changes) no puede dar cero fallas.
+  - **Aprobadas por David el 11/11/2026 a las 21:30** («Aprobar las dos», con las dos líneas a la vista), y aplicadas tal
+    cual. La lista final de pruebas existentes modificadas por el change es esa y la de «Descargar la planilla de ejemplo».
 
 ## 2. La base: dar, quitar y la regla del propio permiso
 

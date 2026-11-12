@@ -56,7 +56,7 @@ public class ExportacionPersonasTests : IDisposable
         var par = vista.ParesDeCupo()[0];
         Assert.StartsWith("\"Persona\";\"Estado\";", lineas[0], StringComparison.Ordinal);
         Assert.Contains($"\"{vista.NombrePar(par)}: usado hoy\";\"{vista.NombrePar(par)}: límite\"", lineas[0], StringComparison.Ordinal);
-        Assert.EndsWith("\"Opciones habilitadas\"", lineas[0], StringComparison.Ordinal);
+        Assert.EndsWith("\"Opciones habilitadas\";\"Operador\"", lineas[0], StringComparison.Ordinal);
         var habilitada = Assert.Single(lineas, l => l.StartsWith("\"Persona habilitada\";", StringComparison.Ordinal));
         Assert.StartsWith("\"Persona habilitada\";\"Activa\";", habilitada, StringComparison.Ordinal);
         Assert.Contains(lineas, l => l.StartsWith("\"Persona inactiva\";\"De baja\";", StringComparison.Ordinal));
