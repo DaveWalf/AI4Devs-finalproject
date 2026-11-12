@@ -125,8 +125,10 @@ Las capturas del puesto real, tomadas por CDP sobre el EXE publicado y siguiendo
 Hay tres caminos, y los tres usan sólo datos sintéticos. Las únicas credenciales son los
 [códigos sintéticos](#cómo-ver-la-demostración) de la tabla de más abajo, y no hay contraseñas.
 
-**1. El Release, sin instalar .NET.** En [Releases](https://github.com/DaveWalf/AI4Devs-finalproject/releases),
-bajar `INComedor-Puesto-<versión>-win-x64.zip` y su `.sha256`, comprobar la suma y abrir el EXE:
+**1. El paquete del puesto, sin instalar .NET.** Cuando haya un Release publicado en
+[Releases](https://github.com/DaveWalf/AI4Devs-finalproject/releases), bajar `INComedor-Puesto-<versión>-win-x64.zip` y
+su `.sha256`, comprobar la suma y abrir el EXE (mientras no lo haya, el mismo zip se arma en local, como dice el final
+de este camino):
 
 ```powershell
 $zip = '.\INComedor-Puesto-<versión>-win-x64.zip'
@@ -138,10 +140,9 @@ Expand-Archive $zip -DestinationPath .\INComedor-Puesto
 Requisito: Windows 11 x64 con el WebView2 Runtime, que Windows 11 ya trae. El paquete lleva el runtime de .NET
 al lado del EXE y no trae datos: la base se crea y se siembra al abrirlo. El EXE no está firmado, así que
 SmartScreen puede pedir «Más información» y «Ejecutar de todas formas». El Release trae sólo el puesto: el
-receptor necesita SQL Server y se revisa desde el código. El primer Release real sale con .NET 11 estable, del 10/11/2026,
-desde `final-project-dw` (D-C28). Hasta entonces, el mismo zip se arma en local con
-`pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
-el EXE publicado y lo deja en `artifacts/`.
+receptor necesita SQL Server y se revisa desde el código. Mientras no haya un Release publicado, el mismo zip se
+arma en local con `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el
+E2E contra el EXE publicado y lo deja en `artifacts/`; o se sigue el camino 2, desde el código.
 
 **La versión que corre.** En el centro del pie, entre la sincronización y la marca Intelektron, el puesto dice, más
 chico y atenuado, la versión del paquete y el commit corto, como «v1.0.1 · 7b80d45»; la última sección de General, «Versión del programa», suma el
