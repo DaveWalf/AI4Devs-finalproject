@@ -192,7 +192,9 @@ toca `%LOCALAPPDATA%\INComedor\demo\`. Las capturas de cada paso quedan en
 `tests/Intelektron.INComedor.E2E.Tests/bin/Debug/net11.0-windows10.0.17763.0/TestResults/e2e/`.
 
 **Datos sembrados.** La base del puesto se crea y se siembra al abrirlo: un catálogo sintético de ALMUERZO y
-REFRIGERIO, cuatro personas y cuatro operadores, con los códigos de la tabla. El receptor de demostración genera
+REFRIGERIO y nueve personas: «Persona de demostración», sin código, de la pantalla anterior; cuatro personas con los
+códigos `0001` a `0004`; tres operadores, `9001` a `9003`, y un administrador sin `OPERATOR`, `9004`, con lo que dice la
+tabla de códigos. El receptor de demostración genera
 sus certificados sintéticos y su base al arrancar («Receptor de lotes y puesto conectados», más abajo).
 
 **Variables de entorno.** [`.env.example`](.env.example) lista las cinco, vacías y comentadas. Nada lo carga,
@@ -224,7 +226,8 @@ receptor, en la ventana:
 6. En Consumos, «Buscar» con el número de una fila y «Consultar» dejan sólo esa; «Exportar CSV» pide la carpeta la primera
    vez y deja ahí el archivo. Cerrar Configuración y entrar por el engranaje con `9001` en lugar de la clave: «Reimprimir»
    pide sólo el motivo y la copia sale con «Habilitó:» y el nombre del operador; cerrar Configuración termina su sesión.
-7. En reposo, el engranaje y «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
+7. En reposo, el engranaje, la clave del día como en el paso 4 (o el código de un operador, como en el paso 6) y
+   «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
    `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión
    2 de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
    no se reconoce. Con `9001` en lugar de la clave, Configuración abre sólo con Consumos, Personas e Impresora y
@@ -377,8 +380,8 @@ guarda sólo lo de su pestaña y deja Configuración abierta con el aviso de lo 
 y descartan lo no guardado, también con un panel de edición abierto. Identidad visual tiene el «Estilo visual», con la
 opacidad de las superficies (72 a 88 %, 76 % por defecto) y el desenfoque del fondo (0 a 12 px, 4 px por defecto) con
 vista previa y su «Guardar» en `estilo-visual.json` de la carpeta de datos; Impresora, con la impresora simulada, sus
-modos. En mantenimiento, cualquiera que toque el puesto en reposo puede cambiar el estilo o simular una impresora sin
-papel.
+modos. En mantenimiento, quien entra por el engranaje con la clave del día puede cambiar el estilo o simular una
+impresora sin papel.
 
 **Resguardo de la configuración.** Al final de General, «Guardar resguardo» deja en la carpeta de la exportación
 `INComedor-resguardo-AAAAMMDD-HHmmss.zip`, con un manifiesto (formato, esquema de la base y huella SHA-256 de cada
@@ -819,7 +822,7 @@ El E2E (`tests/Intelektron.INComedor.E2E.Tests`) recorre el escenario E2E del pl
 apagado y luego recuperado (AT01, AT02 y AT27), sobre los EXE compilados del puesto y del receptor. Lo maneja
 Playwright por CDP, sin bajar navegadores: el navegador es el WebView2 del equipo. Suma las costuras del puesto
 (`INCOMEDOR_DEMO_DIR`, `INCOMEDOR_RECEPTOR_URL` e `INCOMEDOR_CDP_PORT`): el puerto de depuración sólo abre con un
-valor válido y sólo en loopback. Con las de los changes que tocan la pantalla, medidas en la ventana real, son 44. Además de SQL Server, necesita el WebView2 Runtime y una sesión con escritorio,
+valor válido y sólo en loopback. Con las de los changes que tocan la pantalla, medidas en la ventana real, son 52. Además de SQL Server, necesita el WebView2 Runtime y una sesión con escritorio,
 y si falta algo falla con un mensaje que lo nombra, nunca con un salto. Con `INCOMEDOR_E2E_KIOSK_EXE`, corre
 contra el EXE del paquete publicado, sin .NET a la vista: es lo que hace el script del Release antes de armar
 el zip. El resto de los casos del plan sigue especificado, no ejecutado.
