@@ -5,13 +5,13 @@ using Microsoft.AspNetCore.Components;
 namespace Intelektron.INComedor.Kiosk.Tests;
 
 /// <summary>
-/// La versión del programa en pantalla (D3 y D4 de mostrar-version-del-programa): debajo del nombre del servicio, en reposo y
-/// durante una atención, sin ser un control; y al final de General, «Versión del programa» con la versión, el commit, la
+/// La versión del programa en pantalla (D3 y D4 de mostrar-version-del-programa, y D1 a D3 de mover-version-al-pie): en el
+/// centro del pie, en reposo y durante una atención, sin ser un control; y al final de General, «Versión del programa» con la versión, el commit, la
 /// fecha de compilación y .NET, sin rutas ni datos del equipo. El Kiosk de las pruebas se compila sin tag: dice «desarrollo».
 /// </summary>
 public class VersionEnPantallaTests
 {
-    [Fact(DisplayName = "presentacion-puesto · Un build de desarrollo: en reposo, debajo de «INComedor · tu pausa del día», la cabecera dice «desarrollo · » y el commit, y sigue sin botones")]
+    [Fact(DisplayName = "presentacion-puesto · Un build de desarrollo: en reposo, el pie dice «desarrollo · » y el commit, y la cabecera, con «INComedor · tu pausa del día», no tiene la versión y sigue sin botones")]
     public void La_version_en_reposo()
     {
         using var puesto = new PuestoDePrueba();
@@ -19,15 +19,15 @@ public class VersionEnPantallaTests
 
         var cabecera = pantalla.Find("header.cabecera");
         Assert.Equal("INComedor · tu pausa del día", cabecera.QuerySelector(".servicio")!.TextContent.Trim());
-        var version = cabecera.QuerySelector("#version-programa")!;
+        Assert.Null(cabecera.QuerySelector("#version-programa"));
+        var version = pantalla.Find("footer.pie #version-programa");
         Assert.Equal(VersionPrograma.DelPuesto().Cabecera, version.TextContent.Trim());
         Assert.StartsWith("desarrollo · ", version.TextContent.Trim(), StringComparison.Ordinal);
-        Assert.Same(cabecera.QuerySelector(".servicio")!.ParentElement, version.ParentElement);
         Assert.Empty(cabecera.QuerySelectorAll("button"));
         Assert.Null(version.GetAttribute("tabindex"));
     }
 
-    [Fact(DisplayName = "presentacion-puesto · Un paquete publicado: con una persona en la selección, la cabecera sigue mostrando la versión")]
+    [Fact(DisplayName = "presentacion-puesto · Un paquete publicado: con una persona en la selección, el pie sigue mostrando la versión")]
     public async Task La_version_durante_una_atencion()
     {
         using var puesto = new PuestoDePrueba();
@@ -36,7 +36,7 @@ public class VersionEnPantallaTests
         await pantalla.Find("#ingresar").ClickAsync(new());
 
         Assert.NotEmpty(pantalla.FindAll(".opcion"));
-        Assert.Equal(VersionPrograma.DelPuesto().Cabecera, pantalla.Find("header.cabecera #version-programa").TextContent.Trim());
+        Assert.Equal(VersionPrograma.DelPuesto().Cabecera, pantalla.Find("footer.pie #version-programa").TextContent.Trim());
     }
 
     [Fact(DisplayName = "configuracion-puesto · La versión de un build de desarrollo: la última sección de General es «Versión del programa», con «desarrollo», el commit, la fecha de compilación y .NET")]

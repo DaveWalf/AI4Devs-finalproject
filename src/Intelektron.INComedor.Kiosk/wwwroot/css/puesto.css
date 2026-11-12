@@ -67,12 +67,19 @@ body:has(.puesto) {
 }
 
 .cabecera img { height: 44px; width: auto; max-width: 180px; object-fit: contain; }
-.cabecera .servicio { flex: 1; text-align: center; font-family: Georgia, "Times New Roman", serif; font-size: 22px; }
-/* El título y la versión en una columna centrada entre los logos, dentro de los 64 px de la cabecera (D3 de
-   mostrar-version-del-programa): la versión en 12 px, atenuada. */
-.cabecera .titulo-cabecera { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
-.cabecera .titulo-cabecera .servicio { flex: none; }
-.cabecera #version-programa { font-size: 12px; color: var(--tinta-suave); opacity: .8; font-variant-numeric: tabular-nums; }
+/* El título con la letra con que INWeb escribe su nombre: Heebo Light, desde un archivo del puesto, sin pedir nada a
+   internet (D4 de mover-version-al-pie). Es la fuente variable del subconjunto latino que usa INWeb, con su licencia
+   OFL 1.1 en fonts/OFL-Heebo.txt; sin el archivo, el título sale en la sans-serif del sistema. */
+@font-face {
+    font-family: "Heebo";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: block;
+    src: url("../fonts/heebo-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+.cabecera .servicio { flex: 1; text-align: center; font-family: Heebo, "Segoe UI", system-ui, sans-serif; font-weight: 300; font-size: 22px; }
 /* La versión del programa en General (D4): los rótulos en una columna y los valores en otra, en la letra de la pestaña. */
 .datos-version { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; font-size: 17px; }
 .datos-version dt { font-weight: 600; }
@@ -300,23 +307,29 @@ body:has(.puesto) {
 .atencion td, .atencion th { border-bottom: 1px solid var(--borde); padding: 6px; text-align: left; }
 .atencion td button { min-width: 0; padding: 0 14px; font-size: 17px; margin: 2px; }
 
-/* Pie de 56 px en todos los estados: la sincronización a la izquierda y, a la derecha, la marca Intelektron, discreta,
-   y el engranaje en el borde (su lugar queda reservado durante la atención). El borde derecho del botón queda a 8 px. */
+/* Pie de 56 px en todos los estados: la sincronización a la izquierda, la versión del programa en el centro de la
+   ventana y, a la derecha, la marca Intelektron, discreta, y el engranaje en el borde (su lugar queda reservado durante
+   la atención). El borde derecho del botón queda a 8 px. Tres columnas con los costados iguales, para que la versión no
+   se corra cuando cambia el texto de la sincronización (D1 de mover-version-al-pie). El relleno es parejo, 8 px a cada
+   lado, para que el centro de la grilla sea el de la ventana; la franja suma 8 px de margen y sigue a 16 px del borde. */
 .pie {
     min-height: 56px;
     flex: none;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    gap: 16px;
-    padding: 0 8px 0 16px;
+    column-gap: 16px;
+    padding: 0 8px;
     font-size: 14px;
     background: rgb(var(--papel) / var(--opacidad-superficie));
     border-top: 1px solid var(--borde);
 }
 
-.pie .franja-sincronizacion { margin: 0; }
+.pie .franja-sincronizacion { margin: 0 0 0 8px; justify-self: start; min-width: 0; }
 .pie .mensaje-sincronizacion { margin-left: 6px; margin-right: 10px; }
-.pie .pie-derecha { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+/* La versión, como estaba bajo el título (D2 de mover-version-al-pie): 12 px, atenuada, con cifras tabulares. */
+.pie #version-programa { font-size: 12px; color: var(--tinta-suave); opacity: .8; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pie .pie-derecha { justify-self: end; display: flex; align-items: center; gap: 8px; }
 .pie .marca-intelektron { height: 16px; width: auto; opacity: .8; }
 .pie .lugar-engranaje { width: 56px; height: 56px; flex: none; }
 

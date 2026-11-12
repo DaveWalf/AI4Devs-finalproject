@@ -143,12 +143,15 @@ desde `final-project-dw` (D-C28). Hasta entonces, el mismo zip se arma en local 
 `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
 el EXE publicado y lo deja en `artifacts/`.
 
-**La versión que corre.** Debajo de «INComedor · tu pausa del día», la cabecera dice, más chico y atenuado, la versión
-del paquete y el commit corto, como «v1.0.1 · 7b80d45»; la última sección de General, «Versión del programa», suma el
+**La versión que corre.** En el centro del pie, entre la sincronización y la marca Intelektron, el puesto dice, más
+chico y atenuado, la versión del paquete y el commit corto, como «v1.0.1 · 7b80d45»; la última sección de General, «Versión del programa», suma el
 commit completo, la fecha y hora de compilación y la versión de .NET. El tag del Release llega al EXE porque
 `publicar-puesto.ps1` lo pasa como la propiedad propia `VersionPuesto` (y la fecha como `FechaCompilacionPuesto`),
-nunca como `Version`, y el E2E contra el EXE comprueba que la cabecera lo muestra. Un puesto compilado desde el código,
-o en la CI, dice «desarrollo» en lugar de la versión, con el commit del que se compiló.
+nunca como `Version`, y el E2E contra el EXE comprueba que el pie lo muestra. Un puesto compilado desde el código,
+o en la CI, dice «desarrollo» en lugar de la versión, con el commit del que se compiló. El título de la cabecera,
+«INComedor · tu pausa del día», va en Heebo Light, la letra con que INWeb escribe su nombre, desde un archivo del propio
+puesto ([`heebo-latin.woff2`](src/Intelektron.INComedor.Kiosk/wwwroot/fonts/heebo-latin.woff2), con su licencia
+[OFL 1.1](src/Intelektron.INComedor.Kiosk/wwwroot/fonts/OFL-Heebo.txt)): no pide nada a internet.
 
 **2. El código.** Con el SDK que fija `global.json` (11.0.100) o uno posterior de .NET 11, que
 `global.json` acepta con `rollForward: latestFeature`, desde la raíz de un clon de la rama

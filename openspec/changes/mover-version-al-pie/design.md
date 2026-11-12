@@ -87,7 +87,7 @@ los quince bloques de `css2.css` con los subconjuntos hebreo y de símbolos, que
 Por CDP, `CSS.getPlatformFontsForNode` sobre el nodo de texto del título devuelve la familia que el navegador usó de
 verdad (no la pedida): tiene que ser «Heebo» para todos los glifos, y `getComputedStyle(...).fontWeight` tiene que dar
 `300`. El E2E lo mide a 1024 × 768 junto con la cabecera de 64 px. En bUnit se comprueba sólo la estructura (la
-cabecera sin versión y el pie con «versión »), porque bUnit no dibuja.
+cabecera sin versión y la versión en el pie), porque bUnit no dibuja.
 
 Descartada: comparar `getComputedStyle().fontFamily`, que devuelve la pila pedida aunque la fuente no haya cargado.
 

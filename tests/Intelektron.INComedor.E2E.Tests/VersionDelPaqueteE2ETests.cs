@@ -7,8 +7,9 @@ namespace Intelektron.INComedor.E2E.Tests;
 /// <summary>
 /// El paquete lleva su versión (D5 de mostrar-version-del-programa): abre el puesto, el compilado o el EXE publicado, y compara
 /// la cabecera con <c>INCOMEDOR_VERSION_ESPERADA</c>, que <c>publicar-puesto.ps1</c> pone en el tag del paquete; sin ella,
-/// con «desarrollo». El commit corto es el de <c>git rev-parse HEAD</c> del repo. A 1024 × 768 y por CDP mide además la
-/// cabecera (64 px, el título y la versión centrados en la misma vertical, la versión más chica) y la pestaña General (los
+/// con «desarrollo». El commit corto es el de <c>git rev-parse HEAD</c> del repo. A 1024 × 768 y por CDP mide además el
+/// pie (la versión centrada en la ventana, más chica que la letra del pie, sin tocar la franja ni la marca, y el engranaje
+/// en su borde; D6 de mover-version-al-pie), la cabecera (64 px, sin la versión) y la pestaña General (los
 /// encabezados de sus secciones y los rótulos de la versión alineados), con la tolerancia de 1 px de la regla de prolijidad.
 /// </summary>
 public class VersionDelPaqueteE2ETests : IAsyncLifetime
@@ -26,7 +27,7 @@ public class VersionDelPaqueteE2ETests : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _escenario.DisposeAsync();
 
-    [Fact(DisplayName = "distribucion-puesto · El tag en la cabecera del EXE: la cabecera dice la versión esperada («desarrollo» sin INCOMEDOR_VERSION_ESPERADA) y el commit corto del código, y mide 64 px con la versión centrada debajo del nombre del servicio")]
+    [Fact(DisplayName = "distribucion-puesto · El tag en el pie del EXE: el pie dice la versión esperada («desarrollo» sin INCOMEDOR_VERSION_ESPERADA) y el commit corto del código, centrada en la ventana, más chica que la letra del pie y sin tocar la franja ni la marca, y la cabecera mide 64 px sin la versión")]
     public async Task Version_del_paquete_en_la_cabecera()
     {
         var esperada = Environment.GetEnvironmentVariable(VariableVersionEsperada) is { Length: > 0 } tag ? tag : "desarrollo";
@@ -40,25 +41,33 @@ public class VersionDelPaqueteE2ETests : IAsyncLifetime
         });
         await Assertions.Expect(pagina.Locator("#codigo")).ToBeVisibleAsync();
 
-        var texto = (await pagina.Locator("#version-programa").InnerTextAsync()).Trim();
-        _escenario.Registrar($"la cabecera dice «{texto}»; se esperaba «{esperada} · {commit[..7]}» (HEAD {commit})");
+        var texto = (await pagina.Locator("footer.pie #version-programa").InnerTextAsync()).Trim();
+        _escenario.Registrar($"el pie dice «{texto}»; se esperaba «{esperada} · {commit[..7]}» (HEAD {commit})");
         Assert.Equal($"{esperada} · {commit[..7]}", texto);
 
-        var cabecera = JsonSerializer.Deserialize<Cabecera>(await pagina.EvaluateAsync<string>(
+        var pie = JsonSerializer.Deserialize<Pie>(await pagina.EvaluateAsync<string>(
             """
-            () => { const c = document.querySelector('header.cabecera').getBoundingClientRect();
-              const centro = s => { const r = document.createRange(); r.selectNodeContents(document.querySelector(s)); const b = r.getBoundingClientRect(); return (b.left + b.right) / 2; };
-              return JSON.stringify({ Alto: c.height, CentroServicio: centro('header.cabecera .servicio'), CentroVersion: centro('#version-programa'),
-                LetraServicio: parseFloat(getComputedStyle(document.querySelector('header.cabecera .servicio')).fontSize),
-                LetraVersion: parseFloat(getComputedStyle(document.querySelector('#version-programa')).fontSize),
-                Botones: document.querySelectorAll('header.cabecera button').length }); }
+            () => { const caja = s => document.querySelector(s).getBoundingClientRect();
+              const r = document.createRange(); r.selectNodeContents(document.querySelector('footer.pie #version-programa')); const v = r.getBoundingClientRect();
+              const franja = caja('footer.pie .franja-sincronizacion'), marca = caja('footer.pie .marca-intelektron'), engranaje = caja('footer.pie .engranaje');
+              return JSON.stringify({ AltoCabecera: caja('header.cabecera').height, VersionesEnCabecera: document.querySelectorAll('header.cabecera #version-programa').length,
+                BotonesEnCabecera: document.querySelectorAll('header.cabecera button').length,
+                CentroVentana: window.innerWidth / 2, CentroVersion: (v.left + v.right) / 2, IzquierdaVersion: v.left, DerechaVersion: v.right,
+                DerechaFranja: franja.right, IzquierdaMarca: marca.left,
+                LetraPie: parseFloat(getComputedStyle(document.querySelector('footer.pie')).fontSize),
+                LetraVersion: parseFloat(getComputedStyle(document.querySelector('footer.pie #version-programa')).fontSize),
+                MargenDerechoEngranaje: window.innerWidth - engranaje.right, MargenInferiorEngranaje: window.innerHeight - engranaje.bottom }); }
             """))!;
-        _escenario.Registrar($"1024 × 768, la cabecera: {cabecera}");
-        await _escenario.CapturarAsync(pagina, "cabecera-version-1024x768");
-        Assert.True(Math.Abs(cabecera.Alto - 64) <= Tolerancia, $"La cabecera mide {cabecera.Alto} px.");
-        Assert.True(Math.Abs(cabecera.CentroServicio - cabecera.CentroVersion) <= Tolerancia, "El título y la versión no comparten el centro.");
-        Assert.True(cabecera.LetraVersion < cabecera.LetraServicio, "La versión no es más chica que el nombre del servicio.");
-        Assert.Equal(0, cabecera.Botones);
+        _escenario.Registrar($"1024 × 768, el pie y la cabecera: {pie}");
+        await _escenario.CapturarAsync(pagina, "pie-version-1024x768");
+        Assert.True(Math.Abs(pie.AltoCabecera - 64) <= Tolerancia, $"La cabecera mide {pie.AltoCabecera} px.");
+        Assert.Equal(0, pie.VersionesEnCabecera);
+        Assert.Equal(0, pie.BotonesEnCabecera);
+        Assert.True(Math.Abs(pie.CentroVentana - pie.CentroVersion) <= Tolerancia, "La versión no está centrada en la ventana.");
+        Assert.True(pie.LetraVersion < pie.LetraPie, "La versión no es más chica que la letra del pie.");
+        Assert.True(pie.DerechaFranja <= pie.IzquierdaVersion, "La versión toca la franja de sincronización.");
+        Assert.True(pie.DerechaVersion <= pie.IzquierdaMarca, "La versión toca la marca Intelektron.");
+        Assert.True(pie.MargenDerechoEngranaje <= 16 && pie.MargenInferiorEngranaje <= 16, "El engranaje dejó el borde inferior derecho.");
 
         await EntradaConfiguracionE2E.EntrarAsync(pagina);
         await pagina.Locator("#pestana-general").ClickAsync();
@@ -103,7 +112,9 @@ public class VersionDelPaqueteE2ETests : IAsyncLifetime
         return salida;
     }
 
-    private sealed record Cabecera(double Alto, double CentroServicio, double CentroVersion, double LetraServicio, double LetraVersion, int Botones);
+    private sealed record Pie(double AltoCabecera, int VersionesEnCabecera, int BotonesEnCabecera, double CentroVentana, double CentroVersion,
+        double IzquierdaVersion, double DerechaVersion, double DerechaFranja, double IzquierdaMarca, double LetraPie, double LetraVersion,
+        double MargenDerechoEngranaje, double MargenInferiorEngranaje);
 
     private sealed record Caja(string Texto, double Izquierda, string Letra)
     {

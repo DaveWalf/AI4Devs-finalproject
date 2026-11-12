@@ -15,45 +15,75 @@ sigue la regla de prolijidad de `config.yaml`.
 
 ## 2. La versión en el pie
 
-- [ ] 2.1 Pruebas nuevas en `Kiosk.Tests` (`VersionEnElPieTests`), vistas fallar antes: en reposo, la cabecera no
+- [x] 2.1 Pruebas nuevas en `Kiosk.Tests` (`VersionEnElPieTests`), vistas fallar antes: en reposo, la cabecera no
   tiene `#version-programa`; el pie tiene uno solo, con «desarrollo · » y el commit, sin la palabra «versión», sin
   `tabindex` ni `button`; con una persona en la selección, el mismo texto en el pie. Verifica: el filtro de la clase, en rojo antes
   y en verde después.
-- [ ] 2.2 Las dos pruebas de `VersionEnPantallaTests` aprobadas en la 1.1, como dice D6. Verifica: rojas contra el
+  Hecho el 11/11/2026: 2 casos, 2 en rojo antes («Assert.Null() Failure: Value is not null»: la cabecera tenía la
+  versión) y 2 en verde después de la 2.3.
+- [x] 2.2 Las dos pruebas de `VersionEnPantallaTests` aprobadas en la 1.1, como dice D6. Verifica: rojas contra el
   código de hoy y verdes después de la 2.3.
-- [ ] 2.3 `PantallaAtencion.razor` y `puesto.css` (D1, D2 y D3): la versión sale de la cabecera, entra al centro del pie
+  Hecho: las afirmaciones, como las aprobó David; además, sus dos `DisplayName` y el resumen de la clase dicen «el pie»
+  donde decían «la cabecera», para que el nombre no contradiga lo que se prueba. Verdes después de la 2.3.
+- [x] 2.3 `PantallaAtencion.razor` y `puesto.css` (D1, D2 y D3): la versión sale de la cabecera, entra al centro del pie
   con el texto de hoy, y el pie pasa a tres columnas. Verifica: 2.1 y 2.2 en verde, `CabeceraTests` y `NombreDelServicioTests`
   en verde sin cambios, y `dotnet build INComedor.sln -warnaserror` sin errores.
+  Hecho: el pie en `grid` con `minmax(0, 1fr) auto minmax(0, 1fr)`; `.titulo-cabecera` y `.cabecera #version-programa`
+  quitados. `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter` de las cuatro clases: total 11, error 0;
+  build `-warnaserror`: 0 errores.
 - [ ] 2.4 La E2E aprobada en la 1.1 (D6): el texto del pie, la versión centrada en la ventana con 1 px de tolerancia,
   su letra más chica que la del pie, sin solaparse con la franja ni con la marca, la cabecera en 64 px sin botones, y
   el engranaje a no más de 16 px de los bordes derecho e inferior. Mide por CDP a 1024 × 768, pega las medidas del
   `registro.txt` y deja la captura `pie-version-1024x768`. Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests
   --filter "FullyQualifiedName~VersionDelPaqueteE2ETests"` en verde.
+  Hecho: la primera corrida dio la versión 4 px a la derecha (`CentroVersion = 516`), porque el pie tenía relleno de
+  16 px a la izquierda y 8 a la derecha; pasó a 8 y 8, con 8 px de margen en la franja, que sigue a 16 px del borde.
+  Medidas del `registro.txt` de la segunda: `AltoCabecera = 64, VersionesEnCabecera = 0, BotonesEnCabecera = 0,
+  CentroVentana = 512, CentroVersion = 512, IzquierdaVersion = 459,84, DerechaVersion = 564,16, DerechaFranja = 284,71,
+  IzquierdaMarca = 877,74, LetraPie = 14, LetraVersion = 12, MargenDerechoEngranaje = 8, MargenInferiorEngranaje = 0`;
+  total 1, error 0; captura `pie-version-1024x768.png` mirada.
 
 ## 3. El título en Heebo
 
-- [ ] 3.1 Copiar `NGS6v5_NC0k9P9H2TbE.woff2` de
+- [x] 3.1 Copiar `NGS6v5_NC0k9P9H2TbE.woff2` de
   `C:\dotnet-projects\Aplicaciones\Web\Intelektron.web.NET\Intelektron.web.NET\wwwroot\vendor\google\` a
   `src/Intelektron.INComedor.Kiosk/wwwroot/fonts/heebo-latin.woff2`, y el texto de la OFL 1.1 de Heebo de
   `https://raw.githubusercontent.com/google/fonts/main/ofl/heebo/OFL.txt` a `wwwroot/fonts/OFL-Heebo.txt` (D4).
   Verifica: `Get-FileHash` del `.woff2` igual al de INWeb, 30.240 bytes, y el `.txt` empieza con el aviso de copyright
   de Heebo y contiene «SIL OPEN FONT LICENSE Version 1.1».
-- [ ] 3.2 Prueba E2E nueva `TituloConLaLetraDeInwebE2ETests`, vista fallar antes: a 1024 × 768, por CDP,
+  Hecho: SHA-256 `964DFE7C…24A5C431` en los dos, 30.240 bytes; `OFL-Heebo.txt` (4.474 bytes) empieza con «Copyright
+  2014 The Heebo Project Authors (https://github.com/OdedEzer/heebo)» y su línea 9 dice «SIL OPEN FONT LICENSE Version
+  1.1 - 26 February 2007».
+- [x] 3.2 Prueba E2E nueva `TituloConLaLetraDeInwebE2ETests`, vista fallar antes: a 1024 × 768, por CDP,
   `CSS.getPlatformFontsForNode` del texto del título da sólo «Heebo», `fontWeight` da `300`, el título entero se ve
   sin recortar entre los dos logos y la cabecera mide 64 px; ninguna regla de `puesto.css` nombra un dominio externo.
   Pega las medidas y deja la captura `titulo-heebo-1024x768`. Verifica: el filtro de la clase, en rojo antes y en verde
   después de la 3.3.
-- [ ] 3.3 La `@font-face` y la letra del título en `puesto.css` (D4). Verifica: 3.2 en verde y
+  Hecho: en rojo antes («Expected: "Heebo" · Actual: "Georgia"»), en verde después. Medidas: `familias usadas Heebo;
+  Peso = 300, Letra = 22, AltoCabecera = 64, IzquierdaTexto = 371,95, DerechaTexto = 652,04, DerechaLogoEmpresa =
+  173,14, IzquierdaLogoConcesionaria = 850,86, AnchoUtil = 646, AnchoTexto = 646, ReglasExternas = 0`; captura
+  `titulo-heebo-1024x768.png` mirada.
+- [x] 3.3 La `@font-face` y la letra del título en `puesto.css` (D4). Verifica: 3.2 en verde y
   `dotnet build INComedor.sln -warnaserror` sin errores.
-- [ ] 3.4 La fuente que falta: con `heebo-latin.woff2` renombrado en la salida del build de la prueba, el título se ve
+  Hecho: una `@font-face` con el `unicode-range` latino de INWeb, igual al de su `css2.css`; el título en
+  `Heebo, "Segoe UI", system-ui, sans-serif`, peso 300, 22 px. Build `-warnaserror`: 0 errores.
+- [x] 3.4 La fuente que falta: con `heebo-latin.woff2` renombrado en la salida del build de la prueba, el título se ve
   entero en la sans-serif del sistema y la cabecera sigue en 64 px; el archivo vuelve a su nombre al terminar.
   Verifica: un caso más de `TituloConLaLetraDeInwebE2ETests` en verde.
+  Hecho de otra forma, con el mismo resultado: en vez de renombrar el archivo en la salida del build, que comparten las
+  E2E que corren en paralelo, la prueba lo bloquea por CDP (`Network.setBlockedURLs` con `*heebo-latin.woff2*` y la caché
+  apagada) y recarga la página. En rojo antes («Expected: "Segoe UI" · Actual: "Georgia"»), en verde después: `familias
+  usadas Segoe UI Light` (la cara de 300 de Segoe UI), `Peso = 300, AltoCabecera = 64, AnchoTexto = 646` en 646;
+  captura `titulo-sin-heebo-1024x768`.
 
 ## 4. Documentación y verificación
 
-- [ ] 4.1 `readme.md`: dónde se ve la versión (al centro del pie) y la letra del título.
+- [x] 4.1 `readme.md`: dónde se ve la versión (al centro del pie) y la letra del título.
   `docs/aplicacion-del-curso.md`: la evidencia del change, con su gate. Verifica: el chequeo de enlaces relativos del D8
   de `mostrar-aplicacion-del-curso`, con su control negativo.
+  Hecho: «La versión que corre» del README y la fila «No reemplazar la revisión humana…» del mapa. Chequeo de D8: el
+  control negativo da `ROTO`, `ANCLA` y `enlaces rotos: 2`; `readme.md`, `prompts.md`, `docs/cobertura-entrega.md` y
+  `docs/aplicacion-del-curso.md`, de a uno, `enlaces rotos: 0`.
 - [ ] 4.2 La solución entera en primer plano, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`: `dotnet build INComedor.sln
   -warnaserror` y `dotnet test INComedor.sln`, `openspec validate --all --strict` y
   `git diff --diff-filter=M --name-only a2f0026 -- tests/` con sólo las dos clases aprobadas. Verifica: los resúmenes

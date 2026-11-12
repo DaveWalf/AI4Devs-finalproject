@@ -14,12 +14,9 @@
     @* Con Configuración abierta, el resto de la página es inerte: el foco no sale del diálogo (D5). *@
     <header class="cabecera" inert="@(HayDialogo || CartelVisible)">
         <img class="logo-empresa" src="@_logos.Empresa" alt="Logo de la empresa" />
-        @* El nombre del servicio y, debajo, la versión del programa, más chica y atenuada, en una columna centrada entre los *@
-        @* dos logos; la versión es texto, no un control (D3 de mostrar-version-del-programa). *@
-        <div class="titulo-cabecera">
-            <span class="servicio">INComedor · tu pausa del día</span>
-            <span id="version-programa">@VersionDelPrograma.Cabecera</span>
-        </div>
+        @* El nombre del servicio, centrado entre los dos logos, en Heebo Light como el nombre de INWeb (D3 y D4 de *@
+        @* mover-version-al-pie); la versión del programa va en el pie. *@
+        <span class="servicio">INComedor · tu pausa del día</span>
         <img class="logo-concesionaria" src="@_logos.Concesionaria" alt="Logo de la concesionaria" />
     </header>
 
@@ -261,6 +258,9 @@
 
     <footer class="pie" inert="@(HayDialogo || CartelVisible)">
         <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
+        @* La versión del programa en el centro de la ventana, más chica y atenuada; es texto, no un control (D1 y D2 de *@
+        @* mover-version-al-pie). *@
+        <span id="version-programa">@VersionDelPrograma.Cabecera</span>
         <div class="pie-derecha">
             <img class="marca-intelektron" src="img/intelektron.svg" alt="Intelektron" />
             @* El engranaje va en el borde, al lado de la marca, y sólo en reposo; durante la atención su lugar queda reservado (D1, D2 y D5). *@
