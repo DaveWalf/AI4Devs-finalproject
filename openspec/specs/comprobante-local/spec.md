@@ -43,7 +43,7 @@ Origen: AT05 («un solo trabajo original») y RB17 («recuperar retoma el trabaj
 
 ### Requirement: Recuperar o reimprimir sin tocar el consumo
 
-Desde la fila de Consumos SHALL poder recuperarse un trabajo original en `FAILED`, que se vuelve a enviar como el mismo trabajo, o reimprimirse el comprobante con un motivo de una lista fija. Reimprimir crea un trabajo con la copia siguiente, la leyenda REIMPRESIÓN y «Habilitó:» con el operador o, con la clave del día, «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD». Las acciones MUST NOT cambiar consumo, cupo ni importe (RB08) y MUST quedar en la bitácora con su actor.
+Desde la fila de Consumos SHALL poder recuperarse un trabajo original en `FAILED`, que se vuelve a enviar como el mismo trabajo, o reimprimirse el comprobante con un motivo de una lista fija. Reimprimir crea un trabajo con la copia siguiente, la leyenda REIMPRESIÓN y «Habilitó:» con el operador, si Impresora los imprime, o, con la clave del día, siempre «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD». Las acciones MUST NOT cambiar consumo, cupo ni importe (RB08) y MUST quedar en la bitácora con su actor.
 
 #### Scenario: Reimpresión con motivo
 Origen: AT54 («crea copia numerada … sin cambio de consumo»), RB08 y la mejora 9b de David del 10/11/2026 («REIMPRESIÓN o el operador que habilitó»).
@@ -98,6 +98,18 @@ Origen: RB26 («comprobar el permiso en cada acción») y AT54 («siguiente acci
 - **WHEN** intenta reimprimir
 - **THEN** la acción se deniega con `PERMISSION_EXPIRED`, sin trabajo nuevo, y la pestaña muestra el aviso de ese motivo sin pedir un código
 - **AND** la acción siguiente desde Consumos también se deniega, sin trabajo nuevo
+
+#### Scenario: Una copia sin aviso ni operador
+Origen: mejora 4 de David del 11/11/2026 («si se imprimirá un aviso visual en caso de tratarse de la reimpresión del ticket, y qué operador lo hizo») y su respuesta 2 al gate, con RB08: la copia sigue numerada.
+- **GIVEN** «Aviso de reimpresión» y «Operador que habilitó» en «No imprimir», y Configuración abierta con el código de un operador con permiso vigente
+- **WHEN** reimprime un comprobante con el motivo «Papel ilegible»
+- **THEN** la copia dice «Copia: 1» y no lleva REIMPRESIÓN, «ORIGINAL» ni «Habilitó:»
+
+#### Scenario: La marca de la clave del día no se apaga
+Origen: respuesta 3 de David al gate del 11/11/2026 («un técnico que esté configurando […] no debe poder generar tickets válidos»), borde.
+- **GIVEN** «Aviso de reimpresión» y «Operador que habilitó» en «No imprimir», y Configuración abierta con la clave del día
+- **WHEN** se reimprime un comprobante
+- **THEN** la copia lleva «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD» y «Copia: 1»
 
 ### Requirement: Comprobante en pantalla con la impresora simulada
 
@@ -238,7 +250,7 @@ Origen: RB08 («copia posterior … queda marcada y auditada») y AT54, borde.
 
 ### Requirement: El contenido del comprobante
 
-El comprobante SHALL llevar el nombre visible del comensal tomado al confirmar, el número y el nombre del puesto si están guardados, su número y, al pie antes del texto configurable, una de 50 frases cálidas elegida por el comprobante. Una copia MUST repetir el nombre, el número y la frase del original. MUST NOT llevar el código de identificación, en papel ni en pantalla.
+El comprobante SHALL llevar el nombre visible del comensal tomado al confirmar, si Impresora lo imprime, el número y el nombre del puesto si están guardados, su número y, al pie antes del texto configurable, una de 50 frases cálidas elegida por el comprobante. Una copia MUST repetir el número y la frase del original, y el nombre si se imprime. MUST NOT llevar el código de identificación, en papel ni en pantalla.
 
 #### Scenario: Un comprobante con el puesto y la frase
 Origen: mejora 9b de David del 10/11/2026 («nombre del comensal, una de 50 frases cálidas al pie, número y nombre del puesto»).
@@ -257,6 +269,12 @@ Origen: D1 de este change, borde: los comprobantes guardados no cambian.
 - **GIVEN** un comprobante guardado antes de este cambio, sin nombre en sus datos
 - **WHEN** se lo reimprime o se lo ve en pantalla
 - **THEN** sale sin línea de comensal y con los ocho caracteres de siempre como número
+
+#### Scenario: Un comprobante sin el comensal
+Origen: mejora 4 de David del 11/11/2026 («la opción de imprimir o no el nombre del comensal») y su respuesta 4 al gate, borde: «Ver» lo sigue mostrando.
+- **GIVEN** «Nombre del comensal» en «No imprimir» en Impresora
+- **WHEN** «Persona sintética 01» confirma, sale el comprobante y, después, se lo ve con «Ver» en Consumos
+- **THEN** el papel y el comprobante en pantalla no tienen línea de comensal, y «Ver» muestra «Persona sintética 01»
 
 ### Requirement: La numeración del comprobante
 
@@ -341,3 +359,25 @@ Origen: pedido de David del 06/11/2026 («1. Eliminar el botón de Asistencia»)
 - **GIVEN** el puesto en reposo
 - **WHEN** se revisa la pantalla
 - **THEN** tiene el campo del código e «Ingresar», y ningún botón «Asistencia»
+
+### Requirement: Las líneas que imprime el comprobante
+
+La pestaña Impresora SHALL dejar elegir «Imprimir» o «No imprimir» para el nombre del comensal, el aviso de reimpresión y el operador que habilitó una copia; las tres empiezan en «Imprimir», se guardan con los textos y quedan en `TICKET_TEXTS`. MUST valer desde el próximo comprobante, en el papel y en el que sale en pantalla al confirmar. La marca «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD» MUST NOT depender de ellas. Un archivo sin las tres MUST imprimirlas.
+
+#### Scenario: Elegir qué imprime
+Origen: mejora 4 de David del 11/11/2026 y su respuesta 1 al gate («Impresora, encendidas»).
+- **GIVEN** la pestaña Impresora con las tres elecciones en «Imprimir»
+- **WHEN** se elige «No imprimir» en «Nombre del comensal» y se guarda
+- **THEN** la pestaña avisa lo guardado, la general tiene `CONFIGURATION_CHANGED` de `TICKET_TEXTS` con las elecciones antes y después, y al volver a abrir Configuración la elección sigue
+
+#### Scenario: Un archivo de textos de antes
+Origen: D1 de `enriquecer-comprobante` (lo guardado antes no cambia) y `AGENTS.md` (la configuración que llega al puesto), borde.
+- **GIVEN** un `impresora.json` con encabezado y pie, sin las tres elecciones
+- **WHEN** el puesto arranca y una persona confirma
+- **THEN** el comprobante lleva el nombre del comensal, y la pestaña Impresora muestra las tres en «Imprimir»
+
+#### Scenario: Una elección fuera de forma
+Origen: `AGENTS.md` (OWASP: la configuración que llega al puesto), borde.
+- **GIVEN** un `impresora.json` con «comensal» igual al texto «no»
+- **WHEN** el puesto arranca
+- **THEN** usa los textos y las elecciones por defecto, como con un archivo ilegible
