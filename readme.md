@@ -256,8 +256,9 @@ receptor, en la ventana:
 La sincronización con el receptor se ve en «Receptor de lotes y puesto conectados», más abajo, y el E2E la recorre
 sola.
 
-**Video.** Un recorrido de 2 a 3 minutos, con su [guion](docs/guion-video.md). Pendiente: cuando se grabe, va a
-YouTube como no listado y su enlace, acá.
+**Video.** [Un recorrido de 2:17 en YouTube](https://youtu.be/_wxPGLIcuJk), no listado: el flujo principal sobre el
+EXE del Release v0.8.0 y el ciclo SDD del change `reimprimir-sin-codigo`. Su [guion](docs/guion-video.md) cuenta cómo
+se hizo.
 
 #### Capturas del flujo principal
 

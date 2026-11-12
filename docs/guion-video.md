@@ -5,6 +5,14 @@ Release; desde el 12/11/2026 va a YouTube como no listado) y que el README enlaz
 cada paso. Todo lo que aparece es sintético: los códigos son los de la tabla de «Cómo ver la demostración» del
 [README](../readme.md#cómo-ver-la-demostración).
 
+**El video publicado.** El [recorrido de 2:17](https://youtu.be/_wxPGLIcuJk) del 12/11/2026 sigue un guion posterior a
+éste, con la reimpresión de `reimprimir-sin-codigo`: el flujo principal con el receptor apagado, el cupo del día, la
+impresora sin papel, la recuperación y la reimpresión con la clave del día, que sale «SIN VALIDEZ: PRUEBA DE
+FUNCIONALIDAD», y la sincronización cuando vuelve el receptor, con la espera del ciclo recortada y rotulada; después, el
+change en OpenSpec, sus pruebas vistas fallar y la CI de `cab59de`. Lo produjo Claude Code: manejó el EXE del Release
+v0.8.0 con toques emulados y locución sintética en español rioplatense, sobre datos sintéticos. Los pasos de abajo
+quedan como el recorrido para hacerlo a mano.
+
 ## Herramienta y carpeta propia
 
 - **Grabación:** la Herramienta Recortes de Windows 11, en su modo de grabación de pantalla, sobre la ventana del
