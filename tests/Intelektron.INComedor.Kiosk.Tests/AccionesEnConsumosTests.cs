@@ -8,8 +8,8 @@ namespace Intelektron.INComedor.Kiosk.Tests;
 
 /// <summary>
 /// Ver, Reimprimir y Recuperar en cada fila de Consumos, sin la pestaña Comprobantes (comprobante-local de
-/// buscar-y-exportar-consumos, D4, D5 y D7): «Ver» sin operador y sin imprimir; reimprimir y recuperar con un operador, que
-/// se pide en la pestaña o se toma de la entrada con su código. bUnit sobre el puesto de prueba.
+/// buscar-y-exportar-consumos, D4 y D7, y de reimprimir-sin-codigo, D1 y D5): «Ver» sin operador y sin imprimir; reimprimir
+/// y recuperar con el acceso con que se entró a Configuración, sin pedir otro código. bUnit sobre el puesto de prueba.
 /// </summary>
 public class AccionesEnConsumosTests
 {
@@ -65,8 +65,8 @@ public class AccionesEnConsumosTests
         Assert.Equal(recibidos, impresora.Recibidos.Count);
     }
 
-    [Fact(DisplayName = "comprobante-local · Operador con permiso vigente: con la clave del día, «Reimprimir» pide un código; 9001 abre la sesión, la pestaña muestra su nombre y el motivo, y la copia 1 sale")]
-    public async Task Reimprimir_pide_el_codigo_con_la_clave()
+    [Fact(DisplayName = "comprobante-local · Con la clave del día no se pide un código: «Reimprimir» pide el motivo sin campo de código ni operador, y la copia 1 sale")]
+    public async Task Con_la_clave_no_se_pide_un_codigo()
     {
         using var puesto = new PuestoDePrueba();
         var pantalla = puesto.Dibujar();
@@ -74,11 +74,9 @@ public class AccionesEnConsumosTests
         await EntradaConfiguracion.Entrar(pantalla);
 
         await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
-        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "9001" });
-        await pantalla.Find("#entrar-operador").ClickAsync(new());
 
-        Assert.Contains(Operador, pantalla.Find("#seccion-consumos").TextContent);
         Assert.Empty(pantalla.FindAll("#codigo-operador"));
+        Assert.DoesNotContain(Operador, pantalla.Find("#seccion-consumos").TextContent);
         await pantalla.FindAll("#seccion-consumos .motivo")[0].ClickAsync(new());
         Assert.Equal(1L, Escalar(puesto, "SELECT COUNT(*) FROM tbComedorTrabajosImpresion WHERE comimpNumeroCopia = 1"));
         Assert.Contains("Copia 1", pantalla.Find("#mensaje-asistencia").TextContent);
@@ -132,47 +130,8 @@ public class AccionesEnConsumosTests
         Assert.Empty(pantalla.FindAll("#seccion-comprobantes"));
     }
 
-    [Fact(DisplayName = "comprobante-local · El pedido dice qué va a hacer: con la clave del día, «Reimprimir» pide el código para reimprimir el comprobante con su número, y la impresora no recibe nada")]
-    public async Task El_pedido_dice_que_va_a_hacer()
-    {
-        using var puesto = new PuestoDePrueba();
-        var impresora = new ImpresoraDePrueba();
-        var pantalla = puesto.Dibujar(impresora);
-        await Consumir(pantalla);
-        await EntradaConfiguracion.Entrar(pantalla);
-        var recibidos = impresora.Recibidos.Count;
-        var numero = pantalla.Find("#seccion-consumos tr.consumo td.numero").TextContent.Trim();
-
-        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
-
-        Assert.Equal(MensajesAtencion.PedidoOperadorPara(false, numero), pantalla.Find("#pedido-operador").TextContent.Trim());
-        Assert.Equal(recibidos, impresora.Recibidos.Count);
-    }
-
-    [Fact(DisplayName = "comprobante-local · Un pedido que nadie atiende: «Recuperar» pide el código para recuperar, y a los 30 s sin un toque el pedido se cierra sin recuperar nada")]
-    public async Task Un_pedido_que_nadie_atiende()
-    {
-        using var puesto = new PuestoDePrueba();
-        var impresora = new ImpresoraDePrueba();
-        var pantalla = puesto.Dibujar(impresora);
-        await Consumir(pantalla);
-        await EntradaConfiguracion.Entrar(pantalla);
-        Ejecutar(puesto, "UPDATE tbComedorTrabajosImpresion SET comimpEstado = 'FAILED' WHERE comimpNumeroCopia = 0");
-        await pantalla.Find("#consultar-consumos").ClickAsync(new());
-        var numero = pantalla.Find("#seccion-consumos tr.consumo td.numero").TextContent.Trim();
-        var recibidos = impresora.Recibidos.Count;
-
-        await pantalla.Find("#seccion-consumos tr.consumo .recuperar").ClickAsync(new());
-        Assert.Equal(MensajesAtencion.PedidoOperadorPara(true, numero), pantalla.Find("#pedido-operador").TextContent.Trim());
-        puesto.Reloj.Avanzar(TimeSpan.FromSeconds(30));
-
-        pantalla.WaitForAssertion(() => Assert.Empty(pantalla.FindAll("#codigo-operador")), TimeSpan.FromSeconds(5));
-        Assert.Equal(recibidos, impresora.Recibidos.Count);
-        Assert.Equal(0L, Escalar(puesto, "SELECT COUNT(*) FROM tbComedorBitacora WHERE combitTipoEvento = 'TICKET_RECOVERED'"));
-    }
-
-    [Fact(DisplayName = "comprobante-local · Recuperar por el pedido: «Recuperar» con la clave del día y 9001 después saca el original otra vez, sin copia nueva")]
-    public async Task Recuperar_por_el_pedido()
+    [Fact(DisplayName = "comprobante-local · Recuperar con la clave del día: «Recuperar» saca el original otra vez sin pedir un código, sin copia nueva")]
+    public async Task Recuperar_con_la_clave_del_dia()
     {
         using var puesto = new PuestoDePrueba();
         var pantalla = puesto.Dibujar();
@@ -182,56 +141,23 @@ public class AccionesEnConsumosTests
         await pantalla.Find("#consultar-consumos").ClickAsync(new());
 
         await pantalla.Find("#seccion-consumos tr.consumo .recuperar").ClickAsync(new());
-        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "9001" });
-        await pantalla.Find("#entrar-operador").ClickAsync(new());
 
+        Assert.Empty(pantalla.FindAll("#codigo-operador"));
         Assert.Equal(1L, Escalar(puesto, "SELECT COUNT(*) FROM tbComedorBitacora WHERE combitTipoEvento = 'TICKET_RECOVERED'"));
         Assert.Equal(0L, Escalar(puesto, "SELECT COUNT(*) FROM tbComedorTrabajosImpresion WHERE comimpNumeroCopia > 0"));
     }
 
-    [Fact(DisplayName = "comprobante-local · Cancelar después de una denegación: con el aviso de un permiso vencido, «Cancelar» cierra el pedido y el aviso, y la tabla sigue igual")]
-    public async Task Cancelar_despues_de_una_denegacion()
-    {
-        using var puesto = new PuestoDePrueba();
-        var pantalla = puesto.Dibujar();
-        await Consumir(pantalla);
-        await EntradaConfiguracion.Entrar(pantalla);
-
-        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
-        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "9002" });
-        await pantalla.Find("#entrar-operador").ClickAsync(new());
-        Assert.NotNull(pantalla.Find("#aviso-comprobantes"));
-        await pantalla.Find("#cancelar-operador").ClickAsync(new());
-
-        Assert.Empty(pantalla.FindAll(".operador-consumos"));
-        Assert.Single(pantalla.FindAll("#seccion-consumos tr.consumo"));
-    }
-
-    [Fact(DisplayName = "comprobante-local · Un pedido que nadie atiende: dejar la pestaña cierra el pedido del código, y al volver no está")]
-    public async Task Dejar_la_pestana_cierra_el_pedido()
-    {
-        using var puesto = new PuestoDePrueba();
-        var pantalla = puesto.Dibujar();
-        await Consumir(pantalla);
-        await EntradaConfiguracion.Entrar(pantalla);
-
-        await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
-        await pantalla.Find("#pestana-personas").ClickAsync(new());
-        await pantalla.Find("#pestana-consumos").ClickAsync(new());
-
-        Assert.Empty(pantalla.FindAll("#codigo-operador"));
-    }
-
-    [Fact(DisplayName = "comprobante-local · Salir no cierra la sesión de quien entró con su código: «Salir» en Consumos no la cierra, y cerrar Configuración la cierra una vez con CONFIGURATION_CLOSED")]
-    public async Task Salir_no_cierra_la_sesion_adoptada()
+    [Fact(DisplayName = "comprobante-local · Cerrar Configuración termina la sesión: 9001 reimprime desde Consumos, sin «Salir» en la pestaña, y cerrar Configuración la cierra una vez con CONFIGURATION_CLOSED")]
+    public async Task Cerrar_configuracion_termina_la_sesion()
     {
         using var puesto = new PuestoDePrueba();
         var pantalla = puesto.Dibujar();
         await Consumir(pantalla);
         await EntradaConfiguracion.Entrar(pantalla, "9001");
         await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
+        await pantalla.FindAll("#seccion-consumos .motivo")[0].ClickAsync(new());
 
-        await pantalla.Find("#salir").ClickAsync(new());
+        Assert.Empty(pantalla.FindAll("#salir"));
         Assert.Equal(0L, Escalar(puesto, "SELECT COUNT(*) FROM tbComedorBitacora WHERE combitTipoEvento = 'PRIVILEGED_SESSION_CLOSED'"));
         await pantalla.Find("#cancelar-configuracion").ClickAsync(new());
 

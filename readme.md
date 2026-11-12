@@ -208,12 +208,12 @@ receptor, en la ventana:
    Configuración avisa arriba que no se validó. En su pestaña Impresora, «Sin papel»; `0001` con «Café con leche», un
    REFRIGERIO: «Tu consumo está registrado. El comprobante queda pendiente».
 5. La impresora en «Disponible» y, en Consumos, «Ver» en la fila del paso 4: el comprobante en pantalla, marcado COPIA
-   EN PANTALLA, sin pedir un operador ni imprimir. «Recuperar» en esa fila pide el código de un operador: `9001` e
-   «Ingresar» lo saca como el mismo trabajo. «Reimprimir», con un motivo, saca una copia con la leyenda REIMPRESIÓN y
-   «Habilitó:» con el nombre del operador.
-   «Salir», cerrar Configuración o 30 s sin tocar la pestaña terminan la sesión del operador.
-6. «Salir» y, en Consumos, «Reimprimir» en una fila y `9002` e «Ingresar»: «Tu permiso de operador está vencido». «Buscar» con el
-   número de una fila y «Consultar» dejan sólo esa; «Exportar CSV» pide la carpeta la primera vez y deja ahí el archivo.
+   EN PANTALLA, sin pedir un operador ni imprimir. «Recuperar» en esa fila lo saca como el mismo trabajo, sin pedir ningún
+   código. «Reimprimir» avisa que la copia va a salir marcada «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD», porque se entró con
+   la clave del día, y con un motivo saca una copia con la leyenda REIMPRESIÓN y esa marca en lugar de «Habilitó:».
+6. En Consumos, «Buscar» con el número de una fila y «Consultar» dejan sólo esa; «Exportar CSV» pide la carpeta la primera
+   vez y deja ahí el archivo. Cerrar Configuración y entrar por el engranaje con `9001` en lugar de la clave: «Reimprimir»
+   pide sólo el motivo y la copia sale con «Habilitó:» y el nombre del operador; cerrar Configuración termina su sesión.
 7. En reposo, el engranaje y «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
    `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión
    2 de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
@@ -321,9 +321,12 @@ una frase, nunca con el código; tocarlo equivale a «Listo», y con movimiento 
 (Disponible, Sin papel o Incierta) están en Configuración. Con «Sin papel», el consumo queda registrado y el
 comprobante, pendiente, sin comprobante en pantalla. La pantalla de reposo ya no tiene «Asistencia»: en Consumos de
 Configuración, cada fila tiene «Ver», que muestra el comprobante en pantalla marcado COPIA EN PANTALLA, sin imprimir ni
-crear una copia, y «Reimprimir», que pide el código de un operador con `OPERATOR` vigente, salvo que ese operador haya
-entrado a Configuración con su código. Reimprime con un motivo de una lista fija, y la copia sale con la leyenda
-REIMPRESIÓN, su número y «Habilitó:» con el nombre del operador. Si el original falló, «Recuperar» lo saca otra vez como el mismo trabajo y no como una copia nueva.
+crear una copia, y «Reimprimir», que no pide ningún código: usa el acceso con que se entró a Configuración. Reimprime con
+un motivo de una lista fija, y la copia sale con la leyenda REIMPRESIÓN y su número. Si se entró con el código de un
+operador con `OPERATOR` vigente, la copia lleva «Habilitó:» con su nombre, y su permiso se comprueba en cada acción; si se
+entró con la clave del día, que no identifica a nadie, lleva «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD» en su lugar, y la
+pestaña lo avisa antes de elegir el motivo. Si el original falló, «Recuperar» lo saca otra vez como el mismo trabajo y no
+como una copia nueva, sin pedir un código y sin marca, porque es el comprobante del consumo.
 
 Todo lo que pasa en el puesto queda primero en la base y después, fuera de la atención, en dos bitácoras de texto
 por mes en `%LOCALAPPDATA%\INComedor\demo\bitacoras\<KioskId>\`: `INComedor-interacciones-AAAAMM.log` (cada
@@ -490,7 +493,8 @@ quedan en la general.
 **El comprobante.** De arriba abajo: el encabezado; el número y el nombre del puesto, si se guardaron en «Datos del
 comprobante» de Impresora; «ORIGINAL» o «REIMPRESIÓN · copia N» con el número del comprobante; el nombre del comensal,
 tomado al confirmar y guardado con el comprobante, así una copia repite el de ese día; la opción, la fecha y el cargo;
-en una copia, «Habilitó:» con el nombre del operador que la pidió; una de 50 frases cálidas, siempre la misma para el
+en una copia, «Habilitó:» con el nombre del operador que la pidió o, si se pidió con la clave del día, «SIN VALIDEZ:
+PRUEBA DE FUNCIONALIDAD»; una de 50 frases cálidas, siempre la misma para el
 mismo comprobante; y el pie. Nunca el código de identificación. **El número del comprobante** se elige en «Datos del
 comprobante»: «El código de siempre» o «Correlativo desde» un número de 1 a 999.999.999. El código de siempre sale así:
 al confirmar, el puesto crea el identificador del comprobante con un GUID versión 4 (122 bits al azar) y el comprobante

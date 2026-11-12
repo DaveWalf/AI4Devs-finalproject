@@ -92,8 +92,6 @@ public class DatosDelComprobanteTests
 
         Assert.Equal("1000", pantalla.Find("#seccion-consumos tr.consumo td.numero").TextContent.Trim());
         await pantalla.Find("#seccion-consumos tr.consumo .reimprimir").ClickAsync(new());
-        await pantalla.Find("#codigo-operador").InputAsync(new ChangeEventArgs { Value = "9001" });
-        await pantalla.Find("#entrar-operador").ClickAsync(new());
 
         Assert.Contains("N.º 1000 ·", pantalla.Find("#seccion-consumos").TextContent);
     }

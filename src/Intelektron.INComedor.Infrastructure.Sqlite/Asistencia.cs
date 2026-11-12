@@ -41,6 +41,7 @@ public sealed record ResultadoAccion(bool Realizada, string? ReasonCode, Resulta
 /// <summary>
 /// Asistencia con permiso OPERATOR (D8 de atender-seleccion-y-confirmacion). Recuperar y reimprimir son acciones
 /// distintas, cada una vuelve a evaluar el permiso en su instante (RB26) y ninguna toca consumo, cupo ni comprobante.
+/// Desde reimprimir-sin-codigo, las dos tienen además su variante con la clave del día, sin sesión y con el actor nulo (D1).
 /// </summary>
 public sealed class Asistencia
 {
@@ -138,64 +139,42 @@ public sealed class Asistencia
     }
 
     /// <summary>Vuelve a QUEUED el original en FAILED y lo envía otra vez: el mismo trabajo, sin copia nueva.</summary>
-    public ResultadoAccion Recuperar(Guid sesion, Guid trabajoId)
-    {
-        var denegada = Actuar(sesion, "RECOVER", (conexion, transaccion, puesto, persona, permiso, ahora) =>
-        {
-            using (var comando = ComandosSqlite.Crear(conexion, transaccion,
-                       """
-                       UPDATE tbComedorTrabajosImpresion
-                       SET comimpEstado = 'QUEUED', comimpFechaActualizacionUtc = $ahora
-                       WHERE comimpCodigo = $job AND comimpNumeroCopia = 0 AND comimpEstado = 'FAILED'
-                       """,
-                       ("$ahora", FormatoInstante.Texto(ahora)), ("$job", trabajoId)))
-            {
-                if (comando.ExecuteNonQuery() == 0)
-                {
-                    return "PRINT_JOB_NOT_RECOVERABLE";
-                }
-            }
-
-            using var consulta = ComandosSqlite.Crear(conexion, transaccion,
-                "SELECT comcmpCodigo FROM tbComedorTrabajosImpresion WHERE comimpCodigo = $job", ("$job", trabajoId));
-            var ticket = Guid.Parse((string)consulta.ExecuteScalar()!);
-            _bitacora.Insertar(conexion, transaccion, puesto, ahora, "TICKET_RECOVERED",
-                ContextoDePermiso(persona, permiso, ("TicketId", ticket), ("PrintJobId", trabajoId), ("CopyNumber", 0)));
-            return null;
-        });
-
-        return denegada ?? Enviado(trabajoId);
-    }
+    public ResultadoAccion Recuperar(Guid sesion, Guid trabajoId) =>
+        Actuar(sesion, "RECOVER", (conexion, transaccion, puesto, persona, permiso, ahora) =>
+            CuerpoRecuperar(conexion, transaccion, puesto, ahora, trabajoId, mas => ContextoDePermiso(persona, permiso, mas)))
+        ?? Enviado(trabajoId);
 
     /// <summary>Crea la copia siguiente del comprobante, con el motivo de la lista fija, y la envía.</summary>
     public ResultadoAccion Reimprimir(Guid sesion, Guid ticketId, MotivoReimpresion motivo)
     {
         var trabajoId = Guid.NewGuid();
-        var denegada = Actuar(sesion, "REPRINT", (conexion, transaccion, puesto, persona, permiso, ahora) =>
-        {
-            if (ComandosSqlite.EscalarLong(conexion, transaccion,
-                    "SELECT COUNT(*) FROM tbComedorComprobantes WHERE comcmpCodigo = $tk", ("$tk", ticketId)) == 0)
-            {
-                return "TICKET_NOT_FOUND";
-            }
-
-            var copia = (int)ComandosSqlite.EscalarLong(conexion, transaccion,
-                "SELECT MAX(comimpNumeroCopia) + 1 FROM tbComedorTrabajosImpresion WHERE comcmpCodigo = $tk", ("$tk", ticketId));
-            ComandosSqlite.Ejecutar(conexion, transaccion,
-                """
-                INSERT INTO tbComedorTrabajosImpresion (comimpCodigo, comcmpCodigo, comimpNumeroCopia, comimpEstado,
-                    comimpIdentificadorTrabajoSpooler, comimpCodigoUltimoError, comimpFechaActualizacionUtc)
-                VALUES ($job, $tk, $copia, 'QUEUED', NULL, NULL, $ahora)
-                """,
-                ("$job", trabajoId), ("$tk", ticketId), ("$copia", copia), ("$ahora", FormatoInstante.Texto(ahora)));
-            _bitacora.Insertar(conexion, transaccion, puesto, ahora, "TICKET_REPRINTED",
-                ContextoDePermiso(persona, permiso,
-                    ("Reason", CodigoDe(motivo)), ("TicketId", ticketId), ("PrintJobId", trabajoId), ("CopyNumber", copia)));
-            return null;
-        });
-
-        return denegada ?? Enviado(trabajoId);
+        return Actuar(sesion, "REPRINT", (conexion, transaccion, puesto, persona, permiso, ahora) =>
+                   CuerpoReimprimir(conexion, transaccion, puesto, ahora, ticketId, motivo, trabajoId,
+                       mas => ContextoDePermiso(persona, permiso, mas)))
+               ?? Enviado(trabajoId);
     }
+
+    /// <summary>
+    /// Reimprime con la clave del día, que no identifica a nadie: sin sesión ni permiso, con el actor nulo, NO_AUTHENTICATION
+    /// y Access DAILY_KEY en TICKET_REPRINTED, que es de donde la copia saca la marca SIN VALIDEZ (D1 y D2 de
+    /// reimprimir-sin-codigo). Sólo lo llama una Configuración abierta con la clave del día.
+    /// </summary>
+    public ResultadoAccion ReimprimirConClave(Guid ticketId, MotivoReimpresion motivo)
+    {
+        var trabajoId = Guid.NewGuid();
+        return ActuarConClave((conexion, transaccion, puesto, ahora) =>
+                   CuerpoReimprimir(conexion, transaccion, puesto, ahora, ticketId, motivo, trabajoId, ContextoConClave))
+               ?? Enviado(trabajoId);
+    }
+
+    /// <summary>
+    /// Recupera el original en FAILED con la clave del día: el mismo trabajo, sin marca, porque es el comprobante del consumo
+    /// (D3 de reimprimir-sin-codigo); sólo TICKET_RECOVERED dice que se hizo con la clave.
+    /// </summary>
+    public ResultadoAccion RecuperarConClave(Guid trabajoId) =>
+        ActuarConClave((conexion, transaccion, puesto, ahora) =>
+            CuerpoRecuperar(conexion, transaccion, puesto, ahora, trabajoId, ContextoConClave))
+        ?? Enviado(trabajoId);
 
     /// <summary>Cierra la sesión privilegiada porque el operador tocó «Salir» (RB26).</summary>
     public void Salir(Guid sesion) => Salir(sesion, "EXIT");
@@ -278,6 +257,93 @@ public sealed class Asistencia
 
         transaccion.Commit();
         return new ResultadoAccion(false, motivo, null);
+    }
+
+    private delegate string? AccionConClave(SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, DateTimeOffset ahora);
+
+    /// <summary>
+    /// Corre la acción de la clave del día en BEGIN IMMEDIATE, sin buscar persona ni permiso (D1 de reimprimir-sin-codigo).
+    /// Devuelve null si quedó hecha; si no, la denegación, sin nada escrito.
+    /// </summary>
+    private ResultadoAccion? ActuarConClave(AccionConClave cuerpo)
+    {
+        using var conexion = _baseComedor.AbrirConexion();
+        using var transaccion = BaseComedor.IniciarTransaccionEscritura(conexion);
+        var motivo = cuerpo(conexion, transaccion, PuestoLocal.Leer(conexion, transaccion), _reloj.GetUtcNow());
+        transaccion.Commit();
+        return motivo is null ? null : new ResultadoAccion(false, motivo, null);
+    }
+
+    /// <summary>Lo común de recuperar, después de habilitar la acción: el contexto del actor lo arma quien la habilitó.</summary>
+    private string? CuerpoRecuperar(
+        SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, DateTimeOffset ahora, Guid trabajoId,
+        Func<(string Clave, object? Valor)[], object> contexto)
+    {
+        using (var comando = ComandosSqlite.Crear(conexion, transaccion,
+                   """
+                   UPDATE tbComedorTrabajosImpresion
+                   SET comimpEstado = 'QUEUED', comimpFechaActualizacionUtc = $ahora
+                   WHERE comimpCodigo = $job AND comimpNumeroCopia = 0 AND comimpEstado = 'FAILED'
+                   """,
+                   ("$ahora", FormatoInstante.Texto(ahora)), ("$job", trabajoId)))
+        {
+            if (comando.ExecuteNonQuery() == 0)
+            {
+                return "PRINT_JOB_NOT_RECOVERABLE";
+            }
+        }
+
+        using var consulta = ComandosSqlite.Crear(conexion, transaccion,
+            "SELECT comcmpCodigo FROM tbComedorTrabajosImpresion WHERE comimpCodigo = $job", ("$job", trabajoId));
+        var ticket = Guid.Parse((string)consulta.ExecuteScalar()!);
+        _bitacora.Insertar(conexion, transaccion, puesto, ahora, "TICKET_RECOVERED",
+            contexto([("TicketId", ticket), ("PrintJobId", trabajoId), ("CopyNumber", 0)]));
+        return null;
+    }
+
+    /// <summary>Lo común de reimprimir, después de habilitar la acción: el contexto del actor lo arma quien la habilitó.</summary>
+    private string? CuerpoReimprimir(
+        SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, DateTimeOffset ahora, Guid ticketId,
+        MotivoReimpresion motivo, Guid trabajoId, Func<(string Clave, object? Valor)[], object> contexto)
+    {
+        if (ComandosSqlite.EscalarLong(conexion, transaccion,
+                "SELECT COUNT(*) FROM tbComedorComprobantes WHERE comcmpCodigo = $tk", ("$tk", ticketId)) == 0)
+        {
+            return "TICKET_NOT_FOUND";
+        }
+
+        var copia = (int)ComandosSqlite.EscalarLong(conexion, transaccion,
+            "SELECT MAX(comimpNumeroCopia) + 1 FROM tbComedorTrabajosImpresion WHERE comcmpCodigo = $tk", ("$tk", ticketId));
+        ComandosSqlite.Ejecutar(conexion, transaccion,
+            """
+            INSERT INTO tbComedorTrabajosImpresion (comimpCodigo, comcmpCodigo, comimpNumeroCopia, comimpEstado,
+                comimpIdentificadorTrabajoSpooler, comimpCodigoUltimoError, comimpFechaActualizacionUtc)
+            VALUES ($job, $tk, $copia, 'QUEUED', NULL, NULL, $ahora)
+            """,
+            ("$job", trabajoId), ("$tk", ticketId), ("$copia", copia), ("$ahora", FormatoInstante.Texto(ahora)));
+        _bitacora.Insertar(conexion, transaccion, puesto, ahora, "TICKET_REPRINTED",
+            contexto([("Reason", CodigoDe(motivo)), ("TicketId", ticketId), ("PrintJobId", trabajoId), ("CopyNumber", copia)]));
+        return null;
+    }
+
+    /// <summary>
+    /// El actor de la clave del día, como CONSUMPTIONS_QUERIED: ActorPersonId nulo (escrito, no omitido), NO_AUTHENTICATION y
+    /// Access DAILY_KEY, sin PersonId, GrantId ni rol.
+    /// </summary>
+    private static object ContextoConClave((string Clave, object? Valor)[] mas)
+    {
+        var contexto = new Dictionary<string, object?>
+        {
+            ["ActorPersonId"] = null,
+            ["ActorReason"] = "NO_AUTHENTICATION",
+            ["Access"] = "DAILY_KEY",
+        };
+        foreach (var (clave, valor) in mas)
+        {
+            contexto[clave] = valor;
+        }
+
+        return contexto;
     }
 
     /// <summary>Envía después del commit y devuelve cómo quedó el trabajo de la acción.</summary>

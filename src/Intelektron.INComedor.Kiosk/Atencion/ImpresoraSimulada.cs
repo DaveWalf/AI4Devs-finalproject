@@ -68,7 +68,13 @@ public sealed class ImpresoraSimulada : IImpresoraComprobantes
             }
 
             texto.AppendLine("Copia: " + comprobante.NumeroCopia);
-            if (comprobante.Habilito is { } habilito)
+            // Una copia lleva quién la habilitó o, si se hizo con la clave del día, la marca en su lugar (D2 de
+            // reimprimir-sin-codigo); nunca las dos.
+            if (comprobante.SinValidez)
+            {
+                texto.AppendLine(ComprobanteEnPantalla.MarcaSinValidez);
+            }
+            else if (comprobante.Habilito is { } habilito)
             {
                 texto.AppendLine("Habilitó: " + habilito);
             }
