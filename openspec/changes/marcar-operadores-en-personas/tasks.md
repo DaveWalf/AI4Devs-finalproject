@@ -93,9 +93,9 @@ prolijidad de `config.yaml`. Se aplica después de `operador-desde-la-identifica
 - [x] 5.1 `readme.md`: la columna «Operador» de Personas, la regla del propio permiso y la columna de los Excel.
   Verifica: `git grep -n "Operador»" -- readme.md` con las líneas nuevas.
   Hecho: `readme.md` describe la columna «Operador» de Personas, la regla del propio permiso y la columna de los Excel (exportación, planilla de ejemplo e importación). `git grep -n "Operador»" -- readme.md` da sus líneas (409, 414, 421, 422 y 427 al aplicarla; corridas después por la sección de la versión).
-- [ ] 5.2 La verificación completa: `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y
+- [x] 5.2 La verificación completa: `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y
   `openspec validate --all --strict`, sin errores. Verifica: las tres salidas pegadas, con el total de pruebas.
-  Se cierra con la corrida única del final (§6.6 del plan del goal); depende además de la aprobación de las dos pruebas del hallazgo de 1.1.
+  Hecho con la corrida única del final (§6.6 del plan del goal), el 11/11/2026 de 21:46 a 21:52, sobre `afc4b87`, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`: `dotnet build INComedor.sln -warnaserror` «0 Errores» (build exit 0); `dotnet test INComedor.sln` exit 0, «Resumen de la serie de pruebas: Correcta! · total: 1215 · error: 0 · correcto: 1215 · omitido: 0» (Contracts 23, Domain 91, Sync.Api 62, Infrastructure.Sqlite 329, Kiosk 661 y E2E 49 en 5 min 27 s); `openspec validate --all --strict` «Totals: 25 passed, 0 failed (25 items)». Las pruebas existentes modificadas son sólo las tres aprobadas por David (`git diff --diff-filter=M --name-only d6bbb24 -- tests/`).
 - [x] 5.3 La evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` (el pedido de David, con la regla
   del propio permiso y la revisión OWASP de la columna del Excel) y, si deja un workflow o un ajuste humano nuevo, su
   entrada en `prompts.md`. Verifica: el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso`, con su

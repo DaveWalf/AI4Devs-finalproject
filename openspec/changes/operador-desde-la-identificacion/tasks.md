@@ -63,9 +63,9 @@ sigue la regla de prolijidad de `config.yaml`.
   los dos caminos del operador. Verifica: `git grep -n "OPERATOR_IDENTIFICATION\|Configuración» junto" -- readme.md`
   con las líneas nuevas.
   Hecho: `readme.md` suma en la tabla de códigos que 9001 en reposo o en el combo ve «Configuración» junto a «Listo», y en el paso 7 de la demostración los dos caminos con `OPERATOR` y `OPERATOR_IDENTIFICATION`. `git grep` da las líneas 223, 225 y 315.
-- [ ] 4.2 La verificación completa: `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y
+- [x] 4.2 La verificación completa: `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y
   `openspec validate --all --strict`, sin errores. Verifica: las tres salidas pegadas, con el total de pruebas.
-  Se cierra con la corrida única del final (§6.6 del plan del goal): pendiente hasta después del quinto change.
+  Hecho con la corrida única del final (§6.6 del plan del goal), el 11/11/2026 de 21:46 a 21:52, sobre `afc4b87`, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`: `dotnet build INComedor.sln -warnaserror` «0 Errores» (build exit 0); `dotnet test INComedor.sln` exit 0, «Resumen de la serie de pruebas: Correcta! · total: 1215 · error: 0 · correcto: 1215 · omitido: 0» (Contracts 23, Domain 91, Sync.Api 62, Infrastructure.Sqlite 329, Kiosk 661 y E2E 49 en 5 min 27 s); `openspec validate --all --strict` «Totals: 25 passed, 0 failed (25 items)». Las pruebas existentes modificadas son sólo las tres aprobadas por David (`git diff --diff-filter=M --name-only d6bbb24 -- tests/`).
 - [x] 4.3 La evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` (el pedido de David, con los dos
   caminos y la bitácora que los distingue) y, si deja un workflow o un ajuste humano nuevo, su entrada en `prompts.md`.
   Verifica: el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso`, con su control negativo,

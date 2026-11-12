@@ -68,9 +68,9 @@ vacío: este change no prevé tocar pruebas existentes. Las pruebas de base y re
 - [x] 5.1 `readme.md`: dónde se ven la versión y el commit (la cabecera y General), y que un build desde el código dice
   «desarrollo». Verifica: el chequeo de enlaces relativos con su control negativo, `enlaces rotos: 0`.
   Hecho: `readme.md` suma «La versión que corre» (la cabecera, General, el tag que llega al EXE como `VersionPuesto` y «desarrollo» desde el código o la CI) y la versión entre lo que muestra General. Chequeo de enlaces relativos de D8 sobre `readme.md`: `enlaces rotos: 0`; control negativo `enlaces rotos: 2`.
-- [ ] 5.2 La verificación completa: `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y
+- [x] 5.2 La verificación completa: `dotnet build INComedor.sln -warnaserror`, `dotnet test INComedor.sln` y
   `openspec validate --all --strict`, sin errores. Verifica: las tres salidas pegadas, con el total de pruebas.
-  Se cierra con la corrida única del final (§6.6 del plan del goal): pendiente hasta después del quinto change.
+  Hecho con la corrida única del final (§6.6 del plan del goal), el 11/11/2026 de 21:46 a 21:52, sobre `afc4b87`, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`: `dotnet build INComedor.sln -warnaserror` «0 Errores» (build exit 0); `dotnet test INComedor.sln` exit 0, «Resumen de la serie de pruebas: Correcta! · total: 1215 · error: 0 · correcto: 1215 · omitido: 0» (Contracts 23, Domain 91, Sync.Api 62, Infrastructure.Sqlite 329, Kiosk 661 y E2E 49 en 5 min 27 s); `openspec validate --all --strict` «Totals: 25 passed, 0 failed (25 items)». Las pruebas existentes modificadas son sólo las tres aprobadas por David (`git diff --diff-filter=M --name-only d6bbb24 -- tests/`).
 - [x] 5.3 La evidencia: la fila nueva o actualizada en `docs/aplicacion-del-curso.md` (el pedido de David, con el camino
   del tag medido contra MSB4181) y, si deja un workflow o un ajuste humano nuevo, su entrada en `prompts.md`. Verifica:
   el chequeo de enlaces relativos de D8 de `mostrar-aplicacion-del-curso`, con su control negativo, `enlaces rotos: 0`.
