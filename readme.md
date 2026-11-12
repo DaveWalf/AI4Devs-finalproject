@@ -37,7 +37,7 @@ el diseño del producto. La demostración usa datos sintéticos y adaptadores de
 | Organización | INTELEKTRON. Caso empresarial con cliente anonimizado y datos sintéticos. |
 | URL del proyecto | Aplicación de escritorio Windows con ejecución local; no corresponde una URL de aplicación en esta etapa. |
 | URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`. Final: rama [`final-project-dw`](https://github.com/DaveWalf/AI4Devs-finalproject/tree/final-project-dw); `main` tiene sólo las plantillas del curso. |
-| Etapa | Entrega final en curso. Presentadas: la entrega 1, documentación técnica, y la entrega 2, scaffolds conectados (puesto, base SQLite y receptor). |
+| Etapa | Entrega final, presentada con el Typeform del 12/11/2026 sobre la rama `final-project-dw`. Antes: la entrega 1, documentación técnica, y la entrega 2, scaffolds conectados (puesto, base SQLite y receptor). |
 | Modalidad del MVP | Adaptadores de prueba para servicios y dispositivos; persistencia y reglas reales en la implementación académica. |
 
 ## 1. Descripción general del producto
