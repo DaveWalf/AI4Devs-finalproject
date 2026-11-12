@@ -432,6 +432,9 @@ html, body { overscroll-behavior: none; }
 /* La columna «Operador» de Personas (D3 de marcar-operadores-en-personas): angosta, con el escudo centrado, del color de la
    tinta; en edición, el botón de 44 × 44 px con el alto de los campos de cupo de la fila. */
 .tabla-personas td.operador-persona { text-align: center; width: 1%; white-space: nowrap; color: var(--tinta); }
+/* Con la columna nueva, lo usado («0/») y el campo del límite quedan en un renglón: si no, «0/» saltaba arriba del campo, la
+   fila crecía y con el teclado en pantalla entraba una sola (RacionesEnPersonasE2ETests). */
+.tabla-personas td.cupo { white-space: nowrap; }
 /* Su encabezado, con menos relleno: en edición, con el código y «Quitar», la tabla entra en el diálogo sin desplazarse. */
 .tabla-personas th[data-columna="Operador"] { padding: 0 2px; }
 .dialogo .tabla-personas th[data-columna="Operador"] button.ordenar { padding: 0 4px; text-align: center; }

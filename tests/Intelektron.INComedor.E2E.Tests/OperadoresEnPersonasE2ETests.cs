@@ -58,7 +58,7 @@ public class OperadoresEnPersonasE2ETests : IAsyncLifetime
         _escenario.Registrar($"filas a la vista en edición: {edicion.FilasVisibles} de {edicion.Total}, con el teclado en pantalla abierto");
         // Con el teclado abierto entran al menos dos filas, como pide RacionesEnPersonasE2ETests, y el botón no corre los cupos.
         Assert.True(edicion.FilasVisibles >= 2, $"Con el teclado se ven {edicion.FilasVisibles} filas enteras.");
-        Assert.True(Math.Abs(edicion.ArribaBoton - edicion.ArribaCupo) <= 12, $"El botón empieza en {edicion.ArribaBoton} y el cupo en {edicion.ArribaCupo}.");
+        Assert.True(Math.Abs(edicion.ArribaBoton - edicion.ArribaCupo) <= Tolerancia, $"El botón empieza en {edicion.ArribaBoton} y el cupo en {edicion.ArribaCupo}.");
     }
 
     /// <summary>
