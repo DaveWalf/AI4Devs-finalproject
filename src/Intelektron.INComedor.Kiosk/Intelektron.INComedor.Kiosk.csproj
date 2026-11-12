@@ -10,5 +10,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Demostracion\semilla_demostracion.sql" LogicalName="Demostracion.semilla_demostracion.sql" />
+    <EmbeddedResource Include="Atencion\semilla_atencion.sql" LogicalName="Atencion.semilla_atencion.sql" />
   </ItemGroup>
 </Project>

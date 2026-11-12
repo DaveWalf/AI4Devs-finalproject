@@ -1,0 +1,48 @@
+@using Intelektron.INComedor.Infrastructure.Sqlite
+
+<section class="franja-sincronizacion" role="status" aria-live="polite" aria-label="Sincronización con el receptor">
+    <style>
+        .franja-sincronizacion { margin-top: 1rem; padding: .5rem; border-top: 2px solid #888; font-size: 1rem; }
+        .franja-sincronizacion .mensaje-sincronizacion { margin-left: .5rem; margin-right: 1rem; }
+    </style>
+    <strong>Sincronización:</strong>
+    @foreach (var mensaje in Mensajes(Estado))
+    {
+        <span class="mensaje-sincronizacion">@mensaje</span>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public EstadoSincronizacion Estado { get; set; } = null!;
+
+    /// <summary>
+    /// Los mensajes de D11 de recibir-lotes-idempotente, detrás de la etiqueta «Sincronización:». La credencial va aparte
+    /// de la falta de red (HU02-G), y los pendientes y retenidos se cuentan. Sin nada de eso, al día.
+    /// </summary>
+    private static List<string> Mensajes(EstadoSincronizacion estado)
+    {
+        if (!estado.ReceptorConfigurado)
+        {
+            return ["Sin receptor configurado"];
+        }
+
+        var mensajes = new List<string>();
+        if (estado.ErrorDeCredencial)
+        {
+            mensajes.Add("Error técnico: credencial del equipo");
+        }
+
+        if (estado.Pendientes > 0)
+        {
+            mensajes.Add(estado.Pendientes == 1 ? "1 pendiente" : $"{estado.Pendientes} pendientes");
+        }
+
+        if (estado.Retenidos > 0)
+        {
+            mensajes.Add(estado.Retenidos == 1 ? "1 retenido para revisión" : $"{estado.Retenidos} retenidos para revisión");
+        }
+
+        return mensajes.Count > 0 ? mensajes : ["al día"];
+    }
+}

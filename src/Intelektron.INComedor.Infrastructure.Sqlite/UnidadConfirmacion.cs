@@ -10,10 +10,6 @@ namespace Intelektron.INComedor.Infrastructure.Sqlite;
 /// <summary>Confirmación atómica de una intención de consumo (RB06) con replay por IntentId (RB07).</summary>
 public sealed class UnidadConfirmacion
 {
-    // En el primer corte hay una sola generación de bitácora; el cambio de generación tras restaurar
-    // una base es de la segunda ola (bitácoras mensuales).
-    private static readonly Guid GeneracionBitacora = Guid.Parse("00000000-0000-0000-0000-000000000001");
-
     private static readonly JsonSerializerOptions OpcionesResultado = new()
     {
         Converters = { new JsonStringEnumConverter() },
@@ -22,7 +18,7 @@ public sealed class UnidadConfirmacion
     private readonly BaseComedor _baseComedor;
     private readonly TimeProvider _reloj;
     private readonly IPuntosDeFalla _puntosDeFalla;
-    private readonly Guid _arranque = Guid.NewGuid();
+    private readonly RegistroBitacora _bitacora = new("Infrastructure.Sqlite.UnidadConfirmacion");
 
     public UnidadConfirmacion(BaseComedor baseComedor, TimeProvider reloj)
         : this(baseComedor, reloj, SinPuntosDeFalla.Instancia)
@@ -64,7 +60,7 @@ public sealed class UnidadConfirmacion
 
         // 3. Relectura bajo el bloqueo.
         var ahora = _reloj.GetUtcNow();
-        var puesto = LeerPuesto(conexion, transaccion);
+        var puesto = PuestoLocal.Leer(conexion, transaccion);
 
         // 4. Validaciones previas a decidir: no escriben nada.
         if (!SesionUtilizable(conexion, transaccion, solicitud, puesto, ahora))
@@ -80,9 +76,16 @@ public sealed class UnidadConfirmacion
 
         // 5. Decide el dominio.
         var fecha = CalculadoraFechaNegocio.Calcular(ahora, puesto.ZonaHoraria.Id, puesto.InicioDiaNegocio);
-        var reglas = LeerReglasVigentes(conexion, transaccion, puesto, solicitud.PersonId, opcion.ServicioId, ahora);
-        var usos = LeerUsos(conexion, transaccion, solicitud.PersonId, fecha);
-        var decision = EvaluadorCupo.Evaluar(solicitud.PersonId, opcion.ServicioId, fecha, opcion.Cargas, reglas, usos);
+        var candidatas = LeerReglasCandidatas(conexion, transaccion, puesto, solicitud.PersonId, opcion.ServicioId);
+        var habilitacion = EvaluadorHabilitacion.Evaluar(
+            LeerPersonaActiva(conexion, transaccion, puesto, solicitud.PersonId),
+            LeerCredencialDeSesion(conexion, transaccion, puesto, solicitud.IdentitySessionId),
+            ahora, opcion.ServicioId, opcion.Cargas, candidatas);
+        var decision = habilitacion.Motivo is { } motivo
+            ? new DecisionCupo(false, motivo, [])
+            : EvaluadorCupo.Evaluar(
+                solicitud.PersonId, opcion.ServicioId, fecha, opcion.Cargas, habilitacion.Reglas,
+                LeerUsos(conexion, transaccion, solicitud.PersonId, fecha));
 
         // 6. Persistencia de la decisión según RB06.
         var resultado = decision.Autorizada
@@ -101,7 +104,7 @@ public sealed class UnidadConfirmacion
         SqliteTransaction transaccion,
         SolicitudConfirmacion solicitud,
         byte[] hash,
-        Puesto puesto,
+        PuestoLocal puesto,
         OpcionMenu opcion,
         FechaNegocio fecha,
         DecisionCupo decision,
@@ -203,7 +206,7 @@ public sealed class UnidadConfirmacion
 
         InsertarEvento(conexion, transaccion, eventoId, solicitud.IntentId, comprobanteId, "CONSUMPTION_RECORDED", contenidoEvento, hashEvento);
 
-        InsertarBitacora(conexion, transaccion, puesto, ahora, "CONSUMPTION_AUTHORIZED",
+        _bitacora.Insertar(conexion, transaccion, puesto, ahora, "CONSUMPTION_AUTHORIZED",
             new { solicitud.IntentId, DecisionId = decisionId, ConsumptionId = consumoId, TicketId = comprobanteId, solicitud.PersonId, BusinessDate = fechaTexto });
 
         return resultado;
@@ -214,7 +217,7 @@ public sealed class UnidadConfirmacion
         SqliteTransaction transaccion,
         SolicitudConfirmacion solicitud,
         byte[] hash,
-        Puesto puesto,
+        PuestoLocal puesto,
         DecisionCupo decision,
         FechaNegocio fecha,
         DateTimeOffset ahora)
@@ -231,7 +234,7 @@ public sealed class UnidadConfirmacion
 
         InsertarIntencion(conexion, transaccion, solicitud, hash, "DENIED", decisionId, resultado, ahoraTexto);
         InsertarEvento(conexion, transaccion, eventoId, solicitud.IntentId, null, "CONSUMPTION_DENIED", contenidoEvento, HashIntencion.DeTexto(contenidoEvento));
-        InsertarBitacora(conexion, transaccion, puesto, ahora, "CONSUMPTION_DENIED",
+        _bitacora.Insertar(conexion, transaccion, puesto, ahora, "CONSUMPTION_DENIED",
             new { solicitud.IntentId, DecisionId = decisionId, solicitud.PersonId, ReasonCode = motivo, BusinessDate = Texto(fecha) });
 
         return resultado;
@@ -278,35 +281,6 @@ public sealed class UnidadConfirmacion
             ("$contenido", contenido), ("$hash", hash));
     }
 
-    private void InsertarBitacora(
-        SqliteConnection conexion,
-        SqliteTransaction transaccion,
-        Puesto puesto,
-        DateTimeOffset ahora,
-        string tipoEvento,
-        object contexto)
-    {
-        var secuencia = ComandosSqlite.EscalarLong(conexion, transaccion,
-            "SELECT COALESCE(MAX(combitSecuencia), 0) + 1 FROM tbComedorBitacora WHERE compueCodigo = $pue AND combitCodigoGeneracion = $gen",
-            ("$pue", puesto.Id), ("$gen", GeneracionBitacora));
-        var local = TimeZoneInfo.ConvertTime(ahora, puesto.ZonaHoraria);
-        var desplazamiento = puesto.ZonaHoraria.GetUtcOffset(ahora);
-        var ahoraTexto = FormatoInstante.Texto(ahora);
-
-        ComandosSqlite.Ejecutar(conexion, transaccion,
-            """
-            INSERT INTO tbComedorBitacora (combitCodigo, compueCodigo, combitCodigoGeneracion, combitSecuencia, combitCodigoArranque,
-                combitFechaHechoUtc, combitFechaRegistroUtc, combitZonaHoraria, combitDesplazamientoUtc, combitMesBitacora,
-                combitTipoEvento, combitSeveridad, combitComponente, combitVersionEsquema, combitContexto)
-            VALUES ($id, $pue, $gen, $sec, $boot, $ahora, $ahora, $zona, $offset, $mes, $tipo, 'INFO', $componente, 1, $contexto)
-            """,
-            ("$id", Guid.NewGuid()), ("$pue", puesto.Id), ("$gen", GeneracionBitacora), ("$sec", secuencia),
-            ("$boot", _arranque), ("$ahora", ahoraTexto), ("$zona", puesto.ZonaHoraria.Id),
-            ("$offset", (desplazamiento < TimeSpan.Zero ? "-" : "+") + desplazamiento.Duration().ToString(@"hh\:mm", CultureInfo.InvariantCulture)),
-            ("$mes", local.ToString("yyyyMM", CultureInfo.InvariantCulture)), ("$tipo", tipoEvento),
-            ("$componente", "Infrastructure.Sqlite.UnidadConfirmacion"), ("$contexto", JsonSerializer.Serialize(contexto)));
-    }
-
     private static IntencionGuardada? BuscarIntencion(SqliteConnection conexion, SqliteTransaction? transaccion, Guid intentId)
     {
         using var comando = ComandosSqlite.Crear(conexion, transaccion,
@@ -333,33 +307,8 @@ public sealed class UnidadConfirmacion
         return JsonSerializer.Deserialize<ResultadoConfirmacion>(contenido, OpcionesResultado)!;
     }
 
-    private static Puesto LeerPuesto(SqliteConnection conexion, SqliteTransaction transaccion)
-    {
-        using var comando = ComandosSqlite.Crear(conexion, transaccion,
-            """
-            SELECT cp.compueCodigo, cp.comvcCodigoActiva, cp.comcpZonaHoraria, cp.comcpHoraInicioDiaNegocio,
-                   vc.comvcVersionConfiguracion, vc.comvcVersionPoliticas, vc.comvcVersionCatalogo
-            FROM tbComedorConfiguracionPuestos cp
-            JOIN tbComedorVersionesConfiguracion vc ON vc.comvcCodigo = cp.comvcCodigoActiva
-            """);
-        using var lector = comando.ExecuteReader();
-        if (!lector.Read())
-        {
-            throw new InvalidOperationException("La base no tiene la configuración del puesto con un snapshot activo.");
-        }
-
-        return new Puesto(
-            lector.GetGuid(0),
-            lector.GetGuid(1),
-            TimeZoneInfo.FindSystemTimeZoneById(lector.GetString(2)),
-            TimeOnly.ParseExact(lector.GetString(3), "HH:mm", CultureInfo.InvariantCulture),
-            lector.GetInt32(4),
-            lector.GetInt32(5),
-            lector.GetInt32(6));
-    }
-
     private static bool SesionUtilizable(
-        SqliteConnection conexion, SqliteTransaction transaccion, SolicitudConfirmacion solicitud, Puesto puesto, DateTimeOffset ahora)
+        SqliteConnection conexion, SqliteTransaction transaccion, SolicitudConfirmacion solicitud, PuestoLocal puesto, DateTimeOffset ahora)
     {
         using (var comando = ComandosSqlite.Crear(conexion, transaccion,
                    """
@@ -387,7 +336,7 @@ public sealed class UnidadConfirmacion
             ("$vc", puesto.SnapshotId), ("$per", solicitud.PersonId)) == 1;
     }
 
-    private static OpcionMenu? LeerOpcion(SqliteConnection conexion, SqliteTransaction transaccion, Puesto puesto, Guid menuItemId)
+    private static OpcionMenu? LeerOpcion(SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, Guid menuItemId)
     {
         OpcionMenuLeida? leida;
         using (var comando = ComandosSqlite.Crear(conexion, transaccion,
@@ -431,13 +380,40 @@ public sealed class UnidadConfirmacion
         return new OpcionMenu(leida.Version, leida.ServicioId, leida.Nombre, leida.Moneda, leida.Escala, leida.ImporteEmpleadoUnidadesMenores, cargas);
     }
 
-    private static List<ReglaPersona> LeerReglasVigentes(
-        SqliteConnection conexion, SqliteTransaction transaccion, Puesto puesto, Guid personaId, Guid servicioId, DateTimeOffset ahora)
+    private static bool LeerPersonaActiva(SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, Guid personaId) =>
+        ComandosSqlite.EscalarLong(conexion, transaccion,
+            "SELECT comperActivo FROM tbComedorPersonas WHERE comvcCodigo = $vc AND comperCodigo = $per",
+            ("$vc", puesto.SnapshotId), ("$per", personaId)) == 1;
+
+    /// <summary>La credencial con la que se abrió la sesión; null si la sesión no lleva ninguna (demostración).</summary>
+    private static CredencialSesion? LeerCredencialDeSesion(
+        SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, Guid sesionId)
     {
-        var reglas = new List<ReglaPersona>();
         using var comando = ComandosSqlite.Crear(conexion, transaccion,
             """
-            SELECT comregCodigo, comsrvCodigo, comacCodigo, comcatCodigo, comregLimite,
+            SELECT cre.comcreFechaVigenciaHastaUtc, cre.comcreFechaRevocacionUtc
+            FROM tbComedorSesionesIdentidad ses
+            JOIN tbComedorCredencialesPersonas cre ON cre.comvcCodigo = ses.comvcCodigo AND cre.comcreCodigo = ses.comcreCodigo
+            WHERE ses.comsidCodigo = $sid AND cre.comvcCodigo = $vc
+            """,
+            ("$sid", sesionId), ("$vc", puesto.SnapshotId));
+        using var lector = comando.ExecuteReader();
+        if (!lector.Read())
+        {
+            return null;
+        }
+
+        return new CredencialSesion(LeerInstanteOpcional(lector, 0), LeerInstanteOpcional(lector, 1));
+    }
+
+    /// <summary>Todas las reglas por persona del servicio, sin filtrar vigencia: RB02 se decide en el dominio.</summary>
+    private static List<ReglaCandidata> LeerReglasCandidatas(
+        SqliteConnection conexion, SqliteTransaction transaccion, PuestoLocal puesto, Guid personaId, Guid servicioId)
+    {
+        var reglas = new List<ReglaCandidata>();
+        using var comando = ComandosSqlite.Crear(conexion, transaccion,
+            """
+            SELECT comregCodigo, comsrvCodigo, comacCodigo, comcatCodigo, comregLimite, comregPrioridad,
                    comregFechaVigenciaDesdeUtc, comregFechaVigenciaHastaUtc
             FROM tbComedorReglasHabilitacion
             WHERE comvcCodigo = $vc AND comperCodigo = $per AND comsrvCodigo = $srv
@@ -446,16 +422,16 @@ public sealed class UnidadConfirmacion
         using var lector = comando.ExecuteReader();
         while (lector.Read())
         {
-            var desde = lector.IsDBNull(5) ? (DateTimeOffset?)null : FormatoInstante.Leer(lector.GetString(5));
-            var hasta = lector.IsDBNull(6) ? (DateTimeOffset?)null : FormatoInstante.Leer(lector.GetString(6));
-            if ((desde is null || desde <= ahora) && (hasta is null || ahora < hasta))
-            {
-                reglas.Add(new ReglaPersona(lector.GetGuid(0), lector.GetGuid(1), lector.GetGuid(2), lector.GetGuid(3), lector.GetInt32(4)));
-            }
+            reglas.Add(new ReglaCandidata(
+                lector.GetGuid(0), lector.GetGuid(1), lector.GetGuid(2), lector.GetGuid(3), lector.GetInt32(4), lector.GetInt32(5),
+                LeerInstanteOpcional(lector, 6), LeerInstanteOpcional(lector, 7)));
         }
 
         return reglas;
     }
+
+    private static DateTimeOffset? LeerInstanteOpcional(SqliteDataReader lector, int columna) =>
+        lector.IsDBNull(columna) ? null : FormatoInstante.Leer(lector.GetString(columna));
 
     private static Dictionary<ClaveCupo, int> LeerUsos(
         SqliteConnection conexion, SqliteTransaction transaccion, Guid personaId, FechaNegocio fecha)
@@ -479,19 +455,14 @@ public sealed class UnidadConfirmacion
     {
         MotivoDenegacion.LocalLimitReached => "LOCAL_LIMIT_REACHED",
         MotivoDenegacion.ServiceNotEnabled => "SERVICE_NOT_ENABLED",
+        MotivoDenegacion.PersonInactive => "PERSON_INACTIVE",
+        MotivoDenegacion.CredentialRevoked => "CREDENTIAL_REVOKED",
+        MotivoDenegacion.CredentialExpired => "CREDENTIAL_EXPIRED",
+        MotivoDenegacion.RuleDenied => "RULE_DENIED",
         _ => throw new ArgumentOutOfRangeException(nameof(motivo), motivo, null),
     };
 
     private sealed record IntencionGuardada(byte[] Hash, string? ResultPayload);
-
-    private sealed record Puesto(
-        Guid Id,
-        Guid SnapshotId,
-        TimeZoneInfo ZonaHoraria,
-        TimeOnly InicioDiaNegocio,
-        int VersionConfiguracion,
-        int VersionPoliticas,
-        int VersionCatalogo);
 
     private sealed record OpcionMenuLeida(int Version, Guid ServicioId, string Nombre, string Moneda, int Escala, long ImporteEmpleadoUnidadesMenores);
 

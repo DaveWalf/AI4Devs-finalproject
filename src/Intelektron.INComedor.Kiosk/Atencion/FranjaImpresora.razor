@@ -1,0 +1,25 @@
+<section class="franja-impresora" aria-label="Simulación de impresora (demostración)">
+    <style>
+        .franja-impresora { margin-top: 2rem; padding: .5rem; border-top: 2px dashed #888; font-size: 1rem; }
+        .franja-impresora button { font-size: 1rem; min-width: 7rem; padding: .4rem .8rem; }
+    </style>
+    <strong>Simulación de impresora (demostración):</strong>
+    @foreach (var modo in Enum.GetValues<ModoImpresoraSimulada>())
+    {
+        <button type="button" id="impresora-@modo.ToString().ToLowerInvariant()" aria-pressed="@(modo == Impresora.Modo ? "true" : "false")"
+                @onclick="() => Impresora.Modo = modo">@Texto(modo)</button>
+    }
+    <span id="modo-impresora">Modo: @Texto(Impresora.Modo)</span>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public ImpresoraSimulada Impresora { get; set; } = null!;
+
+    private static string Texto(ModoImpresoraSimulada modo) => modo switch
+    {
+        ModoImpresoraSimulada.Disponible => "Disponible",
+        ModoImpresoraSimulada.SinPapel => "Sin papel",
+        _ => "Incierta",
+    };
+}

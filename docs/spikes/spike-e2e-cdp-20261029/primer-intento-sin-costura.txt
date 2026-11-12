@@ -1,0 +1,4 @@
+Xunit.MicrosoftTestingPlatform.XunitException: System.InvalidOperationException : CDP no respondió en el puerto 9333 en 30 s.
+---- Microsoft.Playwright.PlaywrightException : connect ECONNREFUSED 127.0.0.1:9333
+Call log:
+- <ws preparing> retrieving websocket url from http://127.0.0.1:9333

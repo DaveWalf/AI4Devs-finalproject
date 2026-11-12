@@ -1,0 +1,31 @@
+diff --git a/Directory.Packages.props b/Directory.Packages.props
+index ca6ceab..15b22e0 100644
+--- a/Directory.Packages.props
++++ b/Directory.Packages.props
+@@ -10,5 +10,6 @@
+     <PackageVersion Include="xunit.v3" Version="4.0.2" />
+     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
++    <PackageVersion Include="Microsoft.Playwright" Version="1.64.1" />
+   </ItemGroup>
+ </Project>
+diff --git a/src/Intelektron.INComedor.Kiosk/MainWindow.xaml.cs b/src/Intelektron.INComedor.Kiosk/MainWindow.xaml.cs
+index 740fa3c..db250ec 100644
+--- a/src/Intelektron.INComedor.Kiosk/MainWindow.xaml.cs
++++ b/src/Intelektron.INComedor.Kiosk/MainWindow.xaml.cs
+@@ -11,6 +11,15 @@ public partial class MainWindow : Window
+     public MainWindow()
+     {
+         InitializeComponent();
++
++        // Spike del 29/10/2026: una app elevada ignora WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, así que el puerto
++        // de CDP para el E2E entra por código, sólo si la variable INCOMEDOR_CDP_PORT trae un número.
++        if (int.TryParse(Environment.GetEnvironmentVariable("INCOMEDOR_CDP_PORT"), out var puertoCdp))
++        {
++            blazorWebView.BlazorWebViewInitializing = (_, e) => e.EnvironmentOptions =
++                new Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions { AdditionalBrowserArguments = $"--remote-debugging-port={puertoCdp}" };
++        }
++
+         var servicios = new ServiceCollection();
+         servicios.AddWpfBlazorWebView();
+         servicios.AddSingleton(new ServicioDemostracion(RutaBaseDemostracion(), TimeProvider.System));

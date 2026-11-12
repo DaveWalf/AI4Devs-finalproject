@@ -8,6 +8,9 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <!-- Microsoft.Data.SqlClient 7.1.1 trae Pkcs 9.0.18 (CVE-2026-84008 y CVE-2026-70162). En Sync.Api lo poda el
+         framework de ASP.NET; en este proyecto, que no es web, se fija la versión corregida del tren de D-C25. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
     <ProjectReference Include="..\..\src\Intelektron.INComedor.Sync.Api\Intelektron.INComedor.Sync.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
