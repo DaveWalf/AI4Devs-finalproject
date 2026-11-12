@@ -58,7 +58,10 @@ vacío: este change no prevé tocar pruebas existentes. Las pruebas de base y re
 - [x] 4.3 El escenario «La cabecera no muestra el tag», con una corrida de control: `INCOMEDOR_VERSION_ESPERADA` en
   `v9.9.9` contra un EXE armado con `v0.0.0-ensayo`, con el E2E pedido a mano, que tiene que fallar. Verifica: la falla
   pegada, y que el script no deja zip cuando el E2E falla (el escenario «Prueba en rojo» de `distribucion-puesto`).
-  Hecho: con `INCOMEDOR_VERSION_ESPERADA=v9.9.9` contra el EXE armado con `v0.0.0-ensayo`, el E2E pedido a mano falla: «Expected: "v9.9.9 · 5882ba4" · Actual: "v0.0.0-ensayo · 5882ba4"», «total: 1, error: 1». Y el script no deja zip con el E2E en rojo: corrido con `INCOMEDOR_SQLSERVER=NO-EXISTE-E2E` (el E2E falla por la misma llamada de `Invocar`), salió con exit 1 en «El E2E contra el EXE publicado» y `artifacts/` quedó sin ningún `.zip`; el zip bueno de 4.2 se guardó antes y volvió después, con la misma suma.
+  Hecho: con `INCOMEDOR_VERSION_ESPERADA=v9.9.9` contra el EXE armado con `v0.0.0-ensayo`, el E2E pedido a mano falla: «Expected: "v9.9.9 · 5882ba4" · Actual: "v0.0.0-ensayo · 5882ba4"», «total: 1, error: 1». Y el script no deja zip con el E2E en rojo: corrido con `INCOMEDOR_SQLSERVER=NO-EXISTE-E2E` (el E2E falla por la misma llamada de `Invocar`), salió con exit 1 en «El E2E contra el EXE publicado» y `artifacts/` quedó sin ningún `.zip`; el zip bueno de 4.2 se guardó antes y volvió después, con la misma suma. Después de la verificación (`97ff96d`), el script
+  pasa las dos propiedades sólo a la publicación y no al build de la solución, que copian las pruebas en Release; armado otra
+  vez con `v0.0.0-ensayo` a las 21:15, exit 0: «0 Errores», E2E contra el EXE 2 de 2 y «zip: …\artifacts\INComedor-Puesto-v0.0.0-ensayo-win-x64.zip
+  · 77892543 bytes · sha256 a05ab10c7ad9812d461a56e58286aa15d6147489a2e55e019890f58c1e886d64».
 
 ## 5. Documentación y verificación completa
 
