@@ -14,6 +14,13 @@
   <ItemGroup>
     <Resource Include="Recursos\incomedor-puesto.ico" />
   </ItemGroup>
+  <!-- La versión del paquete y la fecha de compilación, como metadatos con nombre propio que publicar-puesto.ps1 pasa con
+       -p:VersionPuesto y -p:FechaCompilacionPuesto, nunca como Version (MSB4181 con un tag que empieza con «v»). Sin ellos
+       van vacíos, y el puesto dice «desarrollo» y la fecha del archivo (D1 y D2 de mostrar-version-del-programa). -->
+  <ItemGroup>
+    <AssemblyMetadata Include="VersionPuesto" Value="$(VersionPuesto)" />
+    <AssemblyMetadata Include="FechaCompilacionPuesto" Value="$(FechaCompilacionPuesto)" />
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Demostracion\semilla_demostracion.sql" LogicalName="Demostracion.semilla_demostracion.sql" />
     <EmbeddedResource Include="Atencion\semilla_atencion_comun.sql" LogicalName="Atencion.semilla_atencion_comun.sql" />

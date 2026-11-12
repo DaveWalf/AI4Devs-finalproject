@@ -45,7 +45,7 @@ public class TablaPersonasTests : IDisposable
 
         var encabezados = pantalla.FindAll("#tabla-personas thead th").Select(th => th.TextContent.Trim()).ToList();
 
-        Assert.Equal(["Nombre", "Estado", "ALMUERZO", "REFRIGERIO", "Opciones habilitadas"], encabezados);
+        Assert.Equal(["Nombre", "Estado", "Operador", "ALMUERZO", "REFRIGERIO", "Opciones habilitadas"], encabezados);
     }
 
     [Fact(DisplayName = "administracion-local · Persona sin cupos: su fila tiene «—» en cada columna de cupo y 0 opciones habilitadas")]

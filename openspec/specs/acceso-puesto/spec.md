@@ -112,7 +112,7 @@ Origen: AT16 y RB05 (una atención no se interrumpe por fuera de sus acciones), 
 
 ### Requirement: Cada acceso queda en la bitácora general
 
-Cada clave del día pedida con su resultado y su acción, cada entrada a Configuración, cada cambio de modo y cada cierre SHALL quedar en la bitácora general con cómo se entró o se cerró: `MAINTENANCE_MODE`, `DAILY_KEY` u `OPERATOR`. Con la clave o en mantenimiento, el actor MUST ser nulo con `NO_AUTHENTICATION`; con un operador, MUST ser su persona. Ningún registro MUST contener lo tipeado.
+Cada clave del día pedida con su resultado y su acción, cada entrada a Configuración, cada cambio de modo y cada cierre SHALL quedar en la bitácora general con cómo se entró o se cerró: `MAINTENANCE_MODE`, `DAILY_KEY`, `OPERATOR` (el engranaje) u `OPERATOR_IDENTIFICATION` (la identificación en reposo). Con la clave o en mantenimiento, el actor MUST ser nulo con `NO_AUTHENTICATION`; con un operador, MUST ser su persona. Ningún registro MUST contener lo tipeado.
 
 #### Scenario: Entrada con la clave del día
 Origen: RB21 («todo cambio/prueba tiene permiso, actor y resultado») y AT41.
@@ -138,6 +138,12 @@ Origen: RB21 y AT37 («cambio válido versionado/auditado»).
 - **GIVEN** Configuración abierta en mantenimiento, a la que se entró con la clave del día
 - **WHEN** se pasa a operativo con la clave del día
 - **THEN** la general tiene `CONFIGURATION_CHANGED` con el modo, antes mantenimiento y después operativo, el resultado aplicado y `DAILY_KEY`
+
+#### Scenario: Entrada de un operador desde la identificación
+Origen: mejora 5 de David del 11/11/2026 y RB21 («todo cambio/prueba tiene permiso, actor y resultado»), borde: la general distingue los dos caminos.
+- **GIVEN** el puesto en reposo
+- **WHEN** se tipea `9001` en el campo del código, se toca «Ingresar» y después «Configuración»
+- **THEN** la general tiene `CONFIGURATION_OPENED` con `OPERATOR_IDENTIFICATION` y la persona de `9001` como actor, y ningún registro contiene `9001`
 
 ### Requirement: Modo simulación encendido por omisión y sólo en mantenimiento
 

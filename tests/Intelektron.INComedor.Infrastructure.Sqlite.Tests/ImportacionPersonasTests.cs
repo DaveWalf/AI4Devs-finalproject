@@ -172,7 +172,7 @@ public class ImportacionPersonasTests : IDisposable
 
         var filas = Leer(ruta);
         var vista = Admin.Leer();
-        Assert.Equal(new[] { "Nombre", "Código" }.Concat(vista.ParesDeCupo().Select(p => $"{vista.NombrePar(p)}: límite")), filas[0]);
+        Assert.Equal(new[] { "Nombre", "Código", "Operador" }.Concat(vista.ParesDeCupo().Select(p => $"{vista.NombrePar(p)}: límite")), filas[0]);
         Assert.Equal(["1002", "1003"], filas.Skip(1).Select(f => f[1]));
 
         using var planilla = File.OpenRead(ruta);

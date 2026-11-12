@@ -1,5 +1,5 @@
-# Publica el puesto autocontenido para Windows x64, corre el E2E del flujo principal contra ese EXE y recién entonces
-# escribe el zip y su suma (D7 de demostrar-flujo-de-punta-a-punta). Si algo falla, no queda ningún zip.
+# Publica el puesto autocontenido para Windows x64, corre el E2E del flujo principal y el de la versión contra ese EXE y
+# recién entonces escribe el zip y su suma (D7 de demostrar-flujo-de-punta-a-punta). Si algo falla, no queda ningún zip.
 # Uso: pwsh .github/scripts/publicar-puesto.ps1 -Version <v>   (desde la raíz del repo; el E2E usa INCOMEDOR_SQLSERVER)
 param([Parameter(Mandatory)] [string] $Version)
 $ErrorActionPreference = 'Stop'
@@ -40,18 +40,28 @@ New-Item -ItemType Directory -Force -Path $artefactos | Out-Null
 # Restore y build separados, como en ci.yml. Cada paso deja su binlog en artifacts/, fuera del zip, y release.yml los
 # sube si el job falla: así se vio que una variable de entorno VERSION llegaba a MSBuild como la propiedad Version.
 $binlog = { param([string] $Paso) '-bl:' + (Join-Path $artefactos "$Paso.binlog") }
+# El tag ya validado y la fecha de compilación, tomada una sola vez, entran como propiedades propias, nunca como Version,
+# que con un tag como «v0.0.0-ensayo» rompía el restore con MSB4181 (D1 de mostrar-version-del-programa).
+$fechaCompilacion = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ', [Globalization.CultureInfo]::InvariantCulture)
+$propiedades = @("-p:VersionPuesto=$Version", "-p:FechaCompilacionPuesto=$fechaCompilacion")
 Invocar 'El restore' { dotnet restore INComedor.sln (& $binlog 'restore') }
+# El build de la solución va sin ellas: las pruebas en Release copian el Kiosk y tienen que ver «desarrollo»; sólo el EXE
+# publicado lleva el tag (sugerencia de la verificación del 11/11/2026).
 Invocar 'El build' { dotnet build INComedor.sln -c Release -warnaserror --no-restore (& $binlog 'build') }
-Invocar 'La publicación' { dotnet publish src/Intelektron.INComedor.Kiosk -c Release -r win-x64 --self-contained true -o $publicacion (& $binlog 'publicacion') }
+Invocar 'La publicación' { dotnet publish src/Intelektron.INComedor.Kiosk -c Release -r win-x64 --self-contained true -o $publicacion @propiedades (& $binlog 'publicacion') }
 RevisarPublicacion
 
-# El E2E contra el EXE publicado, con un entorno sin .NET a la vista (escenario «Abre sin .NET instalado»).
+# El E2E contra el EXE publicado, con un entorno sin .NET a la vista (escenario «Abre sin .NET instalado»): el flujo
+# principal y el pie, que tiene que decir el tag del paquete (D5 de mostrar-version-del-programa y mover-version-al-pie).
 $env:INCOMEDOR_E2E_KIOSK_EXE = Join-Path $publicacion 'Intelektron.INComedor.Kiosk.exe'
+$env:INCOMEDOR_VERSION_ESPERADA = $Version
 try {
-    Invocar 'El E2E contra el EXE publicado' { dotnet test tests/Intelektron.INComedor.E2E.Tests -c Release --no-build --filter-method '*Flujo_principal*' }
+    Invocar 'El E2E contra el EXE publicado' {
+        dotnet test tests/Intelektron.INComedor.E2E.Tests -c Release --no-build --filter-method '*Flujo_principal*' --filter-method '*Version_del_paquete*'
+    }
 }
 finally {
-    Remove-Item Env:INCOMEDOR_E2E_KIOSK_EXE -ErrorAction SilentlyContinue
+    Remove-Item Env:INCOMEDOR_E2E_KIOSK_EXE, Env:INCOMEDOR_VERSION_ESPERADA -ErrorAction SilentlyContinue
 }
 
 # Otra vez, por si la corrida dejó algo junto al EXE; después, el zip con las entradas en la raíz y su suma.

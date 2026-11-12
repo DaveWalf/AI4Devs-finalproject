@@ -14,6 +14,8 @@
     @* Con Configuración abierta, el resto de la página es inerte: el foco no sale del diálogo (D5). *@
     <header class="cabecera" inert="@(HayDialogo || CartelVisible)">
         <img class="logo-empresa" src="@_logos.Empresa" alt="Logo de la empresa" />
+        @* El nombre del servicio, centrado entre los dos logos, en Heebo Light como el nombre de INWeb (D3 y D4 de *@
+        @* mover-version-al-pie); la versión del programa va en el pie. *@
         <span class="servicio">INComedor · tu pausa del día</span>
         <img class="logo-concesionaria" src="@_logos.Concesionaria" alt="Logo de la concesionaria" />
     </header>
@@ -72,6 +74,12 @@
                 <div class="titulo superficie" inert="@CartelVisible">
                     <h2>Elegí tu servicio de hoy</h2>
                     <p id="saludo">Hola, <strong>@Maquina.NombreVisible</strong></p>
+                    @* Un operador identificado ve «Configuración» a la izquierda de «Cancelar», con su misma clase (D3 de *@
+                    @* operador-desde-la-identificacion). *@
+                    @if (Maquina.EsOperador)
+                    {
+                        <button id="configuracion-operador" type="button" disabled="@(Maquina.Estado == EstadoAtencion.Confirmando)" @onclick="EntrarDesdeIdentificacion">Configuración</button>
+                    }
                     <button id="cancelar" type="button" disabled="@(Maquina.Estado == EstadoAtencion.Confirmando)" @onclick="Maquina.Cancelar">Cancelar</button>
                     @* Sólo lo agotado hoy, que es lo que explica una opción ausente (D3 de ofrecer-solo-opciones-disponibles). *@
                     @if (Maquina.UsoDelDia is { } uso)
@@ -79,6 +87,10 @@
                         <p id="uso-del-dia" class="uso-del-dia">@uso</p>
                     }
                 </div>
+                @if (AvisoOperador is { } avisoOperador)
+                {
+                    <p id="aviso-operador" class="aviso superficie" role="status" inert="@CartelVisible">@avisoOperador</p>
+                }
                 @if (Maquina.Aviso is not null && Maquina.Estado == EstadoAtencion.Seleccion)
                 {
                     <p id="aviso" class="aviso titulo superficie" role="status" inert="@CartelVisible">@Maquina.Aviso</p>
@@ -176,7 +188,15 @@
                     {
                         <p id="motivo-sin-opciones" class="aviso">@motivo</p>
                     }
+                    @if (AvisoOperador is { } avisoSinOpciones)
+                    {
+                        <p id="aviso-operador" class="aviso" role="status">@avisoSinOpciones</p>
+                    }
                     <div class="acciones">
+                        @if (Maquina.EsOperador)
+                        {
+                            <button id="configuracion-operador" type="button" @onclick="EntrarDesdeIdentificacion">Configuración</button>
+                        }
                         <button id="listo" type="button" class="principal" @onclick="Maquina.Listo">Listo</button>
                     </div>
                 </section>
@@ -238,6 +258,9 @@
 
     <footer class="pie" inert="@(HayDialogo || CartelVisible)">
         <FranjaSincronizacion Estado="Servicio.Sincronizacion" />
+        @* La versión del programa en el centro de la ventana, más chica y atenuada; es texto, no un control (D1 y D2 de *@
+        @* mover-version-al-pie). *@
+        <span id="version-programa">@VersionDelPrograma.Cabecera</span>
         <div class="pie-derecha">
             <img class="marca-intelektron" src="img/intelektron.svg" alt="Intelektron" />
             @* El engranaje va en el borde, al lado de la marca, y sólo en reposo; durante la atención su lugar queda reservado (D1, D2 y D5). *@
@@ -537,6 +560,19 @@
     private const string AccesoMantenimiento = "MAINTENANCE_MODE";
     private const string AccesoClave = "DAILY_KEY";
     private const string AccesoOperador = "OPERATOR";
+    private const string AccesoOperadorIdentificacion = "OPERATOR_IDENTIFICATION";
+
+    /// <summary>La versión del Kiosk que corre, leída una sola vez de su ensamblado (D2 de mostrar-version-del-programa).</summary>
+    private static readonly VersionPrograma VersionDelPrograma = VersionPrograma.DelPuesto();
+
+    /// <summary>
+    /// El motivo por el que «Configuración» no abrió desde la identificación, atado a la sesión de consumo de esa atención (D2):
+    /// la persona siguiente, se identifique como se identifique, no lo ve.
+    /// </summary>
+    private (Guid? Sesion, string Texto)? _avisoOperador;
+
+    private string? AvisoOperador =>
+        _avisoOperador is { } aviso && aviso.Sesion is not null && aviso.Sesion == Maquina.SesionConsumo ? aviso.Texto : null;
 
     /// <summary>Con un operador no hay General: el modo, la simulación y el cierre vuelven sin hacer nada (D6).</summary>
     private bool EsOperador => _actor is not null;
@@ -648,6 +684,7 @@
     {
         var codigo = _codigo;
         _codigo = string.Empty;
+        _avisoOperador = null;
         Maquina.Identificar(codigo);
         CancelarConfiguracionFueraDeReposo();
     }
@@ -665,6 +702,7 @@
             return;
         }
 
+        _avisoOperador = null;
         Maquina.IdentificarPorCredencial(credencial);
         CancelarConfiguracionFueraDeReposo();
     }
@@ -824,6 +862,60 @@
 
         StateHasChanged();
         return new(null);
+    }
+
+    /// <summary>
+    /// «Configuración» de un operador identificado (D2 y D4 de operador-desde-la-identificacion): la asistencia vuelve a evaluar
+    /// OPERATOR y abre la sesión privilegiada desde la de consumo, sin el código; concedida, la atención termina sin consumo y
+    /// Configuración abre como con el engranaje, con OPERATOR_IDENTIFICATION y el operador como actor. Denegada, la atención
+    /// sigue y la pantalla dice el motivo.
+    /// </summary>
+    private void EntrarDesdeIdentificacion()
+    {
+        if (!Maquina.EsOperador || Maquina.SesionConsumo is not { } sesion)
+        {
+            return;
+        }
+
+        ResultadoAsistencia resultado;
+        try
+        {
+            resultado = Servicio.Asistencia.EntrarDesdeIdentificacion(sesion);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _avisoOperador = (sesion, MensajesAtencion.ErrorAlmacenamiento);
+            return;
+        }
+
+        if (!resultado.Concedida)
+        {
+            // La denegación queda también en la general, que es la de los accesos a Configuración; ASSISTANCE_DENIED va a
+            // interacciones (D4 de operador-desde-la-identificacion, ajuste al aplicar).
+            RegistrarConfiguracion("CONFIGURATION_ACCESS_DENIED", new
+            {
+                Access = AccesoOperadorIdentificacion, resultado.ReasonCode, ActorPersonId = Maquina.PersonaId,
+            }, SeveridadBitacora.Warning);
+            _avisoOperador = (sesion, MensajesAtencion.DeMotivo(resultado.ReasonCode));
+            // Sin el permiso, «Configuración» deja de ofrecerse en esta atención: otro toque sólo repetiría la denegación.
+            Maquina.OlvidarOperador();
+            return;
+        }
+
+        _avisoOperador = null;
+        _estadoBitacoras = LeerEstadoBitacoras();
+        _actor = resultado.PersonId;
+        _operador = resultado.NombreVisible;
+        _sesionDelOperador = resultado.SesionId;
+        Maquina.TerminarPorConfiguracion();
+        if (Maquina.Estado != EstadoAtencion.Reposo)
+        {
+            SalirDelOperador();
+            return;
+        }
+
+        AbrirConfiguracionCon(AccesoOperadorIdentificacion);
+        _sesionOperador?.Adoptar(resultado.SesionId!.Value, resultado.NombreVisible ?? string.Empty);
     }
 
     /// <summary>Termina la sesión privilegiada del operador de Configuración y olvida su acceso.</summary>
@@ -1147,6 +1239,9 @@
             Updated = personas.Count(p => p.Accion == AccionImportada.Modificada),
             Unchanged = personas.Count(p => p.Accion == AccionImportada.SinCambios),
             Deactivated = personas.Count(p => p.Accion == AccionImportada.DadaDeBaja),
+            // Cuántos permisos de operador dio y quitó, sin nombres ni códigos (D4 de marcar-operadores-en-personas).
+            OperatorGranted = importacion.Resultado.PermisosDados,
+            OperatorRevoked = importacion.Resultado.PermisosQuitados,
             People = personas.Select(p => new
             {
                 PersonId = p.PersonaId,
@@ -1309,17 +1404,16 @@
     /// Los textos del comprobante: validados antes de escribir, en impresora.json y, con la simulada, desde el próximo que sale.
     /// Cada guardado queda en la general con el antes, el después y el resultado (D13 y D17).
     /// </summary>
-    private ResultadoTextos GuardarTextos(string encabezado, string pie)
+    private ResultadoTextos GuardarTextos(TextosComprobante nuevos)
     {
         var antes = _textos;
-        var campos = TextosComprobante.Validar(encabezado, pie);
+        var campos = TextosComprobante.Validar(nuevos.Encabezado, nuevos.Pie);
         if (campos.Count > 0)
         {
             RegistrarCambioDeTextos(antes, null, "REJECTED", campos);
             return new ResultadoTextos(false, campos, MensajesAtencion.PanelInvalido);
         }
 
-        var nuevos = new TextosComprobante(encabezado, pie);
         try
         {
             _almacenImpresora?.Guardar(nuevos);
@@ -1429,12 +1523,22 @@
         From = datos.Desde,
     };
 
+    /// <summary>Los textos y las tres líneas elegidas, como quedan en TICKET_TEXTS (D2 de elegir-lineas-del-comprobante).</summary>
+    private static object TextosDelRegistro(TextosComprobante textos) => new
+    {
+        Header = textos.Encabezado,
+        Footer = textos.Pie,
+        PrintPersonName = textos.Comensal,
+        PrintReprintNotice = textos.AvisoReimpresion,
+        PrintOperator = textos.Operador,
+    };
+
     private void RegistrarCambioDeTextos(TextosComprobante antes, TextosComprobante? despues, string resultado, IReadOnlyList<string> campos) =>
         RegistrarConfiguracion("CONFIGURATION_CHANGED", new
         {
             Setting = "TICKET_TEXTS",
-            Before = new { Header = antes.Encabezado, Footer = antes.Pie },
-            After = despues is null ? null : new { Header = despues.Encabezado, Footer = despues.Pie },
+            Before = TextosDelRegistro(antes),
+            After = despues is null ? null : TextosDelRegistro(despues),
             Result = resultado,
             Fields = campos,
             Access = _acceso,

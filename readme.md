@@ -37,7 +37,7 @@ el diseño del producto. La demostración usa datos sintéticos y adaptadores de
 | Organización | INTELEKTRON. Caso empresarial con cliente anonimizado y datos sintéticos. |
 | URL del proyecto | Aplicación de escritorio Windows con ejecución local; no corresponde una URL de aplicación en esta etapa. |
 | URL o ZIP del repositorio | [DaveWalf/AI4Devs-finalproject](https://github.com/DaveWalf/AI4Devs-finalproject). Entrega 1: rama `feature/entrega-1-DW`. Entrega 2: rama `feature/entrega-2-DW`. Final: rama [`final-project-dw`](https://github.com/DaveWalf/AI4Devs-finalproject/tree/final-project-dw); `main` tiene sólo las plantillas del curso. |
-| Etapa | Entrega final en curso. Presentadas: la entrega 1, documentación técnica, y la entrega 2, scaffolds conectados (puesto, base SQLite y receptor). |
+| Etapa | Entrega final, presentada con el Typeform del 12/11/2026 sobre la rama `final-project-dw`. Antes: la entrega 1, documentación técnica, y la entrega 2, scaffolds conectados (puesto, base SQLite y receptor). |
 | Modalidad del MVP | Adaptadores de prueba para servicios y dispositivos; persistencia y reglas reales en la implementación académica. |
 
 ## 1. Descripción general del producto
@@ -125,8 +125,10 @@ Las capturas del puesto real, tomadas por CDP sobre el EXE publicado y siguiendo
 Hay tres caminos, y los tres usan sólo datos sintéticos. Las únicas credenciales son los
 [códigos sintéticos](#cómo-ver-la-demostración) de la tabla de más abajo, y no hay contraseñas.
 
-**1. El Release, sin instalar .NET.** En [Releases](https://github.com/DaveWalf/AI4Devs-finalproject/releases),
-bajar `INComedor-Puesto-<versión>-win-x64.zip` y su `.sha256`, comprobar la suma y abrir el EXE:
+**1. El paquete del puesto, sin instalar .NET.** Cuando haya un Release publicado en
+[Releases](https://github.com/DaveWalf/AI4Devs-finalproject/releases), bajar `INComedor-Puesto-<versión>-win-x64.zip` y
+su `.sha256`, comprobar la suma y abrir el EXE (mientras no lo haya, el mismo zip se arma en local, como dice el final
+de este camino):
 
 ```powershell
 $zip = '.\INComedor-Puesto-<versión>-win-x64.zip'
@@ -138,10 +140,19 @@ Expand-Archive $zip -DestinationPath .\INComedor-Puesto
 Requisito: Windows 11 x64 con el WebView2 Runtime, que Windows 11 ya trae. El paquete lleva el runtime de .NET
 al lado del EXE y no trae datos: la base se crea y se siembra al abrirlo. El EXE no está firmado, así que
 SmartScreen puede pedir «Más información» y «Ejecutar de todas formas». El Release trae sólo el puesto: el
-receptor necesita SQL Server y se revisa desde el código. El primer Release real sale con .NET 11 estable, del 10/11/2026,
-desde `final-project-dw` (D-C28). Hasta entonces, el mismo zip se arma en local con
-`pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
-el EXE publicado y lo deja en `artifacts/`.
+receptor necesita SQL Server y se revisa desde el código. Mientras no haya un Release publicado, el mismo zip se
+arma en local con `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el
+E2E contra el EXE publicado y lo deja en `artifacts/`; o se sigue el camino 2, desde el código.
+
+**La versión que corre.** En el centro del pie, entre la sincronización y la marca Intelektron, el puesto dice, más
+chico y atenuado, la versión del paquete y el commit corto, como «v1.0.1 · 7b80d45»; la última sección de General, «Versión del programa», suma el
+commit completo, la fecha y hora de compilación y la versión de .NET. El tag del Release llega al EXE porque
+`publicar-puesto.ps1` lo pasa como la propiedad propia `VersionPuesto` (y la fecha como `FechaCompilacionPuesto`),
+nunca como `Version`, y el E2E contra el EXE comprueba que el pie lo muestra. Un puesto compilado desde el código,
+o en la CI, dice «desarrollo» en lugar de la versión, con el commit del que se compiló. El título de la cabecera,
+«INComedor · tu pausa del día», va en Heebo Light, la letra con que INWeb escribe su nombre, desde un archivo del propio
+puesto ([`heebo-latin.woff2`](src/Intelektron.INComedor.Kiosk/wwwroot/fonts/heebo-latin.woff2), con su licencia
+[OFL 1.1](src/Intelektron.INComedor.Kiosk/wwwroot/fonts/OFL-Heebo.txt)): no pide nada a internet.
 
 **2. El código.** Con el SDK que fija `global.json` (11.0.100) o uno posterior de .NET 11, que
 `global.json` acepta con `rollForward: latestFeature`, desde la raíz de un clon de la rama
@@ -176,13 +187,15 @@ del WebView2):
 - la franja cuenta 1 pendiente;
 - al volver el receptor, queda al día, con el consumo consolidado una sola vez.
 
-Suma las cinco pruebas de las costuras del puesto y las E2E de los changes que tocan la pantalla: 44 en total, que en la CI tardan cerca de 10 min (10 min 10 s en la [corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063)), porque cada una abre la ventana del puesto y el flujo principal espera el ciclo real de envío, de 30 s. Necesita el WebView2 Runtime, SQL Server y una sesión con
+Suma las cinco pruebas de las costuras del puesto y las E2E de los changes que tocan la pantalla: 52 en total. Con 44, en la CI tardaban cerca de 10 min (10 min 10 s en la [corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063)), y las 52, en local, 4 min 28 s el 11/11, porque cada una abre la ventana del puesto y el flujo principal espera el ciclo real de envío, de 30 s. Necesita el WebView2 Runtime, SQL Server y una sesión con
 escritorio: si falta algo, falla nombrándolo. Cada prueba usa su carpeta temporal, sus puertos y su base, y no
 toca `%LOCALAPPDATA%\INComedor\demo\`. Las capturas de cada paso quedan en
 `tests/Intelektron.INComedor.E2E.Tests/bin/Debug/net11.0-windows10.0.17763.0/TestResults/e2e/`.
 
 **Datos sembrados.** La base del puesto se crea y se siembra al abrirlo: un catálogo sintético de ALMUERZO y
-REFRIGERIO, cuatro personas y cuatro operadores, con los códigos de la tabla. El receptor de demostración genera
+REFRIGERIO y nueve personas: «Persona de demostración», sin código, de la pantalla anterior; cuatro personas con los
+códigos `0001` a `0004`; tres operadores, `9001` a `9003`, y un administrador sin `OPERATOR`, `9004`, con lo que dice la
+tabla de códigos. El receptor de demostración genera
 sus certificados sintéticos y su base al arrancar («Receptor de lotes y puesto conectados», más abajo).
 
 **Variables de entorno.** [`.env.example`](.env.example) lista las cinco, vacías y comentadas. Nada lo carga,
@@ -214,12 +227,16 @@ receptor, en la ventana:
 6. En Consumos, «Buscar» con el número de una fila y «Consultar» dejan sólo esa; «Exportar CSV» pide la carpeta la primera
    vez y deja ahí el archivo. Cerrar Configuración y entrar por el engranaje con `9001` en lugar de la clave: «Reimprimir»
    pide sólo el motivo y la copia sale con «Habilitó:» y el nombre del operador; cerrar Configuración termina su sesión.
-7. En reposo, el engranaje y «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
+7. En reposo, el engranaje, la clave del día como en el paso 4 (o el código de un operador, como en el paso 6) y
+   «Personas habilitadas»: «Agregar persona», el nombre «Persona sintética 05», el código
    `0105` (no se vuelve a mostrar), el cupo ALMUERZO con «Agregar cupo» (límite 1) y «Guardar»: «Se guardó la versión
    2 de la configuración». Cerrar Configuración, `0105` e «Ingresar»: sólo opciones de ALMUERZO; `105`, sin el cero,
    no se reconoce. Con `9001` en lugar de la clave, Configuración abre sólo con Consumos, Personas e Impresora y
    «Operador: Operador sintético 01» arriba, sin General ni «Cerrar el puesto»; `9002` dice que su permiso está
-   vencido.
+   vencido. El otro camino del operador: en reposo, `9001` e «Ingresar» (o su nombre en el combo de la simulación) muestran
+   «Configuración» junto a «Listo», y tocarlo abre la misma Configuración, sin pedir la clave ni el código otra vez; un
+   operador con comidas lo ve junto a «Cancelar», arriba de sus opciones. La general distingue los dos caminos:
+   `CONFIGURATION_OPENED` con `OPERATOR` por el engranaje y con `OPERATOR_IDENTIFICATION` desde la identificación.
 8. La simulación viene encendida: desde el paso 1, la pantalla de identificación tiene, arriba del campo del código, el
    combo «Simulación: elegí a la persona», con los nombres y sin ningún código, de borde a borde con la fila del campo
    e «Ingresar», que queda a la derecha del campo. Su lista no es la nativa de Windows: la dibuja la página, dentro de
@@ -239,8 +256,8 @@ receptor, en la ventana:
 La sincronización con el receptor se ve en «Receptor de lotes y puesto conectados», más abajo, y el E2E la recorre
 sola.
 
-**Video.** Un recorrido de 2 a 3 minutos, con su [guion](docs/guion-video.md). Pendiente: va como archivo del
-Release cuando se publique.
+**Video.** Un recorrido de 2 a 3 minutos, con su [guion](docs/guion-video.md). Pendiente: cuando se grabe, va a
+YouTube como no listado y su enlace, acá.
 
 #### Capturas del flujo principal
 
@@ -309,7 +326,7 @@ Códigos sintéticos:
 | `0002` | Credencial vencida: «Esta credencial está vencida» |
 | `0003` | Credencial revocada: «Esta credencial ya no está habilitada» |
 | `0004` | Credencial todavía no vigente: «No pudimos identificarte» |
-| `9001` | Operador con permiso `OPERATOR` vigente: reimprime y recupera en Consumos |
+| `9001` | Operador con permiso `OPERATOR` vigente: reimprime y recupera en Consumos. Tipeado en reposo, o elegido en el combo de la simulación, ve «No tenés opciones disponibles ahora.» con «Configuración» junto a «Listo», que abre Configuración como su código en el engranaje |
 | `9002` | Operador con el permiso vencido: Consumos no lo deja reimprimir |
 | `9003` | Operador con el permiso revocado: Consumos no lo deja reimprimir |
 | `9004` | Administrador sin `OPERATOR`: Consumos no lo deja reimprimir |
@@ -357,15 +374,15 @@ borra. Cada guardado queda en la general por la huella SHA-256 del archivo, su t
 
 El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre
 **Configuración por pestañas**: Consumos, donde abre, Personas, Opciones, Identidad visual, Impresora,
-Mails, Pantalla, Red, Lector, Exportación y, al final, General (el modo, el estado de las bitácoras y el resguardo), en una fila de botones de 56 px que entra en
+Mails, Pantalla, Red, Lector, Exportación y, al final, General (el modo, el estado de las bitácoras, el resguardo y la versión del programa), en una fila de botones de 56 px que entra en
 1024 × 768.
 Todas quedan montadas, así que lo editado en una pestaña sobrevive al pasar a otra hasta cerrar. Cada «Guardar»
 guarda sólo lo de su pestaña y deja Configuración abierta con el aviso de lo guardado; «Cerrar» o Escape la cierran
 y descartan lo no guardado, también con un panel de edición abierto. Identidad visual tiene el «Estilo visual», con la
 opacidad de las superficies (72 a 88 %, 76 % por defecto) y el desenfoque del fondo (0 a 12 px, 4 px por defecto) con
 vista previa y su «Guardar» en `estilo-visual.json` de la carpeta de datos; Impresora, con la impresora simulada, sus
-modos. En mantenimiento, cualquiera que toque el puesto en reposo puede cambiar el estilo o simular una impresora sin
-papel.
+modos. En mantenimiento, quien entra por el engranaje con la clave del día puede cambiar el estilo o simular una
+impresora sin papel.
 
 **Resguardo de la configuración.** Al final de General, «Guardar resguardo» deja en la carpeta de la exportación
 `INComedor-resguardo-AAAAMMDD-HHmmss.zip`, con un manifiesto (formato, esquema de la base y huella SHA-256 de cada
@@ -403,20 +420,28 @@ cómo se entró (`MAINTENANCE_MODE` para el cierre directo, `DAILY_KEY` u `OPERA
 Personas y Opciones abren, con «Editar», «Personas habilitadas» y «Opciones del comedor», cada uno con su «Guardar» y
 su «Cancelar», que vuelven a la pestaña. Personas es una **tabla**: una fila por persona y una columna por cada cupo
 que usa el catálogo (en la semilla, ALMUERZO y REFRIGERIO), con lo usado hoy sobre su límite diario de 0 a 99 («1/2»)
-o «—» sin cupo, el estado y la cantidad de opciones que esos cupos habilitan. En 1024 × 768 entran diez filas de 44 px,
+o «—» sin cupo, el estado, la columna «Operador», con un escudo (texto accesible «Operador») en quien tiene el permiso
+`OPERATOR` vigente, y la cantidad de opciones que esos cupos habilitan. En 1024 × 768 entran diez filas de 44 px,
 el encabezado queda fijo y cada encabezado ordena la vista sin cambiar lo que se guarda. Tocar un cupo, o «Editar» en
 el encabezado, la pasa a edición en el mismo lugar, con un teclado en pantalla que escribe en el campo elegido y que
 «Ocultar teclado» esconde hasta cerrar Configuración: agregar una persona con su nombre, su código y sus cupos, cambiar su nombre o sus cupos (vaciar una celda
-quita el cupo) y quitarla, que la da de baja y revoca su código sin borrar sus consumos. Cada guardado deja en la
+quita el cupo) y quitarla, que la da de baja y revoca su código sin borrar sus consumos. En edición, la celda «Operador»
+se toca para marcar o desmarcar: guardar da el permiso desde ese momento y sin fin, o lo revoca en la versión nueva sin
+borrarlo; un operador marca a otros pero no a sí mismo («No podés cambiar tu propio permiso.»), y una persona de baja no
+se marca. Cada guardado deja en la
 general los cupos cambiados de cada persona, con el límite antes y después, y el operador que entró con su código como
 actor. «Exportar CSV» y «Exportar Excel», en el pie de Personas, guardan la tabla en la carpeta de la exportación de
 Consumos, sin ningún código, y quedan en la general como `PEOPLE_EXPORTED`. «Planilla de ejemplo» deja ahí un `.xlsx`
-para completar (Nombre, Código como texto y el límite de cada cupo, con una hoja de instrucciones), e «Importar Excel» lo
+para completar (Nombre, Código como texto, «Operador» con «Sí» o «No» y el límite de cada cupo, con una hoja de
+instrucciones; la segunda fila de ejemplo es operador), y la exportación lleva «Operador» al final. «Importar Excel» lo
 lee: cada fila se reconoce por su código, uno que ya está modifica a esa persona y uno nuevo la agrega. Antes de aplicar,
 un resumen cuenta las nuevas, las modificadas y las que «Reemplazar» daría de baja por no estar en la planilla (nunca un
 operador ni el administrador), avisa si quedan filas de ejemplo o códigos que Excel guardó como número (sin sus ceros),
 y ofrece «Modificar y agregar», «Reemplazar» y «Cancelar»; una fila con error no deja aplicar nada y se lista con su
-motivo. Lo consumido hoy sigue contando contra los límites nuevos. Cada importación queda en la general con la huella
+motivo. En la columna «Operador», «Sí» da el permiso, «No» lo quita y una celda vacía o la columna ausente lo deja como
+estaba; otro valor, también una fórmula, es un error de su fila que no muestra lo escrito, y un operador no puede cambiar
+el suyo por planilla. El resumen suma «1 permiso de operador dado y 1 quitado.» cuando hay alguno, y `PEOPLE_IMPORTED`
+los cuenta en `OperatorGranted` y `OperatorRevoked`. Lo consumido hoy sigue contando contra los límites nuevos. Cada importación queda en la general con la huella
 SHA-256 del archivo, como `PEOPLE_IMPORTED`, persona por persona sin nombres ni códigos, o `PEOPLE_IMPORT_REJECTED` con
 sus errores por motivo. El código se tipea en un campo
 enmascarado de sólo dígitos, conserva sus ceros iniciales, no se puede repetir aunque esté revocado, y nunca se
@@ -487,14 +512,19 @@ prueba», que manda a la impresora del puesto un comprobante con la leyenda PRUE
 salió, si no tiene papel o si quedó incierto, y no crea ninguna fila en la base ni se confunde con el comprobante de
 una atención; y los **textos del comprobante**: el encabezado (de 1 a 40 caracteres, «INComedor · comprobante» por
 defecto) y el pie (hasta 60), en `impresora.json` de la carpeta de datos, que se aplican desde el próximo comprobante,
-en la impresora y en pantalla, también a una copia. Cada prueba (`PRINTER_TESTED`) y cada guardado (`TICKET_TEXTS`)
-quedan en la general.
+en la impresora y en pantalla, también a una copia. Debajo del pie, tres líneas se eligen con «Imprimir» o «No imprimir»:
+«Nombre del comensal», «Aviso de reimpresión» y «Operador que habilitó», las tres en «Imprimir» por defecto y guardadas
+con los textos; valen desde el próximo comprobante, en el papel y en el que sale en pantalla al confirmar, y «Ver» en
+Consumos las muestra siempre. Una copia sin el aviso no lleva REIMPRESIÓN ni «ORIGINAL», pero conserva su «Copia: N». La
+marca «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD» de una copia hecha con la clave del día no se apaga: quien configura con la
+clave del día no puede sacar un comprobante que parezca válido. Cada prueba (`PRINTER_TESTED`) y cada guardado
+(`TICKET_TEXTS`, con las tres elecciones antes y después) quedan en la general.
 
 **El comprobante.** De arriba abajo: el encabezado; el número y el nombre del puesto, si se guardaron en «Datos del
-comprobante» de Impresora; «ORIGINAL» o «REIMPRESIÓN · copia N» con el número del comprobante; el nombre del comensal,
-tomado al confirmar y guardado con el comprobante, así una copia repite el de ese día; la opción, la fecha y el cargo;
-en una copia, «Habilitó:» con el nombre del operador que la pidió o, si se pidió con la clave del día, «SIN VALIDEZ:
-PRUEBA DE FUNCIONALIDAD»; una de 50 frases cálidas, siempre la misma para el
+comprobante» de Impresora; «ORIGINAL» o «REIMPRESIÓN · copia N» (si Impresora imprime el aviso) con el número del
+comprobante; el nombre del comensal (si Impresora lo imprime), tomado al confirmar y guardado con el comprobante, así una
+copia repite el de ese día; la opción, la fecha y el cargo; en una copia, «Habilitó:» con el nombre del operador que la
+pidió (si Impresora lo imprime) o, si se pidió con la clave del día, siempre «SIN VALIDEZ: PRUEBA DE FUNCIONALIDAD»; una de 50 frases cálidas, siempre la misma para el
 mismo comprobante; y el pie. Nunca el código de identificación. **El número del comprobante** se elige en «Datos del
 comprobante»: «El código de siempre» o «Correlativo desde» un número de 1 a 999.999.999. El código de siempre sale así:
 al confirmar, el puesto crea el identificador del comprobante con un GUID versión 4 (122 bits al azar) y el comprobante
@@ -585,7 +615,7 @@ conservan sus propios teclados.
 
 | Consumos del día | La clave del día con su teclado | Configuración de un operador |
 |---|---|---|
-| ![La pestaña Consumos, la primera de once: los filtros y los tres consumos del día de «Persona sintética 01», sin ningún código](docs/capturas/15-consumos-del-dia.jpg) | ![El diálogo «Clave del día» con la clave enmascarada y el teclado numérico en pantalla](docs/capturas/17-teclado-clave.jpg) | ![Configuración abierta con el código de «Operador sintético 01»: sólo Consumos, Personas e Impresora, con el operador a la vista y «Salir»](docs/capturas/18-configuracion-operador.jpg) |
+| ![La pestaña Consumos, la primera de once: los filtros y tres consumos, cada uno en un renglón, con la persona y la opción cortadas con «…» cuando no entran y sin ningún código](docs/capturas/15-consumos-del-dia.jpg) | ![El diálogo «Clave del día» con la clave enmascarada y el teclado numérico en pantalla](docs/capturas/17-teclado-clave.jpg) | ![Configuración abierta con el código de «Operador sintético 01»: sólo Consumos, Personas e Impresora, con el operador a la vista y «Salir»](docs/capturas/18-configuracion-operador.jpg) |
 
 Las 18 las sacó el 11/11/2026 un recorrido por CDP sobre el EXE publicado desde `d50cb4d`, la punta con los nueve
 changes del cierre, a 1024 × 768 y en JPEG a escala CSS con calidad 85, con una carpeta de datos nueva: las del flujo
@@ -742,7 +772,7 @@ La integración física y el despliegue productivo requieren homologación.
 - [`ci.yml`](.github/workflows/ci.yml), en cada pull request y en cada push a `feature/**` y a `final-project-*`:
   en `windows-latest`, restore, auditoría de dependencias vulnerables, build con `-warnaserror`, arranque de
   LocalDB y todas las pruebas, con el E2E; en `ubuntu-latest`, `openspec validate --all --strict` y gitleaks sobre
-  la historia. La punta de `final-project-dw` está en verde en la [corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063), con 1122 pruebas.
+  la historia. La punta de `final-project-dw` anterior al #37 (`7b80d45`) está en verde en la [corrida 43083380317](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43083380317), con 1122 pruebas; la cifra de hoy está en la [§2.6](#26-tests).
 - [`release.yml`](.github/workflows/release.yml), sólo con un tag `v*`: un job de sólo lectura compila, publica el
   puesto autocontenido para Windows x64 con [`publicar-puesto.ps1`](.github/scripts/publicar-puesto.ps1), corre el
   E2E contra ese EXE y recién entonces arma el zip y su suma; otro job, el único con escritura, comprueba la suma y
@@ -783,7 +813,7 @@ El [plan de pruebas](docs/pruebas.md) cubre dominio, SQLite real, sincronizació
 contratos, E2E y dispositivos. Casos centrales: arranque offline, cupo local,
 doble confirmación, caída tras commit, reimpresión, snapshot parcial, acuse perdido
 y ambos modos biométricos. Incluye también saltos del reloj, cálculo del día de
-negocio y vigencias. Al 11/11/2026 corren 1122 pruebas, todas en verde en la CI de la punta de `final-project-dw` ([corrida 43076629063](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43076629063)), con `dotnet test INComedor.sln` desde la raíz del repositorio: 91 de Domain, 298 de Infrastructure.Sqlite sobre un archivo SQLite real temporal, 604 del Kiosk, 62 del receptor, 23 de Contracts y 44 del E2E. Las del receptor, las del envío integrado y el E2E necesitan una instancia de SQL Server:
+negocio y vigencias. Al 11/11/2026 corren 1220 pruebas, todas en verde con `dotnet test INComedor.sln` desde la raíz del repositorio y en la CI de la rama del #38 ([corrida 43149977308](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43149977308), sobre `4e2d072`): 91 de Domain, 329 de Infrastructure.Sqlite sobre un archivo SQLite real temporal, 663 del Kiosk, 62 del receptor, 23 de Contracts y 52 del E2E. La CI las corre en cada PR y en cada integración; la punta de `final-project-dw` anterior al #37 dio 1122 en verde en la [corrida 43083380317](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/43083380317). Las del receptor, las del envío integrado y el E2E necesitan una instancia de SQL Server:
 `(localdb)\MSSQLLocalDB` por defecto, u otra en la variable `INCOMEDOR_SQLSERVER`; cada clase crea su base y la
 borra al terminar. Cubren la confirmación atómica (RB06), el replay por `IntentId`, las caídas antes y después
 del commit, la concurrencia por el último cupo, la atención y el comprobante, y el envío de lotes: el acuse
@@ -793,7 +823,7 @@ El E2E (`tests/Intelektron.INComedor.E2E.Tests`) recorre el escenario E2E del pl
 apagado y luego recuperado (AT01, AT02 y AT27), sobre los EXE compilados del puesto y del receptor. Lo maneja
 Playwright por CDP, sin bajar navegadores: el navegador es el WebView2 del equipo. Suma las costuras del puesto
 (`INCOMEDOR_DEMO_DIR`, `INCOMEDOR_RECEPTOR_URL` e `INCOMEDOR_CDP_PORT`): el puerto de depuración sólo abre con un
-valor válido y sólo en loopback. Con las de los changes que tocan la pantalla, medidas en la ventana real, son 44. Además de SQL Server, necesita el WebView2 Runtime y una sesión con escritorio,
+valor válido y sólo en loopback. Con las de los changes que tocan la pantalla, medidas en la ventana real, son 52. Además de SQL Server, necesita el WebView2 Runtime y una sesión con escritorio,
 y si falta algo falla con un mensaje que lo nombra, nunca con un salto. Con `INCOMEDOR_E2E_KIOSK_EXE`, corre
 contra el EXE del paquete publicado, sin .NET a la vista: es lo que hace el script del Release antes de armar
 el zip. El resto de los casos del plan sigue especificado, no ejecutado.
@@ -1030,7 +1060,7 @@ como la declarada al empezar y la cobertura al día. CI en verde en el push y en
 ([41236547866](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236547866),
 [41236552616](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236552616)).
 
-**Del #8 al #35**, integrados en `final-project-dw` del 01/11 al 11/11, cada uno con su CI en verde en el PR y en su
+**Del #8 al #38**, integrados en `final-project-dw` del 01/11 al 12/11, cada uno con su CI en verde en el PR y en su
 integración. Los de changes llevan la salida de `/openspec-verify-change`.
 
 - [#8](https://github.com/DaveWalf/AI4Devs-finalproject/pull/8) y [#9](https://github.com/DaveWalf/AI4Devs-finalproject/pull/9): el mapa, el §7 y la cobertura al día, y .NET 11 rc.3 (D-C26).
@@ -1048,6 +1078,11 @@ integración. Los de changes llevan la salida de `/openspec-verify-change`.
 - [#33](https://github.com/DaveWalf/AI4Devs-finalproject/pull/33), el 11/11: las 18 capturas, el README y el guion del video.
 - [#34](https://github.com/DaveWalf/AI4Devs-finalproject/pull/34), el 11/11: `cubrir-pruebas-de-las-verificaciones`, las pruebas que dejaron pendientes las verificaciones.
 - [#35](https://github.com/DaveWalf/AI4Devs-finalproject/pull/35), el 11/11: el escaneo de secretos de la CI cuenta los commits que sólo renombran y cambian líneas.
+- [#36](https://github.com/DaveWalf/AI4Devs-finalproject/pull/36), el 11/11: la documentación al día con lo que entró desde el 01/11.
+- [#37](https://github.com/DaveWalf/AI4Devs-finalproject/pull/37), el 11/11: `reimprimir-sin-codigo`, reimprimir y recuperar sin pedir un código, con la copia marcada «SIN VALIDEZ» cuando se entra con la clave del día.
+- [#38](https://github.com/DaveWalf/AI4Devs-finalproject/pull/38), el 12/11: `ver-consumos-en-un-renglon`, `mostrar-version-del-programa`, `elegir-lineas-del-comprobante`,
+  `operador-desde-la-identificacion`, `marcar-operadores-en-personas` y `mover-version-al-pie`, las mejoras pedidas por el autor el 11/11, con la
+  documentación al día.
 
 ## 8. Uso de IA y cobertura
 

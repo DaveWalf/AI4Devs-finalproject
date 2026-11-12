@@ -1,6 +1,7 @@
 @using System.Globalization
 @using System.IO
 @using Intelektron.INComedor.Infrastructure.Sqlite
+@implements IDisposable
 
 @*
     La pestaña Consumos (consulta-consumos de configurar-puesto-por-pestanas, D9, y de buscar-y-exportar-consumos): la ve
@@ -119,13 +120,25 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var fila in _filas)
+                    @foreach (var (fila, i) in _filas.Select((f, i) => (f, i)))
                     {
+                        @* La hora, la persona y la opción abren el globo con su dato entero: con un toque, o con el mouse medio *@
+                        @* segundo encima (D4 de ver-consumos-en-un-renglon). El texto de la celda sigue entero en el DOM: el corte *@
+                        @* con «…» es de CSS (D1). *@
                         <tr class="consumo">
-                            <td class="hora">@Hora(fila)</td>
+                            <td class="hora" style="@Ancla(i, DatoGlobo.Hora)" aria-describedby="@Descrita(i, DatoGlobo.Hora)"
+                                @onpointerup="e => TocarDato(e, i, DatoGlobo.Hora, HoraCompleta(fila))"
+                                @onpointerenter="e => EntrarDato(e, i, DatoGlobo.Hora, HoraCompleta(fila))"
+                                @onpointerleave="e => SalirDato(e, i, DatoGlobo.Hora)">@Hora(fila)</td>
                             <td class="numero">@fila.Numero</td>
-                            <td>@fila.Persona</td>
-                            <td>@fila.Opcion</td>
+                            <td class="persona" style="@Ancla(i, DatoGlobo.Persona)" aria-describedby="@Descrita(i, DatoGlobo.Persona)"
+                                @onpointerup="e => TocarDato(e, i, DatoGlobo.Persona, fila.Persona)"
+                                @onpointerenter="e => EntrarDato(e, i, DatoGlobo.Persona, fila.Persona)"
+                                @onpointerleave="e => SalirDato(e, i, DatoGlobo.Persona)">@fila.Persona</td>
+                            <td class="opcion" style="@Ancla(i, DatoGlobo.Opcion)" aria-describedby="@Descrita(i, DatoGlobo.Opcion)"
+                                @onpointerup="e => TocarDato(e, i, DatoGlobo.Opcion, fila.Opcion)"
+                                @onpointerenter="e => EntrarDato(e, i, DatoGlobo.Opcion, fila.Opcion)"
+                                @onpointerleave="e => SalirDato(e, i, DatoGlobo.Opcion)">@fila.Opcion</td>
                             <td>@fila.Servicio</td>
                             <td class="cargo">@CargoDe(fila)</td>
                             <td>@ExportacionConsumos.TextoEstado(fila.EstadoComprobante)</td>
@@ -149,6 +162,13 @@
                 </tbody>
             </table>
         </div>
+
+        @* Un solo globo a la vez, anclado a la celda que lo abrió con anchor-name (D4): el diálogo de Configuración tiene *@
+        @* backdrop-filter, que vuelve relativas a él las coordenadas de position: fixed, así que el ancla reemplaza al puntero. *@
+        @if (_globo is { } globo)
+        {
+            <div id="globo-dato" class="globo-dato" role="tooltip">@globo.Texto</div>
+        }
 
         @if (_filas.Count == 0)
         {
@@ -255,6 +275,10 @@
 
     [Parameter]
     public TimeZoneInfo Zona { get; set; } = TimeZoneInfo.Utc;
+
+    /// <summary>Los plazos del globo del dato completo: medio segundo del mouse y 5 s abierto (D4 de ver-consumos-en-un-renglon).</summary>
+    [Parameter]
+    public TimeProvider Reloj { get; set; } = TimeProvider.System;
 
     /// <summary>La pantalla registra cada consulta en la general, con cómo se entró a Configuración.</summary>
     [Parameter]
@@ -400,6 +424,13 @@
 
     protected override void OnParametersSet()
     {
+        // Dejar la pestaña cierra el globo (D4 de ver-consumos-en-un-renglon).
+        if (!Visible)
+        {
+            CancelarEspera();
+            CerrarGlobo();
+        }
+
         if (Visible && !_cargado)
         {
             _cargado = true;
@@ -507,11 +538,134 @@
             return;
         }
 
+        // Cambiar la consulta cierra el globo: su fila puede ya no estar (D4 de ver-consumos-en-un-renglon).
+        CancelarEspera();
+        CerrarGlobo();
         _aviso = null;
         _aplicado = filtro;
         _filas = resultado.Filas;
         _hayMas = resultado.HayMas;
         Registrar?.Invoke(new ConsultaRealizada(filtro, resultado.Filas.Count, resultado.HayMas));
+    }
+
+    /// <summary>Las tres celdas que abren el globo del dato completo (D4 de ver-consumos-en-un-renglon).</summary>
+    private enum DatoGlobo
+    {
+        Hora,
+        Persona,
+        Opcion,
+    }
+
+    private static readonly TimeSpan EsperaMouse = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan GloboAbierto = TimeSpan.FromSeconds(5);
+
+    private (int Fila, DatoGlobo Dato, string Texto)? _globo;
+    private ITimer? _esperaMouse;
+    private ITimer? _cierreGlobo;
+
+    /// <summary>Un toque (no el mouse) abre el globo de la celda, u otro toque en la misma lo cierra.</summary>
+    private void TocarDato(PointerEventArgs e, int fila, DatoGlobo dato, string texto)
+    {
+        if (e.PointerType == "mouse")
+        {
+            return;
+        }
+
+        if (_globo is { } abierto && abierto.Fila == fila && abierto.Dato == dato)
+        {
+            CerrarGlobo();
+            return;
+        }
+
+        AbrirGlobo(fila, dato, texto);
+    }
+
+    /// <summary>El mouse que entra a la celda abre su globo a los 500 ms si sigue encima.</summary>
+    private void EntrarDato(PointerEventArgs e, int fila, DatoGlobo dato, string texto)
+    {
+        if (e.PointerType != "mouse")
+        {
+            return;
+        }
+
+        CancelarEspera();
+        ITimer? espera = null;
+        espera = Reloj.CreateTimer(_ => _ = InvokeAsync(() =>
+        {
+            if (!ReferenceEquals(_esperaMouse, espera))
+            {
+                return;
+            }
+
+            CancelarEspera();
+            AbrirGlobo(fila, dato, texto);
+            StateHasChanged();
+        }), null, EsperaMouse, Timeout.InfiniteTimeSpan);
+        _esperaMouse = espera;
+    }
+
+    /// <summary>El mouse que sale de la celda cancela la espera y cierra su globo. Un toque también dispara pointerleave: no cuenta.</summary>
+    private void SalirDato(PointerEventArgs e, int fila, DatoGlobo dato)
+    {
+        if (e.PointerType != "mouse")
+        {
+            return;
+        }
+
+        CancelarEspera();
+        if (_globo is { } abierto && abierto.Fila == fila && abierto.Dato == dato)
+        {
+            CerrarGlobo();
+        }
+    }
+
+    /// <summary>Abre el globo con el dato entero y lo cierra solo a los 5 s.</summary>
+    private void AbrirGlobo(int fila, DatoGlobo dato, string texto)
+    {
+        _globo = (fila, dato, texto);
+        _cierreGlobo?.Dispose();
+        ITimer? cierre = null;
+        cierre = Reloj.CreateTimer(_ => _ = InvokeAsync(() =>
+        {
+            if (!ReferenceEquals(_cierreGlobo, cierre))
+            {
+                return;
+            }
+
+            CerrarGlobo();
+            StateHasChanged();
+        }), null, GloboAbierto, Timeout.InfiniteTimeSpan);
+        _cierreGlobo = cierre;
+    }
+
+    private void CerrarGlobo()
+    {
+        _globo = null;
+        _cierreGlobo?.Dispose();
+        _cierreGlobo = null;
+    }
+
+    private void CancelarEspera()
+    {
+        _esperaMouse?.Dispose();
+        _esperaMouse = null;
+    }
+
+    /// <summary>La celda del globo abierto es el ancla de su posición; las demás no llevan estilo.</summary>
+    private string? Ancla(int fila, DatoGlobo dato) =>
+        _globo is { } abierto && abierto.Fila == fila && abierto.Dato == dato ? "anchor-name: --globo-dato" : null;
+
+    private string? Descrita(int fila, DatoGlobo dato) =>
+        _globo is { } abierto && abierto.Fila == fila && abierto.Dato == dato ? "globo-dato" : null;
+
+    /// <summary>La fecha y hora del globo, siempre con el año, en la zona del puesto (D4).</summary>
+    private string HoraCompleta(ConsumoConsultado fila) =>
+        TimeZoneInfo.ConvertTime(fila.ConfirmadoUtc, Zona).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+
+    public void Dispose()
+    {
+        CancelarEspera();
+        CerrarGlobo();
     }
 
     private string Orden(OrdenConsumos columna) =>

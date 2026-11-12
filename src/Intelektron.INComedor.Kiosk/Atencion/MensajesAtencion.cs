@@ -126,10 +126,20 @@ public static class MensajesAtencion
     public const string PlanillaFallida = "No se pudo guardar la planilla: la carpeta no se puede escribir. Cambiala con «Cambiar carpeta» en Consumos.";
     public const string ImportacionRechazada = "No se aplicó la importación: la configuración cambió después del resumen. Volvé a importar la planilla.";
 
+    /// <summary>El título de la celda «Operador» de la propia fila de un operador, deshabilitada (D2 de marcar-operadores-en-personas).</summary>
+    public const string PermisoPropio = "No podés cambiar tu propio permiso.";
+
     public static string PlanillaDeEjemploHecha(string archivo, string carpeta) => $"Planilla de ejemplo guardada como {archivo} en {carpeta}.";
 
-    public static string ResumenImportacion(string archivo, int agregadas, int modificadas, int sinCambios) =>
-        $"{archivo}: {Cantidad(agregadas, "persona nueva", "personas nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")} y {Cantidad(sinCambios, "sin cambios", "sin cambios")}.";
+    /// <summary>
+    /// El resumen de una importación de Personas. Con permisos de operador dados o quitados, suma la oración que los cuenta,
+    /// «1 permiso de operador dado y 1 quitado.» (D4 de marcar-operadores-en-personas); sin ninguno, el texto de siempre.
+    /// </summary>
+    public static string ResumenImportacion(string archivo, int agregadas, int modificadas, int sinCambios, int permisosDados = 0, int permisosQuitados = 0) =>
+        $"{archivo}: {Cantidad(agregadas, "persona nueva", "personas nuevas")}, {Cantidad(modificadas, "modificada", "modificadas")} y {Cantidad(sinCambios, "sin cambios", "sin cambios")}."
+        + (permisosDados + permisosQuitados == 0
+            ? string.Empty
+            : $" {Cantidad(permisosDados, "permiso de operador dado", "permisos de operador dados")} y {permisosQuitados.ToString(CultureInfo.InvariantCulture)} {(permisosQuitados == 1 ? "quitado" : "quitados")}.");
 
     public static string ImportacionReemplazar(int deBaja) => deBaja == 0
         ? "«Reemplazar» no da de baja a nadie: todas las personas activas están en la planilla, son operadores o son el administrador."
@@ -168,7 +178,7 @@ public static class MensajesAtencion
         {
             CodigosAdministracion.Requerido => $"Falta la columna «{error.Campo}».",
             CodigosAdministracion.Repetido => $"La columna {error.Campo} repite el título de otra.",
-            ImportacionPersonas.ColumnaDesconocida => $"La columna {error.Campo} no es «Nombre», «Código» ni el límite de un cupo.",
+            ImportacionPersonas.ColumnaDesconocida => $"La columna {error.Campo} no es «Nombre», «Código», «Operador» ni el límite de un cupo.",
             _ => $"La columna {error.Campo} no es válida.",
         },
         _ => $"Fila {error.Fila.ToString(CultureInfo.InvariantCulture)}: " + error.Motivo switch
@@ -182,6 +192,9 @@ public static class MensajesAtencion
             CodigosAdministracion.NoSonDigitos => $"«{error.Campo}» lleva sólo dígitos.",
             CodigosAdministracion.DemasiadoLargo => $"«{error.Campo}» es demasiado largo.",
             CodigosAdministracion.CaracterDeControl => $"«{error.Campo}» tiene caracteres que no se pueden guardar.",
+            // La columna «Operador» (D2 y D4 de marcar-operadores-en-personas), sin repetir lo escrito.
+            CodigosAdministracion.PermisoPropio => "no podés cambiar tu propio permiso de operador.",
+            CodigosAdministracion.ValorInvalido => $"«{error.Campo}» lleva «Sí», «No» o nada.",
             _ => $"«{error.Campo}» no es válido.",
         },
     };

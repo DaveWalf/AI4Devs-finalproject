@@ -48,12 +48,24 @@ public sealed record RevisionImportacion(
     /// <summary>Cuántas filas siguen siendo las de la planilla de ejemplo, que se agregarían como personas (D4).</summary>
     public int FilasDeEjemplo { get; init; }
 
+    /// <summary>Cuántos permisos de operador da la importación (D4 de marcar-operadores-en-personas).</summary>
+    public int PermisosDados { get; init; }
+
+    /// <summary>Cuántos permisos de operador quita la importación.</summary>
+    public int PermisosQuitados { get; init; }
+
     /// <summary>El código de cada fila agregada, sólo en memoria para hallar su id al aplicar: nunca se muestra ni se registra.</summary>
     internal IReadOnlyDictionary<int, string> CodigosAgregados { get; init; } = new Dictionary<int, string>();
 }
 
 /// <summary>Lo que dejó una importación aplicada: el guardado y cada persona con su id.</summary>
-public sealed record ResultadoImportacion(ResultadoGuardado Guardado, IReadOnlyList<PersonaImportada> Personas);
+public sealed record ResultadoImportacion(ResultadoGuardado Guardado, IReadOnlyList<PersonaImportada> Personas)
+{
+    /// <summary>Los permisos de operador que dio y quitó la importación aplicada, para PEOPLE_IMPORTED.</summary>
+    public int PermisosDados { get; init; }
+
+    public int PermisosQuitados { get; init; }
+}
 
 /// <summary>La versión activa y lo que la importación consulta de ella (ver <see cref="AdministracionLocal.LeerParaImportar"/>).</summary>
 internal sealed record PadronImportacion(
@@ -84,6 +96,11 @@ public sealed class ImportacionPersonas
     public const string NombreDeEjemplo = "Persona de ejemplo";
     public const string ColumnaNombre = "Nombre";
     public const string ColumnaCodigo = "Código";
+
+    /// <summary>La columna del permiso de operador, con «Sí» o «No» (D4 de marcar-operadores-en-personas).</summary>
+    public const string ColumnaOperador = "Operador";
+    public const string Si = "Sí";
+    public const string No = "No";
     public const string SufijoLimite = ": límite";
     public const string HojaPersonas = "Personas";
     public const string HojaInstrucciones = "Instrucciones";
@@ -100,6 +117,7 @@ public sealed class ImportacionPersonas
         "Si se borra una columna de cupo, ese cupo queda como estaba.",
         "Antes de aplicar, el puesto muestra un resumen: «Modificar y agregar» deja a las demás personas como están y «Reemplazar» da de baja a las que no están en la planilla, salvo a los operadores y al administrador.",
         "Lo consumido hoy sigue contando contra los límites nuevos.",
+        "«Operador» dice si la persona es operador del puesto: «Sí» le da el permiso, «No» se lo quita y una celda vacía lo deja como estaba; un operador no puede cambiar el suyo.",
         "Las dos filas de ejemplo se pueden reemplazar o borrar.",
     ];
 
@@ -114,7 +132,7 @@ public sealed class ImportacionPersonas
     /// Lee la primera hoja y arma el resumen: una fila se reconoce por su código (D3), una columna de cupo que falta deja ese
     /// cupo como estaba y una celda vacía lo quita (D2). Con cualquier error, el resumen sólo trae los errores y no se aplica.
     /// </summary>
-    public RevisionImportacion Revisar(Stream archivo)
+    public RevisionImportacion Revisar(Stream archivo, Guid? actor = null)
     {
         IReadOnlyList<IReadOnlyList<string>> filas;
         var numericas = new HashSet<(int Fila, int Columna)>();
@@ -151,6 +169,8 @@ public sealed class ImportacionPersonas
         var reconocidas = new HashSet<Guid>();
         var codigosComoNumero = 0;
         var filasDeEjemplo = 0;
+        var dados = 0;
+        var quitados = 0;
 
         for (var i = 1; i < filas.Count; i++)
         {
@@ -216,6 +236,23 @@ public sealed class ImportacionPersonas
                 }
             }
 
+            // «Operador»: «Sí» o «No», sin distinguir mayúsculas ni la tilde; vacía o ausente no cambia; cualquier otra cosa, también
+            // una fórmula, es un error de la fila, sin lo escrito (D4 de marcar-operadores-en-personas, OWASP A03).
+            bool? operador = null;
+            if (columnas.Operador is { } columnaOperador && Celda(columnaOperador) is { Length: > 0 } valorOperador)
+            {
+                operador = Normalizar(valorOperador) switch
+                {
+                    "SI" => true,
+                    "NO" => false,
+                    _ => null,
+                };
+                if (operador is null)
+                {
+                    errores.Add(new ErrorImportacion(numero, ColumnaOperador, ValorInvalido));
+                }
+            }
+
             var cupos = new List<CupoEditado>();
             foreach (var (columna, titulo, par) in columnas.Cupos)
             {
@@ -249,6 +286,13 @@ public sealed class ImportacionPersonas
                 codigosComoNumero++;
             }
 
+            // Un operador no cambia su propio permiso, tampoco por planilla (D2).
+            if (id is { } propia && propia == actor && operador is { } quiere && quiere != actuales[propia].Operador)
+            {
+                errores.Add(new ErrorImportacion(numero, ColumnaOperador, PermisoPropio));
+                continue;
+            }
+
             if (id is { } personaId)
             {
                 var actual = actuales[personaId];
@@ -258,17 +302,21 @@ public sealed class ImportacionPersonas
                         .Select(c => new CupoEditado(c.ServicioId, c.CategoriaId, c.Limite)),
                     .. cupos,
                 ];
-                var igual = nombre == actual.Nombre && MismosCupos(actual.Cupos, finales);
+                bool? permiso = operador is { } elegido && elegido != actual.Operador ? elegido : null;
+                var igual = nombre == actual.Nombre && MismosCupos(actual.Cupos, finales) && permiso is null;
                 personas.Add(new PersonaImportada(numero, personaId, nombre, igual ? AccionImportada.SinCambios : AccionImportada.Modificada));
                 if (!igual)
                 {
-                    ediciones.Add(new EdicionPersona(personaId, nombre, finales));
+                    ediciones.Add(new EdicionPersona(personaId, nombre, finales, Operador: permiso));
+                    dados += permiso == true ? 1 : 0;
+                    quitados += permiso == false ? 1 : 0;
                 }
             }
             else
             {
                 personas.Add(new PersonaImportada(numero, null, nombre, AccionImportada.Agregada));
-                ediciones.Add(new EdicionPersona(null, nombre, cupos, codigo));
+                ediciones.Add(new EdicionPersona(null, nombre, cupos, codigo, Operador: operador == true ? true : null));
+                dados += operador == true ? 1 : 0;
                 codigosAgregados[numero] = codigo;
             }
         }
@@ -297,6 +345,8 @@ public sealed class ImportacionPersonas
             CodigosAgregados = codigosAgregados,
             CodigosComoNumero = codigosComoNumero,
             FilasDeEjemplo = filasDeEjemplo,
+            PermisosDados = dados,
+            PermisosQuitados = quitados,
         };
     }
 
@@ -330,13 +380,19 @@ public sealed class ImportacionPersonas
             return new ResultadoImportacion(guardado, personas);
         }
 
+        var permisos = (Dados: revision.PermisosDados, Quitados: revision.PermisosQuitados);
+
         var vigentes = _administracion.LeerParaImportar().Vigentes;
         return new ResultadoImportacion(guardado, personas
             .Select(p => p.Accion == AccionImportada.Agregada && p.Fila is { } fila
                 && revision.CodigosAgregados.TryGetValue(fila, out var codigo) && vigentes.TryGetValue(codigo, out var id)
                     ? p with { PersonaId = id }
                     : p)
-            .ToList());
+            .ToList())
+        {
+            PermisosDados = permisos.Dados,
+            PermisosQuitados = permisos.Quitados,
+        };
     }
 
     /// <summary>
@@ -349,12 +405,13 @@ public sealed class ImportacionPersonas
         var padron = _administracion.LeerParaImportar();
         var vista = padron.Vista;
         var pares = vista.ParesDeCupo();
-        List<string> encabezado = [ColumnaNombre, ColumnaCodigo, .. pares.Select(p => vista.NombrePar(p) + SufijoLimite)];
+        // «Operador» después de «Código», donde se completa con la identidad de la persona; la segunda fila de ejemplo es operador (D4).
+        List<string> encabezado = [ColumnaNombre, ColumnaCodigo, ColumnaOperador, .. pares.Select(p => vista.NombrePar(p) + SufijoLimite)];
         var codigos = CodigosLibres(padron.Usados).Take(2).ToList();
 
-        var primera = new List<object> { "Persona de ejemplo 1", codigos[0] };
+        var primera = new List<object> { "Persona de ejemplo 1", codigos[0], No };
         primera.AddRange(pares.Select(_ => (object)new NumeroPlanilla(1, 0)));
-        var segunda = new List<object> { "Persona de ejemplo 2", codigos[1] };
+        var segunda = new List<object> { "Persona de ejemplo 2", codigos[1], Si };
         segunda.AddRange(pares.Select((_, i) => i == 0 ? (object)new NumeroPlanilla(2, 0) : string.Empty));
 
         var ahora = TimeZoneInfo.ConvertTime(_administracion.Reloj.GetUtcNow(), zona);
@@ -383,6 +440,7 @@ public sealed class ImportacionPersonas
 
         int? nombre = null;
         int? codigo = null;
+        int? operador = null;
         var columnasCupo = new List<(int, string, (Guid, Guid))>();
         var vistas = new HashSet<string>(StringComparer.Ordinal);
 
@@ -414,6 +472,10 @@ public sealed class ImportacionPersonas
             {
                 codigo = c;
             }
+            else if (clave == Normalizar(ColumnaOperador))
+            {
+                operador = c;
+            }
             else if (cupos.TryGetValue(clave, out var par))
             {
                 columnasCupo.Add((c, titulo, par));
@@ -434,7 +496,7 @@ public sealed class ImportacionPersonas
             errores.Add(new ErrorImportacion(1, ColumnaCodigo, Requerido));
         }
 
-        return new Columnas(nombre ?? -1, codigo ?? -1, columnasCupo);
+        return new Columnas(nombre ?? -1, codigo ?? -1, columnasCupo, operador);
     }
 
     private static RevisionImportacion Rechazo(IReadOnlyList<ErrorImportacion> errores) => new(errores, [], [], [], []);
@@ -482,5 +544,5 @@ public sealed class ImportacionPersonas
         }
     }
 
-    private sealed record Columnas(int Nombre, int Codigo, IReadOnlyList<(int Columna, string Titulo, (Guid Servicio, Guid Categoria) Par)> Cupos);
+    private sealed record Columnas(int Nombre, int Codigo, IReadOnlyList<(int Columna, string Titulo, (Guid Servicio, Guid Categoria) Par)> Cupos, int? Operador = null);
 }
