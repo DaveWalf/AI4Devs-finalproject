@@ -25,7 +25,7 @@
 
 **Goals:**
 
-- La versión en el centro del pie, con «versión » adelante, sin mover nada de lo que se toca (gate, puntos 1 a 3).
+- La versión en el centro del pie, con el texto de hoy, sin mover nada de lo que se toca (gate, puntos 1 a 3).
 - El título con la letra de INWeb, sin depender de la red (gate, puntos 4 y 5).
 
 **Non-Goals:**
@@ -49,14 +49,14 @@ Prolijidad: la versión queda alineada en la vertical con la franja y la marca (
 no tiene hermanos de su tipo. Con un texto de sincronización largo, la primera columna corta con `min-width: 0` y la
 franja conserva su propio recorte; la versión nunca la tapa porque es otra columna.
 
-### D2. El texto es «versión » más la línea de hoy
+### D2. El texto es la línea de hoy
 
-`PantallaAtencion.razor` escribe `versión @VersionDelPrograma.Cabecera` dentro de `span#version-programa`, que
-conserva el `id` (lo lee el E2E que `publicar-puesto.ps1` corre contra el EXE). Así la validación del tag, «desarrollo» y
-«sin commit» siguen en un solo lugar, `VersionPrograma`, sin otra propiedad. Es un rótulo, no una oración: sin punto
-final. La letra sigue en 12 px, atenuada y con cifras tabulares (gate, punto 2).
+`PantallaAtencion.razor` escribe `@VersionDelPrograma.Cabecera` dentro de `span#version-programa` en el pie, que
+conserva el `id` (lo lee el E2E que `publicar-puesto.ps1` corre contra el EXE): «v1.0.1 · 7b80d45», sin la palabra
+«versión» (gate, punto 1). La validación del tag, «desarrollo» y «sin commit» siguen en `VersionPrograma`. Es un
+rótulo, no una oración: sin punto final. La letra sigue en 12 px, atenuada y con cifras tabulares (gate, punto 2).
 
-Descartada: una propiedad nueva `VersionPrograma.Pie`. Duplica la regla del formato para agregar una palabra.
+Descartada: «versión v1.0.1 · 7b80d45», la primera lectura del pedido; David la cambió en el gate.
 
 ### D3. La cabecera vuelve a tres piezas
 
@@ -96,11 +96,11 @@ Descartada: comparar `getComputedStyle().fontFamily`, que devuelve la pila pedid
 Se cambian, con la aprobación de David en la tarea 1.1 y nada más que lo que este change pide:
 
 - `VersionEnPantallaTests.La_version_en_reposo`: busca `footer.pie #version-programa`, compara con
-  `"versión " + VersionPrograma.DelPuesto().Cabecera`, comprueba que empieza con «versión desarrollo · », que la
-  cabecera no tiene `#version-programa` ni botones y que la versión no tiene `tabindex`. Se quita la afirmación de que
-  comparte el padre con `.servicio`.
+  `VersionPrograma.DelPuesto().Cabecera`, comprueba que empieza con «desarrollo · », que la cabecera no tiene
+  `#version-programa` ni botones y que la versión no tiene `tabindex`. Se quita la afirmación de que comparte el padre
+  con `.servicio`.
 - `VersionEnPantallaTests.La_version_durante_una_atencion`: la misma comparación en `footer.pie`.
-- `VersionDelPaqueteE2ETests.Version_del_paquete_en_la_cabecera`: espera `versión {esperada} · {commit}`, mide el
+- `VersionDelPaqueteE2ETests.Version_del_paquete_en_la_cabecera`: sigue esperando `{esperada} · {commit}`, mide el
   centro de la versión contra el centro de la ventana y su letra contra la del pie, comprueba que no se solapa con la
   franja ni con la marca y que la cabecera sigue en 64 px sin botones. Su `DisplayName` cambia a «El tag en el pie del
   EXE…»; el método y la parte de General no cambian.

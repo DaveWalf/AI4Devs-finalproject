@@ -2,25 +2,25 @@
 
 ### Requirement: La versión del programa en el pie
 
-En el centro del pie, el puesto SHALL mostrar «versión » seguido de la versión del paquete y el commit corto, como «versión v1.0.1 · 7b80d45», en letra más chica que la del pie y atenuada, en reposo y durante una atención. Sin versión de paquete, o con una fuera de forma, MUST decir «desarrollo» en su lugar, y sin commit, «sin commit». La línea MUST NOT ser un control, cambiar el alto del pie ni mover el engranaje, y la cabecera MUST NOT mostrarla.
+En el centro del pie, el puesto SHALL mostrar la versión del paquete y el commit corto, como «v1.0.1 · 7b80d45», en letra más chica que la del pie y atenuada, en reposo y durante una atención. Sin versión de paquete, o con una fuera de forma, MUST decir «desarrollo» en su lugar, y sin commit, «sin commit». La línea MUST NOT ser un control, cambiar el alto del pie ni mover el engranaje, y la cabecera MUST NOT mostrarla.
 
 #### Scenario: Un paquete publicado
-Origen: pedido de David del 11/11/2026 («al centro de la barra que está abajo, indicando previamente "versión ..."») y la mejora 3 del mismo día, con HU03-D.
+Origen: pedido de David del 11/11/2026 («al centro de la barra que está abajo») y su respuesta 1 al gate («comenzá con v...»), con la mejora 3 del mismo día y HU03-D.
 - **GIVEN** el EXE armado con el tag `v1.0.1` sobre el commit `7b80d45…`
 - **WHEN** se revisa el pie en reposo, y otra vez con una persona en la selección
-- **THEN** en el centro del pie dice «versión v1.0.1 · 7b80d45» las dos veces, y la cabecera no muestra ninguna versión
+- **THEN** en el centro del pie dice «v1.0.1 · 7b80d45» las dos veces, y la cabecera no muestra ninguna versión
 
 #### Scenario: Un build de desarrollo
 Origen: respuesta 5 de David al gate de `mostrar-version-del-programa` («desarrollo» y el commit), borde: sin tag.
 - **GIVEN** el puesto compilado desde el código, sin versión de paquete, sobre el commit `7b80d45…`
 - **WHEN** se revisa el pie
-- **THEN** dice «versión desarrollo · 7b80d45»
+- **THEN** dice «desarrollo · 7b80d45»
 
 #### Scenario: Una versión fuera de forma
 Origen: `AGENTS.md` (OWASP: la configuración que llega al puesto) y la validación del tag de `publicar-puesto.ps1`, borde.
 - **GIVEN** un EXE cuyo metadato de versión tiene 80 caracteres y un salto de línea
 - **WHEN** se revisa el pie
-- **THEN** dice «versión desarrollo» y el commit corto, sin ningún carácter del metadato
+- **THEN** dice «desarrollo» y el commit corto, sin ningún carácter del metadato
 
 #### Scenario: El pie y la cabecera no cambian de lugar
 Origen: «zonas de acción estables» de los criterios táctiles de David del 03/11/2026 y el requisito «Cabecera con logos y el engranaje en el pie», borde: el texto de la sincronización cambia.
@@ -54,6 +54,6 @@ Origen: «zonas de acción estables» de los criterios táctiles de David del 03
 
 ### Requirement: La versión del programa bajo el título
 
-**Reason**: David pidió el 11/11/2026 mover la versión de debajo del título, en la cabecera, al centro del pie, con «versión» adelante.
+**Reason**: David pidió el 11/11/2026 mover la versión de debajo del título, en la cabecera, al centro del pie.
 
-**Migration**: Lo reemplaza «La versión del programa en el pie», que conserva el texto («desarrollo», «sin commit» y la validación del tag), la letra más chica y atenuada, y que no sea un control; la cabecera vuelve a tener sólo los logos y el título.
+**Migration**: Lo reemplaza «La versión del programa en el pie», que conserva el texto entero («desarrollo», «sin commit» y la validación del tag), la letra más chica y atenuada, y que no sea un control; la cabecera vuelve a tener sólo los logos y el título.

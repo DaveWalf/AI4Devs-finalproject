@@ -22,38 +22,33 @@ Origen: historia HU03.2 (consultar el estado del puesto), escenario HU03-D («Di
 sincronización»), y los criterios táctiles de David del 03/11/2026 («zonas de acción estables»); ticket TK02.1
 (interfaz).
 
-## Gate (para David)
+## Gate respondido (David, 11/11/2026, de 23:22 a 23:25)
 
-Recomendada primero en cada punto.
-
-1. **El texto del pie.** (a, recomendada) «versión v1.0.1 · 7b80d45» y «versión desarrollo · 7b80d45»: la versión
-   queda igual a la del Release, del zip y de General, así lo que se ve coincide con lo que se busca. (b) «versión
-   1.0.1 · 7b80d45», sin la «v» del tag, que se lee mejor después de «versión».
-2. **La letra de la versión.** (a, recomendada) Como hoy: 12 px, atenuada, con cifras tabulares, porque la mejora 3
-   pidió «menor tamaño y más atenuada». (b) La del pie, 14 px, sin atenuar.
-3. **Dónde es «el centro».** (a, recomendada) El centro de la ventana: el pie pasa a tres columnas (la franja, la
-   versión y la marca con el engranaje), y la versión queda en el mismo lugar en reposo y durante una atención. (b) El
-   centro del espacio libre entre la franja y la marca, que se corre cuando cambia el texto de la sincronización.
-4. **El título en Heebo.** (a, recomendada) Todo «INComedor · tu pausa del día» en Heebo Light (300), a los 22 px de
-   hoy, para no cambiar el alto de la cabecera ni el espacio entre los logos. (b) Heebo Light a 26 px, como INWeb.
-5. **La fuente en el repo.** (a, recomendada) Copiar el `.woff2` latino de INWeb al Kiosk (`wwwroot/fonts/`), con el
-   texto de la licencia OFL 1.1 de Heebo al lado, bajado de `google/fonts` en GitHub, porque el repo es público y la
-   OFL pide redistribuir la fuente con su licencia. (b) Sin el archivo de la licencia (no recomendado).
-6. **Las tres pruebas existentes que cambian**, a aprobar antes de tocarlas (tarea 1.1):
-   - `tests/Intelektron.INComedor.Kiosk.Tests/VersionEnPantallaTests.cs:14-28`, «Un build de desarrollo: en reposo,
-     debajo de «INComedor · tu pausa del día», la cabecera dice…»: pasa a buscar la versión en el pie, con «versión »
-     adelante, y a comprobar que la cabecera ya no la tiene.
-   - `VersionEnPantallaTests.cs:30-40`, «Un paquete publicado: con una persona en la selección, la cabecera sigue
-     mostrando la versión»: pasa a comprobarlo en el pie.
-   - `tests/Intelektron.INComedor.E2E.Tests/VersionDelPaqueteE2ETests.cs:29-61`, «El tag en la cabecera del EXE»:
-     pasa a leer el texto en el pie, con «versión » adelante, y a medir que la versión quede centrada en la ventana,
-     dentro del pie, más chica que el título; la parte de General no cambia. Es la prueba que `publicar-puesto.ps1`
-     corre contra el EXE.
+1. **El texto del pie**: sin la palabra «versión», empezando por la «v» del tag: «v1.0.1 · 7b80d45», el mismo texto de
+   hoy («eliminá entonces la palabra versión en la variante 1, y comenzá con v...»). Sin tag sigue «desarrollo ·
+   7b80d45», y sin commit, «sin commit». Cambia el «indicando previamente "versión ..."» del pedido.
+2. **La letra de la versión**: como hoy, 12 px, atenuada, con cifras tabulares («12 px atenuada»).
+3. **El centro**: el de la ventana; el pie pasa a tres columnas y la versión no se corre cuando cambia la
+   sincronización («El de la ventana»).
+4. **El título en Heebo**: todo «INComedor · tu pausa del día» en Heebo Light (300), a los 22 px de hoy («22 px, como
+   hoy»).
+5. **La fuente en el repo**: el `.woff2` latino de INWeb en el Kiosk (`wwwroot/fonts/`), con el texto de la OFL 1.1 de
+   Heebo al lado, bajado de `google/fonts` en GitHub («Con OFL-Heebo.txt al lado»).
+6. **Las tres pruebas existentes**, aprobadas tal como se las describió y nada más («Aprobadas»):
+   - `tests/Intelektron.INComedor.Kiosk.Tests/VersionEnPantallaTests.cs:14-28`, `La_version_en_reposo`: busca la
+     versión en `footer.pie`, agrega que la cabecera no la tiene y quita que comparta el padre con `.servicio`; el
+     texto, sin botones en la cabecera y sin `tabindex` se conservan.
+   - `VersionEnPantallaTests.cs:30-40`, `La_version_durante_una_atencion`: `header.cabecera` pasa a `footer.pie`, con
+     el mismo texto.
+   - `tests/Intelektron.INComedor.E2E.Tests/VersionDelPaqueteE2ETests.cs:29-61`,
+     `Version_del_paquete_en_la_cabecera`: el mismo texto; mide la versión centrada en la ventana, en 12 px contra los
+     14 del pie, sin solaparse con la franja ni con la marca, y la cabecera en 64 px sin botones; su `DisplayName` pasa
+     a «El tag en el pie del EXE…». La parte de General no cambia.
 
 ## What Changes
 
-- **La versión, al centro del pie**: «versión » y la misma línea de hoy, en reposo y durante una atención, como texto
-  y no como control, sin cambiar el alto del pie ni el lugar del engranaje.
+- **La versión, al centro del pie**: la misma línea de hoy («v1.0.1 · 7b80d45»), en reposo y durante una atención,
+  como texto y no como control, sin cambiar el alto del pie ni el lugar del engranaje.
 - **La cabecera sin la versión**: vuelve a tener sólo el logo de la empresa, el título y el logo de la concesionaria,
   en 64 px.
 - **El título en Heebo**: «INComedor · tu pausa del día» con la letra con que INWeb escribe su nombre, desde un archivo
@@ -85,5 +80,5 @@ Ninguna.
   `@font-face` de Heebo) y un archivo nuevo, `src/Intelektron.INComedor.Kiosk/wwwroot/fonts/heebo-latin.woff2`, con
   su licencia.
 - Pruebas existentes que el cambio exige tocar: las tres del punto 6 del gate. Pruebas nuevas: la cabecera sin versión,
-  el texto del pie con «versión » y la letra del título por CDP.
+  la versión en el pie y la letra del título por CDP.
 - Documentación: `readme.md` (dónde se ve la versión) y `docs/aplicacion-del-curso.md` (la evidencia).

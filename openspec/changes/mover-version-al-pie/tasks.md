@@ -8,20 +8,21 @@ sigue la regla de prolijidad de `config.yaml`.
 
 ## 1. Las pruebas existentes
 
-- [ ] 1.1 Mostrarle a David el cambio de las tres pruebas de D6 (`VersionEnPantallaTests.La_version_en_reposo`,
+- [x] 1.1 Mostrarle a David el cambio de las tres pruebas de D6 (`VersionEnPantallaTests.La_version_en_reposo`,
   `VersionEnPantallaTests.La_version_durante_una_atencion` y `VersionDelPaqueteE2ETests.Version_del_paquete_en_la_cabecera`)
   y esperar su aprobación escrita antes de tocarlas. Verifica: la aprobación citada en esta tarea, con la hora.
+  Hecho: David las aprobó el 11/11/2026 a las 23:25, «Aprobadas», tal como las describe el punto 6 del gate y D6.
 
 ## 2. La versión en el pie
 
 - [ ] 2.1 Pruebas nuevas en `Kiosk.Tests` (`VersionEnElPieTests`), vistas fallar antes: en reposo, la cabecera no
-  tiene `#version-programa`; el pie tiene uno solo, con «versión desarrollo · » y el commit, sin `tabindex` ni
-  `button`; con una persona en la selección, el mismo texto en el pie. Verifica: el filtro de la clase, en rojo antes
+  tiene `#version-programa`; el pie tiene uno solo, con «desarrollo · » y el commit, sin la palabra «versión», sin
+  `tabindex` ni `button`; con una persona en la selección, el mismo texto en el pie. Verifica: el filtro de la clase, en rojo antes
   y en verde después.
 - [ ] 2.2 Las dos pruebas de `VersionEnPantallaTests` aprobadas en la 1.1, como dice D6. Verifica: rojas contra el
   código de hoy y verdes después de la 2.3.
 - [ ] 2.3 `PantallaAtencion.razor` y `puesto.css` (D1, D2 y D3): la versión sale de la cabecera, entra al centro del pie
-  con «versión », y el pie pasa a tres columnas. Verifica: 2.1 y 2.2 en verde, `CabeceraTests` y `NombreDelServicioTests`
+  con el texto de hoy, y el pie pasa a tres columnas. Verifica: 2.1 y 2.2 en verde, `CabeceraTests` y `NombreDelServicioTests`
   en verde sin cambios, y `dotnet build INComedor.sln -warnaserror` sin errores.
 - [ ] 2.4 La E2E aprobada en la 1.1 (D6): el texto del pie, la versión centrada en la ventana con 1 px de tolerancia,
   su letra más chica que la del pie, sin solaparse con la franja ni con la marca, la cabecera en 64 px sin botones, y
@@ -50,7 +51,7 @@ sigue la regla de prolijidad de `config.yaml`.
 
 ## 4. Documentación y verificación
 
-- [ ] 4.1 `readme.md`: dónde se ve la versión («al centro del pie, con "versión" adelante») y la letra del título.
+- [ ] 4.1 `readme.md`: dónde se ve la versión (al centro del pie) y la letra del título.
   `docs/aplicacion-del-curso.md`: la evidencia del change, con su gate. Verifica: el chequeo de enlaces relativos del D8
   de `mostrar-aplicacion-del-curso`, con su control negativo.
 - [ ] 4.2 La solución entera en primer plano, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`: `dotnet build INComedor.sln
