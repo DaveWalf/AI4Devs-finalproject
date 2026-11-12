@@ -93,8 +93,8 @@ Identifica, aplica cupos, registra el consumo e imprime el comprobante con su pr
 - Build: `dotnet build INComedor.sln -warnaserror` (vigente).
 - Test: `dotnet test INComedor.sln` (vigente). Las pruebas del receptor usan SQL Server: `(localdb)\MSSQLLocalDB`,
   u otra instancia en `INCOMEDOR_SQLSERVER`; cada clase crea su base y la borra.
-- E2E: `dotnet test tests/Intelektron.INComedor.E2E.Tests` (vigente, ~1 min 45 s, entra también con el test de la
-  solución). Lanza el receptor y el puesto compilados y maneja la pantalla con Playwright por CDP; necesita WebView2
+- E2E: `dotnet test tests/Intelektron.INComedor.E2E.Tests` (vigente; cerca de 10 min en la CI y unos 5 min en local,
+  como dice el camino 3 de «Cómo revisar» del README; entra también con el test de la solución). Lanza el receptor y el puesto compilados y maneja la pantalla con Playwright por CDP; necesita WebView2
   Runtime, SQL Server y escritorio. Cada prueba usa su carpeta, sus puertos y su base, y cierra sus procesos por PID.
 - Variables del puesto, inertes sin valor (ver `.env.example`): `INCOMEDOR_DEMO_DIR` (carpeta absoluta de la
   demostración), `INCOMEDOR_RECEPTOR_URL` (sólo `https`), `INCOMEDOR_CDP_PORT` (1024 a 65535, sólo loopback, sólo
