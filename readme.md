@@ -143,6 +143,13 @@ desde `final-project-dw` (D-C28). Hasta entonces, el mismo zip se arma en local 
 `pwsh .github/scripts/publicar-puesto.ps1 -Version 0.0.0-local`, que antes de escribirlo corre el E2E contra
 el EXE publicado y lo deja en `artifacts/`.
 
+**La versión que corre.** Debajo de «INComedor · tu pausa del día», la cabecera dice, más chico y atenuado, la versión
+del paquete y el commit corto, como «v1.0.1 · 7b80d45»; la última sección de General, «Versión del programa», suma el
+commit completo, la fecha y hora de compilación y la versión de .NET. El tag del Release llega al EXE porque
+`publicar-puesto.ps1` lo pasa como la propiedad propia `VersionPuesto` (y la fecha como `FechaCompilacionPuesto`),
+nunca como `Version`, y el E2E contra el EXE comprueba que la cabecera lo muestra. Un puesto compilado desde el código,
+o en la CI, dice «desarrollo» en lugar de la versión, con el commit del que se compiló.
+
 **2. El código.** Con el SDK que fija `global.json` (11.0.100) o uno posterior de .NET 11, que
 `global.json` acepta con `rollForward: latestFeature`, desde la raíz de un clon de la rama
 `final-project-dw` (la rama por defecto, `main`, tiene sólo las plantillas del curso):
@@ -360,7 +367,7 @@ borra. Cada guardado queda en la general por la huella SHA-256 del archivo, su t
 
 El engranaje del pie, en el borde inferior derecho al lado de la marca Intelektron y sólo en reposo, abre
 **Configuración por pestañas**: Consumos, donde abre, Personas, Opciones, Identidad visual, Impresora,
-Mails, Pantalla, Red, Lector, Exportación y, al final, General (el modo, el estado de las bitácoras y el resguardo), en una fila de botones de 56 px que entra en
+Mails, Pantalla, Red, Lector, Exportación y, al final, General (el modo, el estado de las bitácoras, el resguardo y la versión del programa), en una fila de botones de 56 px que entra en
 1024 × 768.
 Todas quedan montadas, así que lo editado en una pestaña sobrevive al pasar a otra hasta cerrar. Cada «Guardar»
 guarda sólo lo de su pestaña y deja Configuración abierta con el aviso de lo guardado; «Cerrar» o Escape la cierran
