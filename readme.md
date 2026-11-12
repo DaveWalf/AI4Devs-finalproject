@@ -1056,7 +1056,7 @@ como la declarada al empezar y la cobertura al día. CI en verde en el push y en
 ([41236547866](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236547866),
 [41236552616](https://github.com/DaveWalf/AI4Devs-finalproject/actions/runs/41236552616)).
 
-**Del #8 al #35**, integrados en `final-project-dw` del 01/11 al 11/11, cada uno con su CI en verde en el PR y en su
+**Del #8 al #38**, integrados en `final-project-dw` del 01/11 al 12/11, cada uno con su CI en verde en el PR y en su
 integración. Los de changes llevan la salida de `/openspec-verify-change`.
 
 - [#8](https://github.com/DaveWalf/AI4Devs-finalproject/pull/8) y [#9](https://github.com/DaveWalf/AI4Devs-finalproject/pull/9): el mapa, el §7 y la cobertura al día, y .NET 11 rc.3 (D-C26).
@@ -1074,6 +1074,11 @@ integración. Los de changes llevan la salida de `/openspec-verify-change`.
 - [#33](https://github.com/DaveWalf/AI4Devs-finalproject/pull/33), el 11/11: las 18 capturas, el README y el guion del video.
 - [#34](https://github.com/DaveWalf/AI4Devs-finalproject/pull/34), el 11/11: `cubrir-pruebas-de-las-verificaciones`, las pruebas que dejaron pendientes las verificaciones.
 - [#35](https://github.com/DaveWalf/AI4Devs-finalproject/pull/35), el 11/11: el escaneo de secretos de la CI cuenta los commits que sólo renombran y cambian líneas.
+- [#36](https://github.com/DaveWalf/AI4Devs-finalproject/pull/36), el 11/11: la documentación al día con lo que entró desde el 01/11.
+- [#37](https://github.com/DaveWalf/AI4Devs-finalproject/pull/37), el 11/11: `reimprimir-sin-codigo`, reimprimir y recuperar sin pedir un código, con la copia marcada «SIN VALIDEZ» cuando se entra con la clave del día.
+- [#38](https://github.com/DaveWalf/AI4Devs-finalproject/pull/38), el 12/11: `ver-consumos-en-un-renglon`, `mostrar-version-del-programa`, `elegir-lineas-del-comprobante`,
+  `operador-desde-la-identificacion`, `marcar-operadores-en-personas` y `mover-version-al-pie`, las mejoras pedidas por el autor el 11/11, con la
+  documentación al día.
 
 ## 8. Uso de IA y cobertura
 
