@@ -52,7 +52,7 @@ Invocar 'La publicación' { dotnet publish src/Intelektron.INComedor.Kiosk -c Re
 RevisarPublicacion
 
 # El E2E contra el EXE publicado, con un entorno sin .NET a la vista (escenario «Abre sin .NET instalado»): el flujo
-# principal y la cabecera, que tiene que decir el tag del paquete (D5 de mostrar-version-del-programa).
+# principal y el pie, que tiene que decir el tag del paquete (D5 de mostrar-version-del-programa y mover-version-al-pie).
 $env:INCOMEDOR_E2E_KIOSK_EXE = Join-Path $publicacion 'Intelektron.INComedor.Kiosk.exe'
 $env:INCOMEDOR_VERSION_ESPERADA = $Version
 try {

@@ -45,7 +45,8 @@ public sealed partial class VersionPrograma
     /// <summary>Los primeros siete caracteres del commit, o «sin commit».</summary>
     public string CommitCorto => Commit == SinCommit ? SinCommit : Commit[..7];
 
-    /// <summary>La línea de la cabecera, debajo del nombre del servicio: «v1.0.1 · 7b80d45».</summary>
+    /// <summary>La línea de la versión, en el centro del pie (mover-version-al-pie): «v1.0.1 · 7b80d45». Conserva su nombre
+    /// de cuando iba en la cabecera.</summary>
     public string Cabecera => $"{Version} · {CommitCorto}";
 
     /// <summary>La fecha y hora de compilación en la zona del puesto, «11/11/2026 18:30».</summary>

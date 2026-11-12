@@ -31,7 +31,7 @@ sigue la regla de prolijidad de `config.yaml`.
   Hecho: el pie en `grid` con `minmax(0, 1fr) auto minmax(0, 1fr)`; `.titulo-cabecera` y `.cabecera #version-programa`
   quitados. `dotnet test tests/Intelektron.INComedor.Kiosk.Tests --filter` de las cuatro clases: total 11, error 0;
   build `-warnaserror`: 0 errores.
-- [ ] 2.4 La E2E aprobada en la 1.1 (D6): el texto del pie, la versión centrada en la ventana con 1 px de tolerancia,
+- [x] 2.4 La E2E aprobada en la 1.1 (D6): el texto del pie, la versión centrada en la ventana con 1 px de tolerancia,
   su letra más chica que la del pie, sin solaparse con la franja ni con la marca, la cabecera en 64 px sin botones, y
   el engranaje a no más de 16 px de los bordes derecho e inferior. Mide por CDP a 1024 × 768, pega las medidas del
   `registro.txt` y deja la captura `pie-version-1024x768`. Verifica: `dotnet test tests/Intelektron.INComedor.E2E.Tests
@@ -92,7 +92,27 @@ sigue la regla de prolijidad de `config.yaml`.
   Hecho: «La versión que corre» del README y la fila «No reemplazar la revisión humana…» del mapa. Chequeo de D8: el
   control negativo da `ROTO`, `ANCLA` y `enlaces rotos: 2`; `readme.md`, `prompts.md`, `docs/cobertura-entrega.md` y
   `docs/aplicacion-del-curso.md`, de a uno, `enlaces rotos: 0`.
-- [ ] 4.2 La solución entera en primer plano, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`: `dotnet build INComedor.sln
+- [x] 4.2 La solución entera en primer plano, con `INCOMEDOR_SQLSERVER=INMO-DW-AR`: `dotnet build INComedor.sln
   -warnaserror` y `dotnet test INComedor.sln`, `openspec validate --all --strict` y
   `git diff --diff-filter=M --name-only a2f0026 -- tests/` con sólo las dos clases aprobadas. Verifica: los resúmenes
   literales pegados en esta tarea.
+  Hecho el 11/11/2026 de 23:43 a 23:48, sobre `082db8d`, sin commits durante la corrida: build «0 Advertencia(s) · 0
+  Errores»; `dotnet test INComedor.sln` «Resumen de la serie de pruebas: Correcta! · total: 1220 · error: 0 · correcto:
+  1220 · omitido: 0 · duración: 4m 33s 310ms» (Contracts 23, Domain 91, Sync.Api 62, Infrastructure.Sqlite 329, Kiosk
+  663 y E2E 52); `openspec validate --all --strict` «Totals: 20 passed, 0 failed (20 items)»; el `git diff` lista
+  `tests/Intelektron.INComedor.E2E.Tests/VersionDelPaqueteE2ETests.cs` y
+  `tests/Intelektron.INComedor.Kiosk.Tests/VersionEnPantallaTests.cs`, las dos aprobadas. Una corrida anterior, de las
+  23:35, dio 1218 de 1219: la única roja comparaba el commit del puesto compilado (`b71ad49`) con un HEAD que se movió
+  por dos commits de documentación durante la corrida; repetida sola sobre el HEAD, en verde.
+- [x] 4.3 Agregada por el verify independiente en sólo lectura (11/11, 23:44 a 23:50), sin defectos de implementación:
+  corregir lo que encontró antes de archivar. Verifica: `openspec validate --all --strict`, el archivado ensayado en
+  una copia de `openspec/` y la E2E de la 2.5 en verde.
+  Hecho: la 2.4 tildada (decía «Hecho» sin la casilla); el delta nuevo de `distribucion-puesto` («El paquete lleva su
+  versión en el pie» en lugar de «El paquete lleva su versión», que pedía el tag en la cabecera), aprobado por David a
+  las 23:51; D1 con la grilla real y la franja en dos renglones con el texto largo (decía que se recortaba); los
+  comentarios de `VersionPrograma.cs`, `publicar-puesto.ps1` y el resumen de `VersionDelPaqueteE2ETests` dicen «el
+  pie»; la 2.5 mide con los tres mensajes reales de la franja y el borde de su texto con un `Range`: `CentroVersion =
+  512` antes y después, `DerechaFranja` 274,71 y 369,95, `AltoFranja` 18,5 y 37 (dos renglones), `AltoPie = 57`, total 1,
+  error 0. `validate --all --strict` 20 de 20; el archivado ensayado da +3, −2 y `validate --specs --strict` 19 de 19.
+  Queda como está, por ser pruebas existentes sin aprobación: los `DisplayName` de `VersionProgramaTests.cs:16` y `:26`
+  dicen «la cabecera dice…».

@@ -5,8 +5,9 @@ namespace Intelektron.INComedor.E2E.Tests;
 
 /// <summary>
 /// El pie y la cabecera no cambian de lugar (D1 de mover-version-al-pie): a 1024 × 768 y por CDP, la versión queda en el
-/// centro de la ventana con el texto de la sincronización de reposo y otra vez con uno mucho más largo, como el de un
-/// error de credencial con pendientes; el pie no cambia de alto y la versión no toca la franja ni la marca.
+/// centro de la ventana con el texto de la sincronización de reposo y otra vez con los tres mensajes de su peor caso (un
+/// error de credencial con pendientes y retenidos), que pasan a dos renglones; el pie no cambia de alto, la franja entra
+/// en él y su texto no toca la versión, que tampoco toca la marca.
 /// </summary>
 public class VersionEnElPieE2ETests : IAsyncLifetime
 {
@@ -36,9 +37,15 @@ public class VersionEnElPieE2ETests : IAsyncLifetime
 
         var antes = await MedirAsync(pagina);
         _escenario.Registrar($"1024 × 768, con la sincronización de reposo: {antes}");
-        // Otro estado de la franja, sin tocar el puesto: el texto de un error de credencial con pendientes y retenidos.
+        // Otro estado de la franja, sin tocar el puesto: los tres mensajes de FranjaSincronizacion en su peor caso, un error
+        // de credencial con pendientes y retenidos, cada uno en su span como los arma el componente.
         await pagina.EvaluateAsync(
-            "() => { document.querySelectorAll('footer.pie .mensaje-sincronizacion').forEach(m => m.textContent = 'Error técnico: credencial del equipo · 12 pendientes · 3 retenidos'); }");
+            """
+            () => { const f = document.querySelector('footer.pie .franja-sincronizacion');
+              f.querySelectorAll('.mensaje-sincronizacion').forEach(m => m.remove());
+              for (const t of ['Error técnico: credencial del equipo', '12 pendientes', '3 retenidos para revisión']) {
+                const s = document.createElement('span'); s.className = 'mensaje-sincronizacion'; s.textContent = t; f.appendChild(s); } }
+            """);
         var despues = await MedirAsync(pagina);
         _escenario.Registrar($"1024 × 768, con un texto de sincronización largo: {despues}");
         await _escenario.CapturarAsync(pagina, "pie-sincronizacion-larga-1024x768");
@@ -53,17 +60,19 @@ public class VersionEnElPieE2ETests : IAsyncLifetime
 
         Assert.True(Math.Abs(antes.CentroVersion - despues.CentroVersion) <= Tolerancia, "La versión se corrió al cambiar la sincronización.");
         Assert.True(Math.Abs(antes.AltoPie - despues.AltoPie) <= Tolerancia, $"El pie pasó de {antes.AltoPie} px a {despues.AltoPie} px.");
+        Assert.True(despues.AltoFranja <= despues.AltoPie, $"La franja no entra en el pie: {despues.AltoFranja} px en {despues.AltoPie} px.");
     }
 
     private static async Task<Medida> MedirAsync(IPage pagina) => JsonSerializer.Deserialize<Medida>(await pagina.EvaluateAsync<string>(
         """
         () => { const caja = s => document.querySelector(s).getBoundingClientRect();
-          const r = document.createRange(); r.selectNodeContents(document.querySelector('footer.pie #version-programa')); const v = r.getBoundingClientRect();
+          const texto = s => { const r = document.createRange(); r.selectNodeContents(document.querySelector(s)); return r.getBoundingClientRect(); };
+          const v = texto('footer.pie #version-programa'), f = texto('footer.pie .franja-sincronizacion');
           return JSON.stringify({ CentroVentana: window.innerWidth / 2, CentroVersion: (v.left + v.right) / 2, IzquierdaVersion: v.left, DerechaVersion: v.right,
-            DerechaFranja: caja('footer.pie .franja-sincronizacion').right, IzquierdaMarca: caja('footer.pie .marca-intelektron').left,
+            DerechaFranja: f.right, AltoFranja: f.height, IzquierdaMarca: caja('footer.pie .marca-intelektron').left,
             AltoPie: caja('footer.pie').height, AltoCabecera: caja('header.cabecera').height }); }
         """))!;
 
     private sealed record Medida(double CentroVentana, double CentroVersion, double IzquierdaVersion, double DerechaVersion, double DerechaFranja,
-        double IzquierdaMarca, double AltoPie, double AltoCabecera);
+        double AltoFranja, double IzquierdaMarca, double AltoPie, double AltoCabecera);
 }

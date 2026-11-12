@@ -36,7 +36,9 @@
 
 ### D1. El pie en tres columnas
 
-`.pie` pasa de `flex` a `grid` con `grid-template-columns: 1fr auto 1fr`: la franja en la primera, alineada a la
+`.pie` pasa de `flex` a `grid` con `grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)`, con relleno parejo de
+8 px y 8 px de margen en la franja (ajuste al aplicar: con el relleno de 16 y 8 de antes, el centro de la grilla quedaba
+4 px a la derecha del de la ventana): la franja en la primera, alineada a la
 izquierda; `span#version-programa` en la del centro; y `div.pie-derecha` en la tercera, con `justify-self: end`. Las
 dos columnas de los costados miden lo mismo, así que la del medio queda centrada en la ventana aunque cambie el texto
 de la sincronización, y el engranaje sigue en el borde derecho, con su área de 56 px.
@@ -46,8 +48,11 @@ espacio libre, no en la ventana, y se corre cada vez que la franja cambia de tex
 estables».
 
 Prolijidad: la versión queda alineada en la vertical con la franja y la marca (`align-items: center` de la grilla) y
-no tiene hermanos de su tipo. Con un texto de sincronización largo, la primera columna corta con `min-width: 0` y la
-franja conserva su propio recorte; la versión nunca la tapa porque es otra columna.
+no tiene hermanos de su tipo. Con un texto de sincronización largo, la franja ocupa hasta el borde de su columna (unos
+428 px a 1024 × 768) y pasa a dos renglones dentro de los 56 px del pie, sin recortarse ni tocar la versión, que es otra
+columna (ajuste al aplicar, del verify: decía que se recortaba). Antes, con `flex`, el peor caso entraba en un renglón;
+ahora se ve entero en dos, sin cambiar el alto del pie, y `VersionEnElPieE2ETests` lo mide con los tres mensajes reales
+de la franja.
 
 ### D2. El texto es la línea de hoy
 

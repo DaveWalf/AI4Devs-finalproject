@@ -6,7 +6,7 @@ namespace Intelektron.INComedor.E2E.Tests;
 
 /// <summary>
 /// El paquete lleva su versión (D5 de mostrar-version-del-programa): abre el puesto, el compilado o el EXE publicado, y compara
-/// la cabecera con <c>INCOMEDOR_VERSION_ESPERADA</c>, que <c>publicar-puesto.ps1</c> pone en el tag del paquete; sin ella,
+/// el pie con <c>INCOMEDOR_VERSION_ESPERADA</c>, que <c>publicar-puesto.ps1</c> pone en el tag del paquete; sin ella,
 /// con «desarrollo». El commit corto es el de <c>git rev-parse HEAD</c> del repo. A 1024 × 768 y por CDP mide además el
 /// pie (la versión centrada en la ventana, más chica que la letra del pie, sin tocar la franja ni la marca, y el engranaje
 /// en su borde; D6 de mover-version-al-pie), la cabecera (64 px, sin la versión) y la pestaña General (los

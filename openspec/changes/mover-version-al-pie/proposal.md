@@ -72,6 +72,9 @@ Ninguna.
 
 - `presentacion-puesto`: se retira «La versión del programa bajo el título» y se suman «La versión del programa en el
   pie» y «El título con la letra de INWeb».
+- `distribucion-puesto`: se retira «El paquete lleva su versión», que pedía comprobar el tag en la cabecera del EXE, y
+  se suma «El paquete lleva su versión en el pie», con el mismo texto y los mismos escenarios. Lo encontró el verify del
+  11/11 a las 23:50 y lo aprobó David a las 23:51 («Aprobado»).
 
 ## Impact
 
